@@ -65,3 +65,6 @@ desktop.ini
 *.bak
 *.swp
 localEnquiriesCache.json
+
+# Deploy archives (build with: npm run package)
+*.zip

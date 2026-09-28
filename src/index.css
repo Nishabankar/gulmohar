@@ -1,0 +1,157 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Smooth scroll behavior & prevent horizontal overflow */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 80px;
+}
+body {
+  overflow-x: clip;
+  max-width: 100%;
+}
+
+/* Custom Slim & Elegant Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: #f8fafc;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Custom Scrollbar Utility for Tables */
+.custom-scrollbar::-webkit-scrollbar {
+  height: 4px;
+  width: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #b30e2e;
+}
+
+/* Infinite Smooth Logo Marquee Animation */
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 25s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* Cinematic Ken Burns Slow-Zoom */
+@keyframes kenburns {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.04);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-ken-burns {
+  animation: kenburns 16s ease-in-out infinite alternate;
+}
+
+/* Falling Gulmohar Petals & Flowers Animation */
+@keyframes fallAndTumble {
+  0% {
+    opacity: 0;
+    transform: translateY(-40px) rotate(0deg) rotateX(0deg) translateX(0px);
+  }
+  15% {
+    opacity: 0.95;
+  }
+  50% {
+    transform: translateY(50vh) rotate(180deg) rotateX(45deg) translateX(35px);
+  }
+  85% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(105%) rotate(360deg) rotateX(90deg) translateX(-25px);
+  }
+}
+
+.animate-petal-1 { animation: fallAndTumble 8.5s ease-in-out infinite 0s; }
+.animate-petal-2 { animation: fallAndTumble 11s ease-in-out infinite 1.8s; }
+.animate-petal-3 { animation: fallAndTumble 9.5s ease-in-out infinite 3.5s; }
+.animate-petal-4 { animation: fallAndTumble 12s ease-in-out infinite 0.5s; }
+.animate-petal-5 { animation: fallAndTumble 7.8s ease-in-out infinite 2.5s; }
+.animate-petal-6 { animation: fallAndTumble 10s ease-in-out infinite 4.2s; }
+.animate-petal-7 { animation: fallAndTumble 9s ease-in-out infinite 1.2s; }
+.animate-petal-8 { animation: fallAndTumble 11.5s ease-in-out infinite 5s; }
+
+/* Disappear & Reappear (Fade In - Hold - Fade Out - Pause - Reappear) Badge Animation */
+@keyframes badgeFade {
+  0% {
+    opacity: 0;
+    transform: scale(0.88) translateY(-10px);
+    box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+  }
+  15%, 55% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    box-shadow: 0 14px 32px -5px rgba(179, 14, 46, 0.7), 0 0 25px rgba(251, 191, 36, 0.75);
+  }
+  70% {
+    opacity: 0;
+    transform: scale(0.92) translateY(-6px);
+    box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.88) translateY(-10px);
+  }
+}
+
+.animate-badge-pop {
+  animation: badgeFade 4.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Star Sparkle Pulse Animation */
+@keyframes starPulse {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.25) rotate(25deg);
+    opacity: 1;
+  }
+}
+
+.animate-star-pulse {
+  animation: starPulse 1.5s ease-in-out infinite;
+}

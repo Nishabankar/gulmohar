@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL, CONTACT_PHONE, CONTACT_PHONE_DISPLAY, CONTACT_EMAIL, WHATSAPP_URL } from '../config';
 
 export default function ContactForm({ selectedPlotForEnquiry }) {
   const [formData, setFormData] = useState({ firstName: '', lastName: '', phone: '', email: '', plotInfo: '', plotsCount: '1 Guntha', visitDate: '' });
@@ -50,7 +51,7 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
     };
 
     try {
-      const response = await fetch('http://localhost:5000/api/enquiries', {
+      const response = await fetch(`${API_BASE_URL}/api/enquiries`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -68,7 +69,7 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
         setFormData({ firstName: '', lastName: '', phone: '', email: '', plotInfo: '', plotsCount: '1 Guntha', visitDate: '' });
       } else {
         setStatusMsg({
-          text: data.message || 'Could not save enquiry. Please call us directly at +91 7447 212121.',
+          text: data.message || `Could not save enquiry. Please call us directly at ${CONTACT_PHONE_DISPLAY}.`,
           type: 'error'
         });
       }
@@ -134,35 +135,35 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
                 <div class="space-y-2 text-xs">
                   
                   {/* Phone */}
-                  <a href="tel:+917447212121" class="flex items-center space-x-2.5 p-2 sm:p-2.5 rounded-xl bg-[#FFF0F2] border border-[#FCD6DC] hover:border-[#B30E2E] transition group">
+                  <a href={`tel:+${CONTACT_PHONE}`} class="flex items-center space-x-2.5 p-2 sm:p-2.5 rounded-xl bg-[#FFF0F2] border border-[#FCD6DC] hover:border-[#B30E2E] transition group">
                     <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#B30E2E] text-white flex items-center justify-center flex-shrink-0 text-xs group-hover:scale-105 transition">
                       <i class="fa-solid fa-phone"></i>
                     </div>
                     <div>
                       <span class="text-[10px] font-semibold text-gray-500 block">Direct Sales Helpline</span>
-                      <span class="font-semibold text-gray-800 text-[10.5px] sm:text-[11.5px] leading-tight block group-hover:text-[#B30E2E] transition">+91 7447 212121</span>
+                      <span class="font-semibold text-gray-800 text-[10.5px] sm:text-[11.5px] leading-tight block group-hover:text-[#B30E2E] transition">{CONTACT_PHONE_DISPLAY}</span>
                     </div>
                   </a>
 
                   {/* WhatsApp */}
-                  <a href="https://wa.me/917447212121?text=Hi,%20I%20am%20interested%20in%20Gulmohar%20City%20Plots" target="_blank" rel="noreferrer" class="flex items-center space-x-2.5 p-2 sm:p-2.5 rounded-xl bg-[#EBF5F0] border border-emerald-200 hover:border-[#0D5235] transition group">
+                  <a href={WHATSAPP_URL("Hi, I am interested in Gulmohar City Plots")} target="_blank" rel="noreferrer" class="flex items-center space-x-2.5 p-2 sm:p-2.5 rounded-xl bg-[#EBF5F0] border border-emerald-200 hover:border-[#0D5235] transition group">
                     <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#25D366] text-white flex items-center justify-center flex-shrink-0 text-xs group-hover:scale-110 transition shadow-sm">
                       <i class="fa-brands fa-whatsapp text-sm sm:text-base"></i>
                     </div>
                     <div>
                       <span class="text-[10px] font-semibold text-gray-500 block">WhatsApp Direct Chat</span>
-                      <span class="font-semibold text-gray-800 text-[10.5px] sm:text-[11.5px] leading-tight block group-hover:text-[#0D5235] transition">+91 7447 212121</span>
+                      <span class="font-semibold text-gray-800 text-[10.5px] sm:text-[11.5px] leading-tight block group-hover:text-[#0D5235] transition">{CONTACT_PHONE_DISPLAY}</span>
                     </div>
                   </a>
 
                   {/* Email */}
-                  <a href="https://mail.google.com/mail/?view=cm&fs=1&to=housedealofficial@gmail.com" target="_blank" rel="noreferrer" class="flex items-center space-x-2.5 p-2 sm:p-2.5 rounded-xl bg-gray-50 border border-gray-200 hover:border-gray-400 transition group">
+                  <a href={`https://mail.google.com/mail/?view=cm&fs=1&to=${CONTACT_EMAIL}`} target="_blank" rel="noreferrer" class="flex items-center space-x-2.5 p-2 sm:p-2.5 rounded-xl bg-gray-50 border border-gray-200 hover:border-gray-400 transition group">
                     <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gray-800 text-white flex items-center justify-center flex-shrink-0 text-xs group-hover:scale-105 transition">
                       <i class="fa-solid fa-envelope"></i>
                     </div>
                     <div>
                       <span class="text-[10px] font-semibold text-gray-500 block">Official Email</span>
-                      <span class="font-semibold text-gray-800 text-[10.5px] sm:text-[11.5px] leading-tight block group-hover:text-[#B30E2E] transition">housedealofficial@gmail.com</span>
+                      <span class="font-semibold text-gray-800 text-[10.5px] sm:text-[11.5px] leading-tight block group-hover:text-[#B30E2E] transition">{CONTACT_EMAIL}</span>
                     </div>
                   </a>
 

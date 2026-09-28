@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { CONTACT_PHONE, CONTACT_PHONE_DISPLAY } from '../config';
 
 export default function Navbar({ onOpenAdmin, isAdminLoggedIn, onOpenDashboard }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -29,9 +30,9 @@ export default function Navbar({ onOpenAdmin, isAdminLoggedIn, onOpenDashboard }
           </nav>
 
           <div class="flex items-center space-x-3 flex-shrink-0">
-            <a href="tel:+917447212121" class="inline-flex items-center space-x-2 border border-[#0D5235] text-[#0D5235] bg-[#EBF5F0] hover:bg-[#D6EBE1] font-medium text-xs sm:text-sm px-3.5 sm:px-4 py-2 rounded-full transition whitespace-nowrap">
+            <a href={`tel:+${CONTACT_PHONE}`} class="inline-flex items-center space-x-2 border border-[#0D5235] text-[#0D5235] bg-[#EBF5F0] hover:bg-[#D6EBE1] font-medium text-xs sm:text-sm px-3.5 sm:px-4 py-2 rounded-full transition whitespace-nowrap">
               <i class="fa-solid fa-phone text-[#0D5235]"></i>
-              <span class="whitespace-nowrap">+91 7447 212121</span>
+              <span class="whitespace-nowrap">{CONTACT_PHONE_DISPLAY}</span>
             </a>
 
             <a href="#contact" class="inline-flex items-center space-x-2 bg-[#B30E2E] hover:bg-[#8A0B22] text-white font-medium text-xs sm:text-sm px-4 sm:px-5 py-2 rounded-full shadow-md hover:shadow-lg transition transform hover:-translate-y-0.5 whitespace-nowrap">

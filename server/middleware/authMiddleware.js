@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { JWT_SECRET } = require('../config/env');
 
 const protectAdmin = (req, res, next) => {
   let token;
@@ -6,12 +7,7 @@ const protectAdmin = (req, res, next) => {
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
       token = req.headers.authorization.split(' ')[1];
-      if (token === 'demo_jwt_token_2026' || token.startsWith('agent_jwt_token_')) {
-        const agentUsername = token.replace('agent_jwt_token_', '');
-        req.admin = { username: agentUsername || 'admin', role: agentUsername === 'admin' ? 'SuperAdmin' : 'Agent' };
-        return next();
-      }
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'gulmohar_city_super_secret_jwt_key_2026');
+      const decoded = jwt.verify(token, JWT_SECRET);
       req.admin = decoded;
       return next();
     } catch (error) {

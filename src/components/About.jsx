@@ -1,4 +1,5 @@
 import React from 'react';
+import { CONTACT_PHONE, CONTACT_PHONE_DISPLAY } from '../config';
 
 export default function About() {
   const whyChooseUs = [
@@ -150,11 +151,11 @@ export default function About() {
           </a>
 
           <a 
-            href="tel:+917447212121" 
+            href={`tel:+${CONTACT_PHONE}`} 
             class="w-full sm:w-auto inline-flex items-center justify-center space-x-2 border-2 border-[#0D5235] text-[#0D5235] bg-[#EBF5F0] hover:bg-[#0D5235] hover:text-white font-bold text-xs sm:text-sm px-4 py-1.5 rounded-full transition shadow-sm"
           >
             <i class="fa-solid fa-phone text-[10px]"></i>
-            <span>+91 7447 212121</span>
+            <span>{CONTACT_PHONE_DISPLAY}</span>
           </a>
         </div>
 

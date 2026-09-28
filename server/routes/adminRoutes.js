@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const Admin = require('../models/Admin');
 const Enquiry = require('../models/Enquiry');
 const { protectAdmin } = require('../middleware/authMiddleware');
+const { JWT_SECRET, JWT_EXPIRES_IN } = require('../config/env');
 
 // @route   POST /api/admin/login
 // @desc    Admin login directly from MongoDB database & return JWT token
@@ -30,8 +31,8 @@ router.post('/login', async (req, res) => {
 
     const token = jwt.sign(
       { id: admin._id, username: admin.username, role: admin.role },
-      process.env.JWT_SECRET || 'gulmohar_city_super_secret_jwt_key_2026',
-      { expiresIn: '24h' }
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRES_IN }
     );
 
     return res.json({

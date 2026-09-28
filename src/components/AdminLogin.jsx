@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
+import { API_BASE_URL } from '../config';
 
 export default function AdminLogin({ onLoginSuccess, onClose }) {
-  const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('admin123');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -14,7 +15,7 @@ export default function AdminLogin({ onLoginSuccess, onClose }) {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:5000/api/admin/login', {
+      const response = await fetch(`${API_BASE_URL}/api/admin/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
@@ -28,55 +29,10 @@ export default function AdminLogin({ onLoginSuccess, onClose }) {
         onLoginSuccess(data.admin, data.token);
         return;
       }
+      setError(data.message || 'Invalid username or password. Please try again.');
     } catch (err) {
-      console.warn('Backend connecting... fallback authentication mode active:', err);
-    }
-
-    // Dynamically created agents by Admin
-    const storedAgents = JSON.parse(localStorage.getItem('registeredAgents') || '[]');
-
-    if (username.toLowerCase() === 'admin' && password === 'admin123') {
-      const adminObj = { 
-        id: 'admin-1', 
-        username: 'admin', 
-        name: 'Admin', 
-        role: 'Admin', 
-        phone: '7447212121', 
-        email: 'admin@gulmoharcity.com', 
-        password: 'admin123',
-        avatarColor: 'bg-[#B30E2E]' 
-      };
-      localStorage.setItem('adminToken', 'demo_jwt_token_2026');
-      localStorage.setItem('adminUser', JSON.stringify(adminObj));
-      onLoginSuccess(adminObj, 'demo_jwt_token_2026');
-    } else {
-      const matchedAgent = storedAgents.find(a => a.username.toLowerCase() === username.toLowerCase() && a.password === password);
-      if (matchedAgent) {
-        let profileImg = matchedAgent.profileImage || '';
-        const u = username.toLowerCase();
-        if (!profileImg) {
-          if (u.includes('mohini')) profileImg = '/assets/images/mohini-profile.jpeg';
-          else if (u.includes('sarika')) profileImg = '/assets/images/sarika-profile.jpeg';
-          else if (u.includes('tejashree') || u.includes('nisha')) profileImg = '/assets/images/tejashree-profile.jpeg';
-        }
-
-        const agentObj = { 
-          id: matchedAgent.id || matchedAgent._id, 
-          username: matchedAgent.username, 
-          name: matchedAgent.name, 
-          role: 'Agent',
-          phone: matchedAgent.phone || '',
-          email: matchedAgent.email || '',
-          password: matchedAgent.password || password,
-          profileImage: profileImg,
-          avatarColor: matchedAgent.avatarColor || 'bg-blue-600'
-        };
-        localStorage.setItem('adminToken', `agent_jwt_token_${matchedAgent.username}`);
-        localStorage.setItem('adminUser', JSON.stringify(agentObj));
-        onLoginSuccess(agentObj, `agent_jwt_token_${matchedAgent.username}`);
-      } else {
-        setError('Invalid username or password. Please try again.');
-      }
+      console.error('Login request failed:', err);
+      setError('Unable to reach the server. Please try again later.');
     }
     setLoading(false);
   };

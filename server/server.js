@@ -1,52 +1,50 @@
+const env = require('./config/env');
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
-const dotenv = require('dotenv');
 const bcrypt = require('bcryptjs');
 const connectDB = require('./config/db');
 const Admin = require('./models/Admin');
 
-dotenv.config();
-
 const app = express();
 
 // Middleware
-app.use(cors());
+// CORS_ORIGIN: comma-separated list of allowed origins; empty allows all
+const allowedOrigins = env.CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean);
+app.use(cors(allowedOrigins.length ? { origin: allowedOrigins } : {}));
 app.use(express.json());
-
-// Connect Database
-connectDB();
 
 // Seed Default Admin User directly into MongoDB
 const seedAdminUser = async () => {
   try {
     const adminCount = await Admin.countDocuments();
     if (adminCount === 0) {
-      const defaultUsername = process.env.ADMIN_USERNAME || 'admin';
-      const defaultPassword = process.env.ADMIN_PASSWORD || 'admin123';
-      const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+      if (!env.ADMIN_USERNAME || !env.ADMIN_PASSWORD) {
+        console.warn('⚠️  No admin user exists. Set ADMIN_USERNAME and ADMIN_PASSWORD in .env to seed one.');
+        return;
+      }
+      const hashedPassword = await bcrypt.hash(env.ADMIN_PASSWORD, 10);
 
       await Admin.create({
-        username: defaultUsername,
-        email: 'admin@gulmoharcity.com',
+        username: env.ADMIN_USERNAME.toLowerCase().trim(),
+        email: env.ADMIN_EMAIL,
         password: hashedPassword,
         role: 'SuperAdmin'
       });
 
-      console.log(`🔐 Default Admin User seeded in MongoDB: username='${defaultUsername}', password='${defaultPassword}'`);
+      console.log(`🔐 Admin user '${env.ADMIN_USERNAME}' seeded in MongoDB`);
     }
   } catch (err) {
     console.warn('Admin seed note:', err.message);
   }
 };
 
-setTimeout(seedAdminUser, 2000);
-
 // Routes
 app.use('/api/enquiries', require('./routes/enquiryRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 
-// Health Check Root Route
-app.get('/', (req, res) => {
+// Health Check Route
+app.get(env.SERVE_FRONTEND ? '/api' : '/', (req, res) => {
   res.json({
     status: 'online',
     message: 'Gulmohar City Real Estate Pure MongoDB Backend Server Running',
@@ -58,8 +56,26 @@ app.get('/', (req, res) => {
   });
 });
 
-const PORT = process.env.PORT || 5000;
+// Serve the built React app (npm run build → ../dist) from this same Node app
+if (env.SERVE_FRONTEND) {
+  const distPath = path.join(__dirname, '..', 'dist');
+  app.use(express.static(distPath));
+  app.get(/^\/(?!api\/).*/, (req, res) => res.sendFile(path.join(distPath, 'index.html')));
+}
 
-app.listen(PORT, () => {
-  console.log(`🚀 Pure MongoDB Backend Server running on http://localhost:${PORT}`);
-});
+const startServer = async () => {
+  try {
+    await connectDB();
+  } catch (error) {
+    console.error(`❌ MongoDB Connection Error: ${error.message}`);
+    process.exit(1);
+  }
+
+  await seedAdminUser();
+
+  app.listen(env.PORT, () => {
+    console.log(`🚀 Server running on port ${env.PORT} (${env.NODE_ENV})`);
+  });
+};
+
+startServer();

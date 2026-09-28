@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../config';
 import PolicyModal from './PolicyModal';
 
 const getAgentProfilePhoto = (agentObj) => {
@@ -33,7 +34,7 @@ export default function AdminDashboard({ onLogout }) {
 
   // Logged in user info & Role
   const rawUser = JSON.parse(
-    localStorage.getItem('adminUser') || '{"username":"admin","name":"Admin","role":"Admin","phone":"7447212121","email":"admin@gulmoharcity.com","password":"admin123"}'
+    localStorage.getItem('adminUser') || '{}'
   );
 
   const registeredAgentsList = JSON.parse(localStorage.getItem('registeredAgents') || '[]');
@@ -48,9 +49,9 @@ export default function AdminDashboard({ onLogout }) {
     ...rawUser,
     role: isAdmin ? 'Admin' : 'Agent',
     name: isAdmin ? 'Admin' : (rawUser.name && rawUser.name !== 'Admin Control Panel' ? rawUser.name : 'Sales Executive'),
-    phone: rawUser.phone || (matchedAgentObj ? matchedAgentObj.phone : '') || (isAdmin ? '7447212121' : ''),
-    email: rawUser.email || (matchedAgentObj ? matchedAgentObj.email : '') || (isAdmin ? 'admin@gulmoharcity.com' : ''),
-    password: rawUser.password || (matchedAgentObj ? matchedAgentObj.password : '') || (isAdmin ? 'admin123' : ''),
+    phone: rawUser.phone || (matchedAgentObj ? matchedAgentObj.phone : ''),
+    email: rawUser.email || (matchedAgentObj ? matchedAgentObj.email : ''),
+    password: rawUser.password || (matchedAgentObj ? matchedAgentObj.password : ''),
     profileImage: !isAdmin ? (rawUser.profileImage || getAgentProfilePhoto(rawUser)) : ''
   };
 
@@ -200,7 +201,7 @@ export default function AdminDashboard({ onLogout }) {
         const token = localStorage.getItem('adminToken');
         const agentId = currentUser.id || currentUser._id;
         if (agentId && agentId.length > 10) {
-          await fetch(`http://localhost:5000/api/admin/agents/${agentId}`, {
+          await fetch(`${API_BASE_URL}/api/admin/agents/${agentId}`, {
             method: 'PATCH',
             headers: {
               'Content-Type': 'application/json',
@@ -289,7 +290,7 @@ export default function AdminDashboard({ onLogout }) {
     const filteredLocal = localCache.filter(item => !deletedIds.includes(item._id));
 
     try {
-      const res = await fetch('http://localhost:5000/api/admin/enquiries', {
+      const res = await fetch(`${API_BASE_URL}/api/admin/enquiries`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -320,7 +321,7 @@ export default function AdminDashboard({ onLogout }) {
   const fetchAgents = async () => {
     const token = localStorage.getItem('adminToken');
     try {
-      const res = await fetch('http://localhost:5000/api/admin/agents', {
+      const res = await fetch(`${API_BASE_URL}/api/admin/agents`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -392,7 +393,7 @@ export default function AdminDashboard({ onLogout }) {
     };
 
     try {
-      const response = await fetch('http://localhost:5000/api/enquiries', {
+      const response = await fetch(`${API_BASE_URL}/api/enquiries`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -463,7 +464,7 @@ export default function AdminDashboard({ onLogout }) {
     // Save directly to MongoDB database
     try {
       const token = localStorage.getItem('adminToken');
-      const res = await fetch('http://localhost:5000/api/admin/agents', {
+      const res = await fetch(`${API_BASE_URL}/api/admin/agents`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -516,7 +517,7 @@ export default function AdminDashboard({ onLogout }) {
     if (agentToDelete && agentToDelete.id && agentToDelete.id.length > 10) {
       try {
         const token = localStorage.getItem('adminToken');
-        await fetch(`http://localhost:5000/api/admin/agents/${agentToDelete.id}`, {
+        await fetch(`${API_BASE_URL}/api/admin/agents/${agentToDelete.id}`, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -584,7 +585,7 @@ export default function AdminDashboard({ onLogout }) {
     if (editingUser.id && editingUser.id.length > 10) {
       try {
         const token = localStorage.getItem('adminToken');
-        await fetch(`http://localhost:5000/api/admin/agents/${editingUser.id}`, {
+        await fetch(`${API_BASE_URL}/api/admin/agents/${editingUser.id}`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
@@ -630,7 +631,7 @@ export default function AdminDashboard({ onLogout }) {
 
     try {
       const token = localStorage.getItem('adminToken');
-      await fetch(`http://localhost:5000/api/admin/enquiries/${leadId}`, {
+      await fetch(`${API_BASE_URL}/api/admin/enquiries/${leadId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -649,7 +650,7 @@ export default function AdminDashboard({ onLogout }) {
     setEnquiries(prev => prev.map(item => item._id === id ? { ...item, status: newStatus } : item));
 
     try {
-      const res = await fetch(`http://localhost:5000/api/admin/enquiries/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/admin/enquiries/${id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -673,7 +674,7 @@ export default function AdminDashboard({ onLogout }) {
     setEditingNoteId(null);
 
     try {
-      const res = await fetch(`http://localhost:5000/api/admin/enquiries/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/admin/enquiries/${id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -712,7 +713,7 @@ export default function AdminDashboard({ onLogout }) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 2500);
 
-      const res = await fetch(`http://localhost:5000/api/admin/enquiries/${updatedLead._id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/admin/enquiries/${updatedLead._id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -772,7 +773,7 @@ export default function AdminDashboard({ onLogout }) {
 
     const token = localStorage.getItem('adminToken');
     try {
-      await fetch(`http://localhost:5000/api/admin/enquiries/${id}`, {
+      await fetch(`${API_BASE_URL}/api/admin/enquiries/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -828,7 +829,7 @@ export default function AdminDashboard({ onLogout }) {
     try {
       await Promise.all(
         idsToDelete.map(id =>
-          fetch(`http://localhost:5000/api/admin/enquiries/${id}`, {
+          fetch(`${API_BASE_URL}/api/admin/enquiries/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
           })

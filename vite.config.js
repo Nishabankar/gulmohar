@@ -6,6 +6,10 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
-    open: true
+    open: true,
+    // Forward API calls to the Express backend during local development
+    proxy: {
+      '/api': 'http://localhost:5000'
+    }
   }
 })

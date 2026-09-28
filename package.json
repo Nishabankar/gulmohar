@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "start": "node server.js",
     "server": "node server/server.js",
-    "package": "rm -f gulmohar-deploy.zip && zip -r gulmohar-deploy.zip . -x 'node_modules/*' '*/node_modules/*' '.git/*' 'dist/*' '*.env' '.env*' '*.zip' '.vscode/*' '*.log'"
+    "package": "git archive --format=zip --output=gulmohar-deploy.zip HEAD"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.3.1",

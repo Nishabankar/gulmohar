@@ -97,7 +97,7 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
   };
 
   return (
-    <section id="contact" class="min-h-[calc(100vh-80px)] flex flex-col justify-center py-4 sm:py-6 bg-gradient-to-b from-slate-50 via-white to-slate-50 relative overflow-hidden">
+    <section id="contact" class="sm:min-h-[calc(100vh-80px)] flex flex-col justify-center py-4 sm:py-6 bg-gradient-to-b from-slate-50 via-white to-slate-50 relative overflow-hidden">
       
       {/* Background Accent Blurs */}
       <div class="absolute -top-20 -right-20 w-96 h-96 bg-[#FFF0F2] rounded-full blur-3xl pointer-events-none"></div>

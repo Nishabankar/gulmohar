@@ -12,7 +12,7 @@ export default function MasterPlan({ onOpenLightbox }) {
   ];
 
   return (
-    <section id="layout" class="min-h-[calc(100vh-80px)] flex flex-col justify-center py-4 sm:py-5 bg-gradient-to-b from-slate-50 via-white to-slate-50 relative overflow-hidden">
+    <section id="layout" class="sm:min-h-[calc(100vh-80px)] flex flex-col justify-center py-4 sm:py-5 bg-gradient-to-b from-slate-50 via-white to-slate-50 relative overflow-hidden">
       <div style={{ maxWidth: '1300px' }} class="w-full mx-auto px-4 sm:px-6 lg:px-8 relative z-10 my-auto">
         
         {/* Section Header */}

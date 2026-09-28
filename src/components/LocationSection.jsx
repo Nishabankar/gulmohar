@@ -13,7 +13,7 @@ export default function LocationSection({ onOpenLightbox }) {
   ];
 
   return (
-    <section id="location" class="min-h-[calc(100vh-80px)] flex flex-col justify-center py-4 sm:py-5 bg-gradient-to-b from-white via-slate-50 to-white relative overflow-hidden">
+    <section id="location" class="sm:min-h-[calc(100vh-80px)] flex flex-col justify-center py-4 sm:py-5 bg-gradient-to-b from-white via-slate-50 to-white relative overflow-hidden">
       <div style={{ maxWidth: '1300px' }} class="w-full mx-auto px-4 sm:px-6 lg:px-8 relative z-10 my-auto">
         
         {/* Section Header Title */}

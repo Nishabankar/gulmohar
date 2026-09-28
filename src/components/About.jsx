@@ -30,7 +30,7 @@ export default function About() {
   ];
 
   return (
-    <section id="about" class="min-h-[calc(100vh-80px)] flex flex-col justify-center py-4 sm:py-5 bg-gradient-to-b from-white via-slate-50 to-white relative overflow-hidden">
+    <section id="about" class="sm:min-h-[calc(100vh-80px)] flex flex-col justify-center py-4 sm:py-5 bg-gradient-to-b from-white via-slate-50 to-white relative overflow-hidden">
       
       {/* Background Accent Blurs */}
       <div class="absolute -top-10 -left-10 w-72 h-72 bg-[#FCD6DC]/40 rounded-full blur-3xl pointer-events-none"></div>

@@ -12,7 +12,7 @@ export default function PoweredBySlider() {
   const marqueeLogos = [...developers, ...developers, ...developers, ...developers];
 
   return (
-    <section class="min-h-[calc(100vh-80px-180px)] flex flex-col justify-center py-10 sm:py-14 bg-gradient-to-b from-white via-slate-50 to-white border-t border-gray-100 overflow-hidden">
+    <section class="sm:min-h-[calc(100vh-80px-180px)] flex flex-col justify-center py-10 sm:py-14 bg-gradient-to-b from-white via-slate-50 to-white border-t border-gray-100 overflow-hidden">
       <div style={{ maxWidth: '1300px' }} class="w-full mx-auto px-4 sm:px-6 lg:px-8 mb-4 sm:mb-6">
         
         {/* Section Header */}

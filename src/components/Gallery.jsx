@@ -66,7 +66,7 @@ export default function Gallery({ onOpenLightbox }) {
   };
 
   return (
-    <section id="gallery" class="py-5 sm:py-6 bg-gradient-to-b from-slate-50 via-white to-slate-50 relative overflow-hidden flex flex-col justify-center min-h-[calc(100vh-80px)]">
+    <section id="gallery" class="py-5 sm:py-6 bg-gradient-to-b from-slate-50 via-white to-slate-50 relative overflow-hidden flex flex-col justify-center sm:min-h-[calc(100vh-80px)]">
       <div style={{ maxWidth: '1280px' }} class="w-full mx-auto px-4 sm:px-6 lg:px-8 relative z-10 my-auto">
         
         {/* Header with Title Centered and View More Shifted Up to Top Right */}
@@ -111,7 +111,7 @@ export default function Gallery({ onOpenLightbox }) {
             <div 
               key={item.id} 
               onClick={() => onOpenLightbox(item.src, item.title, item.type)}
-              class="w-[85%] sm:w-[calc(50%-10px)] lg:w-[calc(25%-12px)] flex-shrink-0 snap-start group relative rounded-2xl overflow-hidden shadow-md border border-gray-200 bg-black cursor-pointer h-60 sm:h-[260px] lg:h-[285px] hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
+              class="w-[85%] sm:w-[calc(50%-10px)] lg:w-[calc(25%-12px)] flex-shrink-0 snap-start group relative rounded-2xl overflow-hidden shadow-md border border-gray-200 bg-black cursor-pointer h-60 sm:h-[clamp(260px,calc(100vh-240px),520px)] lg:h-[clamp(285px,calc(100vh-250px),540px)] hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
             >
               {/* Media Element */}
               {item.type === 'video' ? (

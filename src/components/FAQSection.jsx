@@ -49,7 +49,7 @@ export default function FAQSection() {
   };
 
   return (
-    <section id="faq" class="py-4 sm:py-6 bg-slate-50 relative overflow-hidden flex flex-col justify-center min-h-[calc(100vh-80px)]">
+    <section id="faq" class="py-4 sm:py-6 bg-slate-50 relative overflow-hidden flex flex-col justify-center sm:min-h-[calc(100vh-80px)]">
       {/* Inject FAQ Schema for Search Engine Rich Snippets */}
       <script
         type="application/ld+json"

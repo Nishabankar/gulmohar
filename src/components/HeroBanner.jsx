@@ -120,9 +120,10 @@ export default function HeroBanner() {
           class="hidden sm:block w-full h-full object-fill border-0 transition-all duration-300"
         />
 
-        {/* Mobile Banner Cinematic Animated Slider (Mobile Only) */}
+        {/* Mobile Banner 3D Rotate Animated Slider (Mobile Only) */}
         <div 
-          class="block sm:hidden relative w-full h-full overflow-hidden select-none"
+          class="block sm:hidden relative w-full h-full overflow-hidden select-none bg-slate-900"
+          style={{ perspective: '1200px' }}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
@@ -132,32 +133,43 @@ export default function HeroBanner() {
             return (
               <div 
                 key={idx}
-                class={`absolute inset-0 w-full h-full transition-all duration-[1200ms] ease-in-out transform ${
-                  isActive 
-                    ? 'opacity-100 z-10 scale-100' 
-                    : 'opacity-0 z-0 scale-105 pointer-events-none'
-                }`}
+                class="absolute inset-0 w-full h-full"
+                style={{
+                  transform: isActive 
+                    ? 'perspective(1200px) rotateY(0deg) scale(1)' 
+                    : 'perspective(1200px) rotateY(90deg) scale(0.9)',
+                  opacity: isActive ? 1 : 0,
+                  zIndex: isActive ? 10 : 0,
+                  pointerEvents: isActive ? 'auto' : 'none',
+                  transformOrigin: 'center center',
+                  transition: 'transform 900ms cubic-bezier(0.4, 0, 0.2, 1), opacity 800ms ease-in-out',
+                  backfaceVisibility: 'hidden'
+                }}
               >
                 <img 
                   src={banner.src} 
                   alt={banner.alt} 
-                  class={`w-full h-full object-cover transition-transform duration-[4500ms] ease-out ${
-                    isActive ? 'scale-105' : 'scale-100'
-                  }`}
+                  class="w-full h-full object-cover block"
                 />
               </div>
             );
           })}
 
+          {/* 3D Rotate Indicator Badge Overlay */}
+          <div class="absolute top-3 right-3 z-30 pointer-events-none bg-black/40 backdrop-blur-md text-amber-300 text-[10px] font-bold px-2.5 py-1 rounded-full border border-amber-300/30 flex items-center gap-1 shadow-md">
+            <i class="fa-solid fa-rotate text-[9px] animate-spin-slow"></i>
+            <span>3D Flip Banner</span>
+          </div>
+
           {/* Premium Glassmorphism Mobile Slide Dots */}
-          <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 z-30 pointer-events-auto bg-black/30 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 shadow-lg">
+          <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 z-30 pointer-events-auto bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 shadow-lg">
             {mobileBanners.map((_, idx) => (
               <button
                 key={idx}
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMobileSlide(idx); }}
                 class={`h-2 rounded-full transition-all duration-500 cursor-pointer ${
                   mobileSlide === idx 
-                    ? 'w-7 bg-gradient-to-r from-[#B30E2E] to-rose-500 shadow-md ring-2 ring-white/60' 
+                    ? 'w-7 bg-gradient-to-r from-[#B30E2E] to-amber-500 shadow-md ring-2 ring-white/70' 
                     : 'w-2 bg-white/50 hover:bg-white/80'
                 }`}
                 title={`Slide ${idx + 1}`}

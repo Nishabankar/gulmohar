@@ -108,7 +108,7 @@ export default function HeroBanner() {
   };
 
   return (
-    <section id="home" class="relative w-full h-[calc(100dvh-64px)] sm:h-auto bg-white p-0 m-0 group flex flex-col justify-center overflow-hidden">
+    <section id="home" class="relative w-full h-[calc(100dvh-64px)] sm:h-[calc(100vh-80px)] bg-white p-0 m-0 group flex flex-col justify-center overflow-hidden">
       
       {/* 1. Main Hero Image Container */}
       <a href="#contact" class="block w-full h-full cursor-pointer relative">
@@ -117,7 +117,7 @@ export default function HeroBanner() {
         <img 
           src="/assets/images/gulmohar-banner-image.png" 
           alt="Gulmohar City Premium Residential Plots Banner" 
-          class="hidden sm:block w-full h-auto object-contain border-0 transition-all duration-300"
+          class="hidden sm:block w-full h-full object-fill border-0 transition-all duration-300"
         />
 
         {/* Mobile Banner 3D Rotate Animated Slider (Mobile Only) */}
@@ -197,7 +197,7 @@ export default function HeroBanner() {
         <div class="absolute top-2 sm:top-5 md:top-6 left-1/2 -translate-x-1/2 z-30 pointer-events-auto whitespace-nowrap scale-[0.82] sm:scale-100 origin-top">
           <a 
             href="#contact"
-            class="relative flex items-center gap-2.5 sm:gap-3.5 bg-white text-gray-900 px-3.5 py-2 sm:px-5 sm:py-2.5 rounded-2xl border-2 border-[#B30E2E] shadow-2xl animate-badge-pop transition-transform duration-300 hover:scale-105 group/badge cursor-pointer block"
+            class="relative flex items-center gap-2.5 sm:gap-3.5 bg-white/95 backdrop-blur-md text-gray-900 px-3.5 py-2 sm:px-5 sm:py-2.5 rounded-2xl border-2 border-[#B30E2E] shadow-2xl animate-badge-pop transition-transform duration-300 hover:scale-105 group/badge cursor-pointer block"
           >
             {/* Pulsing Outer Ping Aura */}
             <span class="absolute -inset-1 rounded-2xl bg-[#B30E2E]/30 animate-ping opacity-75 pointer-events-none"></span>

@@ -27,6 +27,8 @@ export default function AdminDashboard({ onLogout }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+  const [agentFilter, setAgentFilter] = useState('All');
+  const [isAgentDropdownOpen, setIsAgentDropdownOpen] = useState(false);
   const [selectedLeadIds, setSelectedLeadIds] = useState([]);
   const [editingNoteId, setEditingNoteId] = useState(null);
   const [noteText, setNoteText] = useState('');
@@ -936,7 +938,7 @@ export default function AdminDashboard({ onLogout }) {
     return false;
   });
 
-  // Filtered enquiries by Search & Status
+  // Filtered enquiries by Search, Status & Agent
   const filteredEnquiries = (scopedEnquiries || []).filter(item => {
     if (!item) return false;
     const firstName = item.firstName || '';
@@ -953,7 +955,14 @@ export default function AdminDashboard({ onLogout }) {
       plotInfo.toLowerCase().includes(query);
 
     const matchesStatus = statusFilter === 'All' || item.status === statusFilter;
-    return matchesSearch && matchesStatus;
+
+    const assignedAgentName = (item.assignedAgentName || '').toLowerCase().trim();
+    const targetAgentFilter = agentFilter.toLowerCase().trim();
+    const matchesAgent = agentFilter === 'All' || 
+      assignedAgentName === targetAgentFilter ||
+      (assignedAgentName && targetAgentFilter && (assignedAgentName.includes(targetAgentFilter) || targetAgentFilter.includes(assignedAgentName)));
+
+    return matchesSearch && matchesStatus && matchesAgent;
   });
 
   // Filtered registered users by search query
@@ -1274,7 +1283,10 @@ export default function AdminDashboard({ onLogout }) {
                   <div class="w-full sm:w-44 flex-shrink-0 relative">
                     <button
                       type="button"
-                      onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
+                      onClick={() => {
+                        setIsStatusDropdownOpen(!isStatusDropdownOpen);
+                        setIsAgentDropdownOpen(false);
+                      }}
                       class="w-full px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-xs bg-white hover:bg-gray-50 font-bold text-gray-700 cursor-pointer shadow-xs flex items-center justify-between"
                     >
                       <span>{statusFilter}</span>
@@ -1302,6 +1314,68 @@ export default function AdminDashboard({ onLogout }) {
                       </div>
                     )}
                   </div>
+
+                  {/* Agent Filter Custom Dropdown (Admin Only) */}
+                  {isAdmin && (
+                    <div class="w-full sm:w-48 flex-shrink-0 relative">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAgentDropdownOpen(!isAgentDropdownOpen);
+                          setIsStatusDropdownOpen(false);
+                        }}
+                        class="w-full px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-xs bg-white hover:bg-gray-50 font-bold text-gray-700 cursor-pointer shadow-xs flex items-center justify-between"
+                        title="Filter leads by Agent"
+                      >
+                        <div class="flex items-center gap-1.5 truncate">
+                          <i class="fa-solid fa-user-gear text-xs text-[#B30E2E]"></i>
+                          <span class="truncate">{agentFilter === 'All' ? 'All Agents' : agentFilter}</span>
+                        </div>
+                        <i class={`fa-solid fa-chevron-down text-xs text-gray-400 transition transform ${isAgentDropdownOpen ? 'rotate-180' : ''}`}></i>
+                      </button>
+
+                      {isAgentDropdownOpen && (
+                        <div class="absolute left-0 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-1 max-h-56 overflow-y-auto custom-scrollbar animate-fade-in">
+                          {/* Option 1: All Agents */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAgentFilter('All');
+                              setIsAgentDropdownOpen(false);
+                            }}
+                            class={`w-full text-left px-3 py-2 text-xs font-semibold hover:bg-rose-50 hover:text-[#B30E2E] transition flex items-center justify-between cursor-pointer ${
+                              agentFilter === 'All' ? 'bg-[#FFF0F2] text-[#B30E2E] font-bold' : 'text-gray-700'
+                            }`}
+                          >
+                            <span>All Agents</span>
+                            {agentFilter === 'All' && <i class="fa-solid fa-check text-xs"></i>}
+                          </button>
+
+                          {/* Dynamic Registered Agent Options */}
+                          {registeredAgents.map((agent) => {
+                            const agentName = agent.name || agent.username;
+                            const isSelected = agentFilter.toLowerCase().trim() === agentName.toLowerCase().trim();
+                            return (
+                              <button
+                                key={agent.id || agent._id || agent.username}
+                                type="button"
+                                onClick={() => {
+                                  setAgentFilter(agentName);
+                                  setIsAgentDropdownOpen(false);
+                                }}
+                                class={`w-full text-left px-3 py-2 text-xs font-semibold hover:bg-rose-50 hover:text-[#B30E2E] transition flex items-center justify-between cursor-pointer ${
+                                  isSelected ? 'bg-[#FFF0F2] text-[#B30E2E] font-bold' : 'text-gray-700'
+                                }`}
+                              >
+                                <span class="truncate">{agentName}</span>
+                                {isSelected && <i class="fa-solid fa-check text-xs"></i>}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                 </div>
 

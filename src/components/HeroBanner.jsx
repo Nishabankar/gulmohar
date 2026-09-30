@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 // Realistic 5-Petal Gulmohar Blossom SVG Component
 const GulmoharFlower = ({ className }) => (
@@ -65,16 +65,67 @@ const GulmoharPetal = ({ className }) => (
 );
 
 export default function HeroBanner() {
+  const [mobileSlide, setMobileSlide] = useState(0);
+
+  const mobileBanners = [
+    {
+      src: '/assets/images/mobile-gulmohar-banner-1.png',
+      alt: 'Gulmohar City Mobile Banner Logo'
+    },
+    {
+      src: '/assets/images/mobile-gulmohar-banner-2.png',
+      alt: 'Gulmohar City Mobile Banner Gate'
+    }
+  ];
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setMobileSlide((prev) => (prev + 1) % mobileBanners.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [mobileBanners.length]);
+
   return (
-    <section id="home" class="relative w-full sm:h-[calc(100vh-80px)] bg-white p-0 m-0 group flex flex-col justify-center overflow-hidden">
+    <section id="home" class="relative w-full h-[calc(100dvh-64px)] sm:h-[calc(100vh-80px)] bg-white p-0 m-0 group flex flex-col justify-center overflow-hidden">
       
       {/* 1. Main Hero Image Container */}
       <a href="#contact" class="block w-full h-full cursor-pointer relative">
+        
+        {/* Desktop Banner Image */}
         <img 
           src="/assets/images/gulmohar-banner-image.png" 
           alt="Gulmohar City Premium Residential Plots Banner" 
-          class="w-full h-auto sm:h-full object-cover sm:object-fill block border-0 transition-all duration-300"
+          class="hidden sm:block w-full h-full object-fill border-0 transition-all duration-300"
         />
+
+        {/* Mobile Banner Animated Slider (Mobile Only) */}
+        <div class="block sm:hidden relative w-full h-full overflow-hidden">
+          {mobileBanners.map((banner, idx) => (
+            <img 
+              key={idx}
+              src={banner.src} 
+              alt={banner.alt} 
+              class={`absolute inset-0 w-full h-full object-cover transition-all duration-1000 transform ${
+                mobileSlide === idx 
+                  ? 'opacity-100 scale-100 translate-x-0' 
+                  : 'opacity-0 scale-105 translate-x-4 pointer-events-none'
+              }`}
+            />
+          ))}
+
+          {/* Mobile Slide Dots */}
+          <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-30 pointer-events-auto">
+            {mobileBanners.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={(e) => { e.preventDefault(); setMobileSlide(idx); }}
+                class={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
+                  mobileSlide === idx ? 'w-6 bg-[#B30E2E]' : 'w-2 bg-white/70'
+                }`}
+              />
+            ))}
+          </div>
+        </div>
 
         {/* Subtle Dark Vignette Gradient Overlay */}
         <div class="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none"></div>

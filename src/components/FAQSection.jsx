@@ -22,7 +22,7 @@ export default function FAQSection() {
     },
     {
       question: "Are bank loan facilities available for buying plots at Gulmohar City?",
-      answer: "Yes, loan facilities are available through developer on EMI option will assists you on EMI option from developer."
+      answer: "Yes, loan facilities are available through EMI option available from Developer please contact sales team for more information."
     },
     {
       question: "How can I book a free site visit to Gulmohar City?",

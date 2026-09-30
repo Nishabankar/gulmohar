@@ -1057,11 +1057,15 @@ export default function AdminDashboard({ onLogout }) {
               )}
             </button>
 
-            {/* Registered Users Directory Button (Admin Only - Shown ONLY on Dashboard/Leads Page) */}
-            {isAdmin && activeTab !== 'users' && (
+            {/* Registered Users Directory Button (Admin Only) */}
+            {isAdmin && (
               <button 
                 onClick={() => setActiveTab('users')}
-                class="w-9 h-9 rounded-xl flex items-center justify-center transition shadow-md border cursor-pointer relative bg-white/10 hover:bg-white/20 text-white border-white/20"
+                class={`w-9 h-9 rounded-xl flex items-center justify-center transition shadow-md border cursor-pointer relative ${
+                  activeTab === 'users'
+                    ? 'bg-amber-400 text-slate-900 border-amber-300 ring-2 ring-amber-300/50 font-extrabold scale-105'
+                    : 'bg-white/10 hover:bg-white/20 text-white border-white/20'
+                }`}
                 title="Users"
               >
                 <i class="fa-solid fa-users text-sm"></i>

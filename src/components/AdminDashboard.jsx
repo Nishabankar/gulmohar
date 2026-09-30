@@ -25,7 +25,7 @@ export default function AdminDashboard({ onLogout }) {
   const [enquiries, setEnquiries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All');
+  const [statusFilter, setStatusFilter] = useState('New');
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
   const [agentFilter, setAgentFilter] = useState('All');
   const [isAgentDropdownOpen, setIsAgentDropdownOpen] = useState(false);

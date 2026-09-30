@@ -66,6 +66,8 @@ const GulmoharPetal = ({ className }) => (
 
 export default function HeroBanner() {
   const [mobileSlide, setMobileSlide] = useState(0);
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
 
   const mobileBanners = [
     {
@@ -81,9 +83,29 @@ export default function HeroBanner() {
   useEffect(() => {
     const timer = setInterval(() => {
       setMobileSlide((prev) => (prev + 1) % mobileBanners.length);
-    }, 4000);
+    }, 3800);
     return () => clearInterval(timer);
   }, [mobileBanners.length]);
+
+  const handleTouchStart = (e) => {
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    if (distance > 40) {
+      setMobileSlide((prev) => (prev + 1) % mobileBanners.length);
+    } else if (distance < -40) {
+      setMobileSlide((prev) => (prev - 1 + mobileBanners.length) % mobileBanners.length);
+    }
+    setTouchStart(0);
+    setTouchEnd(0);
+  };
 
   return (
     <section id="home" class="relative w-full h-[calc(100dvh-64px)] sm:h-[calc(100vh-80px)] bg-white p-0 m-0 group flex flex-col justify-center overflow-hidden">
@@ -98,30 +120,47 @@ export default function HeroBanner() {
           class="hidden sm:block w-full h-full object-fill border-0 transition-all duration-300"
         />
 
-        {/* Mobile Banner Animated Slider (Mobile Only) */}
-        <div class="block sm:hidden relative w-full h-full overflow-hidden">
-          {mobileBanners.map((banner, idx) => (
-            <img 
-              key={idx}
-              src={banner.src} 
-              alt={banner.alt} 
-              class={`absolute inset-0 w-full h-full object-cover transition-all duration-1000 transform ${
-                mobileSlide === idx 
-                  ? 'opacity-100 scale-100 translate-x-0' 
-                  : 'opacity-0 scale-105 translate-x-4 pointer-events-none'
-              }`}
-            />
-          ))}
+        {/* Mobile Banner Cinematic Animated Slider (Mobile Only) */}
+        <div 
+          class="block sm:hidden relative w-full h-full overflow-hidden select-none"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          {mobileBanners.map((banner, idx) => {
+            const isActive = mobileSlide === idx;
+            return (
+              <div 
+                key={idx}
+                class={`absolute inset-0 w-full h-full transition-all duration-[1200ms] ease-in-out transform ${
+                  isActive 
+                    ? 'opacity-100 z-10 scale-100' 
+                    : 'opacity-0 z-0 scale-105 pointer-events-none'
+                }`}
+              >
+                <img 
+                  src={banner.src} 
+                  alt={banner.alt} 
+                  class={`w-full h-full object-cover transition-transform duration-[4500ms] ease-out ${
+                    isActive ? 'scale-105' : 'scale-100'
+                  }`}
+                />
+              </div>
+            );
+          })}
 
-          {/* Mobile Slide Dots */}
-          <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-30 pointer-events-auto">
+          {/* Premium Glassmorphism Mobile Slide Dots */}
+          <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 z-30 pointer-events-auto bg-black/30 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 shadow-lg">
             {mobileBanners.map((_, idx) => (
               <button
                 key={idx}
-                onClick={(e) => { e.preventDefault(); setMobileSlide(idx); }}
-                class={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
-                  mobileSlide === idx ? 'w-6 bg-[#B30E2E]' : 'w-2 bg-white/70'
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMobileSlide(idx); }}
+                class={`h-2 rounded-full transition-all duration-500 cursor-pointer ${
+                  mobileSlide === idx 
+                    ? 'w-7 bg-gradient-to-r from-[#B30E2E] to-rose-500 shadow-md ring-2 ring-white/60' 
+                    : 'w-2 bg-white/50 hover:bg-white/80'
                 }`}
+                title={`Slide ${idx + 1}`}
               />
             ))}
           </div>

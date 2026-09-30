@@ -52,9 +52,12 @@ export default function Gallery({ onOpenLightbox }) {
   };
 
   return (
-    <section id="gallery" class="py-5 sm:py-6 bg-gradient-to-b from-slate-50 via-white to-slate-50 relative overflow-hidden flex flex-col justify-center sm:min-h-[calc(100vh-80px)]">
-      <div style={{ maxWidth: '1280px' }} class="w-full mx-auto px-4 sm:px-6 lg:px-8 relative z-10 my-auto">
+    <section id="gallery" class="py-6 sm:py-6 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 sm:bg-gradient-to-b sm:from-slate-50 sm:via-white sm:to-slate-50 relative overflow-hidden flex flex-col justify-center sm:min-h-[calc(100vh-80px)]">
+      <div style={{ maxWidth: '1280px' }} class="w-full mx-auto px-3 sm:px-6 lg:px-8 relative z-10 my-auto">
         
+        {/* Mobile App-Card Wrapper Container */}
+        <div class="bg-slate-900/90 sm:bg-transparent rounded-3xl sm:rounded-none border border-slate-800/90 sm:border-0 shadow-xl sm:shadow-none p-3.5 sm:p-0">
+
         {/* Header with Title Centered and View More Shifted Up to Top Right */}
         <div class="relative mb-3 sm:mb-4">
           <div class="text-center max-w-3xl mx-auto">
@@ -62,8 +65,8 @@ export default function Gallery({ onOpenLightbox }) {
               <i class="fa-solid fa-photo-film text-[9px]"></i>
               <span>PROJECT GALLERY</span>
             </span>
-            <h2 class="text-lg sm:text-xl lg:text-2xl font-serif font-bold text-gray-900 mt-1 leading-tight">
-              Explore <span class="text-[#B30E2E]">Gulmohar City Plots & Site Videos</span>
+            <h2 class="text-lg sm:text-xl lg:text-2xl font-serif font-bold text-white sm:text-gray-900 mt-1 leading-tight">
+              Explore <span class="text-amber-400 sm:text-[#B30E2E]">Gulmohar City Plots & Site Videos</span>
             </h2>
             <div class="w-14 h-1 bg-[#B30E2E] rounded-full mx-auto mt-1"></div>
           </div>
@@ -73,7 +76,7 @@ export default function Gallery({ onOpenLightbox }) {
             <button
               onClick={handleScrollLeft}
               title="Previous"
-              class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white hover:bg-gray-100 border border-gray-200 text-gray-700 flex items-center justify-center shadow-sm hover:shadow transition cursor-pointer"
+              class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-800 sm:bg-white hover:bg-slate-700 sm:hover:bg-gray-100 border border-slate-700 sm:border-gray-200 text-white sm:text-gray-700 flex items-center justify-center shadow-sm hover:shadow transition cursor-pointer"
             >
               <i class="fa-solid fa-chevron-left text-xs"></i>
             </button>
@@ -148,6 +151,11 @@ export default function Gallery({ onOpenLightbox }) {
             </div>
           ))}
         </div>
+
+        </div>
+
+        {/* Mobile Section Divider */}
+        <div class="block sm:hidden w-3/4 mx-auto h-[1.5px] bg-gradient-to-r from-transparent via-[#B30E2E]/40 to-transparent mt-6 mb-1"></div>
 
       </div>
     </section>

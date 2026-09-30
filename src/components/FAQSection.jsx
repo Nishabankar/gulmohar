@@ -49,15 +49,18 @@ export default function FAQSection() {
   };
 
   return (
-    <section id="faq" class="py-4 sm:py-6 bg-slate-50 relative overflow-hidden flex flex-col justify-center sm:min-h-[calc(100vh-80px)]">
+    <section id="faq" class="py-6 sm:py-6 bg-gradient-to-b from-white via-slate-50 to-white relative overflow-hidden flex flex-col justify-center sm:min-h-[calc(100vh-80px)]">
       {/* Inject FAQ Schema for Search Engine Rich Snippets */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
       />
 
-      <div style={{ maxWidth: '1280px' }} class="w-full mx-auto px-4 sm:px-6 lg:px-8 relative z-10 my-auto">
+      <div style={{ maxWidth: '1280px' }} class="w-full mx-auto px-3 sm:px-6 lg:px-8 relative z-10 my-auto">
         
+        {/* Mobile App-Card Wrapper Container */}
+        <div class="bg-slate-50/90 sm:bg-transparent rounded-3xl sm:rounded-none border border-slate-200/90 sm:border-0 shadow-md sm:shadow-none p-3.5 sm:p-0">
+
         {/* Section Header */}
         <div class="text-center max-w-3xl mx-auto mb-4 sm:mb-6">
           <span class="inline-flex items-center space-x-1.5 text-[#B30E2E] font-bold text-[10px] sm:text-xs uppercase tracking-widest bg-[#FFF0F2] px-2.5 py-0.5 rounded-full border border-[#FCD6DC]">
@@ -107,6 +110,11 @@ export default function FAQSection() {
             );
           })}
         </div>
+
+        </div>
+
+        {/* Mobile Section Divider */}
+        <div class="block sm:hidden w-3/4 mx-auto h-[1.5px] bg-gradient-to-r from-transparent via-[#B30E2E]/40 to-transparent mt-6 mb-1"></div>
 
       </div>
     </section>

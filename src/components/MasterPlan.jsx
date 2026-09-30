@@ -12,9 +12,12 @@ export default function MasterPlan({ onOpenLightbox }) {
   ];
 
   return (
-    <section id="layout" class="sm:min-h-[calc(100vh-80px)] flex flex-col justify-center py-4 sm:py-5 bg-gradient-to-b from-slate-50 via-white to-slate-50 relative overflow-hidden">
-      <div style={{ maxWidth: '1300px' }} class="w-full mx-auto px-4 sm:px-6 lg:px-8 relative z-10 my-auto">
+    <section id="layout" class="sm:min-h-[calc(100vh-80px)] flex flex-col justify-center py-6 sm:py-5 bg-gradient-to-b from-[#FFF7F8] via-white to-[#FFF7F8] sm:bg-gradient-to-b sm:from-slate-50 sm:via-white sm:to-slate-50 relative overflow-hidden">
+      <div style={{ maxWidth: '1300px' }} class="w-full mx-auto px-3 sm:px-6 lg:px-8 relative z-10 my-auto">
         
+        {/* Mobile App-Card Wrapper Container */}
+        <div class="bg-white sm:bg-transparent rounded-3xl sm:rounded-none border border-rose-200/90 sm:border-0 shadow-md sm:shadow-none p-3.5 sm:p-0">
+
         {/* Section Header */}
         <div class="text-center max-w-3xl mx-auto mb-4 sm:mb-5">
           <span class="inline-flex items-center space-x-1.5 text-[#B30E2E] font-bold text-xs uppercase tracking-widest bg-[#FFF0F2] px-3 py-0.5 rounded-full border border-[#FCD6DC]">
@@ -100,6 +103,11 @@ export default function MasterPlan({ onOpenLightbox }) {
           </div>
 
         </div>
+
+        </div>
+
+        {/* Mobile Section Divider */}
+        <div class="block sm:hidden w-3/4 mx-auto h-[1.5px] bg-gradient-to-r from-transparent via-[#B30E2E]/40 to-transparent mt-6 mb-1"></div>
 
       </div>
     </section>

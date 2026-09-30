@@ -36,8 +36,11 @@ export default function About() {
       <div class="absolute -top-10 -left-10 w-72 h-72 bg-[#FCD6DC]/40 rounded-full blur-3xl pointer-events-none"></div>
       <div class="absolute -bottom-10 -right-10 w-96 h-96 bg-[#EBF5F0]/50 rounded-full blur-3xl pointer-events-none"></div>
 
-      <div style={{ maxWidth: '1300px' }} class="w-full mx-auto px-4 sm:px-6 lg:px-8 relative z-10 my-auto">
+      <div style={{ maxWidth: '1300px' }} class="w-full mx-auto px-3 sm:px-6 lg:px-8 relative z-10 my-auto">
         
+        {/* Mobile App-Card Wrapper Container */}
+        <div class="bg-white sm:bg-transparent rounded-3xl sm:rounded-none border border-rose-100/90 sm:border-0 shadow-md sm:shadow-none p-3.5 sm:p-0">
+
         {/* Section Header */}
         <div class="text-center max-w-3xl mx-auto mb-4 sm:mb-5">
           <span class="inline-flex items-center space-x-1.5 text-[#B30E2E] font-bold text-xs uppercase tracking-widest bg-[#FFF0F2] px-3 py-0.5 rounded-full border border-[#FCD6DC]">
@@ -158,6 +161,11 @@ export default function About() {
             <span>{CONTACT_PHONE_DISPLAY}</span>
           </a>
         </div>
+
+        </div>
+
+        {/* Mobile Section Divider */}
+        <div class="block sm:hidden w-3/4 mx-auto h-[1.5px] bg-gradient-to-r from-transparent via-[#B30E2E]/40 to-transparent mt-6 mb-1"></div>
 
       </div>
     </section>

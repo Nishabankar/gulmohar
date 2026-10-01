@@ -1654,7 +1654,7 @@ export default function AdminDashboard({ onLogout }) {
                         )}
                         <th class="py-2 px-1.5 whitespace-nowrap w-16 min-w-[60px]">Lead ID</th>
                         <th class="py-2 px-2 whitespace-nowrap w-44 min-w-[165px]">Full Name</th>
-                        <th class="py-2 px-2 whitespace-nowrap w-36 min-w-[140px]">Mobile No</th>
+                        <th class="py-2 px-2 whitespace-nowrap w-32 min-w-[128px]">Mobile No</th>
                         <th class="py-2 px-1.5 whitespace-nowrap">Email Address</th>
                         <th class="py-2 px-1.5 whitespace-nowrap">No. of Guntha</th>
                         <th class="py-2 px-1.5 whitespace-nowrap">Enquiry Date</th>
@@ -1703,7 +1703,7 @@ export default function AdminDashboard({ onLogout }) {
                             </td>
 
                             {/* Column 2: Mobile No & WhatsApp Action */}
-                            <td class="py-2 px-2 whitespace-nowrap w-36 min-w-[140px] max-w-[140px]">
+                            <td class="py-2 px-2 whitespace-nowrap w-32 min-w-[128px] max-w-[128px]">
                               {item.phone ? (
                                 <div class="flex items-center justify-between gap-1 w-full whitespace-nowrap">
                                   <a 

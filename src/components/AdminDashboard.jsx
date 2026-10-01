@@ -848,6 +848,37 @@ export default function AdminDashboard({ onLogout }) {
     }
   };
 
+  // Helper to generate consistent Customer/User ID and Lead ID
+  const getCustomerUserId = (item, allLeads = enquiries) => {
+    if (!item) return '#USR-1001';
+    if (item.userId) return item.userId;
+
+    const phoneOrEmail = (item.phone || item.email || item.firstName || '').toLowerCase().trim();
+    if (!phoneOrEmail) return '#USR-1001';
+
+    const customerMap = new Map();
+    let counter = 1001;
+
+    (allLeads || []).forEach(lead => {
+      if (!lead) return;
+      const key = (lead.phone || lead.email || lead.firstName || '').toLowerCase().trim();
+      if (key && !customerMap.has(key)) {
+        customerMap.set(key, `#USR-${counter++}`);
+      }
+    });
+
+    return customerMap.get(phoneOrEmail) || '#USR-1001';
+  };
+
+  const getLeadDisplayId = (item, index = 0, allLeads = enquiries) => {
+    if (!item) return `#LD-${101 + index}`;
+    if (item.leadId) return item.leadId;
+    
+    const leadIndex = (allLeads || []).findIndex(l => (l._id || l.id) === (item._id || item.id));
+    const finalIndex = leadIndex >= 0 ? leadIndex : index;
+    return `#LD-${101 + finalIndex}`;
+  };
+
   // Export CSV handler
   const handleExportCSV = () => {
     if (filteredEnquiries.length === 0) {
@@ -855,8 +886,10 @@ export default function AdminDashboard({ onLogout }) {
       return;
     }
 
-    const headers = ['Full Name', 'Mobile No', 'Email Address', 'Number of Guntha', 'Selected Plot', 'Submitted Date', 'Visit Date', 'Status', 'Assigned Agent', 'Notes'];
-    const rows = filteredEnquiries.map(item => [
+    const headers = ['Lead ID', 'User ID', 'Full Name', 'Mobile No', 'Email Address', 'Number of Guntha', 'Selected Plot', 'Submitted Date', 'Visit Date', 'Status', 'Assigned Agent', 'Notes'];
+    const rows = filteredEnquiries.map((item, idx) => [
+      `"${getLeadDisplayId(item, idx, enquiries)}"`,
+      `"${getCustomerUserId(item, enquiries)}"`,
       `"${item.firstName || ''} ${item.lastName || ''}"`,
       `"${item.phone || ''}"`,
       `"${item.email || ''}"`,
@@ -948,11 +981,16 @@ export default function AdminDashboard({ onLogout }) {
     const plotInfo = item.plotInfo || '';
     const query = (searchQuery || '').toLowerCase();
 
+    const displayLeadId = getLeadDisplayId(item, 0, enquiries).toLowerCase();
+    const displayUserId = getCustomerUserId(item, enquiries).toLowerCase();
+
     const matchesSearch = 
       `${firstName} ${lastName}`.toLowerCase().includes(query) ||
       phone.toLowerCase().includes(query) ||
       email.toLowerCase().includes(query) ||
-      plotInfo.toLowerCase().includes(query);
+      plotInfo.toLowerCase().includes(query) ||
+      displayLeadId.includes(query) ||
+      displayUserId.includes(query);
 
     const matchesStatus = statusFilter === 'All' || item.status === statusFilter;
 
@@ -1270,7 +1308,7 @@ export default function AdminDashboard({ onLogout }) {
                       type="text" 
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search lead by name, mobile, email..."
+                      placeholder="Search lead by ID, User ID, name, mobile..."
                       class="w-full pl-9 pr-7 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-xs bg-white font-medium shadow-xs"
                     />
                     {searchQuery && (
@@ -1442,6 +1480,8 @@ export default function AdminDashboard({ onLogout }) {
                             />
                           </th>
                         )}
+                        <th class="py-2 px-1.5 whitespace-nowrap">Lead ID</th>
+                        <th class="py-2 px-1.5 whitespace-nowrap">User ID</th>
                         <th class="py-2 px-1.5 whitespace-nowrap">Full Name</th>
                         <th class="py-2 px-1.5 whitespace-nowrap">Mobile No</th>
                         <th class="py-2 px-1.5 whitespace-nowrap">Email Address</th>
@@ -1457,6 +1497,8 @@ export default function AdminDashboard({ onLogout }) {
                     <tbody class="divide-y divide-gray-100 text-[11.5px]">
                       {filteredEnquiries.map((item, idx) => {
                         const currentId = item._id || item.id || `lead-row-${idx}`;
+                        const displayLeadId = getLeadDisplayId(item, idx, enquiries);
+                        const displayUserId = getCustomerUserId(item, enquiries);
                         return (
                           <tr key={currentId} class={`hover:bg-rose-50/20 transition ${selectedLeadIds.includes(currentId) ? 'bg-rose-50/40' : ''}`}>
                             {isAdmin && (
@@ -1469,6 +1511,20 @@ export default function AdminDashboard({ onLogout }) {
                                 />
                               </td>
                             )}
+
+                            {/* Lead ID */}
+                            <td class="py-2 px-1.5 whitespace-nowrap">
+                              <span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-rose-50 text-[#B30E2E] border border-rose-200/80 shadow-xs">
+                                {displayLeadId}
+                              </span>
+                            </td>
+
+                            {/* User ID (Customer ID) */}
+                            <td class="py-2 px-1.5 whitespace-nowrap">
+                              <span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-blue-50 text-blue-700 border border-blue-200/80 shadow-xs">
+                                {displayUserId}
+                              </span>
+                            </td>
                             
                             {/* Column 1: Full Name */}
                             <td class="py-2 px-1.5 font-bold text-gray-800 whitespace-nowrap">

@@ -858,35 +858,37 @@ export default function AdminDashboard({ onLogout }) {
   };
 
   const getCustomerUserId = (item, allLeads = enquiries) => {
-    if (!item) return '#USR-1001';
+    if (!item) return '#USR-01';
     if (item.userId) return item.userId;
 
     const phoneOrEmail = (item.phone || item.email || item.firstName || '').toLowerCase().trim();
-    if (!phoneOrEmail) return '#USR-1001';
+    if (!phoneOrEmail) return '#USR-01';
 
     const sortedLeads = getChronologicalLeads(allLeads);
     const customerMap = new Map();
-    let counter = 1001;
+    let counter = 1;
 
     sortedLeads.forEach(lead => {
       if (!lead) return;
       const key = (lead.phone || lead.email || lead.firstName || '').toLowerCase().trim();
       if (key && !customerMap.has(key)) {
-        customerMap.set(key, `#USR-${counter++}`);
+        const formattedNum = String(counter++).padStart(2, '0');
+        customerMap.set(key, `#USR-${formattedNum}`);
       }
     });
 
-    return customerMap.get(phoneOrEmail) || '#USR-1001';
+    return customerMap.get(phoneOrEmail) || '#USR-01';
   };
 
   const getLeadDisplayId = (item, index = 0, allLeads = enquiries) => {
-    if (!item) return `#LD-${101 + index}`;
+    if (!item) return `#LD-${String(index + 1).padStart(2, '0')}`;
     if (item.leadId) return item.leadId;
     
     const sortedLeads = getChronologicalLeads(allLeads);
     const leadIndex = sortedLeads.findIndex(l => (l._id || l.id) === (item._id || item.id));
     const finalIndex = leadIndex >= 0 ? leadIndex : index;
-    return `#LD-${101 + finalIndex}`;
+    const formattedNum = String(finalIndex + 1).padStart(2, '0');
+    return `#LD-${formattedNum}`;
   };
 
   // Export CSV handler

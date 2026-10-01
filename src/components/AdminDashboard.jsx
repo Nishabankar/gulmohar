@@ -830,7 +830,7 @@ export default function AdminDashboard({ onLogout }) {
   };
 
   const getAgentUserId = (item, registeredAgentsList = registeredAgents) => {
-    if (!item) return '#USR-01';
+    if (!item) return '01';
 
     const assignedName = (item.assignedAgentName || '').toLowerCase().trim();
     const assignedTo = (item.assignedTo || '').toString().toLowerCase().trim();
@@ -854,23 +854,22 @@ export default function AdminDashboard({ onLogout }) {
     });
 
     if (agentIndex >= 0) {
-      return `#USR-${String(agentIndex + 1).padStart(2, '0')}`;
+      return String(agentIndex + 1).padStart(2, '0');
     }
 
-    return '#USR-01';
+    return '01';
   };
 
   const getCustomerUserId = getAgentUserId;
 
   const getLeadDisplayId = (item, index = 0, allLeads = enquiries) => {
-    if (!item) return `#LD-${String(index + 1).padStart(2, '0')}`;
-    if (item.leadId) return item.leadId;
+    if (!item) return String(index + 1).padStart(2, '0');
+    if (item.leadId) return (item.leadId || '').replace(/^#?LD-?/i, '');
     
     const sortedLeads = getChronologicalLeads(allLeads);
     const leadIndex = sortedLeads.findIndex(l => (l._id || l.id) === (item._id || item.id));
     const finalIndex = leadIndex >= 0 ? leadIndex : index;
-    const formattedNum = String(finalIndex + 1).padStart(2, '0');
-    return `#LD-${formattedNum}`;
+    return String(finalIndex + 1).padStart(2, '0');
   };
 
   // Export CSV handler
@@ -1901,7 +1900,7 @@ export default function AdminDashboard({ onLogout }) {
                               {/* User ID */}
                               <td class="py-3 px-3 whitespace-nowrap">
                                 <span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-blue-50 text-blue-700 border border-blue-200/80 shadow-xs">
-                                  {`#USR-${String(agentIdx + 1).padStart(2, '0')}`}
+                                  {String(agentIdx + 1).padStart(2, '0')}
                                 </span>
                               </td>
                               

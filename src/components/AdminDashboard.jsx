@@ -829,28 +829,38 @@ export default function AdminDashboard({ onLogout }) {
     });
   };
 
-  const getCustomerUserId = (item, allLeads = enquiries) => {
+  const getAgentUserId = (item, registeredAgentsList = registeredAgents) => {
     if (!item) return '#USR-01';
-    if (item.userId) return item.userId;
 
-    const phoneOrEmail = (item.phone || item.email || item.firstName || '').toLowerCase().trim();
-    if (!phoneOrEmail) return '#USR-01';
+    const assignedName = (item.assignedAgentName || '').toLowerCase().trim();
+    const assignedTo = (item.assignedTo || '').toString().toLowerCase().trim();
 
-    const sortedLeads = getChronologicalLeads(allLeads);
-    const customerMap = new Map();
-    let counter = 1;
+    const agentsList = (registeredAgentsList && registeredAgentsList.length > 0) 
+      ? registeredAgentsList 
+      : JSON.parse(localStorage.getItem('registeredAgents') || '[]');
 
-    sortedLeads.forEach(lead => {
-      if (!lead) return;
-      const key = (lead.phone || lead.email || lead.firstName || '').toLowerCase().trim();
-      if (key && !customerMap.has(key)) {
-        const formattedNum = String(counter++).padStart(2, '0');
-        customerMap.set(key, `#USR-${formattedNum}`);
-      }
+    const agentIndex = (agentsList || []).findIndex(agent => {
+      if (!agent) return false;
+      const name = (agent.name || '').toLowerCase().trim();
+      const username = (agent.username || '').toLowerCase().trim();
+      const id = (agent.id || agent._id || '').toString().toLowerCase().trim();
+
+      if (id && assignedTo && id === assignedTo) return true;
+      if (username && (assignedTo === username || assignedName === username)) return true;
+      if (name && assignedName && (name === assignedName || name.includes(assignedName) || assignedName.includes(name))) return true;
+      if (name.split(' ')[0] && assignedName.split(' ')[0] && name.split(' ')[0] === assignedName.split(' ')[0]) return true;
+
+      return false;
     });
 
-    return customerMap.get(phoneOrEmail) || '#USR-01';
+    if (agentIndex >= 0) {
+      return `#USR-${String(agentIndex + 1).padStart(2, '0')}`;
+    }
+
+    return '#USR-01';
   };
+
+  const getCustomerUserId = getAgentUserId;
 
   const getLeadDisplayId = (item, index = 0, allLeads = enquiries) => {
     if (!item) return `#LD-${String(index + 1).padStart(2, '0')}`;
@@ -1864,6 +1874,7 @@ export default function AdminDashboard({ onLogout }) {
                   <table class="w-full min-w-[700px] text-left border-collapse">
                       <thead>
                         <tr class="bg-gray-100/70 border-b border-gray-200 text-[10.5px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                          <th class="py-2.5 px-3 whitespace-nowrap">User ID</th>
                           <th class="py-2.5 px-3 whitespace-nowrap">Full Name</th>
                           <th class="py-2.5 px-3 whitespace-nowrap">Username</th>
                           <th class="py-2.5 px-3 whitespace-nowrap">Password</th>
@@ -1874,7 +1885,7 @@ export default function AdminDashboard({ onLogout }) {
                         </tr>
                       </thead>
                       <tbody class="divide-y divide-gray-100 text-xs">
-                        {filteredUsers.map((agent) => {
+                        {filteredUsers.map((agent, agentIdx) => {
                           const assignedCount = enquiries.filter(e => {
                             const leadAgent = (e.assignedAgentName || '').toLowerCase().trim();
                             const agentName = (agent.name || '').toLowerCase().trim();
@@ -1895,6 +1906,13 @@ export default function AdminDashboard({ onLogout }) {
                           }).length;
                           return (
                             <tr key={agent.id || agent.username} class="hover:bg-slate-50/80 transition">
+                              
+                              {/* User ID */}
+                              <td class="py-3 px-3 whitespace-nowrap">
+                                <span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-blue-50 text-blue-700 border border-blue-200/80 shadow-xs">
+                                  {`#USR-${String(agentIdx + 1).padStart(2, '0')}`}
+                                </span>
+                              </td>
                               
                               {/* Full Name */}
                               <td class="py-3 px-3 font-bold text-gray-900 whitespace-nowrap">

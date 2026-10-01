@@ -1652,9 +1652,9 @@ export default function AdminDashboard({ onLogout }) {
                             />
                           </th>
                         )}
-                        <th class="py-2 px-1.5 whitespace-nowrap w-16">Lead ID</th>
-                        <th class="py-2 px-2 whitespace-nowrap min-w-[140px]">Full Name</th>
-                        <th class="py-2 px-2 whitespace-nowrap min-w-[145px] w-36">Mobile No</th>
+                        <th class="py-2 px-1.5 whitespace-nowrap w-16 min-w-[60px]">Lead ID</th>
+                        <th class="py-2 px-2 whitespace-nowrap w-44 min-w-[165px]">Full Name</th>
+                        <th class="py-2 px-2 whitespace-nowrap w-36 min-w-[140px]">Mobile No</th>
                         <th class="py-2 px-1.5 whitespace-nowrap">Email Address</th>
                         <th class="py-2 px-1.5 whitespace-nowrap">No. of Guntha</th>
                         <th class="py-2 px-1.5 whitespace-nowrap">Enquiry Date</th>
@@ -1684,28 +1684,28 @@ export default function AdminDashboard({ onLogout }) {
                             )}
 
                             {/* Lead ID */}
-                            <td class="py-2 px-1.5 whitespace-nowrap w-16">
+                            <td class="py-2 px-1.5 whitespace-nowrap w-16 min-w-[60px]">
                               <span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-rose-50 text-[#B30E2E] border border-rose-200/80 shadow-xs">
                                 {displayLeadId}
                               </span>
                             </td>
 
                             {/* Column 1: Full Name */}
-                            <td class="py-2 px-2 font-bold text-gray-800 whitespace-nowrap min-w-[140px]">
-                              <div class="flex items-center gap-1">
+                            <td class="py-2 px-2 font-bold text-gray-800 whitespace-nowrap w-44 min-w-[165px] max-w-[165px]">
+                              <div class="flex items-center gap-1 truncate">
                                 <div class="w-5 h-5 rounded-full bg-[#FCD6DC] text-[#B30E2E] font-bold text-[10px] flex items-center justify-center flex-shrink-0 border border-[#FCD6DC]">
                                   {(item.firstName || 'C')[0].toUpperCase()}
                                 </div>
-                                <span class="capitalize text-[11.5px] text-gray-900 font-bold whitespace-nowrap">
+                                <span class="capitalize text-[11.5px] text-gray-900 font-bold whitespace-nowrap truncate">
                                   {item.firstName || ''} {item.lastName || ''}
                                 </span>
                               </div>
                             </td>
 
                             {/* Column 2: Mobile No & WhatsApp Action */}
-                            <td class="py-2 px-2 whitespace-nowrap min-w-[145px] w-36">
+                            <td class="py-2 px-2 whitespace-nowrap w-36 min-w-[140px] max-w-[140px]">
                               {item.phone ? (
-                                <div class="inline-flex items-center gap-1.5 whitespace-nowrap">
+                                <div class="flex items-center justify-between gap-1 w-full whitespace-nowrap">
                                   <a 
                                     href={`tel:${item.phone}`} 
                                     class="text-[#B30E2E] hover:underline font-bold flex items-center gap-1 whitespace-nowrap text-[11.5px]"

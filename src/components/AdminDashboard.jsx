@@ -240,36 +240,7 @@ export default function AdminDashboard({ onLogout }) {
   };
 
   // Initial mock data fallback if offline
-  const mockEnquiries = [
-    {
-      _id: 'mock-1',
-      firstName: 'Kiran',
-      lastName: 'Patil',
-      phone: '9087563456',
-      email: 'raj@gmail.com',
-      plotInfo: 'Plot #7 (7 Guntha)',
-      plotsCount: '7 Guntha',
-      visitDate: '2026-09-30',
-      status: 'New',
-      notes: 'Interested in site visit on 30 Sept.',
-      assignedAgentName: 'Rahul Patil',
-      createdAt: new Date().toISOString()
-    },
-    {
-      _id: 'mock-2',
-      firstName: 'Pooja',
-      lastName: 'Bankar',
-      phone: '9078653456',
-      email: 'pooja2607@gmail.com',
-      plotInfo: 'Plot #8 (8 Guntha)',
-      plotsCount: '8 Guntha',
-      visitDate: '2026-09-26',
-      status: 'New',
-      notes: 'Wants bulk plot investment options.',
-      assignedAgentName: 'Priya Sharma',
-      createdAt: new Date(Date.now() - 3600000).toISOString()
-    }
-  ];
+  const mockEnquiries = [];
 
   const applyRoundRobinAssignments = (leadsList, agents = null) => {
     const agentsList = agents || JSON.parse(localStorage.getItem('registeredAgents') || '[]');

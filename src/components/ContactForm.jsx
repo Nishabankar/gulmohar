@@ -119,76 +119,8 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-stretch">
           
-          {/* Left Column: Contact Info & Developers Showcase */}
-          <div class="lg:col-span-6 flex flex-col">
-            
-            {/* Contact Details Card */}
-            <div class="bg-white p-3.5 sm:p-4 lg:p-5 rounded-2xl border border-gray-200/90 shadow-md space-y-2.5 flex-1 flex flex-col justify-between">
-              <div>
-                <div class="flex items-center justify-between border-b border-gray-100 pb-2 mb-2.5">
-                  <h3 class="font-serif font-bold text-gray-900 text-xs sm:text-sm flex items-center gap-1.5">
-                    <i class="fa-solid fa-headset text-[#B30E2E]"></i>
-                    <span>Contact Sales Team</span>
-                  </h3>
-                </div>
-
-                <div class="space-y-2 text-xs">
-                  
-                  {/* Phone */}
-                  <a href={`tel:+${CONTACT_PHONE}`} class="flex items-center space-x-2.5 p-2 sm:p-2.5 rounded-xl bg-[#FFF0F2] border border-[#FCD6DC] hover:border-[#B30E2E] transition group">
-                    <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#B30E2E] text-white flex items-center justify-center flex-shrink-0 text-xs group-hover:scale-105 transition">
-                      <i class="fa-solid fa-phone"></i>
-                    </div>
-                    <div>
-                      <span class="text-[10px] font-semibold text-gray-500 block">Direct Sales Helpline</span>
-                      <span class="font-semibold text-gray-800 text-[10.5px] sm:text-[11.5px] leading-tight block group-hover:text-[#B30E2E] transition">{CONTACT_PHONE_DISPLAY}</span>
-                    </div>
-                  </a>
-
-                  {/* WhatsApp */}
-                  <a href={WHATSAPP_URL("Hi, I am interested in Gulmohar City Plots")} target="_blank" rel="noreferrer" class="flex items-center space-x-2.5 p-2 sm:p-2.5 rounded-xl bg-[#EBF5F0] border border-emerald-200 hover:border-[#0D5235] transition group">
-                    <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#25D366] text-white flex items-center justify-center flex-shrink-0 text-xs group-hover:scale-110 transition shadow-sm">
-                      <i class="fa-brands fa-whatsapp text-sm sm:text-base"></i>
-                    </div>
-                    <div>
-                      <span class="text-[10px] font-semibold text-gray-500 block">WhatsApp Direct Chat</span>
-                      <span class="font-semibold text-gray-800 text-[10.5px] sm:text-[11.5px] leading-tight block group-hover:text-[#0D5235] transition">{CONTACT_PHONE_DISPLAY}</span>
-                    </div>
-                  </a>
-
-                  {/* Email */}
-                  <a href={`https://mail.google.com/mail/?view=cm&fs=1&to=${CONTACT_EMAIL}`} target="_blank" rel="noreferrer" class="flex items-center space-x-2.5 p-2 sm:p-2.5 rounded-xl bg-gray-50 border border-gray-200 hover:border-gray-400 transition group">
-                    <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gray-800 text-white flex items-center justify-center flex-shrink-0 text-xs group-hover:scale-105 transition">
-                      <i class="fa-solid fa-envelope"></i>
-                    </div>
-                    <div>
-                      <span class="text-[10px] font-semibold text-gray-500 block">Official Email</span>
-                      <span class="font-semibold text-gray-800 text-[10.5px] sm:text-[11.5px] leading-tight block group-hover:text-[#B30E2E] transition">{CONTACT_EMAIL}</span>
-                    </div>
-                  </a>
-
-                  {/* Address */}
-                  <div class="flex items-center space-x-2.5 p-2 sm:p-2.5 rounded-xl bg-gray-50 border border-gray-200">
-                    <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center flex-shrink-0 text-xs">
-                      <i class="fa-solid fa-location-dot"></i>
-                    </div>
-                    <div>
-                      <span class="text-[10px] font-semibold text-gray-500 block">Site Address</span>
-                      <span class="font-semibold text-gray-800 text-[10.5px] sm:text-[11.5px] leading-tight block">
-                        Malthan Village, Shikrapur – Malthan Road, Tal. Shirur, Dist. Pune
-                      </span>
-                    </div>
-                  </div>
-
-                </div>
-              </div>
-
-            </div>
-
-          </div>
-
-          {/* Right Column: High-Converting Enquiry Form */}
-          <div class="lg:col-span-6 flex flex-col">
+          {/* Enquiry Form: TOP on Mobile, RIGHT on Desktop */}
+          <div class="lg:col-span-6 flex flex-col order-1 lg:order-2">
             <div class="bg-white p-3.5 sm:p-4 lg:p-5 rounded-2xl border border-gray-200/90 shadow-md space-y-2.5 flex-1 flex flex-col justify-between">
               
               <div>
@@ -376,6 +308,74 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
               </div>
 
             </div>
+          </div>
+
+          {/* Contact Sales Team: BOTTOM on Mobile, LEFT on Desktop */}
+          <div class="lg:col-span-6 flex flex-col order-2 lg:order-1">
+            
+            {/* Contact Details Card */}
+            <div class="bg-white p-3.5 sm:p-4 lg:p-5 rounded-2xl border border-gray-200/90 shadow-md space-y-2.5 flex-1 flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between border-b border-gray-100 pb-2 mb-2.5">
+                  <h3 class="font-serif font-bold text-gray-900 text-xs sm:text-sm flex items-center gap-1.5">
+                    <i class="fa-solid fa-headset text-[#B30E2E]"></i>
+                    <span>Contact Sales Team</span>
+                  </h3>
+                </div>
+
+                <div class="space-y-2 text-xs">
+                  
+                  {/* Phone */}
+                  <a href={`tel:+${CONTACT_PHONE}`} class="flex items-center space-x-2.5 p-2 sm:p-2.5 rounded-xl bg-[#FFF0F2] border border-[#FCD6DC] hover:border-[#B30E2E] transition group">
+                    <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#B30E2E] text-white flex items-center justify-center flex-shrink-0 text-xs group-hover:scale-105 transition">
+                      <i class="fa-solid fa-phone"></i>
+                    </div>
+                    <div>
+                      <span class="text-[10px] font-semibold text-gray-500 block">Direct Sales Helpline</span>
+                      <span class="font-semibold text-gray-800 text-[10.5px] sm:text-[11.5px] leading-tight block group-hover:text-[#B30E2E] transition">{CONTACT_PHONE_DISPLAY}</span>
+                    </div>
+                  </a>
+
+                  {/* WhatsApp */}
+                  <a href={WHATSAPP_URL("Hi, I am interested in Gulmohar City Plots")} target="_blank" rel="noreferrer" class="flex items-center space-x-2.5 p-2 sm:p-2.5 rounded-xl bg-[#EBF5F0] border border-emerald-200 hover:border-[#0D5235] transition group">
+                    <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#25D366] text-white flex items-center justify-center flex-shrink-0 text-xs group-hover:scale-110 transition shadow-sm">
+                      <i class="fa-brands fa-whatsapp text-sm sm:text-base"></i>
+                    </div>
+                    <div>
+                      <span class="text-[10px] font-semibold text-gray-500 block">WhatsApp Direct Chat</span>
+                      <span class="font-semibold text-gray-800 text-[10.5px] sm:text-[11.5px] leading-tight block group-hover:text-[#0D5235] transition">{CONTACT_PHONE_DISPLAY}</span>
+                    </div>
+                  </a>
+
+                  {/* Email */}
+                  <a href={`https://mail.google.com/mail/?view=cm&fs=1&to=${CONTACT_EMAIL}`} target="_blank" rel="noreferrer" class="flex items-center space-x-2.5 p-2 sm:p-2.5 rounded-xl bg-gray-50 border border-gray-200 hover:border-gray-400 transition group">
+                    <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gray-800 text-white flex items-center justify-center flex-shrink-0 text-xs group-hover:scale-105 transition">
+                      <i class="fa-solid fa-envelope"></i>
+                    </div>
+                    <div>
+                      <span class="text-[10px] font-semibold text-gray-500 block">Official Email</span>
+                      <span class="font-semibold text-gray-800 text-[10.5px] sm:text-[11.5px] leading-tight block group-hover:text-[#B30E2E] transition">{CONTACT_EMAIL}</span>
+                    </div>
+                  </a>
+
+                  {/* Address */}
+                  <div class="flex items-center space-x-2.5 p-2 sm:p-2.5 rounded-xl bg-gray-50 border border-gray-200">
+                    <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center flex-shrink-0 text-xs">
+                      <i class="fa-solid fa-location-dot"></i>
+                    </div>
+                    <div>
+                      <span class="text-[10px] font-semibold text-gray-500 block">Site Address</span>
+                      <span class="font-semibold text-gray-800 text-[10.5px] sm:text-[11.5px] leading-tight block">
+                        Malthan Village, Shikrapur – Malthan Road, Tal. Shirur, Dist. Pune
+                      </span>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+            </div>
+
           </div>
 
         </div>

@@ -1491,10 +1491,11 @@ export default function AdminDashboard({ onLogout }) {
                                 {isSelected && <i class="fa-solid fa-check text-xs"></i>}
                               </button>
                             );
-                        </div>
-                      )}
-                    </div>
-                  )}
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                   {/* Active Visit Date Filter Badge */}
                   {visitDateFilter !== 'All' && (

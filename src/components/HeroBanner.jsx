@@ -155,12 +155,6 @@ export default function HeroBanner() {
             );
           })}
 
-          {/* 3D Rotate Indicator Badge Overlay */}
-          <div class="absolute top-3 right-3 z-30 pointer-events-none bg-black/40 backdrop-blur-md text-amber-300 text-[10px] font-bold px-2.5 py-1 rounded-full border border-amber-300/30 flex items-center gap-1 shadow-md">
-            <i class="fa-solid fa-rotate text-[9px] animate-spin-slow"></i>
-            <span>3D Flip Banner</span>
-          </div>
-
           {/* Premium Glassmorphism Mobile Slide Dots */}
           <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 z-30 pointer-events-auto bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 shadow-lg">
             {mobileBanners.map((_, idx) => (

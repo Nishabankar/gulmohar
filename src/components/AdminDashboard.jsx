@@ -1642,7 +1642,7 @@ export default function AdminDashboard({ onLogout }) {
                     <thead>
                       <tr class="bg-gray-100/70 border-b border-gray-200 text-[10px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">
                         {isAdmin && (
-                          <th class="py-2 px-1 text-center whitespace-nowrap w-7">
+                          <th class="py-2.5 px-2 text-center whitespace-nowrap w-8">
                             <input 
                               type="checkbox"
                               checked={filteredEnquiries.length > 0 && filteredEnquiries.every(item => selectedLeadIds.includes(item._id || item.id))}
@@ -1652,17 +1652,17 @@ export default function AdminDashboard({ onLogout }) {
                             />
                           </th>
                         )}
-                        <th class="py-2 px-1.5 whitespace-nowrap w-16 min-w-[60px]">Lead ID</th>
-                        <th class="py-2 px-2 whitespace-nowrap w-44 min-w-[165px]">Full Name</th>
-                        <th class="py-2 px-2 whitespace-nowrap w-32 min-w-[128px]">Mobile No</th>
-                        <th class="py-2 px-1.5 whitespace-nowrap">Email Address</th>
-                        <th class="py-2 px-1.5 whitespace-nowrap">No. of Guntha</th>
-                        <th class="py-2 px-1.5 whitespace-nowrap">Enquiry Date</th>
-                        <th class="py-2 px-1.5 whitespace-nowrap">Visit Date</th>
-                        <th class="py-2 px-1.5 whitespace-nowrap">Status</th>
-                        <th class="py-2 px-1.5 whitespace-nowrap">Assigned Agent</th>
-                        <th class="py-2 px-1 text-center whitespace-nowrap">Notes</th>
-                        <th class="py-2 px-1 text-center whitespace-nowrap">Actions</th>
+                        <th class="py-2.5 px-2.5 whitespace-nowrap w-16 min-w-[60px]">Lead ID</th>
+                        <th class="py-2.5 px-3 whitespace-nowrap w-44 min-w-[165px]">Full Name</th>
+                        <th class="py-2.5 px-3 whitespace-nowrap w-32 min-w-[128px]">Mobile No</th>
+                        <th class="py-2.5 px-2.5 whitespace-nowrap min-w-[155px]">Email Address</th>
+                        <th class="py-2.5 px-2.5 whitespace-nowrap min-w-[110px]">No. of Guntha</th>
+                        <th class="py-2.5 px-2.5 whitespace-nowrap min-w-[145px]">Enquiry Date</th>
+                        <th class="py-2.5 px-2.5 whitespace-nowrap min-w-[110px]">Visit Date</th>
+                        <th class="py-2.5 px-2.5 whitespace-nowrap min-w-[130px]">Status</th>
+                        <th class="py-2.5 px-2.5 whitespace-nowrap min-w-[145px]">Assigned Agent</th>
+                        <th class="py-2.5 px-2 text-center whitespace-nowrap w-12">Notes</th>
+                        <th class="py-2.5 px-2 text-center whitespace-nowrap w-16">Actions</th>
                       </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100 text-[11.5px]">
@@ -1673,7 +1673,7 @@ export default function AdminDashboard({ onLogout }) {
                         return (
                           <tr key={currentId} class={`hover:bg-rose-50/20 transition ${selectedLeadIds.includes(currentId) ? 'bg-rose-50/40' : ''}`}>
                             {isAdmin && (
-                              <td class="py-2 px-1 text-center whitespace-nowrap w-7">
+                              <td class="py-2.5 px-2 text-center whitespace-nowrap w-8">
                                 <input 
                                   type="checkbox"
                                   checked={selectedLeadIds.includes(currentId)}
@@ -1684,14 +1684,14 @@ export default function AdminDashboard({ onLogout }) {
                             )}
 
                             {/* Lead ID */}
-                            <td class="py-2 px-1.5 whitespace-nowrap w-16 min-w-[60px]">
+                            <td class="py-2.5 px-2.5 whitespace-nowrap w-16 min-w-[60px]">
                               <span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-rose-50 text-[#B30E2E] border border-rose-200/80 shadow-xs">
                                 {displayLeadId}
                               </span>
                             </td>
 
                             {/* Column 1: Full Name */}
-                            <td class="py-2 px-2 font-bold text-gray-800 whitespace-nowrap w-44 min-w-[165px] max-w-[165px]">
+                            <td class="py-2.5 px-3 font-bold text-gray-800 whitespace-nowrap w-44 min-w-[165px] max-w-[165px]">
                               <div class="flex items-center gap-1 truncate">
                                 <div class="w-5 h-5 rounded-full bg-[#FCD6DC] text-[#B30E2E] font-bold text-[10px] flex items-center justify-center flex-shrink-0 border border-[#FCD6DC]">
                                   {(item.firstName || 'C')[0].toUpperCase()}
@@ -1703,7 +1703,7 @@ export default function AdminDashboard({ onLogout }) {
                             </td>
 
                             {/* Column 2: Mobile No & WhatsApp Action */}
-                            <td class="py-2 px-2 whitespace-nowrap w-32 min-w-[128px] max-w-[128px]">
+                            <td class="py-2.5 px-3 whitespace-nowrap w-32 min-w-[128px] max-w-[128px]">
                               {item.phone ? (
                                 <div class="flex items-center justify-between gap-1 w-full whitespace-nowrap">
                                   <a 
@@ -1739,7 +1739,7 @@ export default function AdminDashboard({ onLogout }) {
                             </td>
 
                             {/* Column 3: Email Address */}
-                            <td class="py-2 px-1.5 whitespace-nowrap">
+                            <td class="py-2.5 px-2.5 whitespace-nowrap min-w-[155px]">
                               {item.email ? (
                                 <a 
                                   href={`mailto:${item.email}`}
@@ -1755,7 +1755,7 @@ export default function AdminDashboard({ onLogout }) {
                             </td>
 
                             {/* Column 4: Number of Guntha */}
-                            <td class="py-2 px-1.5 whitespace-nowrap">
+                            <td class="py-2.5 px-2.5 whitespace-nowrap min-w-[110px]">
                               <div class="flex items-center gap-1 whitespace-nowrap">
                                 <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200/80 whitespace-nowrap">
                                   <i class="fa-solid fa-shapes text-[8.5px] text-amber-600"></i>
@@ -1770,7 +1770,7 @@ export default function AdminDashboard({ onLogout }) {
                             </td>
 
                             {/* Column 5: Enquiry Date */}
-                            <td class="py-2 px-1.5 whitespace-nowrap">
+                            <td class="py-2.5 px-2.5 whitespace-nowrap min-w-[145px]">
                               <div class="font-semibold text-gray-800 text-[10px] whitespace-nowrap">
                                 <i class="fa-regular fa-clock text-[8.5px] text-gray-400 mr-0.5"></i>
                                 {new Date(item.createdAt || Date.now()).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
@@ -1781,7 +1781,7 @@ export default function AdminDashboard({ onLogout }) {
                             </td>
 
                             {/* Column 6: Site Visit Date */}
-                            <td class="py-2 px-1.5 whitespace-nowrap">
+                            <td class="py-2.5 px-2.5 whitespace-nowrap min-w-[110px]">
                               {item.visitDate ? (
                                 <div class="text-[10px] text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-md px-1.5 py-0.5 inline-flex items-center gap-1 font-semibold whitespace-nowrap">
                                   <i class="fa-regular fa-calendar-days text-[8.5px] text-indigo-500"></i>
@@ -1793,7 +1793,7 @@ export default function AdminDashboard({ onLogout }) {
                             </td>
 
                             {/* Column 7: Status Dropdown */}
-                            <td class="py-2 px-1.5 whitespace-nowrap">
+                            <td class="py-2.5 px-2.5 whitespace-nowrap min-w-[130px]">
                               <select
                                 value={item.status || 'New'}
                                 onChange={(e) => handleStatusChange(currentId, e.target.value)}
@@ -1812,7 +1812,7 @@ export default function AdminDashboard({ onLogout }) {
                             </td>
 
                             {/* Column 8: Assigned Agent (Admin dropdown vs Agent static badge) */}
-                            <td class="py-2 px-1.5 whitespace-nowrap">
+                            <td class="py-2.5 px-2.5 whitespace-nowrap min-w-[145px]">
                               {isAdmin ? (
                                 <select
                                   value={item.assignedAgentName || (allAgents[0] ? allAgents[0].name : '')}
@@ -1835,7 +1835,7 @@ export default function AdminDashboard({ onLogout }) {
                             </td>
 
                             {/* Column 9: Notes Symbol Icon */}
-                            <td class="py-2 px-1 text-center whitespace-nowrap">
+                            <td class="py-2.5 px-2 text-center whitespace-nowrap w-12">
                               {item.notes ? (
                                 <button 
                                   type="button"
@@ -1851,7 +1851,7 @@ export default function AdminDashboard({ onLogout }) {
                             </td>
 
                             {/* Column 10: Actions Column */}
-                            <td class="py-2 px-1 text-center whitespace-nowrap">
+                            <td class="py-2.5 px-2 text-center whitespace-nowrap w-16">
                               <div class="flex items-center justify-center gap-1">
                                 {/* Edit Lead Button */}
                                 <button 

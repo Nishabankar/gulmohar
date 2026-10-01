@@ -984,7 +984,7 @@ export default function AdminDashboard({ onLogout }) {
       (assignedAgentName && targetAgentFilter && (assignedAgentName.includes(targetAgentFilter) || targetAgentFilter.includes(assignedAgentName)));
 
     return matchesSearch && matchesStatus && matchesAgent;
-  });
+  }).sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
 
   // Filtered registered users by search query
   const filteredUsers = (registeredAgents || []).filter(agent => {

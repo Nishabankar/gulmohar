@@ -1624,7 +1624,7 @@ export default function AdminDashboard({ onLogout }) {
                             {/* Column 2: Mobile No & WhatsApp Action */}
                             <td class="py-2 px-1.5 whitespace-nowrap">
                               {item.phone ? (
-                                <div class="inline-flex items-center justify-between gap-2 min-w-[125px] whitespace-nowrap">
+                                <div class="inline-flex items-center gap-1.5 whitespace-nowrap">
                                   <a 
                                     href={`tel:${item.phone}`} 
                                     class="text-[#B30E2E] hover:underline font-bold flex items-center gap-1 whitespace-nowrap text-[11.5px]"

@@ -1056,11 +1056,11 @@ export default function AdminDashboard({ onLogout }) {
   // Calculate stats
   const totalLeads = scopedEnquiries.length;
   const newLeadsCount = scopedEnquiries.filter(e => e.status === 'New').length;
-  const siteVisitsCount = scopedEnquiries.filter(e => e.status === 'Site Visit Scheduled' || !!e.visitDate).length;
+  const siteVisitsCount = scopedEnquiries.filter(e => e.status === 'Site Visit Scheduled' || e.status === 'Site Visit Done' || !!e.visitDate).length;
   const todayVisitsCount = scopedEnquiries.filter(e => e.visitDate === getTodayString()).length;
   const tomorrowVisitsCount = scopedEnquiries.filter(e => e.visitDate === getTomorrowString()).length;
   const thisWeekVisitsCount = scopedEnquiries.filter(e => isDateInThisWeek(e.visitDate)).length;
-  const closedDealsCount = scopedEnquiries.filter(e => e.status === 'Closed').length;
+  const closedDealsCount = scopedEnquiries.filter(e => e.status === 'Won' || e.status === 'Closed').length;
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -1070,10 +1070,19 @@ export default function AdminDashboard({ onLogout }) {
         return 'bg-blue-100 text-blue-800 border-blue-300';
       case 'Interested':
         return 'bg-purple-100 text-purple-800 border-purple-300';
+      case 'Not Interested':
+        return 'bg-slate-100 text-slate-700 border-slate-300';
+      case 'Details Provided':
+        return 'bg-cyan-100 text-cyan-800 border-cyan-300';
       case 'Site Visit Scheduled':
         return 'bg-indigo-100 text-indigo-800 border-indigo-300';
+      case 'Site Visit Done':
+        return 'bg-sky-100 text-sky-800 border-sky-300';
+      case 'Won':
       case 'Closed':
         return 'bg-emerald-100 text-emerald-800 border-emerald-300';
+      case 'Lost':
+        return 'bg-rose-100 text-rose-800 border-rose-300';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-300';
     }
@@ -1349,9 +1358,9 @@ export default function AdminDashboard({ onLogout }) {
                     </div>
                   </div>
 
-                  {/* Card 7: Closed Deals */}
+                  {/* Card 7: Won Deals */}
                   <div 
-                    onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Closed'); setVisitDateFilter('All'); }}
+                    onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Won'); setVisitDateFilter('All'); }}
                     class="bg-white rounded-2xl p-5 shadow-sm border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-lg hover:border-emerald-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                     title="Click to view closed/booked leads"
                   >
@@ -1426,7 +1435,7 @@ export default function AdminDashboard({ onLogout }) {
 
                     {isStatusDropdownOpen && (
                       <div class="absolute left-0 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-1 max-h-48 overflow-y-auto custom-scrollbar animate-fade-in">
-                        {['All', 'New', 'Contacted', 'Interested', 'Site Visit Scheduled', 'Closed'].map((status) => (
+                        {['All', 'New', 'Contacted', 'Interested', 'Not Interested', 'Details Provided', 'Site Visit Scheduled', 'Site Visit Done', 'Won', 'Lost'].map((status) => (
                           <button
                             key={status}
                             type="button"
@@ -1721,8 +1730,12 @@ export default function AdminDashboard({ onLogout }) {
                                 <option value="New" class="bg-white text-gray-800 font-medium">New</option>
                                 <option value="Contacted" class="bg-white text-gray-800 font-medium">Contacted</option>
                                 <option value="Interested" class="bg-white text-gray-800 font-medium">Interested</option>
+                                <option value="Not Interested" class="bg-white text-gray-800 font-medium">Not Interested</option>
+                                <option value="Details Provided" class="bg-white text-gray-800 font-medium">Details Provided</option>
                                 <option value="Site Visit Scheduled" class="bg-white text-gray-800 font-medium">Site Visit Scheduled</option>
-                                <option value="Closed" class="bg-white text-gray-800 font-medium">Closed</option>
+                                <option value="Site Visit Done" class="bg-white text-gray-800 font-medium">Site Visit Done</option>
+                                <option value="Won" class="bg-white text-gray-800 font-medium">Won</option>
+                                <option value="Lost" class="bg-white text-gray-800 font-medium">Lost</option>
                               </select>
                             </td>
 
@@ -2400,8 +2413,12 @@ export default function AdminDashboard({ onLogout }) {
                     <option value="New">New</option>
                     <option value="Contacted">Contacted</option>
                     <option value="Interested">Interested</option>
+                    <option value="Not Interested">Not Interested</option>
+                    <option value="Details Provided">Details Provided</option>
                     <option value="Site Visit Scheduled">Site Visit Scheduled</option>
-                    <option value="Closed">Closed</option>
+                    <option value="Site Visit Done">Site Visit Done</option>
+                    <option value="Won">Won</option>
+                    <option value="Lost">Lost</option>
                   </select>
                 </div>
                 <div>

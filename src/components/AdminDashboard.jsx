@@ -880,10 +880,9 @@ export default function AdminDashboard({ onLogout }) {
       return;
     }
 
-    const headers = ['Lead ID', 'User ID', 'Full Name', 'Mobile No', 'Email Address', 'Number of Guntha', 'Selected Plot', 'Submitted Date', 'Visit Date', 'Status', 'Assigned Agent', 'Notes'];
+    const headers = ['Lead ID', 'Full Name', 'Mobile No', 'Email Address', 'Number of Guntha', 'Selected Plot', 'Submitted Date', 'Visit Date', 'Status', 'Assigned Agent', 'Notes'];
     const rows = filteredEnquiries.map((item, idx) => [
       `"${getLeadDisplayId(item, idx, enquiries)}"`,
-      `"${getCustomerUserId(item, enquiries)}"`,
       `"${item.firstName || ''} ${item.lastName || ''}"`,
       `"${item.phone || ''}"`,
       `"${item.email || ''}"`,
@@ -1399,7 +1398,7 @@ export default function AdminDashboard({ onLogout }) {
                       type="text" 
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search lead by ID, User ID, name, mobile..."
+                      placeholder="Search lead by Lead ID, name, mobile..."
                       class="w-full pl-9 pr-7 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-xs bg-white font-medium shadow-xs"
                     />
                     {searchQuery && (
@@ -1574,7 +1573,6 @@ export default function AdminDashboard({ onLogout }) {
                           </th>
                         )}
                         <th class="py-2 px-1.5 whitespace-nowrap">Lead ID</th>
-                        <th class="py-2 px-1.5 whitespace-nowrap">User ID</th>
                         <th class="py-2 px-1.5 whitespace-nowrap">Full Name</th>
                         <th class="py-2 px-1.5 whitespace-nowrap">Mobile No</th>
                         <th class="py-2 px-1.5 whitespace-nowrap">Email Address</th>
@@ -1612,13 +1610,6 @@ export default function AdminDashboard({ onLogout }) {
                               </span>
                             </td>
 
-                            {/* User ID (Customer ID) */}
-                            <td class="py-2 px-1.5 whitespace-nowrap">
-                              <span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-blue-50 text-blue-700 border border-blue-200/80 shadow-xs">
-                                {displayUserId}
-                              </span>
-                            </td>
-                            
                             {/* Column 1: Full Name */}
                             <td class="py-2 px-1.5 font-bold text-gray-800 whitespace-nowrap">
                               <div class="flex items-center gap-1">

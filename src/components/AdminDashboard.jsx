@@ -28,6 +28,7 @@ export default function AdminDashboard({ onLogout }) {
   const [statusFilter, setStatusFilter] = useState('New');
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
   const [agentFilter, setAgentFilter] = useState('All');
+  const [visitDateFilter, setVisitDateFilter] = useState('All'); // 'All' | 'Today' | 'Tomorrow' | 'ThisWeek'
   const [isAgentDropdownOpen, setIsAgentDropdownOpen] = useState(false);
   const [selectedLeadIds, setSelectedLeadIds] = useState([]);
   const [editingNoteId, setEditingNoteId] = useState(null);
@@ -954,7 +955,43 @@ export default function AdminDashboard({ onLogout }) {
     return false;
   });
 
-  // Filtered enquiries by Search, Status & Agent
+  // Date Helpers for Visit Filtering
+  const formatDateToYYYYMMDD = (d) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const getTodayString = () => formatDateToYYYYMMDD(new Date());
+
+  const getTomorrowString = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return formatDateToYYYYMMDD(tomorrow);
+  };
+
+  const isDateInThisWeek = (dateStr) => {
+    if (!dateStr) return false;
+    const target = new Date(dateStr);
+    if (isNaN(target.getTime())) return false;
+
+    const today = new Date();
+    const currentDayOfWeek = today.getDay();
+    const distanceToMonday = (currentDayOfWeek + 6) % 7;
+
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - distanceToMonday);
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    endOfWeek.setHours(23, 59, 59, 999);
+
+    return target >= startOfWeek && target <= endOfWeek;
+  };
+
+  // Filtered enquiries by Search, Status, Agent & Visit Date
   const filteredEnquiries = (scopedEnquiries || []).filter(item => {
     if (!item) return false;
     const firstName = item.firstName || '';
@@ -977,13 +1014,23 @@ export default function AdminDashboard({ onLogout }) {
 
     const matchesStatus = statusFilter === 'All' || item.status === statusFilter;
 
+    // Visit Date Filter Matching
+    let matchesVisitDate = true;
+    if (visitDateFilter === 'Today') {
+      matchesVisitDate = item.visitDate === getTodayString();
+    } else if (visitDateFilter === 'Tomorrow') {
+      matchesVisitDate = item.visitDate === getTomorrowString();
+    } else if (visitDateFilter === 'ThisWeek') {
+      matchesVisitDate = isDateInThisWeek(item.visitDate);
+    }
+
     const assignedAgentName = (item.assignedAgentName || '').toLowerCase().trim();
     const targetAgentFilter = agentFilter.toLowerCase().trim();
     const matchesAgent = agentFilter === 'All' || 
       assignedAgentName === targetAgentFilter ||
       (assignedAgentName && targetAgentFilter && (assignedAgentName.includes(targetAgentFilter) || targetAgentFilter.includes(assignedAgentName)));
 
-    return matchesSearch && matchesStatus && matchesAgent;
+    return matchesSearch && matchesStatus && matchesAgent && matchesVisitDate;
   }).sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
 
   // Filtered registered users by search query
@@ -1001,7 +1048,10 @@ export default function AdminDashboard({ onLogout }) {
   // Calculate stats
   const totalLeads = scopedEnquiries.length;
   const newLeadsCount = scopedEnquiries.filter(e => e.status === 'New').length;
-  const siteVisitsCount = scopedEnquiries.filter(e => e.status === 'Site Visit Scheduled').length;
+  const siteVisitsCount = scopedEnquiries.filter(e => e.status === 'Site Visit Scheduled' || !!e.visitDate).length;
+  const todayVisitsCount = scopedEnquiries.filter(e => e.visitDate === getTodayString()).length;
+  const tomorrowVisitsCount = scopedEnquiries.filter(e => e.visitDate === getTomorrowString()).length;
+  const thisWeekVisitsCount = scopedEnquiries.filter(e => isDateInThisWeek(e.visitDate)).length;
   const closedDealsCount = scopedEnquiries.filter(e => e.status === 'Closed').length;
 
   const getStatusBadge = (status) => {
@@ -1193,11 +1243,11 @@ export default function AdminDashboard({ onLogout }) {
                   </h2>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
                   
                   {/* Card 1: Total Leads */}
                   <div 
-                    onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); }}
+                    onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setVisitDateFilter('All'); }}
                     class="bg-white rounded-2xl p-5 shadow-sm border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-lg hover:border-rose-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                     title="Click to view all leads"
                   >
@@ -1213,7 +1263,7 @@ export default function AdminDashboard({ onLogout }) {
 
                   {/* Card 2: New */}
                   <div 
-                    onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('New'); }}
+                    onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('New'); setVisitDateFilter('All'); }}
                     class="bg-white rounded-2xl p-5 shadow-sm border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-lg hover:border-amber-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                     title="Click to view new leads"
                   >
@@ -1227,25 +1277,73 @@ export default function AdminDashboard({ onLogout }) {
                     </div>
                   </div>
 
-                  {/* Card 3: Site Visits */}
+                  {/* Card 3: Total Site Visits (All) */}
                   <div 
-                    onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Site Visit Scheduled'); }}
+                    onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Site Visit Scheduled'); setVisitDateFilter('All'); }}
                     class="bg-white rounded-2xl p-5 shadow-sm border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-lg hover:border-indigo-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
-                    title="Click to view scheduled site visits"
+                    title="Click to view all scheduled site visits"
                   >
                     <div>
-                      <p class="text-xs font-bold text-gray-500 uppercase tracking-wider group-hover:text-indigo-600 transition-colors">Site Visits Scheduled</p>
+                      <p class="text-xs font-bold text-gray-500 uppercase tracking-wider group-hover:text-indigo-600 transition-colors">Total Site Visits</p>
                       <h3 class="text-2xl sm:text-3xl font-bold text-indigo-600 mt-1">{siteVisitsCount}</h3>
-                      <p class="text-[11px] text-indigo-700/80 mt-1">Upcoming site appointments</p>
+                      <p class="text-[11px] text-indigo-700/80 mt-1">All site appointments</p>
                     </div>
                     <div class="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
                       <i class="fa-solid fa-calendar-check text-xl"></i>
                     </div>
                   </div>
 
-                  {/* Card 4: Closed Deals */}
+                  {/* Card 4: Today's Visits (NEW) */}
                   <div 
-                    onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Closed'); }}
+                    onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Site Visit Scheduled'); setVisitDateFilter('Today'); }}
+                    class="bg-white rounded-2xl p-5 shadow-sm border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-lg hover:border-purple-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                    title="Click to view today's scheduled visits"
+                  >
+                    <div>
+                      <p class="text-xs font-bold text-purple-600 uppercase tracking-wider group-hover:text-purple-700 transition-colors">Today's Visits</p>
+                      <h3 class="text-2xl sm:text-3xl font-bold text-purple-600 mt-1">{todayVisitsCount}</h3>
+                      <p class="text-[11px] text-purple-700/80 mt-1">Scheduled for today</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-2xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                      <i class="fa-solid fa-calendar-day text-xl"></i>
+                    </div>
+                  </div>
+
+                  {/* Card 5: Tomorrow's Visits (NEW) */}
+                  <div 
+                    onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Site Visit Scheduled'); setVisitDateFilter('Tomorrow'); }}
+                    class="bg-white rounded-2xl p-5 shadow-sm border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-lg hover:border-blue-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                    title="Click to view tomorrow's scheduled visits"
+                  >
+                    <div>
+                      <p class="text-xs font-bold text-blue-600 uppercase tracking-wider group-hover:text-blue-700 transition-colors">Tomorrow's Visits</p>
+                      <h3 class="text-2xl sm:text-3xl font-bold text-blue-600 mt-1">{tomorrowVisitsCount}</h3>
+                      <p class="text-[11px] text-blue-700/80 mt-1">Scheduled for tomorrow</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                      <i class="fa-solid fa-calendar-plus text-xl"></i>
+                    </div>
+                  </div>
+
+                  {/* Card 6: This Week's Visits (NEW) */}
+                  <div 
+                    onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Site Visit Scheduled'); setVisitDateFilter('ThisWeek'); }}
+                    class="bg-white rounded-2xl p-5 shadow-sm border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-lg hover:border-[#B30E2E]/30 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                    title="Click to view this week's scheduled visits"
+                  >
+                    <div>
+                      <p class="text-xs font-bold text-[#B30E2E] uppercase tracking-wider group-hover:text-[#8A0B22] transition-colors">This Week's Visits</p>
+                      <h3 class="text-2xl sm:text-3xl font-bold text-[#B30E2E] mt-1">{thisWeekVisitsCount}</h3>
+                      <p class="text-[11px] text-[#B30E2E]/80 mt-1">Current week appointments</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center text-[#B30E2E] group-hover:bg-[#B30E2E] group-hover:text-white transition-colors">
+                      <i class="fa-solid fa-calendar-week text-xl"></i>
+                    </div>
+                  </div>
+
+                  {/* Card 7: Closed Deals */}
+                  <div 
+                    onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Closed'); setVisitDateFilter('All'); }}
                     class="bg-white rounded-2xl p-5 shadow-sm border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-lg hover:border-emerald-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                     title="Click to view closed/booked leads"
                   >
@@ -1396,6 +1494,20 @@ export default function AdminDashboard({ onLogout }) {
                           })}
                         </div>
                       )}
+                  {/* Active Visit Date Filter Badge */}
+                  {visitDateFilter !== 'All' && (
+                    <div class="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-800 border border-indigo-200 px-3 py-1.5 rounded-xl text-xs font-bold shadow-xs whitespace-nowrap animate-fade-in">
+                      <i class="fa-regular fa-calendar-days text-indigo-600 text-xs"></i>
+                      <span>
+                        Showing {visitDateFilter === 'Today' ? "Today's Visits" : visitDateFilter === 'Tomorrow' ? "Tomorrow's Visits" : "This Week's Visits"}
+                      </span>
+                      <button 
+                        onClick={() => { setVisitDateFilter('All'); setStatusFilter('All'); }} 
+                        class="ml-1 text-indigo-400 hover:text-indigo-700 text-xs p-0.5 cursor-pointer"
+                        title="Clear visit date filter"
+                      >
+                        <i class="fa-solid fa-xmark"></i>
+                      </button>
                     </div>
                   )}
 

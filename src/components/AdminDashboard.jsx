@@ -1196,7 +1196,7 @@ export default function AdminDashboard({ onLogout }) {
       </header>
 
       {/* Main Dashboard Container */}
-      <main class="w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-4 sm:space-y-6">
+      <main class="w-full px-2 sm:px-3 lg:px-4 py-4 sm:py-8 space-y-4 sm:space-y-6">
         
         {activeTab === 'enquiries' || !isAdmin ? (
           <>
@@ -1466,7 +1466,7 @@ export default function AdminDashboard({ onLogout }) {
                 </div>
               ) : (
                 <div class="overflow-x-auto custom-scrollbar w-full">
-                  <table class="w-full min-w-[700px] text-left border-collapse">
+                  <table class="w-full min-w-full text-left border-collapse">
                     <thead>
                       <tr class="bg-gray-100/70 border-b border-gray-200 text-[10px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">
                         {isAdmin && (

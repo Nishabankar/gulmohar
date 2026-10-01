@@ -1012,7 +1012,7 @@ export default function AdminDashboard({ onLogout }) {
             <img 
               src="/assets/images/gulmohar-city-footer-logo.png" 
               alt="Gulmohar City" 
-              class="h-7 sm:h-14 w-auto object-contain flex-shrink-0"
+              class="h-11 sm:h-14 w-auto object-contain flex-shrink-0 py-0.5"
             />
             <h1 class="hidden md:block text-base sm:text-lg font-serif font-bold text-white tracking-wide">
               Lead Management System

@@ -1108,7 +1108,7 @@ export default function AdminDashboard({ onLogout }) {
 
             {/* Leads View Standalone Button */}
             <button 
-              onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); }}
+              onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('New'); setVisitDateFilter('All'); }}
               class={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition shadow-md border cursor-pointer relative ${
                 activeTab === 'enquiries' && activeView === 'leads'
                   ? 'bg-amber-400 text-slate-900 border-amber-300 ring-2 ring-amber-300/50 font-extrabold scale-105'
@@ -1247,7 +1247,7 @@ export default function AdminDashboard({ onLogout }) {
                   
                   {/* Card 1: Total Leads */}
                   <div 
-                    onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setVisitDateFilter('All'); }}
+                    onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('New'); setVisitDateFilter('All'); }}
                     class="bg-white rounded-2xl p-5 shadow-sm border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-lg hover:border-rose-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                     title="Click to view all leads"
                   >

@@ -1056,7 +1056,7 @@ export default function AdminDashboard({ onLogout }) {
   // Calculate stats
   const totalLeads = scopedEnquiries.length;
   const newLeadsCount = scopedEnquiries.filter(e => e.status === 'New').length;
-  const todaysFollowupCount = scopedEnquiries.filter(e => e.status === 'Contacted' || e.visitDate === getTodayString()).length;
+  const todaysFollowupCount = scopedEnquiries.filter(e => e.status === 'Contacted' || e.status === 'Details Provided').length;
   const interestedLeadsCount = scopedEnquiries.filter(e => e.status === 'Interested').length;
   const siteVisitDoneCount = scopedEnquiries.filter(e => e.status === 'Site Visit Done').length;
   const wonDealsCount = scopedEnquiries.filter(e => e.status === 'Won' || e.status === 'Closed').length;

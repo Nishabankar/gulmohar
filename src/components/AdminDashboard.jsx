@@ -1621,16 +1621,37 @@ export default function AdminDashboard({ onLogout }) {
                               </div>
                             </td>
 
-                            {/* Column 2: Mobile No */}
+                            {/* Column 2: Mobile No & WhatsApp Action */}
                             <td class="py-2 px-1.5 whitespace-nowrap">
                               {item.phone ? (
-                                <a 
-                                  href={`tel:${item.phone}`} 
-                                  class="text-[#B30E2E] hover:underline font-bold flex items-center gap-1 whitespace-nowrap text-[11.5px]"
-                                >
-                                  <i class="fa-solid fa-phone text-[8.5px] text-[#B30E2E]"></i>
-                                  <span>{item.phone}</span>
-                                </a>
+                                <div class="flex items-center gap-1.5 whitespace-nowrap">
+                                  <a 
+                                    href={`tel:${item.phone}`} 
+                                    class="text-[#B30E2E] hover:underline font-bold flex items-center gap-1 whitespace-nowrap text-[11.5px]"
+                                    title="Call Lead"
+                                  >
+                                    <i class="fa-solid fa-phone text-[8.5px] text-[#B30E2E]"></i>
+                                    <span>{item.phone}</span>
+                                  </a>
+                                  {(() => {
+                                    const cleanPhone = (item.phone || '').replace(/\D/g, '');
+                                    const formattedPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+                                    const customerName = `${item.firstName || ''} ${item.lastName || ''}`.trim() || 'Customer';
+                                    const waMsg = encodeURIComponent(`Hello ${customerName}, thank you for your enquiry at Gulmohar City! Would you like us to share the project layout and pricing brochure?`);
+                                    const waUrl = `https://wa.me/${formattedPhone}?text=${waMsg}`;
+                                    return (
+                                      <a
+                                        href={waUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="w-5 h-5 rounded-full bg-emerald-100 hover:bg-emerald-600 text-emerald-600 hover:text-white flex items-center justify-center transition-colors shadow-2xs border border-emerald-200 cursor-pointer flex-shrink-0"
+                                        title={`Chat on WhatsApp with ${customerName}`}
+                                      >
+                                        <i class="fa-brands fa-whatsapp text-[11px]"></i>
+                                      </a>
+                                    );
+                                  })()}
+                                </div>
                               ) : (
                                 <span class="text-gray-400 italic text-[10.5px]">N/A</span>
                               )}

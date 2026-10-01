@@ -848,7 +848,15 @@ export default function AdminDashboard({ onLogout }) {
     }
   };
 
-  // Helper to generate consistent Customer/User ID and Lead ID
+  // Helper to generate consistent Customer/User ID and Lead ID in chronological order (Oldest Created First)
+  const getChronologicalLeads = (allLeads = enquiries) => {
+    return [...(allLeads || [])].sort((a, b) => {
+      const timeA = new Date(a.createdAt || 0).getTime();
+      const timeB = new Date(b.createdAt || 0).getTime();
+      return timeA - timeB;
+    });
+  };
+
   const getCustomerUserId = (item, allLeads = enquiries) => {
     if (!item) return '#USR-1001';
     if (item.userId) return item.userId;
@@ -856,10 +864,11 @@ export default function AdminDashboard({ onLogout }) {
     const phoneOrEmail = (item.phone || item.email || item.firstName || '').toLowerCase().trim();
     if (!phoneOrEmail) return '#USR-1001';
 
+    const sortedLeads = getChronologicalLeads(allLeads);
     const customerMap = new Map();
     let counter = 1001;
 
-    (allLeads || []).forEach(lead => {
+    sortedLeads.forEach(lead => {
       if (!lead) return;
       const key = (lead.phone || lead.email || lead.firstName || '').toLowerCase().trim();
       if (key && !customerMap.has(key)) {
@@ -874,7 +883,8 @@ export default function AdminDashboard({ onLogout }) {
     if (!item) return `#LD-${101 + index}`;
     if (item.leadId) return item.leadId;
     
-    const leadIndex = (allLeads || []).findIndex(l => (l._id || l.id) === (item._id || item.id));
+    const sortedLeads = getChronologicalLeads(allLeads);
+    const leadIndex = sortedLeads.findIndex(l => (l._id || l.id) === (item._id || item.id));
     const finalIndex = leadIndex >= 0 ? leadIndex : index;
     return `#LD-${101 + finalIndex}`;
   };

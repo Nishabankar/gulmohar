@@ -1279,7 +1279,7 @@ export default function AdminDashboard({ onLogout }) {
 
                   {/* Card 3: Total Site Visits (All) */}
                   <div 
-                    onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Site Visit Scheduled'); setVisitDateFilter('All'); }}
+                    onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setVisitDateFilter('All'); }}
                     class="bg-white rounded-2xl p-5 shadow-sm border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-lg hover:border-indigo-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                     title="Click to view all scheduled site visits"
                   >
@@ -1295,7 +1295,7 @@ export default function AdminDashboard({ onLogout }) {
 
                   {/* Card 4: Today's Visits (NEW) */}
                   <div 
-                    onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Site Visit Scheduled'); setVisitDateFilter('Today'); }}
+                    onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setVisitDateFilter('Today'); }}
                     class="bg-white rounded-2xl p-5 shadow-sm border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-lg hover:border-purple-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                     title="Click to view today's scheduled visits"
                   >
@@ -1311,7 +1311,7 @@ export default function AdminDashboard({ onLogout }) {
 
                   {/* Card 5: Tomorrow's Visits (NEW) */}
                   <div 
-                    onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Site Visit Scheduled'); setVisitDateFilter('Tomorrow'); }}
+                    onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setVisitDateFilter('Tomorrow'); }}
                     class="bg-white rounded-2xl p-5 shadow-sm border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-lg hover:border-blue-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                     title="Click to view tomorrow's scheduled visits"
                   >
@@ -1327,7 +1327,7 @@ export default function AdminDashboard({ onLogout }) {
 
                   {/* Card 6: This Week's Visits (NEW) */}
                   <div 
-                    onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Site Visit Scheduled'); setVisitDateFilter('ThisWeek'); }}
+                    onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setVisitDateFilter('ThisWeek'); }}
                     class="bg-white rounded-2xl p-5 shadow-sm border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-lg hover:border-[#B30E2E]/30 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                     title="Click to view this week's scheduled visits"
                   >

@@ -111,7 +111,7 @@ export default function HeroBanner() {
     <section id="home" class="relative w-full h-[calc(100dvh-64px)] sm:h-[calc(100vh-80px)] bg-white p-0 m-0 group flex flex-col justify-center overflow-hidden">
       
       {/* 1. Main Hero Image Container */}
-      <a href="#contact" class="block w-full h-full cursor-pointer relative">
+      <div class="w-full h-full relative">
         
         {/* Desktop Banner Image */}
         <img 
@@ -229,7 +229,7 @@ export default function HeroBanner() {
           </a>
         </div>
 
-      </a>
+      </div>
 
     </section>
   );

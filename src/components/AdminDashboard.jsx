@@ -1005,14 +1005,14 @@ export default function AdminDashboard({ onLogout }) {
       
       {/* Admin Top Navbar */}
       <header class="bg-gradient-to-r from-[#B30E2E] via-[#8A0B22] to-[#590414] text-white sticky top-0 z-40 shadow-xl border-b border-rose-900/40">
-        <div class="w-full px-3 sm:px-6 lg:px-8 flex items-center justify-between h-16 sm:h-20 gap-2 sm:gap-4">
+        <div class="w-full px-2.5 sm:px-6 lg:px-8 flex items-center justify-between h-16 sm:h-20 gap-2 sm:gap-4">
           
           {/* Left: Branding & System Title */}
           <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
             <img 
               src="/assets/images/gulmohar-city-footer-logo.png" 
               alt="Gulmohar City" 
-              class="h-8 sm:h-14 w-auto object-contain flex-shrink-0"
+              class="h-7 sm:h-14 w-auto object-contain flex-shrink-0"
             />
             <h1 class="hidden md:block text-base sm:text-lg font-serif font-bold text-white tracking-wide">
               Lead Management System
@@ -1020,32 +1020,32 @@ export default function AdminDashboard({ onLogout }) {
           </div>
 
           {/* Right: View Navigation Tabs & Logout Button (Separate Standalone Buttons) */}
-          <div class="flex items-center gap-1.5 sm:gap-4 flex-shrink-0">
+          <div class="flex items-center gap-2.5 sm:gap-3.5 flex-shrink-0">
             
             {/* Dashboard View Standalone Button */}
             <button 
               onClick={() => { setActiveTab('enquiries'); setActiveView('dashboard'); }}
-              class={`w-9 h-9 rounded-xl flex items-center justify-center transition shadow-md border cursor-pointer ${
+              class={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition shadow-md border cursor-pointer ${
                 activeTab === 'enquiries' && activeView === 'dashboard'
                   ? 'bg-amber-400 text-slate-900 border-amber-300 ring-2 ring-amber-300/50 font-extrabold scale-105'
                   : 'bg-white/10 hover:bg-white/20 text-white border-white/20'
               }`}
               title="Dashboard"
             >
-              <i class="fa-solid fa-chart-pie text-sm"></i>
+              <i class="fa-solid fa-chart-pie text-xs sm:text-sm"></i>
             </button>
 
             {/* Leads View Standalone Button */}
             <button 
               onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); }}
-              class={`w-9 h-9 rounded-xl flex items-center justify-center transition shadow-md border cursor-pointer relative ${
+              class={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition shadow-md border cursor-pointer relative ${
                 activeTab === 'enquiries' && activeView === 'leads'
                   ? 'bg-amber-400 text-slate-900 border-amber-300 ring-2 ring-amber-300/50 font-extrabold scale-105'
                   : 'bg-white/10 hover:bg-white/20 text-white border-white/20'
               }`}
               title="Leads"
             >
-              <i class="fa-solid fa-address-book text-sm"></i>
+              <i class="fa-solid fa-address-book text-xs sm:text-sm"></i>
               {scopedEnquiries.length > 0 && (
                 <span class={`absolute -top-1 -right-1 font-extrabold text-[9px] min-w-4 h-4 px-1 rounded-full flex items-center justify-center shadow ${
                   activeTab === 'enquiries' && activeView === 'leads'
@@ -1061,14 +1061,14 @@ export default function AdminDashboard({ onLogout }) {
             {isAdmin && (
               <button 
                 onClick={() => setActiveTab('users')}
-                class={`w-9 h-9 rounded-xl flex items-center justify-center transition shadow-md border cursor-pointer relative ${
+                class={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition shadow-md border cursor-pointer relative ${
                   activeTab === 'users'
                     ? 'bg-amber-400 text-slate-900 border-amber-300 ring-2 ring-amber-300/50 font-extrabold scale-105'
                     : 'bg-white/10 hover:bg-white/20 text-white border-white/20'
                 }`}
                 title="Users"
               >
-                <i class="fa-solid fa-users text-sm"></i>
+                <i class="fa-solid fa-users text-xs sm:text-sm"></i>
               </button>
             )}
 
@@ -1076,7 +1076,7 @@ export default function AdminDashboard({ onLogout }) {
             <div class="relative">
               <button 
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
-                class={`w-9 h-9 rounded-xl flex items-center justify-center transition shadow-md border cursor-pointer overflow-hidden ${
+                class={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition shadow-md border cursor-pointer overflow-hidden ${
                   showProfileMenu 
                     ? 'ring-2 ring-amber-300 border-amber-400 bg-white/20' 
                     : 'border-white/20 bg-white/10 hover:bg-white/20'

@@ -1497,22 +1497,7 @@ export default function AdminDashboard({ onLogout }) {
                       </div>
                     )}
 
-                  {/* Active Visit Date Filter Badge */}
-                  {visitDateFilter !== 'All' && (
-                    <div class="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-800 border border-indigo-200 px-3 py-1.5 rounded-xl text-xs font-bold shadow-xs whitespace-nowrap animate-fade-in">
-                      <i class="fa-regular fa-calendar-days text-indigo-600 text-xs"></i>
-                      <span>
-                        Showing {visitDateFilter === 'Today' ? "Today's Visits" : visitDateFilter === 'Tomorrow' ? "Tomorrow's Visits" : "This Week's Visits"}
-                      </span>
-                      <button 
-                        onClick={() => { setVisitDateFilter('All'); setStatusFilter('All'); }} 
-                        class="ml-1 text-indigo-400 hover:text-indigo-700 text-xs p-0.5 cursor-pointer"
-                        title="Clear visit date filter"
-                      >
-                        <i class="fa-solid fa-xmark"></i>
-                      </button>
-                    </div>
-                  )}
+
 
                 </div>
 

@@ -1094,10 +1094,10 @@ export default function AdminDashboard({ onLogout }) {
   };
 
   return (
-    <div class="min-h-screen bg-gray-50 text-gray-800 font-sans flex flex-col justify-between overflow-x-hidden w-full max-w-full">
+    <div class="h-screen max-h-screen bg-gray-50 text-gray-800 font-sans flex flex-col justify-between overflow-hidden w-full max-w-full">
       
       {/* Admin Top Navbar */}
-      <header class="bg-gradient-to-r from-[#B30E2E] via-[#8A0B22] to-[#590414] text-white sticky top-0 z-40 shadow-xl border-b border-rose-900/40">
+      <header class="bg-gradient-to-r from-[#B30E2E] via-[#8A0B22] to-[#590414] text-white flex-shrink-0 shadow-xl border-b border-rose-900/40">
         <div class="w-full px-2.5 sm:px-6 lg:px-8 flex items-center justify-between h-16 sm:h-20 gap-2 sm:gap-4">
           
           {/* Left: Branding & System Title */}
@@ -1251,13 +1251,13 @@ export default function AdminDashboard({ onLogout }) {
       </header>
 
       {/* Main Dashboard Container */}
-      <main class="w-full px-2 sm:px-3 lg:px-4 py-4 sm:py-8 space-y-4 sm:space-y-6">
+      <main class="w-full px-2 sm:px-3 lg:px-4 py-3 sm:py-4 flex-1 flex flex-col min-h-0 overflow-hidden space-y-3 sm:space-y-4">
         
         {activeTab === 'enquiries' || !isAdmin ? (
           <>
             {/* Dashboard View Tab: 2 Distinct Sections */}
             {activeView === 'dashboard' && (
-              <div class="space-y-6 animate-fade-in">
+              <div class="space-y-6 animate-fade-in flex-1 overflow-y-auto custom-scrollbar">
                 
                 {/* SECTION 1: Status */}
                 <div class="space-y-3">
@@ -1452,19 +1452,19 @@ export default function AdminDashboard({ onLogout }) {
 
             {/* Leads View Tab: Only Leads Table Container */}
             {activeView === 'leads' && (
-              <div class="space-y-4 animate-fade-in">
+              <div class="space-y-3 animate-fade-in flex-1 flex flex-col min-h-0 overflow-hidden">
                 {/* Leads Title Section */}
-                <div>
+                <div class="flex-shrink-0">
                   <h2 class="text-base sm:text-lg font-serif font-bold text-gray-900 tracking-wide">
                     Leads
                   </h2>
                 </div>
 
             {/* Leads Table Container */}
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-200/80 relative">
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200/80 relative flex-1 flex flex-col min-h-0 overflow-hidden">
               
               {/* Card Header Bar with Search, Status Filter & Export CSV */}
-              <div class="px-4 py-3 border-b border-gray-100 bg-gray-50/70 rounded-t-2xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              <div class="px-4 py-2.5 border-b border-gray-100 bg-gray-50/70 rounded-t-2xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 flex-shrink-0">
                 
                 {/* Left/Center: Search & Filter */}
                 <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 max-w-2xl">
@@ -1637,7 +1637,7 @@ export default function AdminDashboard({ onLogout }) {
                   <p class="text-xs text-gray-400">Try adjusting your search query or status filter.</p>
                 </div>
               ) : (
-                <div class="overflow-x-auto overflow-y-auto max-h-[calc(100vh-270px)] custom-scrollbar w-full rounded-b-2xl">
+                <div class="overflow-x-auto overflow-y-auto flex-1 min-h-0 custom-scrollbar w-full rounded-b-2xl">
                   <table class="w-full min-w-full text-left border-collapse">
                     <thead class="sticky top-0 z-10 bg-gray-100 shadow-2xs">
                       <tr class="bg-gray-100 border-b border-gray-200 text-[10px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">

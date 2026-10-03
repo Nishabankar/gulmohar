@@ -813,6 +813,11 @@ export default function AdminDashboard({ onLogout }) {
     }
     localStorage.setItem('localEnquiriesCache', JSON.stringify(updatedCache));
 
+    // If status filter was set to a specific status different from new status, sync statusFilter so edited lead stays visible on screen
+    if (statusFilter !== 'All' && statusFilter !== updatedLead.status) {
+      setStatusFilter(updatedLead.status);
+    }
+
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 2500);
@@ -834,7 +839,8 @@ export default function AdminDashboard({ onLogout }) {
           followupDate: updatedLead.followupDate || '',
           status: updatedLead.status,
           notes: updatedLead.notes,
-          assignedAgentName: updatedLead.assignedAgentName
+          assignedAgentName: updatedLead.assignedAgentName,
+          updatedBy: currentUser.name || 'Sales Executive'
         }),
         signal: controller.signal
       });
@@ -851,7 +857,7 @@ export default function AdminDashboard({ onLogout }) {
       console.warn('Backend patch update note:', err);
     } finally {
       setSavingEdit(false);
-      setEditModalSuccessMsg('Enquiry Edited Successfully!');
+      setEditModalSuccessMsg(`Enquiry Edited Successfully! (Status: ${updatedLead.status})`);
       setTimeout(() => {
         setEditingEnquiry(null);
         setEditModalSuccessMsg('');

@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const Admin = require('../models/Admin');
@@ -123,7 +124,13 @@ router.patch('/enquiries/:id', protectAdmin, async (req, res) => {
   try {
     const { firstName, lastName, phone, email, plotsCount, plotInfo, visitDate, followupDate, status, notes, assignedAgentName, assignedTo, historyEntry, updatedBy } = req.body;
     
-    const existing = await Enquiry.findById(req.params.id);
+    let existing = null;
+    if (mongoose.Types.ObjectId.isValid(req.params.id)) {
+      existing = await Enquiry.findById(req.params.id);
+    }
+    if (!existing && phone) {
+      existing = await Enquiry.findOne({ phone: phone.trim() });
+    }
     if (!existing) {
       return res.status(404).json({ success: false, message: 'Enquiry record not found in MongoDB' });
     }

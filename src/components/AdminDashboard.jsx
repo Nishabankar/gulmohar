@@ -1776,8 +1776,13 @@ export default function AdminDashboard({ onLogout }) {
                                   {(() => {
                                     const cleanPhone = (item.phone || '').replace(/\D/g, '');
                                     const formattedPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
-                                    const customerName = `${item.firstName || ''} ${item.lastName || ''}`.trim() || 'Customer';
-                                    const waMsg = encodeURIComponent(`Hello ${customerName}, thank you for your enquiry at Gulmohar City! Would you like us to share the project layout and pricing brochure?`);
+                                    const formatCapitalizedName = (str) => {
+                                      if (!str) return '';
+                                      return str.trim().split(/\s+/).map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
+                                    };
+                                    const rawName = `${item.firstName || ''} ${item.lastName || ''}`.trim() || 'Customer';
+                                    const customerName = formatCapitalizedName(rawName);
+                                    const waMsg = encodeURIComponent(`Hello ${customerName}, Thank you for your enquiry at Gulmohar City!`);
                                     const waUrl = `https://wa.me/${formattedPhone}?text=${waMsg}`;
                                     return (
                                       <a

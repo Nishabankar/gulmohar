@@ -281,8 +281,17 @@ export default function AdminDashboard({ onLogout }) {
 
       if (data.success && Array.isArray(data.data)) {
         const filteredMongo = data.data.filter(item => !deletedIds.includes(item._id));
-        const combined = [...filteredLocal, ...filteredMongo];
-        const uniqueLeads = Array.from(new Map(combined.map(item => [item._id, item])).values());
+        const localMap = new Map(filteredLocal.map(item => [item._id || item.id, item]));
+        const mergedMongo = filteredMongo.map(mItem => {
+          const key = mItem._id || mItem.id;
+          const cached = localMap.get(key);
+          return {
+            ...mItem,
+            followupDate: (cached && cached.followupDate) ? cached.followupDate : (mItem.followupDate || '')
+          };
+        });
+        const combined = [...filteredLocal, ...mergedMongo];
+        const uniqueLeads = Array.from(new Map(combined.map(item => [(item._id || item.id), item])).values());
         localStorage.setItem('localEnquiriesCache', JSON.stringify(uniqueLeads));
         setEnquiries(applyRoundRobinAssignments(uniqueLeads));
       } else {
@@ -690,13 +699,34 @@ export default function AdminDashboard({ onLogout }) {
 
     // Instant local UI state update
     const updatedLead = { ...editingEnquiry };
-    setEnquiries(prev => prev.map(item => item._id === updatedLead._id ? updatedLead : item));
+    const leadKey = updatedLead._id || updatedLead.id;
+
+    setEnquiries(prev => prev.map(item => {
+      const itemKey = item._id || item.id;
+      return itemKey === leadKey ? updatedLead : item;
+    }));
+
+    // Update local enquiries cache in localStorage
+    const localCache = JSON.parse(localStorage.getItem('localEnquiriesCache') || '[]');
+    let foundInCache = false;
+    const updatedCache = localCache.map(item => {
+      const itemKey = item._id || item.id;
+      if (itemKey === leadKey) {
+        foundInCache = true;
+        return updatedLead;
+      }
+      return item;
+    });
+    if (!foundInCache) {
+      updatedCache.push(updatedLead);
+    }
+    localStorage.setItem('localEnquiriesCache', JSON.stringify(updatedCache));
 
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 2500);
 
-      const res = await fetch(`${API_BASE_URL}/api/admin/enquiries/${updatedLead._id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/admin/enquiries/${leadKey}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -721,7 +751,10 @@ export default function AdminDashboard({ onLogout }) {
       clearTimeout(timeoutId);
       const data = await res.json();
       if (data.success && data.data) {
-        setEnquiries(prev => prev.map(item => item._id === updatedLead._id ? data.data : item));
+        setEnquiries(prev => prev.map(item => {
+          const itemKey = item._id || item.id;
+          return itemKey === leadKey ? { ...data.data, followupDate: updatedLead.followupDate || data.data.followupDate || '' } : item;
+        }));
       }
     } catch (err) {
       console.warn('Backend patch update note:', err);

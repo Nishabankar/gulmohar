@@ -351,6 +351,79 @@ export default function AdminDashboard({ onLogout }) {
     fetchAgents();
   }, []);
 
+  // Helper to get or synthesize Lead Activity History Logs
+  const getLeadHistoryLogs = (item) => {
+    if (!item) return [];
+    let logs = Array.isArray(item.history) && item.history.length > 0 ? [...item.history] : [];
+
+    if (logs.length === 0) {
+      logs.push({
+        actionType: 'CREATED',
+        title: 'Lead Created',
+        description: `New enquiry created for ${item.plotsCount || '1 Guntha'}`,
+        performedBy: `${item.firstName || ''} ${item.lastName || ''}`.trim() || 'Customer / System',
+        createdAt: item.createdAt || new Date().toISOString()
+      });
+
+      if (item.assignedAgentName) {
+        logs.push({
+          actionType: 'AGENT_CHANGE',
+          title: 'Agent Assigned',
+          description: `Lead assigned to ${item.assignedAgentName}`,
+          performedBy: 'System (Round-Robin)',
+          newValue: item.assignedAgentName,
+          createdAt: item.createdAt || new Date().toISOString()
+        });
+      }
+
+      if (item.status && item.status !== 'New') {
+        logs.push({
+          actionType: 'STATUS_CHANGE',
+          title: 'Status Updated',
+          description: `Status set to '${item.status}'`,
+          performedBy: item.assignedAgentName || 'Sales Executive',
+          newValue: item.status,
+          createdAt: item.updatedAt || item.createdAt || new Date().toISOString()
+        });
+      }
+
+      if (item.followupDate) {
+        logs.push({
+          actionType: 'FOLLOWUP_CHANGE',
+          title: 'Followup Date Scheduled',
+          description: `Followup date set to '${item.followupDate}'`,
+          performedBy: item.assignedAgentName || 'Sales Executive',
+          newValue: item.followupDate,
+          createdAt: item.updatedAt || item.createdAt || new Date().toISOString()
+        });
+      }
+
+      if (item.visitDate) {
+        logs.push({
+          actionType: 'VISIT_CHANGE',
+          title: 'Site Visit Date Scheduled',
+          description: `Site visit date set to '${item.visitDate}'`,
+          performedBy: item.assignedAgentName || 'Sales Executive',
+          newValue: item.visitDate,
+          createdAt: item.updatedAt || item.createdAt || new Date().toISOString()
+        });
+      }
+
+      if (item.notes && item.notes.trim() !== '') {
+        logs.push({
+          actionType: 'NOTE',
+          title: 'Note / Remark Added',
+          description: `Note: "${item.notes}"`,
+          performedBy: item.assignedAgentName || 'Sales Executive',
+          newValue: item.notes,
+          createdAt: item.updatedAt || item.createdAt || new Date().toISOString()
+        });
+      }
+    }
+
+    return logs.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+  };
+
   // Handler: Create New Lead (Identical 6 Homepage Fields + Auto Agent Assignment)
   const handleCreateLeadSubmit = async (e) => {
     e.preventDefault();
@@ -359,6 +432,15 @@ export default function AdminDashboard({ onLogout }) {
     if (!/^[6-9]\d{9}$/.test(newLeadFormData.phone.trim())) {
       setCreateLeadMsg('Please enter a valid 10-digit mobile number starting with 6, 7, 8, or 9.');
       return;
+    }
+
+    // Duplicate Lead Prevention Check
+    const existingDuplicate = enquiries.find(item => item.phone && item.phone.trim() === newLeadFormData.phone.trim());
+    if (existingDuplicate) {
+      const confirmCreate = window.confirm(
+        `A lead with mobile number "${newLeadFormData.phone.trim()}" already exists for ${existingDuplicate.firstName} ${existingDuplicate.lastName || ''} (Assigned to: ${existingDuplicate.assignedAgentName || 'Agent'}).\n\nDo you still want to create another lead record for this mobile number?`
+      );
+      if (!confirmCreate) return;
     }
 
     setSubmittingLead(true);
@@ -3186,7 +3268,7 @@ export default function AdminDashboard({ onLogout }) {
                   historyFilterCategory === 'all' ? 'bg-[#B30E2E] text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
                 }`}
               >
-                All Logs ({(historyModalItem.history || []).length})
+                All Logs ({getLeadHistoryLogs(historyModalItem).length})
               </button>
               <button 
                 onClick={() => setHistoryFilterCategory('status')} 
@@ -3217,7 +3299,7 @@ export default function AdminDashboard({ onLogout }) {
             {/* Timeline Body Container */}
             <div class="p-4 flex-1 overflow-y-auto custom-scrollbar space-y-4 relative bg-slate-50/50">
               {(() => {
-                const logs = historyModalItem.history || [];
+                const logs = getLeadHistoryLogs(historyModalItem);
                 const filtered = logs.filter(log => {
                   if (historyFilterCategory === 'status') return log.actionType === 'STATUS_CHANGE';
                   if (historyFilterCategory === 'followup') return log.actionType === 'FOLLOWUP_CHANGE' || log.actionType === 'VISIT_CHANGE';

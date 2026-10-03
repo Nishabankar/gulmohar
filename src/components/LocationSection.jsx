@@ -1,4 +1,5 @@
 import React from 'react';
+import { GOOGLE_MAPS_URL } from '../config';
 
 export default function LocationSection({ onOpenLightbox }) {
   const connectivity = [
@@ -53,7 +54,7 @@ export default function LocationSection({ onOpenLightbox }) {
               {/* Bottom Google Maps Button Strip INSIDE the Card - Centered */}
               <div class="pt-2 flex items-center justify-center px-3">
                 <a 
-                  href="https://maps.google.com" 
+                  href={GOOGLE_MAPS_URL} 
                   target="_blank" 
                   rel="noreferrer" 
                   class="inline-flex items-center justify-center space-x-1.5 bg-gradient-to-r from-[#0D5235] via-[#0A432B] to-[#073220] hover:from-[#093A25] hover:to-[#041D13] text-white font-bold text-xs px-3.5 py-1 rounded-full shadow-md hover:shadow-lg transition cursor-pointer border border-emerald-700/50 group/btn"

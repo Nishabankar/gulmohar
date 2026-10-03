@@ -1315,101 +1315,101 @@ export default function AdminDashboard({ onLogout }) {
                     </h2>
                   </div>
 
-                  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3.5 sm:gap-4">
+                  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-4">
                     
                     {/* Card 1: New */}
                     <div 
                       onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('New'); setVisitDateFilter('All'); }}
-                      class="bg-white rounded-2xl p-4 sm:p-4.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-amber-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      class="bg-white rounded-2xl p-3 sm:p-4.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-amber-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view New leads"
                     >
-                      <div>
-                        <p class="text-[11px] font-bold text-amber-600 uppercase tracking-wider">New</p>
-                        <h3 class="text-2xl font-bold text-gray-900 mt-1">{newLeadsCount}</h3>
-                        <p class="text-[10px] text-gray-500 mt-0.5">Fresh enquiries</p>
+                      <div class="min-w-0 flex-1 pr-1 sm:pr-2">
+                        <p class="text-[10px] sm:text-[11px] font-bold text-amber-600 uppercase tracking-wider truncate">New</p>
+                        <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mt-0.5 sm:mt-1">{newLeadsCount}</h3>
+                        <p class="text-[9px] sm:text-[10px] text-gray-500 mt-0.5 truncate">Fresh enquiries</p>
                       </div>
-                      <div class="w-10 h-10 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 group-hover:bg-amber-600 group-hover:text-white transition-colors">
-                        <i class="fa-solid fa-bell text-base"></i>
+                      <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 group-hover:bg-amber-600 group-hover:text-white transition-colors flex-shrink-0">
+                        <i class="fa-solid fa-bell text-xs sm:text-base"></i>
                       </div>
                     </div>
 
                     {/* Card 2: Today's Followup */}
                     <div 
                       onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setVisitDateFilter('All'); setFollowupDateFilter('Today'); }}
-                      class="bg-white rounded-2xl p-4 sm:p-4.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-blue-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      class="bg-white rounded-2xl p-3 sm:p-4.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-blue-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view Today's Followups"
                     >
-                      <div>
-                        <p class="text-[11px] font-bold text-blue-600 uppercase tracking-wider">Today's Followup</p>
-                        <h3 class="text-2xl font-bold text-gray-900 mt-1">{todaysFollowupCount}</h3>
-                        <p class="text-[10px] text-gray-500 mt-0.5">Scheduled for today</p>
+                      <div class="min-w-0 flex-1 pr-1 sm:pr-2">
+                        <p class="text-[10px] sm:text-[11px] font-bold text-blue-600 uppercase tracking-wider truncate">Today's Followup</p>
+                        <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mt-0.5 sm:mt-1">{todaysFollowupCount}</h3>
+                        <p class="text-[9px] sm:text-[10px] text-gray-500 mt-0.5 truncate">Scheduled for today</p>
                       </div>
-                      <div class="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                        <i class="fa-solid fa-phone-volume text-base"></i>
+                      <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors flex-shrink-0">
+                        <i class="fa-solid fa-phone-volume text-xs sm:text-base"></i>
                       </div>
                     </div>
 
                     {/* Card 3: Interested */}
                     <div 
                       onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Interested'); setVisitDateFilter('All'); }}
-                      class="bg-white rounded-2xl p-4 sm:p-4.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-purple-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      class="bg-white rounded-2xl p-3 sm:p-4.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-purple-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view Interested leads"
                     >
-                      <div>
-                        <p class="text-[11px] font-bold text-purple-600 uppercase tracking-wider">Interested</p>
-                        <h3 class="text-2xl font-bold text-gray-900 mt-1">{interestedLeadsCount}</h3>
-                        <p class="text-[10px] text-gray-500 mt-0.5">Interested prospects</p>
+                      <div class="min-w-0 flex-1 pr-1 sm:pr-2">
+                        <p class="text-[10px] sm:text-[11px] font-bold text-purple-600 uppercase tracking-wider truncate">Interested</p>
+                        <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mt-0.5 sm:mt-1">{interestedLeadsCount}</h3>
+                        <p class="text-[9px] sm:text-[10px] text-gray-500 mt-0.5 truncate">Interested prospects</p>
                       </div>
-                      <div class="w-10 h-10 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors">
-                        <i class="fa-solid fa-thumbs-up text-base"></i>
+                      <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors flex-shrink-0">
+                        <i class="fa-solid fa-thumbs-up text-xs sm:text-base"></i>
                       </div>
                     </div>
 
                     {/* Card 4: Site Visit Done */}
                     <div 
                       onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Site Visit Done'); setVisitDateFilter('All'); }}
-                      class="bg-white rounded-2xl p-4 sm:p-4.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-sky-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      class="bg-white rounded-2xl p-3 sm:p-4.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-sky-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view Completed Visits"
                     >
-                      <div>
-                        <p class="text-[11px] font-bold text-sky-600 uppercase tracking-wider">Site Visit Done</p>
-                        <h3 class="text-2xl font-bold text-gray-900 mt-1">{siteVisitDoneCount}</h3>
-                        <p class="text-[10px] text-gray-500 mt-0.5">Visited project site</p>
+                      <div class="min-w-0 flex-1 pr-1 sm:pr-2">
+                        <p class="text-[10px] sm:text-[11px] font-bold text-sky-600 uppercase tracking-wider truncate">Site Visit Done</p>
+                        <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mt-0.5 sm:mt-1">{siteVisitDoneCount}</h3>
+                        <p class="text-[9px] sm:text-[10px] text-gray-500 mt-0.5 truncate">Visited project site</p>
                       </div>
-                      <div class="w-10 h-10 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-600 group-hover:bg-sky-600 group-hover:text-white transition-colors">
-                        <i class="fa-solid fa-location-dot text-base"></i>
+                      <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-600 group-hover:bg-sky-600 group-hover:text-white transition-colors flex-shrink-0">
+                        <i class="fa-solid fa-location-dot text-xs sm:text-base"></i>
                       </div>
                     </div>
 
                     {/* Card 5: Won */}
                     <div 
                       onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Won'); setVisitDateFilter('All'); }}
-                      class="bg-white rounded-2xl p-4 sm:p-4.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-emerald-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      class="bg-white rounded-2xl p-3 sm:p-4.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-emerald-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view Won/Booked deals"
                     >
-                      <div>
-                        <p class="text-[11px] font-bold text-emerald-600 uppercase tracking-wider">Won</p>
-                        <h3 class="text-2xl font-bold text-gray-900 mt-1">{wonDealsCount}</h3>
-                        <p class="text-[10px] text-gray-500 mt-0.5">Booked plot deals</p>
+                      <div class="min-w-0 flex-1 pr-1 sm:pr-2">
+                        <p class="text-[10px] sm:text-[11px] font-bold text-emerald-600 uppercase tracking-wider truncate">Won</p>
+                        <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mt-0.5 sm:mt-1">{wonDealsCount}</h3>
+                        <p class="text-[9px] sm:text-[10px] text-gray-500 mt-0.5 truncate">Booked plot deals</p>
                       </div>
-                      <div class="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
-                        <i class="fa-solid fa-trophy text-base"></i>
+                      <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors flex-shrink-0">
+                        <i class="fa-solid fa-trophy text-xs sm:text-base"></i>
                       </div>
                     </div>
 
                     {/* Card 6: Lost */}
                     <div 
                       onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Lost'); setVisitDateFilter('All'); }}
-                      class="bg-white rounded-2xl p-4 sm:p-4.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-rose-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      class="bg-white rounded-2xl p-3 sm:p-4.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-rose-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view Lost leads"
                     >
-                      <div>
-                        <p class="text-[11px] font-bold text-rose-600 uppercase tracking-wider">Lost</p>
-                        <h3 class="text-2xl font-bold text-gray-900 mt-1">{lostDealsCount}</h3>
-                        <p class="text-[10px] text-gray-500 mt-0.5">Dropped / Cancelled</p>
+                      <div class="min-w-0 flex-1 pr-1 sm:pr-2">
+                        <p class="text-[10px] sm:text-[11px] font-bold text-rose-600 uppercase tracking-wider truncate">Lost</p>
+                        <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mt-0.5 sm:mt-1">{lostDealsCount}</h3>
+                        <p class="text-[9px] sm:text-[10px] text-gray-500 mt-0.5 truncate">Dropped / Cancelled</p>
                       </div>
-                      <div class="w-10 h-10 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 group-hover:bg-rose-600 group-hover:text-white transition-colors">
-                        <i class="fa-solid fa-thumbs-down text-base"></i>
+                      <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 group-hover:bg-rose-600 group-hover:text-white transition-colors flex-shrink-0">
+                        <i class="fa-solid fa-thumbs-down text-xs sm:text-base"></i>
                       </div>
                     </div>
 
@@ -1425,69 +1425,69 @@ export default function AdminDashboard({ onLogout }) {
                     </h2>
                   </div>
 
-                  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+                  <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-5">
                     
                     {/* Card 1: All Site Visit Scheduled */}
                     <div 
                       onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setVisitDateFilter('All'); }}
-                      class="bg-white rounded-2xl p-5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-indigo-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      class="bg-white rounded-2xl p-3 sm:p-5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-indigo-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view all scheduled site visits"
                     >
-                      <div>
-                        <p class="text-xs font-bold text-indigo-600 uppercase tracking-wider">All Site Visit Scheduled</p>
-                        <h3 class="text-2xl sm:text-3xl font-bold text-gray-900 mt-1">{siteVisitsCount}</h3>
-                        <p class="text-[11px] text-gray-500 mt-1">All site appointments</p>
+                      <div class="min-w-0 flex-1 pr-1 sm:pr-2">
+                        <p class="text-[10px] sm:text-xs font-bold text-indigo-600 uppercase tracking-wider truncate">All Site Visit Scheduled</p>
+                        <h3 class="text-xl sm:text-3xl font-bold text-gray-900 mt-0.5 sm:mt-1">{siteVisitsCount}</h3>
+                        <p class="text-[9px] sm:text-[11px] text-gray-500 mt-0.5 sm:mt-1 truncate">All site appointments</p>
                       </div>
-                      <div class="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                        <i class="fa-solid fa-calendar-check text-xl"></i>
+                      <div class="w-8 h-8 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors flex-shrink-0">
+                        <i class="fa-solid fa-calendar-check text-xs sm:text-xl"></i>
                       </div>
                     </div>
 
                     {/* Card 2: Today's Visit */}
                     <div 
                       onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setVisitDateFilter('Today'); }}
-                      class="bg-white rounded-2xl p-5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-purple-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      class="bg-white rounded-2xl p-3 sm:p-5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-purple-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view today's scheduled visits"
                     >
-                      <div>
-                        <p class="text-xs font-bold text-purple-600 uppercase tracking-wider">Today's Visit</p>
-                        <h3 class="text-2xl sm:text-3xl font-bold text-purple-600 mt-1">{todayVisitsCount}</h3>
-                        <p class="text-[11px] text-purple-700/80 mt-1">Scheduled for today</p>
+                      <div class="min-w-0 flex-1 pr-1 sm:pr-2">
+                        <p class="text-[10px] sm:text-xs font-bold text-purple-600 uppercase tracking-wider truncate">Today's Visit</p>
+                        <h3 class="text-xl sm:text-3xl font-bold text-purple-600 mt-0.5 sm:mt-1">{todayVisitsCount}</h3>
+                        <p class="text-[9px] sm:text-[11px] text-purple-700/80 mt-0.5 sm:mt-1 truncate">Scheduled for today</p>
                       </div>
-                      <div class="w-12 h-12 rounded-2xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors">
-                        <i class="fa-solid fa-calendar-day text-xl"></i>
+                      <div class="w-8 h-8 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors flex-shrink-0">
+                        <i class="fa-solid fa-calendar-day text-xs sm:text-xl"></i>
                       </div>
                     </div>
 
                     {/* Card 3: Tomorrow's Visit */}
                     <div 
                       onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setVisitDateFilter('Tomorrow'); }}
-                      class="bg-white rounded-2xl p-5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-blue-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      class="bg-white rounded-2xl p-3 sm:p-5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-blue-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view tomorrow's scheduled visits"
                     >
-                      <div>
-                        <p class="text-xs font-bold text-blue-600 uppercase tracking-wider">Tomorrow's Visit</p>
-                        <h3 class="text-2xl sm:text-3xl font-bold text-blue-600 mt-1">{tomorrowVisitsCount}</h3>
-                        <p class="text-[11px] text-blue-700/80 mt-1">Scheduled for tomorrow</p>
+                      <div class="min-w-0 flex-1 pr-1 sm:pr-2">
+                        <p class="text-[10px] sm:text-xs font-bold text-blue-600 uppercase tracking-wider truncate">Tomorrow's Visit</p>
+                        <h3 class="text-xl sm:text-3xl font-bold text-blue-600 mt-0.5 sm:mt-1">{tomorrowVisitsCount}</h3>
+                        <p class="text-[9px] sm:text-[11px] text-blue-700/80 mt-0.5 sm:mt-1 truncate">Scheduled for tomorrow</p>
                       </div>
-                      <div class="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                        <i class="fa-solid fa-calendar-plus text-xl"></i>
+                      <div class="w-8 h-8 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors flex-shrink-0">
+                        <i class="fa-solid fa-calendar-plus text-xs sm:text-xl"></i>
                       </div>
                     </div>
 
                     {/* Card 4: This Week's Visit */}
                     <div 
                       onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setVisitDateFilter('ThisWeek'); }}
-                      class="bg-white rounded-2xl p-5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-[#B30E2E]/30 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      class="bg-white rounded-2xl p-3 sm:p-5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-[#B30E2E]/30 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view this week's scheduled visits"
                     >
-                      <div>
-                        <p class="text-xs font-bold text-[#B30E2E] uppercase tracking-wider">This Week's Visit</p>
-                        <h3 class="text-2xl sm:text-3xl font-bold text-[#B30E2E] mt-1">{thisWeekVisitsCount}</h3>
-                        <p class="text-[11px] text-[#B30E2E]/80 mt-1">Current week appointments</p>
+                      <div class="min-w-0 flex-1 pr-1 sm:pr-2">
+                        <p class="text-[10px] sm:text-xs font-bold text-[#B30E2E] uppercase tracking-wider truncate">This Week's Visit</p>
+                        <h3 class="text-xl sm:text-3xl font-bold text-[#B30E2E] mt-0.5 sm:mt-1">{thisWeekVisitsCount}</h3>
+                        <p class="text-[9px] sm:text-[11px] text-[#B30E2E]/80 mt-0.5 sm:mt-1 truncate">Current week appointments</p>
                       </div>
-                      <div class="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center text-[#B30E2E] group-hover:bg-[#B30E2E] group-hover:text-white transition-colors">
-                        <i class="fa-solid fa-calendar-week text-xl"></i>
+                      <div class="w-8 h-8 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center text-[#B30E2E] group-hover:bg-[#B30E2E] group-hover:text-white transition-colors flex-shrink-0">
+                        <i class="fa-solid fa-calendar-week text-xs sm:text-xl"></i>
                       </div>
                     </div>
 

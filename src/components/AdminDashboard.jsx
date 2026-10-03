@@ -3296,8 +3296,8 @@ export default function AdminDashboard({ onLogout }) {
               </button>
             </div>
 
-            {/* Timeline Body Container */}
-            <div class="p-4 flex-1 overflow-y-auto custom-scrollbar space-y-4 relative bg-slate-50/50">
+            {/* History Table Container (Identical Design & Consistency with Main Leads Table) */}
+            <div class="overflow-x-auto overflow-y-auto flex-1 min-h-0 custom-scrollbar w-full rounded-b-2xl bg-white">
               {(() => {
                 const logs = getLeadHistoryLogs(historyModalItem);
                 const filtered = logs.filter(log => {
@@ -3318,65 +3318,80 @@ export default function AdminDashboard({ onLogout }) {
                 }
 
                 return (
-                  <div class="relative space-y-4">
-                    <div class="absolute left-[18px] top-4 bottom-4 w-0.5 bg-slate-200 pointer-events-none"></div>
+                  <table class="w-full min-w-full text-left border-collapse">
+                    <thead class="sticky top-0 z-10 bg-gray-100 shadow-2xs">
+                      <tr>
+                        <th class="py-2.5 px-3 text-[11px] font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">DATE & TIME</th>
+                        <th class="py-2.5 px-3 text-[11px] font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">ACTION / EVENT</th>
+                        <th class="py-2.5 px-3 text-[11px] font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">CHANGE DETAILS</th>
+                        <th class="py-2.5 px-3 text-[11px] font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">PERFORMED BY</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 bg-white">
+                      {filtered.map((log, idx) => {
+                        const isStatus = log.actionType === 'STATUS_CHANGE';
+                        const isFollowup = log.actionType === 'FOLLOWUP_CHANGE';
+                        const isVisit = log.actionType === 'VISIT_CHANGE';
+                        const isAgent = log.actionType === 'AGENT_CHANGE';
+                        const isCreated = log.actionType === 'CREATED';
 
-                    {filtered.map((log, idx) => {
-                      const isStatus = log.actionType === 'STATUS_CHANGE';
-                      const isFollowup = log.actionType === 'FOLLOWUP_CHANGE';
-                      const isVisit = log.actionType === 'VISIT_CHANGE';
-                      const isAgent = log.actionType === 'AGENT_CHANGE';
-                      const isCreated = log.actionType === 'CREATED';
+                        let badgeStyle = 'bg-purple-50 text-purple-800 border-purple-200';
+                        let iconClass = 'fa-comment-dots text-purple-600';
 
-                      let badgeBg = 'bg-purple-100 text-purple-700 border-purple-400';
-                      let iconClass = 'fa-comment-dots';
+                        if (isStatus) {
+                          badgeStyle = 'bg-amber-50 text-amber-900 border-amber-300';
+                          iconClass = 'fa-arrows-rotate text-amber-600';
+                        } else if (isFollowup) {
+                          badgeStyle = 'bg-blue-50 text-blue-900 border-blue-200';
+                          iconClass = 'fa-calendar-check text-blue-600';
+                        } else if (isVisit) {
+                          badgeStyle = 'bg-indigo-50 text-indigo-900 border-indigo-200';
+                          iconClass = 'fa-calendar-days text-indigo-600';
+                        } else if (isAgent) {
+                          badgeStyle = 'bg-emerald-50 text-emerald-900 border-emerald-200';
+                          iconClass = 'fa-user-check text-emerald-600';
+                        } else if (isCreated) {
+                          badgeStyle = 'bg-rose-50 text-[#B30E2E] border-rose-200';
+                          iconClass = 'fa-circle-plus text-[#B30E2E]';
+                        }
 
-                      if (isStatus) {
-                        badgeBg = 'bg-amber-100 text-amber-700 border-amber-400';
-                        iconClass = 'fa-arrows-rotate';
-                      } else if (isFollowup) {
-                        badgeBg = 'bg-blue-100 text-blue-700 border-blue-400';
-                        iconClass = 'fa-calendar-check';
-                      } else if (isVisit) {
-                        badgeBg = 'bg-indigo-100 text-indigo-700 border-indigo-400';
-                        iconClass = 'fa-calendar-days';
-                      } else if (isAgent) {
-                        badgeBg = 'bg-emerald-100 text-emerald-700 border-emerald-400';
-                        iconClass = 'fa-user-check';
-                      } else if (isCreated) {
-                        badgeBg = 'bg-rose-100 text-[#B30E2E] border-[#B30E2E]';
-                        iconClass = 'fa-circle-plus';
-                      }
+                        const logDate = log.createdAt ? new Date(log.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A';
+                        const logTime = log.createdAt ? new Date(log.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '';
 
-                      const logTime = log.createdAt ? new Date(log.createdAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Just Now';
+                        return (
+                          <tr key={idx} class="hover:bg-rose-50/40 transition">
+                            {/* Column 1: Date & Time */}
+                            <td class="py-2.5 px-3 whitespace-nowrap font-semibold text-gray-800 text-[10.5px]">
+                              <i class="fa-regular fa-clock text-[8.5px] text-gray-400 mr-1"></i>
+                              <span>{logDate}</span>
+                              <span class="text-[9.5px] text-gray-400 ml-1.5 font-normal">{logTime}</span>
+                            </td>
 
-                      return (
-                        <div key={idx} class="relative flex items-start gap-3 group">
-                          <div class={`w-9 h-9 rounded-2xl border-2 ${badgeBg} flex items-center justify-center font-bold text-xs shadow-xs z-10 flex-shrink-0 group-hover:scale-105 transition`}>
-                            <i class={`fa-solid ${iconClass}`}></i>
-                          </div>
+                            {/* Column 2: Action / Event Badge */}
+                            <td class="py-2.5 px-3 whitespace-nowrap">
+                              <span class={`px-2 py-0.5 rounded-md border text-[10px] font-bold inline-flex items-center gap-1 shadow-2xs ${badgeStyle}`}>
+                                <i class={`fa-solid ${iconClass} text-[9px]`}></i>
+                                <span>{log.title || 'Activity'}</span>
+                              </span>
+                            </td>
 
-                          <div class="flex-1 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-2xs hover:shadow-sm transition">
-                            <div class="flex items-center justify-between gap-2">
-                              <span class="text-xs font-bold text-slate-800">{log.title || 'Activity Logged'}</span>
-                              <span class="text-[10px] font-semibold text-slate-400">{logTime}</span>
-                            </div>
-
-                            <p class="text-xs text-slate-700 mt-1 font-medium leading-relaxed">
+                            {/* Column 3: Change Details */}
+                            <td class="py-2.5 px-3 text-[11px] text-gray-800 font-medium break-words leading-relaxed max-w-sm">
                               {log.description}
-                            </p>
+                            </td>
 
-                            <div class="mt-2 pt-1 border-t border-slate-100 flex items-center justify-between text-[10.5px]">
-                              <span class="text-slate-400">Performed by: <strong class="text-slate-700 font-semibold">{log.performedBy || 'System'}</strong></span>
-                              {log.newValue && (
-                                <span class="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-bold">{log.newValue}</span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                            {/* Column 4: Performed By */}
+                            <td class="py-2.5 px-3 whitespace-nowrap">
+                              <span class="px-1.5 py-0.5 rounded-lg border border-gray-200 text-[10.5px] font-bold text-gray-700 bg-gray-50 inline-flex items-center gap-1 shadow-2xs">
+                                <i class="fa-solid fa-circle-user text-[9.5px] text-emerald-600"></i>
+                                <span>{log.performedBy || 'System'}</span>
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 );
               })()}
             </div>

@@ -29,6 +29,7 @@ export default function AdminDashboard({ onLogout }) {
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
   const [agentFilter, setAgentFilter] = useState('All');
   const [visitDateFilter, setVisitDateFilter] = useState('All'); // 'All' | 'Today' | 'Tomorrow' | 'ThisWeek'
+  const [followupDateFilter, setFollowupDateFilter] = useState('All'); // 'All' | 'Today' | 'Tomorrow' | 'ThisWeek'
   const [isAgentDropdownOpen, setIsAgentDropdownOpen] = useState(false);
   const [selectedLeadIds, setSelectedLeadIds] = useState([]);
   const [editingNoteId, setEditingNoteId] = useState(null);
@@ -82,6 +83,7 @@ export default function AdminDashboard({ onLogout }) {
     email: '',
     plotsCount: '1 Guntha',
     visitDate: '',
+    followupDate: '',
     notes: ''
   });
   const [submittingLead, setSubmittingLead] = useState(false);
@@ -366,6 +368,7 @@ export default function AdminDashboard({ onLogout }) {
       email: newLeadFormData.email.trim(),
       plotsCount: newLeadFormData.plotsCount || '1 Guntha',
       visitDate: newLeadFormData.visitDate || '',
+      followupDate: newLeadFormData.followupDate || '',
       notes: newLeadFormData.notes ? newLeadFormData.notes.trim() : '',
       status: 'New',
       assignedTo: assignedAgentId,
@@ -412,7 +415,7 @@ export default function AdminDashboard({ onLogout }) {
       setTimeout(() => {
         setShowCreateLeadModal(false);
         setCreateLeadMsg('');
-        setNewLeadFormData({ firstName: '', lastName: '', phone: '', email: '', plotsCount: '1 Guntha', visitDate: '', notes: '' });
+        setNewLeadFormData({ firstName: '', lastName: '', phone: '', email: '', plotsCount: '1 Guntha', visitDate: '', followupDate: '', notes: '' });
       }, 1000);
     }
   };
@@ -707,6 +710,7 @@ export default function AdminDashboard({ onLogout }) {
           plotsCount: updatedLead.plotsCount,
           plotInfo: updatedLead.plotInfo,
           visitDate: updatedLead.visitDate,
+          followupDate: updatedLead.followupDate || '',
           status: updatedLead.status,
           notes: updatedLead.notes,
           assignedAgentName: updatedLead.assignedAgentName
@@ -1032,13 +1036,23 @@ export default function AdminDashboard({ onLogout }) {
       matchesVisitDate = isDateInThisWeek(item.visitDate);
     }
 
+    // Followup Date Filter Matching
+    let matchesFollowupDate = true;
+    if (followupDateFilter === 'Today') {
+      matchesFollowupDate = item.followupDate === getTodayString();
+    } else if (followupDateFilter === 'Tomorrow') {
+      matchesFollowupDate = item.followupDate === getTomorrowString();
+    } else if (followupDateFilter === 'ThisWeek') {
+      matchesFollowupDate = isDateInThisWeek(item.followupDate);
+    }
+
     const assignedAgentName = (item.assignedAgentName || '').toLowerCase().trim();
     const targetAgentFilter = agentFilter.toLowerCase().trim();
     const matchesAgent = agentFilter === 'All' || 
       assignedAgentName === targetAgentFilter ||
       (assignedAgentName && targetAgentFilter && (assignedAgentName.includes(targetAgentFilter) || targetAgentFilter.includes(assignedAgentName)));
 
-    return matchesSearch && matchesStatus && matchesAgent && matchesVisitDate;
+    return matchesSearch && matchesStatus && matchesAgent && matchesVisitDate && matchesFollowupDate;
   }).sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
 
   // Filtered registered users by search query
@@ -1056,7 +1070,7 @@ export default function AdminDashboard({ onLogout }) {
   // Calculate stats
   const totalLeads = scopedEnquiries.length;
   const newLeadsCount = scopedEnquiries.filter(e => e.status === 'New').length;
-  const todaysFollowupCount = scopedEnquiries.filter(e => e.status === 'Contacted' || e.status === 'Details Provided').length;
+  const todaysFollowupCount = scopedEnquiries.filter(e => e.followupDate === getTodayString()).length;
   const interestedLeadsCount = scopedEnquiries.filter(e => e.status === 'Interested').length;
   const siteVisitDoneCount = scopedEnquiries.filter(e => e.status === 'Site Visit Done').length;
   const wonDealsCount = scopedEnquiries.filter(e => e.status === 'Won' || e.status === 'Closed').length;
@@ -1288,14 +1302,14 @@ export default function AdminDashboard({ onLogout }) {
 
                     {/* Card 2: Today's Followup */}
                     <div 
-                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Contacted'); setVisitDateFilter('All'); }}
+                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setVisitDateFilter('All'); setFollowupDateFilter('Today'); }}
                       class="bg-white rounded-2xl p-4 sm:p-4.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-blue-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view Today's Followups"
                     >
                       <div>
                         <p class="text-[11px] font-bold text-blue-600 uppercase tracking-wider">Today's Followup</p>
                         <h3 class="text-2xl font-bold text-gray-900 mt-1">{todaysFollowupCount}</h3>
-                        <p class="text-[10px] text-gray-500 mt-0.5">Contacted / Followup</p>
+                        <p class="text-[10px] text-gray-500 mt-0.5">Scheduled for today</p>
                       </div>
                       <div class="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
                         <i class="fa-solid fa-phone-volume text-base"></i>
@@ -1659,6 +1673,7 @@ export default function AdminDashboard({ onLogout }) {
                         <th class="py-2.5 px-2.5 whitespace-nowrap min-w-[110px]">No. of Guntha</th>
                         <th class="py-2.5 px-2.5 whitespace-nowrap min-w-[145px]">Enquiry Date</th>
                         <th class="py-2.5 px-2.5 whitespace-nowrap min-w-[110px]">Visit Date</th>
+                        <th class="py-2.5 px-2.5 whitespace-nowrap min-w-[115px]">Followup Date</th>
                         <th class="py-2.5 px-2.5 whitespace-nowrap min-w-[130px]">Status</th>
                         <th class="py-2.5 px-2.5 whitespace-nowrap min-w-[145px]">Assigned Agent</th>
                         <th class="py-2.5 px-2 text-center whitespace-nowrap w-12">Notes</th>
@@ -1786,6 +1801,18 @@ export default function AdminDashboard({ onLogout }) {
                                 <div class="text-[10px] text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-md px-1.5 py-0.5 inline-flex items-center gap-1 font-semibold whitespace-nowrap">
                                   <i class="fa-regular fa-calendar-days text-[8.5px] text-indigo-500"></i>
                                   <span>{item.visitDate}</span>
+                                </div>
+                              ) : (
+                                <span class="text-gray-400 italic text-[10px]">Not Scheduled</span>
+                              )}
+                            </td>
+
+                            {/* Column 6.5: Followup Date */}
+                            <td class="py-2.5 px-2.5 whitespace-nowrap min-w-[115px]">
+                              {item.followupDate ? (
+                                <div class="text-[10px] text-amber-800 bg-amber-50 border border-amber-200/80 rounded-md px-1.5 py-0.5 inline-flex items-center gap-1 font-semibold whitespace-nowrap">
+                                  <i class="fa-regular fa-calendar-check text-[8.5px] text-amber-600"></i>
+                                  <span>{item.followupDate}</span>
                                 </div>
                               ) : (
                                 <span class="text-gray-400 italic text-[10px]">Not Scheduled</span>
@@ -2465,6 +2492,7 @@ export default function AdminDashboard({ onLogout }) {
                     <option value="11+ Guntha (Bulk / Investment)">11+ Guntha (Bulk / Investment)</option>
                   </select>
                 </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label class="block text-xs font-bold text-gray-700 mb-1">Site Visit Date</label>
                   <input 
@@ -2474,6 +2502,16 @@ export default function AdminDashboard({ onLogout }) {
                     class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
                   />
                 </div>
+                <div>
+                  <label class="block text-xs font-bold text-gray-700 mb-1">Followup Date</label>
+                  <input 
+                    type="date" 
+                    value={editingEnquiry.followupDate || ''} 
+                    onChange={(e) => setEditingEnquiry({ ...editingEnquiry, followupDate: e.target.value })}
+                    class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
+                  />
+                </div>
+              </div>
               </div>
 
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -2814,15 +2852,26 @@ export default function AdminDashboard({ onLogout }) {
                     <option value="11+ Guntha (Bulk / Investment)">11+ Guntha (Bulk / Investment)</option>
                   </select>
                 </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label class="block text-xs font-bold text-gray-700 mb-1">Site Visit Date</label>
                   <input 
                     type="date" 
-                    value={newLeadFormData.visitDate}
+                    value={newLeadFormData.visitDate || ''}
                     onChange={(e) => setNewLeadFormData({ ...newLeadFormData, visitDate: e.target.value })}
                     class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800"
                   />
                 </div>
+                <div>
+                  <label class="block text-xs font-bold text-gray-700 mb-1">Followup Date</label>
+                  <input 
+                    type="date" 
+                    value={newLeadFormData.followupDate || ''}
+                    onChange={(e) => setNewLeadFormData({ ...newLeadFormData, followupDate: e.target.value })}
+                    class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800"
+                  />
+                </div>
+              </div>
               </div>
 
               {/* 4. Notes */}

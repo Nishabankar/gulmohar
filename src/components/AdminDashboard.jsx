@@ -290,7 +290,9 @@ export default function AdminDashboard({ onLogout }) {
             followupDate: (cached && cached.followupDate) ? cached.followupDate : (mItem.followupDate || '')
           };
         });
-        const combined = [...filteredLocal, ...mergedMongo];
+        // Only merge unsynced offline leads (id starting with 'lead-'). If database is empty, show empty list.
+        const unsyncedLocalLeads = filteredLocal.filter(l => (l._id || l.id || '').toString().startsWith('lead-'));
+        const combined = [...unsyncedLocalLeads, ...mergedMongo];
         const uniqueLeads = Array.from(new Map(combined.map(item => [(item._id || item.id), item])).values());
         localStorage.setItem('localEnquiriesCache', JSON.stringify(uniqueLeads));
         setEnquiries(applyRoundRobinAssignments(uniqueLeads));

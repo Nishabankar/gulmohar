@@ -1637,10 +1637,10 @@ export default function AdminDashboard({ onLogout }) {
                   <p class="text-xs text-gray-400">Try adjusting your search query or status filter.</p>
                 </div>
               ) : (
-                <div class="overflow-x-auto custom-scrollbar w-full">
+                <div class="overflow-x-auto overflow-y-auto max-h-[calc(100vh-270px)] custom-scrollbar w-full rounded-b-2xl">
                   <table class="w-full min-w-full text-left border-collapse">
-                    <thead>
-                      <tr class="bg-gray-100/70 border-b border-gray-200 text-[10px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                    <thead class="sticky top-0 z-10 bg-gray-100 shadow-2xs">
+                      <tr class="bg-gray-100 border-b border-gray-200 text-[10px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">
                         {isAdmin && (
                           <th class="py-2.5 px-2 text-center whitespace-nowrap w-8">
                             <input 
@@ -1947,10 +1947,10 @@ export default function AdminDashboard({ onLogout }) {
                   <p class="text-xs text-gray-400">Click "+ Create User" button to create a user.</p>
                 </div>
               ) : (
-                <div class="overflow-x-auto custom-scrollbar w-full">
+                <div class="overflow-x-auto overflow-y-auto max-h-[calc(100vh-270px)] custom-scrollbar w-full rounded-b-2xl">
                   <table class="w-full min-w-[700px] text-left border-collapse">
-                      <thead>
-                        <tr class="bg-gray-100/70 border-b border-gray-200 text-[10.5px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                      <thead class="sticky top-0 z-10 bg-gray-100 shadow-2xs">
+                        <tr class="bg-gray-100 border-b border-gray-200 text-[10.5px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">
                           <th class="py-2.5 px-3 whitespace-nowrap">User ID</th>
                           <th class="py-2.5 px-3 whitespace-nowrap">Full Name</th>
                           <th class="py-2.5 px-3 whitespace-nowrap">Username</th>

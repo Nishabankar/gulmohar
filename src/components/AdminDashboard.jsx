@@ -99,6 +99,12 @@ export default function AdminDashboard({ onLogout }) {
   const [editingEnquiry, setEditingEnquiry] = useState(null);
   const [activeNotePopover, setActiveNotePopover] = useState(null);
 
+  // State for Lead Activity History Modal
+  const [historyModalItem, setHistoryModalItem] = useState(null);
+  const [historyFilterCategory, setHistoryFilterCategory] = useState('all');
+  const [newQuickNoteText, setNewQuickNoteText] = useState('');
+  const [submittingHistoryNote, setSubmittingHistoryNote] = useState(false);
+
   const handleOpenNotePopover = (e, item) => {
     e.stopPropagation();
     if (activeNotePopover && activeNotePopover.item._id === item._id) {
@@ -638,10 +644,40 @@ export default function AdminDashboard({ onLogout }) {
     }
   };
 
-  // Update Status handler
+  // Update Status handler with History logging
   const handleStatusChange = async (id, newStatus) => {
     const token = localStorage.getItem('adminToken');
-    setEnquiries(prev => prev.map(item => item._id === id ? { ...item, status: newStatus } : item));
+    const existing = enquiries.find(item => (item._id === id || item.id === id));
+    const oldStatus = existing ? (existing.status || 'New') : 'New';
+    const performer = currentUser.name || 'Sales Executive';
+
+    const newHistoryRecord = {
+      actionType: 'STATUS_CHANGE',
+      title: 'Status Updated',
+      description: `Status changed from '${oldStatus}' to '${newStatus}'`,
+      performedBy: performer,
+      oldValue: oldStatus,
+      newValue: newStatus,
+      createdAt: new Date().toISOString()
+    };
+
+    setEnquiries(prev => prev.map(item => {
+      if (item._id === id || item.id === id) {
+        const historyList = [newHistoryRecord, ...(item.history || [])];
+        return { ...item, status: newStatus, history: historyList };
+      }
+      return item;
+    }));
+
+    const localCache = JSON.parse(localStorage.getItem('localEnquiriesCache') || '[]');
+    const updatedCache = localCache.map(item => {
+      if (item._id === id || item.id === id) {
+        const historyList = [newHistoryRecord, ...(item.history || [])];
+        return { ...item, status: newStatus, history: historyList };
+      }
+      return item;
+    });
+    localStorage.setItem('localEnquiriesCache', JSON.stringify(updatedCache));
 
     try {
       const res = await fetch(`${API_BASE_URL}/api/admin/enquiries/${id}`, {
@@ -650,14 +686,67 @@ export default function AdminDashboard({ onLogout }) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ status: newStatus })
+        body: JSON.stringify({ status: newStatus, updatedBy: performer })
       });
       const data = await res.json();
       if (data.success && data.data) {
-        setEnquiries(prev => prev.map(item => item._id === id ? data.data : item));
+        setEnquiries(prev => prev.map(item => (item._id === id || item.id === id) ? data.data : item));
       }
     } catch (err) {
-      console.warn('Backend patch error:', err);
+      console.warn('Backend status patch error:', err);
+    }
+  };
+
+  // Quick Add Activity / Call Note to Lead History
+  const handleAddHistoryNote = async (e) => {
+    e.preventDefault();
+    if (!newQuickNoteText || !newQuickNoteText.trim() || !historyModalItem) return;
+    const noteText = newQuickNoteText.trim();
+    setSubmittingHistoryNote(true);
+    const performer = currentUser.name || 'Sales Executive';
+
+    const newRecord = {
+      actionType: 'NOTE',
+      title: 'Activity Note Added',
+      description: `Note: "${noteText}"`,
+      performedBy: performer,
+      createdAt: new Date().toISOString()
+    };
+
+    const updatedItem = {
+      ...historyModalItem,
+      history: [newRecord, ...(historyModalItem.history || [])],
+      notes: noteText
+    };
+
+    setHistoryModalItem(updatedItem);
+    setEnquiries(prev => prev.map(item => (item._id === updatedItem._id || item.id === updatedItem.id) ? updatedItem : item));
+
+    const localCache = JSON.parse(localStorage.getItem('localEnquiriesCache') || '[]');
+    const updatedCache = localCache.map(item => (item._id === updatedItem._id || item.id === updatedItem.id) ? updatedItem : item);
+    localStorage.setItem('localEnquiriesCache', JSON.stringify(updatedCache));
+
+    try {
+      const token = localStorage.getItem('adminToken');
+      const targetId = updatedItem._id || updatedItem.id;
+      await fetch(`${API_BASE_URL}/api/admin/enquiries/${targetId}/history`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          actionType: 'NOTE',
+          title: 'Activity Note Added',
+          description: `Note: "${noteText}"`,
+          performedBy: performer
+        })
+      });
+    } catch (err) {
+      console.warn('Backend history note save error:', err);
+    } finally {
+      setSubmittingHistoryNote(false);
+      setNewQuickNoteText('');
     }
   };
 
@@ -1930,9 +2019,18 @@ export default function AdminDashboard({ onLogout }) {
                               </button>
                             </td>
 
-                            {/* Column 10: Actions Column */}
-                            <td class="py-2.5 px-2 text-center whitespace-nowrap w-16">
+                            {/* Column 10: Actions Column (History, Edit, Delete) */}
+                            <td class="py-2.5 px-2 text-center whitespace-nowrap w-24">
                               <div class="flex items-center justify-center gap-1">
+                                {/* Lead Activity History Button */}
+                                <button 
+                                  onClick={() => { setHistoryModalItem({ ...item }); setHistoryFilterCategory('all'); setNewQuickNoteText(''); }}
+                                  class="w-6 h-6 rounded-md bg-purple-100 hover:bg-purple-600 text-purple-800 hover:text-white flex items-center justify-center transition cursor-pointer border border-purple-200"
+                                  title="View Lead Activity History & Timeline"
+                                >
+                                  <i class="fa-solid fa-clock-rotate-left text-[10.5px]"></i>
+                                </button>
+
                                 {/* Edit Lead Button */}
                                 <button 
                                   onClick={() => { setEditingEnquiry({ ...item }); setEditModalSuccessMsg(''); }}
@@ -3013,6 +3111,213 @@ export default function AdminDashboard({ onLogout }) {
             </div>
           </div>
         </>
+      )}
+
+      {/* Lead Activity History Modal */}
+      {historyModalItem && (
+        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in">
+          <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-2xl overflow-hidden flex flex-col max-h-[85vh]">
+            
+            {/* Modal Header */}
+            <div class="bg-gradient-to-r from-[#B30E2E] via-[#8A0B22] to-[#590414] text-white p-4 sm:p-5 flex items-center justify-between flex-shrink-0 shadow-md">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center text-amber-300 font-bold text-lg shadow-inner">
+                  <i class="fa-solid fa-clock-rotate-left"></i>
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <h3 class="text-base sm:text-lg font-serif font-bold tracking-wide text-white">Lead Activity History</h3>
+                    <span class="bg-amber-400 text-slate-950 text-[10px] sm:text-xs font-extrabold px-2 py-0.5 rounded-full shadow-xs">
+                      #{historyModalItem._id || historyModalItem.id}
+                    </span>
+                  </div>
+                  <p class="text-xs text-rose-100 font-medium truncate">
+                    {historyModalItem.firstName || ''} {historyModalItem.lastName || ''} • {historyModalItem.phone || ''} • {historyModalItem.plotsCount || '1 Plot'}
+                  </p>
+                </div>
+              </div>
+              
+              <button 
+                onClick={() => setHistoryModalItem(null)}
+                class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer"
+              >
+                <i class="fa-solid fa-xmark text-sm"></i>
+              </button>
+            </div>
+
+            {/* Sub-Header info bar */}
+            <div class="bg-rose-50/70 px-4 py-2.5 border-b border-rose-100 flex flex-wrap items-center justify-between gap-2 text-xs flex-shrink-0">
+              <div class="flex items-center gap-1.5">
+                <span class="text-slate-500 font-bold">Assigned Agent:</span>
+                <span class="inline-flex items-center gap-1 font-bold text-slate-800 bg-white px-2 py-0.5 rounded-md border border-rose-200 text-[11px]">
+                  <i class="fa-solid fa-user-check text-emerald-600"></i>
+                  <span>{historyModalItem.assignedAgentName || 'Unassigned'}</span>
+                </span>
+              </div>
+
+              <div class="flex items-center gap-1.5">
+                <span class="text-slate-500 font-bold">Current Status:</span>
+                <span class={`px-2 py-0.5 rounded-md font-bold text-[11px] ${getStatusBadge(historyModalItem.status || 'New')}`}>
+                  {historyModalItem.status || 'New'}
+                </span>
+              </div>
+
+              {historyModalItem.followupDate && (
+                <div class="flex items-center gap-1.5">
+                  <span class="text-slate-500 font-bold">Followup:</span>
+                  <span class="bg-blue-50 text-blue-800 border border-blue-200 px-2 py-0.5 rounded-md font-bold text-[11px]">
+                    {historyModalItem.followupDate}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Filter Pills */}
+            <div class="px-4 pt-2.5 pb-1 flex items-center gap-2 overflow-x-auto custom-scrollbar border-b border-slate-100 flex-shrink-0">
+              <button 
+                onClick={() => setHistoryFilterCategory('all')} 
+                class={`px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${
+                  historyFilterCategory === 'all' ? 'bg-[#B30E2E] text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                All Logs ({(historyModalItem.history || []).length})
+              </button>
+              <button 
+                onClick={() => setHistoryFilterCategory('status')} 
+                class={`px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${
+                  historyFilterCategory === 'status' ? 'bg-[#B30E2E] text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                Status Changes
+              </button>
+              <button 
+                onClick={() => setHistoryFilterCategory('followup')} 
+                class={`px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${
+                  historyFilterCategory === 'followup' ? 'bg-[#B30E2E] text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                Followups
+              </button>
+              <button 
+                onClick={() => setHistoryFilterCategory('notes')} 
+                class={`px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${
+                  historyFilterCategory === 'notes' ? 'bg-[#B30E2E] text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                Notes & Calls
+              </button>
+            </div>
+
+            {/* Timeline Body Container */}
+            <div class="p-4 flex-1 overflow-y-auto custom-scrollbar space-y-4 relative bg-slate-50/50">
+              {(() => {
+                const logs = historyModalItem.history || [];
+                const filtered = logs.filter(log => {
+                  if (historyFilterCategory === 'status') return log.actionType === 'STATUS_CHANGE';
+                  if (historyFilterCategory === 'followup') return log.actionType === 'FOLLOWUP_CHANGE' || log.actionType === 'VISIT_CHANGE';
+                  if (historyFilterCategory === 'notes') return log.actionType === 'NOTE';
+                  return true;
+                });
+
+                if (filtered.length === 0) {
+                  return (
+                    <div class="py-12 text-center text-slate-400 space-y-2">
+                      <i class="fa-solid fa-clock-rotate-left text-3xl text-slate-300"></i>
+                      <p class="text-xs font-semibold text-slate-600">No activity history records found for this category.</p>
+                      <p class="text-[11px] text-slate-400">Add a quick note or update lead status to start tracking history.</p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div class="relative space-y-4">
+                    <div class="absolute left-[18px] top-4 bottom-4 w-0.5 bg-slate-200 pointer-events-none"></div>
+
+                    {filtered.map((log, idx) => {
+                      const isStatus = log.actionType === 'STATUS_CHANGE';
+                      const isFollowup = log.actionType === 'FOLLOWUP_CHANGE';
+                      const isVisit = log.actionType === 'VISIT_CHANGE';
+                      const isAgent = log.actionType === 'AGENT_CHANGE';
+                      const isCreated = log.actionType === 'CREATED';
+
+                      let badgeBg = 'bg-purple-100 text-purple-700 border-purple-400';
+                      let iconClass = 'fa-comment-dots';
+
+                      if (isStatus) {
+                        badgeBg = 'bg-amber-100 text-amber-700 border-amber-400';
+                        iconClass = 'fa-arrows-rotate';
+                      } else if (isFollowup) {
+                        badgeBg = 'bg-blue-100 text-blue-700 border-blue-400';
+                        iconClass = 'fa-calendar-check';
+                      } else if (isVisit) {
+                        badgeBg = 'bg-indigo-100 text-indigo-700 border-indigo-400';
+                        iconClass = 'fa-calendar-days';
+                      } else if (isAgent) {
+                        badgeBg = 'bg-emerald-100 text-emerald-700 border-emerald-400';
+                        iconClass = 'fa-user-check';
+                      } else if (isCreated) {
+                        badgeBg = 'bg-rose-100 text-[#B30E2E] border-[#B30E2E]';
+                        iconClass = 'fa-circle-plus';
+                      }
+
+                      const logTime = log.createdAt ? new Date(log.createdAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Just Now';
+
+                      return (
+                        <div key={idx} class="relative flex items-start gap-3 group">
+                          <div class={`w-9 h-9 rounded-2xl border-2 ${badgeBg} flex items-center justify-center font-bold text-xs shadow-xs z-10 flex-shrink-0 group-hover:scale-105 transition`}>
+                            <i class={`fa-solid ${iconClass}`}></i>
+                          </div>
+
+                          <div class="flex-1 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-2xs hover:shadow-sm transition">
+                            <div class="flex items-center justify-between gap-2">
+                              <span class="text-xs font-bold text-slate-800">{log.title || 'Activity Logged'}</span>
+                              <span class="text-[10px] font-semibold text-slate-400">{logTime}</span>
+                            </div>
+
+                            <p class="text-xs text-slate-700 mt-1 font-medium leading-relaxed">
+                              {log.description}
+                            </p>
+
+                            <div class="mt-2 pt-1 border-t border-slate-100 flex items-center justify-between text-[10.5px]">
+                              <span class="text-slate-400">Performed by: <strong class="text-slate-700 font-semibold">{log.performedBy || 'System'}</strong></span>
+                              {log.newValue && (
+                                <span class="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-bold">{log.newValue}</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Footer Quick Add Activity Bar */}
+            <form onSubmit={handleAddHistoryNote} class="p-3 bg-slate-100 border-t border-slate-200 flex items-center gap-2 flex-shrink-0">
+              <input 
+                type="text" 
+                value={newQuickNoteText}
+                onChange={(e) => setNewQuickNoteText(e.target.value)}
+                placeholder="Type quick call remark or note..."
+                class="flex-1 px-3.5 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-rose-200 bg-white font-medium shadow-2xs"
+              />
+              <button 
+                type="submit"
+                disabled={submittingHistoryNote || !newQuickNoteText.trim()}
+                class="px-4 py-2 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition cursor-pointer disabled:opacity-50"
+              >
+                {submittingHistoryNote ? (
+                  <i class="fa-solid fa-spinner fa-spin text-xs"></i>
+                ) : (
+                  <i class="fa-solid fa-paper-plane text-xs"></i>
+                )}
+                <span>Add Activity</span>
+              </button>
+            </form>
+
+          </div>
+        </div>
       )}
 
       {/* Privacy Policy & Disclaimer Terms Modal */}

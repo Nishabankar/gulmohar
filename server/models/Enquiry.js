@@ -40,7 +40,6 @@ const enquirySchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['New', 'Contacted', 'Interested', 'Site Visit Scheduled', 'Closed'],
       default: 'New'
     },
     notes: {
@@ -54,7 +53,18 @@ const enquirySchema = new mongoose.Schema(
     assignedTo: {
       type: String,
       default: ''
-    }
+    },
+    history: [
+      {
+        actionType: { type: String, default: 'NOTE' },
+        title: { type: String, default: '' },
+        description: { type: String, default: '' },
+        performedBy: { type: String, default: 'System' },
+        oldValue: { type: String, default: '' },
+        newValue: { type: String, default: '' },
+        createdAt: { type: Date, default: Date.now }
+      }
+    ]
   },
   {
     timestamps: true

@@ -32,7 +32,28 @@ router.post('/', async (req, res) => {
       }
     }
 
-    // Direct MongoDB Database Insert with Round-Robin Agent Assignment
+    // Direct MongoDB Database Insert with Round-Robin Agent Assignment & Initial History
+    const initialHistory = [
+      {
+        actionType: 'CREATED',
+        title: 'Lead Created',
+        description: `New enquiry submitted for ${plotsCount || '1 Plot'}`,
+        performedBy: `${firstName} ${lastName}`.trim() || 'Customer',
+        createdAt: new Date()
+      }
+    ];
+
+    if (finalAssignedAgentName) {
+      initialHistory.push({
+        actionType: 'AGENT_CHANGE',
+        title: 'Agent Assigned',
+        description: `Auto-assigned to ${finalAssignedAgentName}`,
+        performedBy: 'System (Round-Robin)',
+        newValue: finalAssignedAgentName,
+        createdAt: new Date()
+      });
+    }
+
     const newEnquiry = await Enquiry.create({
       firstName,
       lastName: lastName || '',
@@ -44,7 +65,8 @@ router.post('/', async (req, res) => {
       followupDate: followupDate || '',
       notes: notes ? notes.trim() : '',
       assignedAgentName: finalAssignedAgentName,
-      assignedTo: finalAssignedTo
+      assignedTo: finalAssignedTo,
+      history: initialHistory
     });
 
     return res.status(201).json({

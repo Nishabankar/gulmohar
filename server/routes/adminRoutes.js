@@ -117,12 +117,20 @@ router.get('/stats', protectAdmin, async (req, res) => {
 });
 
 // @route   PATCH /api/admin/enquiries/:id
-// @desc    Update any lead details (name, phone, email, plots, visit date, status, notes) directly in MongoDB
+// @desc    Update any lead details (name, phone, email, plots, visit date, status, notes) directly in MongoDB & log history
 // @access  Protected
 router.patch('/enquiries/:id', protectAdmin, async (req, res) => {
   try {
-    const { firstName, lastName, phone, email, plotsCount, plotInfo, visitDate, followupDate, status, notes, assignedAgentName, assignedTo } = req.body;
+    const { firstName, lastName, phone, email, plotsCount, plotInfo, visitDate, followupDate, status, notes, assignedAgentName, assignedTo, historyEntry, updatedBy } = req.body;
+    
+    const existing = await Enquiry.findById(req.params.id);
+    if (!existing) {
+      return res.status(404).json({ success: false, message: 'Enquiry record not found in MongoDB' });
+    }
+
     let updateFields = {};
+    let newHistoryEntries = [];
+    const performer = updatedBy || (req.admin ? (req.admin.name || req.admin.username) : 'System');
 
     if (firstName !== undefined) updateFields.firstName = firstName;
     if (lastName !== undefined) updateFields.lastName = lastName;
@@ -130,26 +138,134 @@ router.patch('/enquiries/:id', protectAdmin, async (req, res) => {
     if (email !== undefined) updateFields.email = email;
     if (plotsCount !== undefined) updateFields.plotsCount = plotsCount;
     if (plotInfo !== undefined) updateFields.plotInfo = plotInfo;
-    if (visitDate !== undefined) updateFields.visitDate = visitDate;
-    if (followupDate !== undefined) updateFields.followupDate = followupDate;
-    if (status !== undefined) updateFields.status = status;
-    if (notes !== undefined) updateFields.notes = notes;
-    if (assignedAgentName !== undefined) updateFields.assignedAgentName = assignedAgentName;
-    if (assignedTo !== undefined) updateFields.assignedTo = assignedTo;
+
+    if (status !== undefined && status !== existing.status) {
+      updateFields.status = status;
+      newHistoryEntries.push({
+        actionType: 'STATUS_CHANGE',
+        title: 'Status Updated',
+        description: `Status changed from '${existing.status || 'New'}' to '${status}'`,
+        performedBy: performer,
+        oldValue: existing.status || 'New',
+        newValue: status,
+        createdAt: new Date()
+      });
+    }
+
+    if (followupDate !== undefined && followupDate !== existing.followupDate) {
+      updateFields.followupDate = followupDate;
+      newHistoryEntries.push({
+        actionType: 'FOLLOWUP_CHANGE',
+        title: 'Followup Date Updated',
+        description: `Followup date set to '${followupDate || 'None'}'`,
+        performedBy: performer,
+        oldValue: existing.followupDate || 'None',
+        newValue: followupDate || 'None',
+        createdAt: new Date()
+      });
+    }
+
+    if (visitDate !== undefined && visitDate !== existing.visitDate) {
+      updateFields.visitDate = visitDate;
+      newHistoryEntries.push({
+        actionType: 'VISIT_CHANGE',
+        title: 'Site Visit Date Updated',
+        description: `Site visit date set to '${visitDate || 'None'}'`,
+        performedBy: performer,
+        oldValue: existing.visitDate || 'None',
+        newValue: visitDate || 'None',
+        createdAt: new Date()
+      });
+    }
+
+    if (assignedAgentName !== undefined && assignedAgentName !== existing.assignedAgentName) {
+      updateFields.assignedAgentName = assignedAgentName;
+      if (assignedTo !== undefined) updateFields.assignedTo = assignedTo;
+      newHistoryEntries.push({
+        actionType: 'AGENT_CHANGE',
+        title: 'Assigned Agent Changed',
+        description: `Lead assigned to '${assignedAgentName}'`,
+        performedBy: performer,
+        oldValue: existing.assignedAgentName || 'Unassigned',
+        newValue: assignedAgentName,
+        createdAt: new Date()
+      });
+    }
+
+    if (notes !== undefined && notes !== existing.notes && notes.trim() !== '') {
+      updateFields.notes = notes;
+      newHistoryEntries.push({
+        actionType: 'NOTE',
+        title: 'Note / Remark Updated',
+        description: `Note: "${notes}"`,
+        performedBy: performer,
+        oldValue: existing.notes || '',
+        newValue: notes,
+        createdAt: new Date()
+      });
+    }
+
+    if (historyEntry) {
+      newHistoryEntries.push({
+        actionType: historyEntry.actionType || 'NOTE',
+        title: historyEntry.title || 'Activity Logged',
+        description: historyEntry.description || historyEntry.text || '',
+        performedBy: historyEntry.performedBy || performer,
+        oldValue: historyEntry.oldValue || '',
+        newValue: historyEntry.newValue || '',
+        createdAt: new Date()
+      });
+    }
+
+    let updateQuery = { $set: updateFields };
+    if (newHistoryEntries.length > 0) {
+      updateQuery.$push = { history: { $each: newHistoryEntries } };
+    }
 
     const updatedEnquiry = await Enquiry.findByIdAndUpdate(
       req.params.id,
-      { $set: updateFields },
+      updateQuery,
       { new: true }
     );
-
-    if (!updatedEnquiry) {
-      return res.status(404).json({ success: false, message: 'Enquiry record not found in MongoDB' });
-    }
 
     return res.json({ success: true, message: 'Enquiry updated in MongoDB', data: updatedEnquiry });
   } catch (error) {
     console.error('Error updating enquiry in MongoDB:', error.message);
+    return res.status(500).json({ success: false, message: 'Database Error' });
+  }
+});
+
+// @route   POST /api/admin/enquiries/:id/history
+// @desc    Add quick activity / call note to enquiry history
+// @access  Protected
+router.post('/enquiries/:id/history', protectAdmin, async (req, res) => {
+  try {
+    const { actionType, title, description, performedBy, oldValue, newValue } = req.body;
+    const performer = performedBy || (req.admin ? (req.admin.name || req.admin.username) : 'System');
+
+    const historyRecord = {
+      actionType: actionType || 'NOTE',
+      title: title || 'Activity Logged',
+      description: description || '',
+      performedBy: performer,
+      oldValue: oldValue || '',
+      newValue: newValue || '',
+      createdAt: new Date()
+    };
+
+    const updated = await Enquiry.findByIdAndUpdate(
+      req.params.id,
+      { $push: { history: [historyRecord] } },
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ success: false, message: 'Enquiry record not found' });
+    }
+
+    return res.json({ success: true, message: 'History record added', data: updated });
+  } catch (err) {
+    console.error('Error adding history entry:', err.message);
     return res.status(500).json({ success: false, message: 'Database Error' });
   }
 });

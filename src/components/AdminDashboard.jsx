@@ -1409,7 +1409,7 @@ export default function AdminDashboard({ onLogout }) {
                         <p class="text-[10px] text-gray-500 mt-0.5">Dropped / Cancelled</p>
                       </div>
                       <div class="w-10 h-10 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 group-hover:bg-rose-600 group-hover:text-white transition-colors">
-                        <i class="fa-solid fa-circle-xmark text-base"></i>
+                        <i class="fa-solid fa-thumbs-down text-base"></i>
                       </div>
                     </div>
 

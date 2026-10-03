@@ -1654,7 +1654,7 @@ export default function AdminDashboard({ onLogout }) {
                         )}
                         <th class="py-2.5 px-2.5 whitespace-nowrap w-16 min-w-[60px]">Lead ID</th>
                         <th class="py-2.5 px-3 whitespace-nowrap w-44 min-w-[165px]">Full Name</th>
-                        <th class="py-2.5 px-3 whitespace-nowrap w-32 min-w-[128px]">Mobile No</th>
+                        <th class="py-2.5 px-3 whitespace-nowrap w-36 min-w-[142px]">Mobile No</th>
                         <th class="py-2.5 px-2.5 whitespace-nowrap min-w-[155px]">Email Address</th>
                         <th class="py-2.5 px-2.5 whitespace-nowrap min-w-[110px]">No. of Guntha</th>
                         <th class="py-2.5 px-2.5 whitespace-nowrap min-w-[145px]">Enquiry Date</th>
@@ -1703,12 +1703,12 @@ export default function AdminDashboard({ onLogout }) {
                             </td>
 
                             {/* Column 2: Mobile No & WhatsApp Action */}
-                            <td class="py-2.5 px-3 whitespace-nowrap w-32 min-w-[128px] max-w-[128px]">
+                            <td class="py-2.5 px-3 whitespace-nowrap w-36 min-w-[142px]">
                               {item.phone ? (
-                                <div class="flex items-center justify-between gap-1 w-full whitespace-nowrap">
+                                <div class="flex items-center gap-1.5 whitespace-nowrap">
                                   <a 
                                     href={`tel:${item.phone}`} 
-                                    class="text-[#B30E2E] hover:underline font-bold flex items-center gap-1 whitespace-nowrap text-[11.5px]"
+                                    class="text-[#B30E2E] hover:underline font-bold flex items-center gap-1 whitespace-nowrap text-[11.5px] w-[90px] shrink-0"
                                     title="Call Lead"
                                   >
                                     <i class="fa-solid fa-phone text-[8.5px] text-[#B30E2E]"></i>
@@ -1725,7 +1725,7 @@ export default function AdminDashboard({ onLogout }) {
                                         href={waUrl}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        class="w-5 h-5 rounded-full bg-emerald-100 hover:bg-emerald-600 text-emerald-600 hover:text-white flex items-center justify-center transition-colors shadow-2xs border border-emerald-200 cursor-pointer flex-shrink-0"
+                                        class="w-5 h-5 rounded-full bg-emerald-100 hover:bg-emerald-600 text-emerald-600 hover:text-white flex items-center justify-center transition-colors shadow-2xs border border-emerald-200 cursor-pointer shrink-0"
                                         title={`Chat on WhatsApp with ${customerName}`}
                                       >
                                         <i class="fa-brands fa-whatsapp text-[11px]"></i>

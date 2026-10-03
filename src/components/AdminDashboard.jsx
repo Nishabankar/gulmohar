@@ -1669,14 +1669,16 @@ export default function AdminDashboard({ onLogout }) {
                     <i class="fa-solid fa-user-pen text-sm"></i>
                   </button>
 
-                  {/* Export CSV Icon Button */}
-                  <button 
-                    onClick={handleExportCSV}
-                    class="w-9 h-9 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition shadow-sm border border-emerald-500/40 cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
-                    title="Export filtered enquiries to CSV file"
-                  >
-                    <i class="fa-solid fa-file-excel text-sm"></i>
-                  </button>
+                  {/* Export CSV Icon Button (Admin Only) */}
+                  {isAdmin && (
+                    <button 
+                      onClick={handleExportCSV}
+                      class="w-9 h-9 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition shadow-sm border border-emerald-500/40 cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
+                      title="Export filtered enquiries to CSV file"
+                    >
+                      <i class="fa-solid fa-file-excel text-sm"></i>
+                    </button>
+                  )}
                 </div>
 
               </div>

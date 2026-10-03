@@ -1586,7 +1586,10 @@ export default function AdminDashboard({ onLogout }) {
                         class="w-full px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-xs bg-white hover:bg-gray-50 font-bold text-gray-700 cursor-pointer shadow-xs flex items-center justify-between"
                         title="Filter leads by Agent"
                       >
-                        <span class="truncate">{agentFilter === 'All' ? 'All Agents' : agentFilter}</span>
+                        <span class="flex items-center gap-1.5 truncate">
+                          <i class="fa-solid fa-user-group text-xs text-[#B30E2E]"></i>
+                          <span class="truncate">{agentFilter === 'All' ? 'All Agents' : agentFilter}</span>
+                        </span>
                         <i class={`fa-solid fa-chevron-down text-xs text-gray-400 transition transform ${isAgentDropdownOpen ? 'rotate-180' : ''}`}></i>
                       </button>
 
@@ -1603,7 +1606,10 @@ export default function AdminDashboard({ onLogout }) {
                               agentFilter === 'All' ? 'bg-[#FFF0F2] text-[#B30E2E] font-bold' : 'text-gray-700'
                             }`}
                           >
-                            <span>All Agents</span>
+                            <span class="flex items-center gap-1.5 truncate">
+                              <i class="fa-solid fa-users text-xs text-rose-500"></i>
+                              <span>All Agents</span>
+                            </span>
                             {agentFilter === 'All' && <i class="fa-solid fa-check text-xs"></i>}
                           </button>
 
@@ -1623,7 +1629,10 @@ export default function AdminDashboard({ onLogout }) {
                                   isSelected ? 'bg-[#FFF0F2] text-[#B30E2E] font-bold' : 'text-gray-700'
                                 }`}
                               >
-                                <span class="truncate">{agentName}</span>
+                                <span class="flex items-center gap-1.5 truncate">
+                                  <i class="fa-solid fa-circle-user text-xs text-emerald-600"></i>
+                                  <span class="truncate">{agentName}</span>
+                                </span>
                                 {isSelected && <i class="fa-solid fa-check text-xs"></i>}
                               </button>
                             );

@@ -1836,18 +1836,20 @@ export default function AdminDashboard({ onLogout }) {
 
                             {/* Column 9: Notes Symbol Icon */}
                             <td class="py-2.5 px-2 text-center whitespace-nowrap w-12">
-                              {item.notes ? (
-                                <button 
-                                  type="button"
-                                  onClick={(e) => handleOpenNotePopover(e, item)}
-                                  class="w-6 h-6 rounded-md bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300/70 flex items-center justify-center transition shadow-2xs cursor-pointer mx-auto transform hover:scale-105 active:scale-95"
-                                  title="Click to view note"
-                                >
-                                  <i class="fa-solid fa-note-sticky text-[10.5px] text-amber-700"></i>
-                                </button>
-                              ) : (
-                                <span class="text-gray-300 italic text-[10px]">-</span>
-                              )}
+                              <button 
+                                type="button"
+                                onClick={(e) => handleOpenNotePopover(e, item)}
+                                class={`w-6 h-6 rounded-md flex items-center justify-center transition shadow-2xs cursor-pointer mx-auto transform hover:scale-105 active:scale-95 ${
+                                  item.notes && item.notes.trim() !== ''
+                                    ? 'bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300/70'
+                                    : 'bg-gray-100 hover:bg-gray-200 text-gray-500 border border-gray-200'
+                                }`}
+                                title={item.notes && item.notes.trim() !== '' ? "Click to view note" : "Empty note - Click to view/add note"}
+                              >
+                                <i class={`fa-solid fa-note-sticky text-[10.5px] ${
+                                  item.notes && item.notes.trim() !== '' ? 'text-amber-700' : 'text-gray-400'
+                                }`}></i>
+                              </button>
                             </td>
 
                             {/* Column 10: Actions Column */}
@@ -2893,10 +2895,22 @@ export default function AdminDashboard({ onLogout }) {
               </button>
             </div>
             {/* Note Content Body */}
-            <div class="flex-1 p-3 bg-[#FFFDFD] overflow-y-auto custom-scrollbar">
-              <p class="text-xs text-gray-800 leading-relaxed whitespace-pre-wrap break-words break-all font-medium">
-                {activeNotePopover.item.notes}
-              </p>
+            <div class="flex-1 p-3 bg-[#FFFDFD] overflow-y-auto custom-scrollbar flex flex-col">
+              {activeNotePopover.item.notes && activeNotePopover.item.notes.trim() !== '' ? (
+                <p class="text-xs text-gray-800 leading-relaxed whitespace-pre-wrap break-words break-all font-medium">
+                  {activeNotePopover.item.notes}
+                </p>
+              ) : (
+                <div class="my-auto text-center py-4 px-2 space-y-2">
+                  <div class="w-10 h-10 rounded-full bg-amber-50 border border-amber-200/80 flex items-center justify-center mx-auto text-amber-600">
+                    <i class="fa-regular fa-note-sticky text-base"></i>
+                  </div>
+                  <h4 class="text-xs font-bold text-gray-800">No Note Added Yet</h4>
+                  <p class="text-[10.5px] text-gray-400 leading-normal">
+                    No notes have been added for this lead. You can click the Edit icon under Actions to add a note.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </>

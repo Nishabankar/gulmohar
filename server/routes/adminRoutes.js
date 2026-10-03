@@ -121,7 +121,7 @@ router.get('/stats', protectAdmin, async (req, res) => {
 // @access  Protected
 router.patch('/enquiries/:id', protectAdmin, async (req, res) => {
   try {
-    const { firstName, lastName, phone, email, plotsCount, plotInfo, visitDate, status, notes, assignedAgentName, assignedTo } = req.body;
+    const { firstName, lastName, phone, email, plotsCount, plotInfo, visitDate, followupDate, status, notes, assignedAgentName, assignedTo } = req.body;
     let updateFields = {};
 
     if (firstName !== undefined) updateFields.firstName = firstName;
@@ -131,6 +131,7 @@ router.patch('/enquiries/:id', protectAdmin, async (req, res) => {
     if (plotsCount !== undefined) updateFields.plotsCount = plotsCount;
     if (plotInfo !== undefined) updateFields.plotInfo = plotInfo;
     if (visitDate !== undefined) updateFields.visitDate = visitDate;
+    if (followupDate !== undefined) updateFields.followupDate = followupDate;
     if (status !== undefined) updateFields.status = status;
     if (notes !== undefined) updateFields.notes = notes;
     if (assignedAgentName !== undefined) updateFields.assignedAgentName = assignedAgentName;

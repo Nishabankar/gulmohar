@@ -8,7 +8,7 @@ const Admin = require('../models/Admin');
 // @access  Public
 router.post('/', async (req, res) => {
   try {
-    const { firstName, lastName, phone, email, plotInfo, plotsCount, visitDate, notes, assignedAgentName, assignedTo } = req.body;
+    const { firstName, lastName, phone, email, plotInfo, plotsCount, visitDate, followupDate, notes, assignedAgentName, assignedTo } = req.body;
 
     if (!firstName || !phone) {
       return res.status(400).json({
@@ -41,6 +41,7 @@ router.post('/', async (req, res) => {
       plotInfo: plotInfo || '',
       plotsCount: plotsCount || '1 Plot',
       visitDate: visitDate || '',
+      followupDate: followupDate || '',
       notes: notes ? notes.trim() : '',
       assignedAgentName: finalAssignedAgentName,
       assignedTo: finalAssignedTo

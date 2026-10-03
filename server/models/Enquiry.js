@@ -34,6 +34,10 @@ const enquirySchema = new mongoose.Schema(
       type: String,
       default: ''
     },
+    followupDate: {
+      type: String,
+      default: ''
+    },
     status: {
       type: String,
       enum: ['New', 'Contacted', 'Interested', 'Site Visit Scheduled', 'Closed'],

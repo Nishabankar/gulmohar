@@ -3255,9 +3255,10 @@ export default function AdminDashboard({ onLogout }) {
             <div class="flex-1 p-3 bg-[#FFFDFD] overflow-y-auto custom-scrollbar space-y-2.5">
               {(() => {
                 const targetLead = activeNotePopover.item;
-                const noteLogs = (targetLead.history || []).filter(h => 
-                  (h.fieldName || '').toLowerCase() === 'notes' || (h.fieldName || '').toLowerCase() === 'note'
-                );
+                const noteLogs = (targetLead.history || [])
+                  .filter(h => (h.fieldName || '').toLowerCase() === 'notes' || (h.fieldName || '').toLowerCase() === 'note')
+                  .slice()
+                  .reverse();
 
                 if (noteLogs.length > 0) {
                   return noteLogs.map((log, nIdx) => {

@@ -1477,9 +1477,278 @@ export default function AdminDashboard({ onLogout }) {
       </header>
 
       {/* Main Dashboard Container */}
+      {/* Main Dashboard Container */}
       <main class="w-full px-2 sm:px-3 lg:px-4 py-3 sm:py-4 flex-1 flex flex-col min-h-0 overflow-hidden space-y-3 sm:space-y-4">
         
-        {activeTab === 'enquiries' || !isAdmin ? (
+        {historyModalItem ? (
+          /* FULL PAGE LEAD ACTIVITY HISTORY VIEW (NO POPUP MODAL) */
+          <div class="space-y-3 sm:space-y-4 animate-fade-in flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar w-full pb-6">
+            
+            {/* Page Header Bar with Back to Leads Button */}
+            <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-xs border border-gray-200/80 flex flex-wrap items-center justify-between gap-3">
+              <div class="flex items-center gap-3.5">
+                <button 
+                  onClick={() => setHistoryModalItem(null)}
+                  class="px-3.5 py-2 rounded-xl bg-gray-100 hover:bg-rose-50 hover:text-[#B30E2E] text-gray-700 font-bold text-xs flex items-center gap-2 transition cursor-pointer border border-gray-200 shadow-2xs"
+                  title="Back to Leads Table"
+                >
+                  <i class="fa-solid fa-arrow-left text-sm text-[#B30E2E]"></i>
+                  <span>Back to Leads</span>
+                </button>
+
+                <div>
+                  <div class="flex items-center gap-2">
+                    <h2 class="text-lg sm:text-xl font-serif font-bold text-gray-900 tracking-wide">
+                      Lead Activity History
+                    </h2>
+                    <span class="bg-amber-400 text-slate-950 text-xs font-extrabold px-2.5 py-0.5 rounded-full shadow-2xs">
+                      #{historyModalItem._id || historyModalItem.id}
+                    </span>
+                  </div>
+                  <p class="text-xs text-gray-500 font-medium mt-0.5">
+                    Full history log for <strong class="text-gray-900">{historyModalItem.firstName || ''} {historyModalItem.lastName || ''}</strong> ({historyModalItem.phone || ''} • {historyModalItem.plotsCount || '1 Guntha'})
+                  </p>
+                </div>
+              </div>
+
+              {/* Lead Info Pill Badges */}
+              <div class="flex flex-wrap items-center gap-2.5 text-xs">
+                <div class="bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                  <span class="text-gray-500 font-bold">Assigned Agent:</span>
+                  <span class="font-bold text-gray-800 flex items-center gap-1">
+                    <i class="fa-solid fa-circle-user text-emerald-600 text-xs"></i>
+                    <span>{historyModalItem.assignedAgentName || 'Unassigned'}</span>
+                  </span>
+                </div>
+
+                <div class="bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                  <span class="text-gray-500 font-bold">Status:</span>
+                  <span class={`px-2 py-0.5 rounded-md font-bold text-[11px] ${getStatusBadge(historyModalItem.status || 'New')}`}>
+                    {historyModalItem.status || 'New'}
+                  </span>
+                </div>
+
+                {historyModalItem.followupDate && (
+                  <div class="bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                    <span class="text-gray-500 font-bold">Followup:</span>
+                    <span class="bg-blue-50 text-blue-800 border border-blue-200 px-2 py-0.5 rounded-md font-bold text-[11px]">
+                      {historyModalItem.followupDate}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Filter Pills & Quick Note Entry Bar */}
+            <div class="bg-white rounded-2xl p-4 shadow-xs border border-gray-200/80 space-y-4">
+              <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 pb-3.5">
+                
+                {/* Log Category Filter Tabs */}
+                <div class="flex items-center gap-2 overflow-x-auto custom-scrollbar">
+                  <button 
+                    onClick={() => setHistoryFilterCategory('all')} 
+                    class={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                      historyFilterCategory === 'all' ? 'bg-[#B30E2E] text-white shadow-xs' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    All Activity Logs ({getLeadHistoryLogs(historyModalItem).length})
+                  </button>
+                  <button 
+                    onClick={() => setHistoryFilterCategory('status')} 
+                    class={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                      historyFilterCategory === 'status' ? 'bg-[#B30E2E] text-white shadow-xs' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    Status Changes
+                  </button>
+                  <button 
+                    onClick={() => setHistoryFilterCategory('followup')} 
+                    class={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                      historyFilterCategory === 'followup' ? 'bg-[#B30E2E] text-white shadow-xs' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    Followups & Visits
+                  </button>
+                  <button 
+                    onClick={() => setHistoryFilterCategory('notes')} 
+                    class={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                      historyFilterCategory === 'notes' ? 'bg-[#B30E2E] text-white shadow-xs' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    Notes & Calls
+                  </button>
+                </div>
+
+                {/* Quick Add Activity Form */}
+                <form onSubmit={handleAddHistoryNote} class="flex items-center gap-2 flex-1 max-w-md">
+                  <input 
+                    type="text" 
+                    value={newQuickNoteText}
+                    onChange={(e) => setNewQuickNoteText(e.target.value)}
+                    placeholder="Type quick call remark or activity note..."
+                    class="flex-1 px-3.5 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-rose-200 bg-white font-medium shadow-2xs"
+                  />
+                  <button 
+                    type="submit"
+                    disabled={submittingHistoryNote || !newQuickNoteText.trim()}
+                    class="px-4 py-2 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition cursor-pointer disabled:opacity-50 whitespace-nowrap"
+                  >
+                    {submittingHistoryNote ? (
+                      <i class="fa-solid fa-spinner fa-spin text-xs"></i>
+                    ) : (
+                      <i class="fa-solid fa-paper-plane text-xs"></i>
+                    )}
+                    <span>Add Activity</span>
+                  </button>
+                </form>
+              </div>
+
+              {/* Full Page History Table (1:1 UI Sequence with Main Leads Table) */}
+              <div class="overflow-x-auto rounded-xl border border-gray-200/80 bg-white shadow-2xs">
+                {(() => {
+                  const logs = getLeadHistoryLogs(historyModalItem);
+                  const filtered = logs.filter(log => {
+                    if (historyFilterCategory === 'status') return log.actionType === 'STATUS_CHANGE';
+                    if (historyFilterCategory === 'followup') return log.actionType === 'FOLLOWUP_CHANGE' || log.actionType === 'VISIT_CHANGE';
+                    if (historyFilterCategory === 'notes') return log.actionType === 'NOTE';
+                    return true;
+                  });
+
+                  if (filtered.length === 0) {
+                    return (
+                      <div class="py-12 text-center text-slate-400 space-y-2">
+                        <i class="fa-solid fa-clock-rotate-left text-3xl text-slate-300"></i>
+                        <p class="text-xs font-semibold text-slate-600">No activity history records found for this category.</p>
+                        <p class="text-[11px] text-slate-400">Add a quick note or update lead status to start tracking history.</p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <table class="w-full min-w-full text-left border-collapse">
+                      <thead class="sticky top-0 z-10 bg-gray-100 shadow-2xs">
+                        <tr>
+                          <th class="py-2.5 px-3 text-[11px] font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">DATE & TIME</th>
+                          <th class="py-2.5 px-3 text-[11px] font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">CHANGED FIELD / ACTION</th>
+                          <th class="py-2.5 px-3 text-[11px] font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">OLD VALUE</th>
+                          <th class="py-2.5 px-3 text-[11px] font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">NEW VALUE</th>
+                          <th class="py-2.5 px-3 text-[11px] font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">PERFORMED BY</th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-gray-100 bg-white">
+                        {filtered.map((log, idx) => {
+                          const isStatus = log.actionType === 'STATUS_CHANGE';
+                          const isFollowup = log.actionType === 'FOLLOWUP_CHANGE';
+                          const isVisit = log.actionType === 'VISIT_CHANGE';
+                          const isAgent = log.actionType === 'AGENT_CHANGE';
+                          const isCreated = log.actionType === 'CREATED';
+                          const isName = log.actionType === 'NAME_CHANGE';
+                          const isPhone = log.actionType === 'PHONE_CHANGE';
+                          const isEmail = log.actionType === 'EMAIL_CHANGE';
+                          const isPlot = log.actionType === 'PLOT_CHANGE';
+
+                          let badgeStyle = 'bg-purple-50 text-purple-800 border-purple-200';
+                          let iconClass = 'fa-comment-dots text-purple-600';
+                          let fieldLabel = log.title || 'Activity';
+
+                          if (isStatus) {
+                            badgeStyle = 'bg-amber-50 text-amber-900 border-amber-300';
+                            iconClass = 'fa-arrows-rotate text-amber-600';
+                            fieldLabel = 'Status';
+                          } else if (isFollowup) {
+                            badgeStyle = 'bg-blue-50 text-blue-900 border-blue-200';
+                            iconClass = 'fa-calendar-check text-blue-600';
+                            fieldLabel = 'Followup Date';
+                          } else if (isVisit) {
+                            badgeStyle = 'bg-indigo-50 text-indigo-900 border-indigo-200';
+                            iconClass = 'fa-calendar-days text-indigo-600';
+                            fieldLabel = 'Site Visit Date';
+                          } else if (isAgent) {
+                            badgeStyle = 'bg-emerald-50 text-emerald-900 border-emerald-200';
+                            iconClass = 'fa-user-check text-emerald-600';
+                            fieldLabel = 'Assigned Agent';
+                          } else if (isCreated) {
+                            badgeStyle = 'bg-rose-50 text-[#B30E2E] border-rose-200';
+                            iconClass = 'fa-circle-plus text-[#B30E2E]';
+                            fieldLabel = 'Lead Created';
+                          } else if (isName) {
+                            badgeStyle = 'bg-cyan-50 text-cyan-900 border-cyan-200';
+                            iconClass = 'fa-signature text-cyan-600';
+                            fieldLabel = 'Full Name';
+                          } else if (isPhone) {
+                            badgeStyle = 'bg-teal-50 text-teal-900 border-teal-200';
+                            iconClass = 'fa-phone text-teal-600';
+                            fieldLabel = 'Mobile No';
+                          } else if (isEmail) {
+                            badgeStyle = 'bg-sky-50 text-sky-900 border-sky-200';
+                            iconClass = 'fa-envelope text-sky-600';
+                            fieldLabel = 'Email Address';
+                          } else if (isPlot) {
+                            badgeStyle = 'bg-orange-50 text-orange-900 border-orange-200';
+                            iconClass = 'fa-vector-square text-orange-600';
+                            fieldLabel = 'No. of Guntha';
+                          }
+
+                          const logDate = log.createdAt ? new Date(log.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A';
+                          const logTime = log.createdAt ? new Date(log.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '';
+
+                          const oldValDisplay = isCreated ? '—' : (log.oldValue || '—');
+                          const newValDisplay = log.newValue || (isCreated ? (log.description || 'New Enquiry Created') : (log.description || '—'));
+
+                          return (
+                            <tr key={idx} class="hover:bg-rose-50/40 transition">
+                              {/* Column 1: Date & Time */}
+                              <td class="py-2.5 px-3 whitespace-nowrap font-semibold text-gray-800 text-[10.5px]">
+                                <i class="fa-regular fa-clock text-[8.5px] text-gray-400 mr-1"></i>
+                                <span>{logDate}</span>
+                                <span class="text-[9.5px] text-gray-400 ml-1.5 font-normal">{logTime}</span>
+                              </td>
+
+                              {/* Column 2: Changed Field / Action Badge */}
+                              <td class="py-2.5 px-3 whitespace-nowrap">
+                                <span class={`px-2 py-0.5 rounded-md border text-[10px] font-bold inline-flex items-center gap-1 shadow-2xs ${badgeStyle}`}>
+                                  <i class={`fa-solid ${iconClass} text-[9px]`}></i>
+                                  <span>{fieldLabel}</span>
+                                </span>
+                              </td>
+
+                              {/* Column 3: Old Value */}
+                              <td class="py-2.5 px-3 text-[11px] text-gray-600 font-medium break-words max-w-[160px]">
+                                {oldValDisplay !== '—' ? (
+                                  <span class="px-2 py-0.5 rounded border border-rose-200 bg-rose-50/80 text-rose-900 text-[10.5px] font-semibold inline-block">
+                                    {oldValDisplay}
+                                  </span>
+                                ) : (
+                                  <span class="text-gray-400 font-normal">{oldValDisplay}</span>
+                                )}
+                              </td>
+
+                              {/* Column 4: New Value */}
+                              <td class="py-2.5 px-3 text-[11px] text-gray-800 font-medium break-words max-w-[240px]">
+                                <span class="px-2 py-0.5 rounded border border-emerald-200 bg-emerald-50 text-emerald-950 text-[10.5px] font-semibold inline-block">
+                                  {newValDisplay}
+                                </span>
+                              </td>
+
+                              {/* Column 5: Performed By */}
+                              <td class="py-2.5 px-3 whitespace-nowrap">
+                                <span class="px-2 py-0.5 rounded-lg border border-gray-200 text-[10.5px] font-bold text-gray-700 bg-gray-50 inline-flex items-center gap-1 shadow-2xs">
+                                  <i class="fa-solid fa-circle-user text-[9.5px] text-emerald-600"></i>
+                                  <span>{log.performedBy || 'System'}</span>
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  );
+                })()}
+              </div>
+            </div>
+
+          </div>
+        ) : activeTab === 'enquiries' || !isAdmin ? (
           <>
             {/* Dashboard View Tab: 2 Distinct Sections */}
             {activeView === 'dashboard' && (
@@ -3199,271 +3468,6 @@ export default function AdminDashboard({ onLogout }) {
             </div>
           </div>
         </>
-      )}
-
-      {/* Lead Activity History Modal */}
-      {historyModalItem && (
-        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in">
-          <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-2xl overflow-hidden flex flex-col max-h-[85vh]">
-            
-            {/* Modal Header */}
-            <div class="bg-gradient-to-r from-[#B30E2E] via-[#8A0B22] to-[#590414] text-white p-4 sm:p-5 flex items-center justify-between flex-shrink-0 shadow-md">
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center text-amber-300 font-bold text-lg shadow-inner">
-                  <i class="fa-solid fa-clock-rotate-left"></i>
-                </div>
-                <div>
-                  <div class="flex items-center gap-2">
-                    <h3 class="text-base sm:text-lg font-serif font-bold tracking-wide text-white">Lead Activity History</h3>
-                    <span class="bg-amber-400 text-slate-950 text-[10px] sm:text-xs font-extrabold px-2 py-0.5 rounded-full shadow-xs">
-                      #{historyModalItem._id || historyModalItem.id}
-                    </span>
-                  </div>
-                  <p class="text-xs text-rose-100 font-medium truncate">
-                    {historyModalItem.firstName || ''} {historyModalItem.lastName || ''} • {historyModalItem.phone || ''} • {historyModalItem.plotsCount || '1 Plot'}
-                  </p>
-                </div>
-              </div>
-              
-              <button 
-                onClick={() => setHistoryModalItem(null)}
-                class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer"
-              >
-                <i class="fa-solid fa-xmark text-sm"></i>
-              </button>
-            </div>
-
-            {/* Sub-Header info bar */}
-            <div class="bg-rose-50/70 px-4 py-2.5 border-b border-rose-100 flex flex-wrap items-center justify-between gap-2 text-xs flex-shrink-0">
-              <div class="flex items-center gap-1.5">
-                <span class="text-slate-500 font-bold">Assigned Agent:</span>
-                <span class="inline-flex items-center gap-1 font-bold text-slate-800 bg-white px-2 py-0.5 rounded-md border border-rose-200 text-[11px]">
-                  <i class="fa-solid fa-user-check text-emerald-600"></i>
-                  <span>{historyModalItem.assignedAgentName || 'Unassigned'}</span>
-                </span>
-              </div>
-
-              <div class="flex items-center gap-1.5">
-                <span class="text-slate-500 font-bold">Current Status:</span>
-                <span class={`px-2 py-0.5 rounded-md font-bold text-[11px] ${getStatusBadge(historyModalItem.status || 'New')}`}>
-                  {historyModalItem.status || 'New'}
-                </span>
-              </div>
-
-              {historyModalItem.followupDate && (
-                <div class="flex items-center gap-1.5">
-                  <span class="text-slate-500 font-bold">Followup:</span>
-                  <span class="bg-blue-50 text-blue-800 border border-blue-200 px-2 py-0.5 rounded-md font-bold text-[11px]">
-                    {historyModalItem.followupDate}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* Filter Pills */}
-            <div class="px-4 pt-2.5 pb-1 flex items-center gap-2 overflow-x-auto custom-scrollbar border-b border-slate-100 flex-shrink-0">
-              <button 
-                onClick={() => setHistoryFilterCategory('all')} 
-                class={`px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${
-                  historyFilterCategory === 'all' ? 'bg-[#B30E2E] text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                All Logs ({getLeadHistoryLogs(historyModalItem).length})
-              </button>
-              <button 
-                onClick={() => setHistoryFilterCategory('status')} 
-                class={`px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${
-                  historyFilterCategory === 'status' ? 'bg-[#B30E2E] text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                Status Changes
-              </button>
-              <button 
-                onClick={() => setHistoryFilterCategory('followup')} 
-                class={`px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${
-                  historyFilterCategory === 'followup' ? 'bg-[#B30E2E] text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                Followups
-              </button>
-              <button 
-                onClick={() => setHistoryFilterCategory('notes')} 
-                class={`px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${
-                  historyFilterCategory === 'notes' ? 'bg-[#B30E2E] text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                Notes & Calls
-              </button>
-            </div>
-
-            {/* History Table Container (Identical Design & Consistency with Main Leads Table) */}
-            <div class="overflow-x-auto overflow-y-auto flex-1 min-h-0 custom-scrollbar w-full rounded-b-2xl bg-white">
-              {(() => {
-                const logs = getLeadHistoryLogs(historyModalItem);
-                const filtered = logs.filter(log => {
-                  if (historyFilterCategory === 'status') return log.actionType === 'STATUS_CHANGE';
-                  if (historyFilterCategory === 'followup') return log.actionType === 'FOLLOWUP_CHANGE' || log.actionType === 'VISIT_CHANGE';
-                  if (historyFilterCategory === 'notes') return log.actionType === 'NOTE';
-                  return true;
-                });
-
-                if (filtered.length === 0) {
-                  return (
-                    <div class="py-12 text-center text-slate-400 space-y-2">
-                      <i class="fa-solid fa-clock-rotate-left text-3xl text-slate-300"></i>
-                      <p class="text-xs font-semibold text-slate-600">No activity history records found for this category.</p>
-                      <p class="text-[11px] text-slate-400">Add a quick note or update lead status to start tracking history.</p>
-                    </div>
-                  );
-                }
-
-                return (
-                  <table class="w-full min-w-full text-left border-collapse">
-                    <thead class="sticky top-0 z-10 bg-gray-100 shadow-2xs">
-                      <tr>
-                        <th class="py-2.5 px-3 text-[11px] font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">DATE & TIME</th>
-                        <th class="py-2.5 px-3 text-[11px] font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">CHANGED FIELD / ACTION</th>
-                        <th class="py-2.5 px-3 text-[11px] font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">OLD VALUE</th>
-                        <th class="py-2.5 px-3 text-[11px] font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">NEW VALUE</th>
-                        <th class="py-2.5 px-3 text-[11px] font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">PERFORMED BY</th>
-                      </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100 bg-white">
-                      {filtered.map((log, idx) => {
-                        const isStatus = log.actionType === 'STATUS_CHANGE';
-                        const isFollowup = log.actionType === 'FOLLOWUP_CHANGE';
-                        const isVisit = log.actionType === 'VISIT_CHANGE';
-                        const isAgent = log.actionType === 'AGENT_CHANGE';
-                        const isCreated = log.actionType === 'CREATED';
-                        const isName = log.actionType === 'NAME_CHANGE';
-                        const isPhone = log.actionType === 'PHONE_CHANGE';
-                        const isEmail = log.actionType === 'EMAIL_CHANGE';
-                        const isPlot = log.actionType === 'PLOT_CHANGE';
-
-                        let badgeStyle = 'bg-purple-50 text-purple-800 border-purple-200';
-                        let iconClass = 'fa-comment-dots text-purple-600';
-                        let fieldLabel = log.title || 'Activity';
-
-                        if (isStatus) {
-                          badgeStyle = 'bg-amber-50 text-amber-900 border-amber-300';
-                          iconClass = 'fa-arrows-rotate text-amber-600';
-                          fieldLabel = 'Status';
-                        } else if (isFollowup) {
-                          badgeStyle = 'bg-blue-50 text-blue-900 border-blue-200';
-                          iconClass = 'fa-calendar-check text-blue-600';
-                          fieldLabel = 'Followup Date';
-                        } else if (isVisit) {
-                          badgeStyle = 'bg-indigo-50 text-indigo-900 border-indigo-200';
-                          iconClass = 'fa-calendar-days text-indigo-600';
-                          fieldLabel = 'Site Visit Date';
-                        } else if (isAgent) {
-                          badgeStyle = 'bg-emerald-50 text-emerald-900 border-emerald-200';
-                          iconClass = 'fa-user-check text-emerald-600';
-                          fieldLabel = 'Assigned Agent';
-                        } else if (isCreated) {
-                          badgeStyle = 'bg-rose-50 text-[#B30E2E] border-rose-200';
-                          iconClass = 'fa-circle-plus text-[#B30E2E]';
-                          fieldLabel = 'Lead Created';
-                        } else if (isName) {
-                          badgeStyle = 'bg-cyan-50 text-cyan-900 border-cyan-200';
-                          iconClass = 'fa-signature text-cyan-600';
-                          fieldLabel = 'Full Name';
-                        } else if (isPhone) {
-                          badgeStyle = 'bg-teal-50 text-teal-900 border-teal-200';
-                          iconClass = 'fa-phone text-teal-600';
-                          fieldLabel = 'Mobile No';
-                        } else if (isEmail) {
-                          badgeStyle = 'bg-sky-50 text-sky-900 border-sky-200';
-                          iconClass = 'fa-envelope text-sky-600';
-                          fieldLabel = 'Email Address';
-                        } else if (isPlot) {
-                          badgeStyle = 'bg-orange-50 text-orange-900 border-orange-200';
-                          iconClass = 'fa-vector-square text-orange-600';
-                          fieldLabel = 'No. of Guntha';
-                        }
-
-                        const logDate = log.createdAt ? new Date(log.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A';
-                        const logTime = log.createdAt ? new Date(log.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '';
-
-                        const oldValDisplay = isCreated ? '—' : (log.oldValue || '—');
-                        const newValDisplay = log.newValue || (isCreated ? (log.description || 'New Enquiry Created') : (log.description || '—'));
-
-                        return (
-                          <tr key={idx} class="hover:bg-rose-50/40 transition">
-                            {/* Column 1: Date & Time */}
-                            <td class="py-2.5 px-3 whitespace-nowrap font-semibold text-gray-800 text-[10.5px]">
-                              <i class="fa-regular fa-clock text-[8.5px] text-gray-400 mr-1"></i>
-                              <span>{logDate}</span>
-                              <span class="text-[9.5px] text-gray-400 ml-1.5 font-normal">{logTime}</span>
-                            </td>
-
-                            {/* Column 2: Changed Field / Action Badge */}
-                            <td class="py-2.5 px-3 whitespace-nowrap">
-                              <span class={`px-2 py-0.5 rounded-md border text-[10px] font-bold inline-flex items-center gap-1 shadow-2xs ${badgeStyle}`}>
-                                <i class={`fa-solid ${iconClass} text-[9px]`}></i>
-                                <span>{fieldLabel}</span>
-                              </span>
-                            </td>
-
-                            {/* Column 3: Old Value */}
-                            <td class="py-2.5 px-3 text-[11px] text-gray-600 font-medium break-words max-w-[140px]">
-                              {oldValDisplay !== '—' ? (
-                                <span class="px-2 py-0.5 rounded border border-rose-200 bg-rose-50/80 text-rose-900 text-[10.5px] font-semibold inline-block">
-                                  {oldValDisplay}
-                                </span>
-                              ) : (
-                                <span class="text-gray-400 font-normal">{oldValDisplay}</span>
-                              )}
-                            </td>
-
-                            {/* Column 4: New Value */}
-                            <td class="py-2.5 px-3 text-[11px] text-gray-800 font-medium break-words max-w-[200px]">
-                              <span class="px-2 py-0.5 rounded border border-emerald-200 bg-emerald-50 text-emerald-950 text-[10.5px] font-semibold inline-block">
-                                {newValDisplay}
-                              </span>
-                            </td>
-
-                            {/* Column 5: Performed By */}
-                            <td class="py-2.5 px-3 whitespace-nowrap">
-                              <span class="px-2 py-0.5 rounded-lg border border-gray-200 text-[10.5px] font-bold text-gray-700 bg-gray-50 inline-flex items-center gap-1 shadow-2xs">
-                                <i class="fa-solid fa-circle-user text-[9.5px] text-emerald-600"></i>
-                                <span>{log.performedBy || 'System'}</span>
-                              </span>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                );
-              })()}
-            </div>
-
-            {/* Footer Quick Add Activity Bar */}
-            <form onSubmit={handleAddHistoryNote} class="p-3 bg-slate-100 border-t border-slate-200 flex items-center gap-2 flex-shrink-0">
-              <input 
-                type="text" 
-                value={newQuickNoteText}
-                onChange={(e) => setNewQuickNoteText(e.target.value)}
-                placeholder="Type quick call remark or note..."
-                class="flex-1 px-3.5 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-rose-200 bg-white font-medium shadow-2xs"
-              />
-              <button 
-                type="submit"
-                disabled={submittingHistoryNote || !newQuickNoteText.trim()}
-                class="px-4 py-2 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition cursor-pointer disabled:opacity-50"
-              >
-                {submittingHistoryNote ? (
-                  <i class="fa-solid fa-spinner fa-spin text-xs"></i>
-                ) : (
-                  <i class="fa-solid fa-paper-plane text-xs"></i>
-                )}
-                <span>Add Activity</span>
-              </button>
-            </form>
-
-          </div>
-        </div>
       )}
 
       {/* Privacy Policy & Disclaimer Terms Modal */}

@@ -1038,9 +1038,6 @@ export default function AdminDashboard({ onLogout }) {
     }
 
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2500);
-
       const res = await fetch(`${API_BASE_URL}/api/admin/enquiries/${leadKey}`, {
         method: 'PATCH',
         headers: {
@@ -1060,11 +1057,9 @@ export default function AdminDashboard({ onLogout }) {
           notes: updatedLead.notes,
           assignedAgentName: updatedLead.assignedAgentName,
           updatedBy: currentUser.name || 'Sales Executive'
-        }),
-        signal: controller.signal
+        })
       });
 
-      clearTimeout(timeoutId);
       const data = await res.json();
       if (data.success && data.data) {
         const finalSynced = { ...data.data, followupDate: updatedLead.followupDate || data.data.followupDate || '' };

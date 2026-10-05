@@ -1343,7 +1343,7 @@ export default function AdminDashboard({ onLogout }) {
             
             {/* Dashboard View Standalone Button */}
             <button 
-              onClick={() => { setActiveTab('enquiries'); setActiveView('dashboard'); }}
+              onClick={() => { setHistoryModalItem(null); setActiveTab('enquiries'); setActiveView('dashboard'); }}
               class={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition shadow-md border cursor-pointer ${
                 activeTab === 'enquiries' && activeView === 'dashboard'
                   ? 'bg-amber-400 text-slate-900 border-amber-300 ring-2 ring-amber-300/50 font-extrabold scale-105'
@@ -1356,7 +1356,7 @@ export default function AdminDashboard({ onLogout }) {
 
             {/* Leads View Standalone Button */}
             <button 
-              onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('New'); setVisitDateFilter('All'); }}
+              onClick={() => { setHistoryModalItem(null); setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('New'); setVisitDateFilter('All'); }}
               class={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition shadow-md border cursor-pointer relative ${
                 activeTab === 'enquiries' && activeView === 'leads'
                   ? 'bg-amber-400 text-slate-900 border-amber-300 ring-2 ring-amber-300/50 font-extrabold scale-105'
@@ -1481,85 +1481,30 @@ export default function AdminDashboard({ onLogout }) {
       <main class="w-full px-2 sm:px-3 lg:px-4 py-3 sm:py-4 flex-1 flex flex-col min-h-0 overflow-hidden space-y-3 sm:space-y-4">
         
         {historyModalItem ? (
-          /* FULL PAGE LEAD ACTIVITY HISTORY VIEW (CLEAN 1-BOX LAYOUT) */
+          /* FULL PAGE LEAD ACTIVITY HISTORY VIEW (DIRECT TABLE ONLY) */
           <div class="space-y-3 sm:space-y-4 animate-fade-in flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar w-full pb-6">
             
-            {/* Filter Pills & Quick Note Entry Bar */}
-            <div class="bg-white rounded-2xl p-4 shadow-xs border border-gray-200/80 space-y-4">
-              <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 pb-3.5">
-                
-                {/* Back Button + Log Category Filter Tabs */}
-                <div class="flex items-center gap-2 overflow-x-auto custom-scrollbar">
-                  {/* Inline Back to Leads Button */}
-                  <button 
-                    onClick={() => setHistoryModalItem(null)}
-                    class="px-3.5 py-1.5 rounded-xl bg-gray-100 hover:bg-rose-50 hover:text-[#B30E2E] text-gray-800 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer border border-gray-300 shadow-2xs mr-1"
-                    title="Back to Leads Table"
-                  >
-                    <i class="fa-solid fa-arrow-left text-xs text-[#B30E2E]"></i>
-                    <span>Back to Leads</span>
-                  </button>
-
-                  <button 
-                    onClick={() => setHistoryFilterCategory('all')} 
-                    class={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-                      historyFilterCategory === 'all' ? 'bg-[#B30E2E] text-white shadow-xs' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                  >
-                    All Activity Logs ({getLeadHistoryLogs(historyModalItem).length})
-                  </button>
-                  <button 
-                    onClick={() => setHistoryFilterCategory('status')} 
-                    class={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-                      historyFilterCategory === 'status' ? 'bg-[#B30E2E] text-white shadow-xs' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                  >
-                    Status Changes
-                  </button>
-                  <button 
-                    onClick={() => setHistoryFilterCategory('followup')} 
-                    class={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-                      historyFilterCategory === 'followup' ? 'bg-[#B30E2E] text-white shadow-xs' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                  >
-                    Followups & Visits
-                  </button>
-                  <button 
-                    onClick={() => setHistoryFilterCategory('notes')} 
-                    class={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-                      historyFilterCategory === 'notes' ? 'bg-[#B30E2E] text-white shadow-xs' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                  >
-                    Notes & Calls
-                  </button>
+            {/* Direct History Table Container (1:1 UI Sequence with Main Leads Table) */}
+            <div class="bg-white rounded-2xl shadow-xs border border-gray-200/80 overflow-hidden flex flex-col">
+              {/* Minimal Header Bar with Back Button */}
+              <div class="p-3 bg-gray-50/80 border-b border-gray-200/80 flex items-center justify-between flex-shrink-0">
+                <button 
+                  onClick={() => setHistoryModalItem(null)}
+                  class="px-3.5 py-1.5 rounded-xl bg-white hover:bg-rose-50 hover:text-[#B30E2E] text-gray-800 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer border border-gray-300 shadow-2xs"
+                  title="Back to Leads Table"
+                >
+                  <i class="fa-solid fa-arrow-left text-xs text-[#B30E2E]"></i>
+                  <span>Back to Leads</span>
+                </button>
+                <div class="text-xs font-bold text-gray-700 flex items-center gap-2">
+                  <span class="bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.5 rounded-md font-extrabold text-[11px]">
+                    Lead #{historyModalItem._id || historyModalItem.id}
+                  </span>
+                  <span>{historyModalItem.firstName || ''} {historyModalItem.lastName || ''} ({historyModalItem.phone || ''})</span>
                 </div>
-
-                {/* Quick Add Activity Form */}
-                <form onSubmit={handleAddHistoryNote} class="flex items-center gap-2 flex-1 max-w-md">
-                  <input 
-                    type="text" 
-                    value={newQuickNoteText}
-                    onChange={(e) => setNewQuickNoteText(e.target.value)}
-                    placeholder="Type quick call remark or activity note..."
-                    class="flex-1 px-3.5 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-rose-200 bg-white font-medium shadow-2xs"
-                  />
-                  <button 
-                    type="submit"
-                    disabled={submittingHistoryNote || !newQuickNoteText.trim()}
-                    class="px-4 py-2 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition cursor-pointer disabled:opacity-50 whitespace-nowrap"
-                  >
-                    {submittingHistoryNote ? (
-                      <i class="fa-solid fa-spinner fa-spin text-xs"></i>
-                    ) : (
-                      <i class="fa-solid fa-paper-plane text-xs"></i>
-                    )}
-                    <span>Add Activity</span>
-                  </button>
-                </form>
               </div>
 
-              {/* Full Page History Table (1:1 UI Sequence with Main Leads Table) */}
-              <div class="overflow-x-auto rounded-xl border border-gray-200/80 bg-white shadow-2xs">
+              <div class="overflow-x-auto">
                 {(() => {
                   const logs = getLeadHistoryLogs(historyModalItem);
                   const filtered = logs.filter(log => {

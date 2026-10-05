@@ -97,7 +97,15 @@ export default function AdminDashboard({ onLogout }) {
 
   // State for Full Lead Edit Modal & Floating Note Popover
   const [editingEnquiry, setEditingEnquiry] = useState(null);
-  const [activeNotePopover, setActiveNotePopover] = useState(null);
+  // State for Lead Activity History View & Tracking Map
+  const [selectedHistoryLead, setSelectedHistoryLead] = useState(null);
+  const [leadHistoryMap, setLeadHistoryMap] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('leadHistoryMap') || '{}');
+    } catch (e) {
+      return {};
+    }
+  });
 
 
 
@@ -645,7 +653,31 @@ export default function AdminDashboard({ onLogout }) {
   // Update Status handler
   const handleStatusChange = async (id, newStatus) => {
     const token = localStorage.getItem('adminToken');
-    const performer = currentUser.name || 'Sales Executive';
+    const performer = currentUser.name || (isAdmin ? 'Admin' : 'Sales Executive');
+
+    const existing = enquiries.find(item => (item._id === id || item.id === id));
+    const oldStatus = existing ? (existing.status || 'New') : 'New';
+
+    if (existing && oldStatus !== newStatus) {
+      const newLog = {
+        editId: 'edit-' + Date.now(),
+        performedBy: performer,
+        timestamp: new Date().toISOString(),
+        changes: {
+          status: { old: oldStatus, new: newStatus }
+        },
+        snapshot: { ...existing, status: newStatus }
+      };
+
+      setLeadHistoryMap(prev => {
+        const leadKey = existing._id || existing.id;
+        const currentLogs = prev[leadKey] || [];
+        const updatedLogs = [newLog, ...currentLogs];
+        const newMap = { ...prev, [leadKey]: updatedLogs };
+        localStorage.setItem('leadHistoryMap', JSON.stringify(newMap));
+        return newMap;
+      });
+    }
 
     setEnquiries(prev => prev.map(item => {
       if (item._id === id || item.id === id) {
@@ -781,6 +813,45 @@ export default function AdminDashboard({ onLogout }) {
           updatedCache.push(finalSynced);
         }
         localStorage.setItem('localEnquiriesCache', JSON.stringify(updatedCache));
+
+        // 3. Log History Comparison Entry in local memory map
+        if (existingLead) {
+          const oldFirstName = existingLead.firstName || '';
+          const oldLastName = existingLead.lastName || '';
+          const oldFullName = `${oldFirstName} ${oldLastName}`.trim() || 'N/A';
+          const newFirstName = finalSynced.firstName || '';
+          const newLastName = finalSynced.lastName || '';
+          const newFullName = `${newFirstName} ${newLastName}`.trim() || 'N/A';
+
+          const changes = {};
+          if (oldFullName !== newFullName) changes.fullName = { old: oldFullName, new: newFullName };
+          if ((existingLead.phone || '') !== (finalSynced.phone || '')) changes.phone = { old: existingLead.phone || 'N/A', new: finalSynced.phone };
+          if ((existingLead.email || '') !== (finalSynced.email || '')) changes.email = { old: existingLead.email || 'N/A', new: finalSynced.email || 'N/A' };
+          if ((existingLead.plotsCount || '1 Guntha') !== (finalSynced.plotsCount || '1 Guntha')) changes.plotsCount = { old: existingLead.plotsCount || '1 Guntha', new: finalSynced.plotsCount || '1 Guntha' };
+          if ((existingLead.visitDate || '') !== (finalSynced.visitDate || '')) changes.visitDate = { old: existingLead.visitDate || 'None', new: finalSynced.visitDate || 'None' };
+          if ((existingLead.followupDate || '') !== (finalSynced.followupDate || '')) changes.followupDate = { old: existingLead.followupDate || 'None', new: finalSynced.followupDate || 'None' };
+          if ((existingLead.status || 'New') !== (finalSynced.status || 'New')) changes.status = { old: existingLead.status || 'New', new: finalSynced.status || 'New' };
+          if ((existingLead.assignedAgentName || '') !== (finalSynced.assignedAgentName || '')) changes.assignedAgentName = { old: existingLead.assignedAgentName || 'Unassigned', new: finalSynced.assignedAgentName || 'Unassigned' };
+          if ((existingLead.notes || '') !== (finalSynced.notes || '')) changes.notes = { old: existingLead.notes || 'None', new: finalSynced.notes || 'None' };
+
+          if (Object.keys(changes).length > 0) {
+            const newLog = {
+              editId: 'edit-' + Date.now(),
+              performedBy: currentUser.name || (isAdmin ? 'Admin' : 'Sales Executive'),
+              timestamp: new Date().toISOString(),
+              changes,
+              snapshot: finalSynced
+            };
+
+            setLeadHistoryMap(prev => {
+              const currentLogs = prev[leadKey] || [];
+              const updatedLogs = [newLog, ...currentLogs];
+              const newMap = { ...prev, [leadKey]: updatedLogs };
+              localStorage.setItem('leadHistoryMap', JSON.stringify(newMap));
+              return newMap;
+            });
+          }
+        }
 
         if (statusFilter !== 'All' && statusFilter !== finalSynced.status) {
           setStatusFilter(finalSynced.status);
@@ -1536,13 +1607,252 @@ export default function AdminDashboard({ onLogout }) {
 
             {/* Leads View Tab: Only Leads Table Container */}
             {activeView === 'leads' && (
-              <div class="space-y-3 animate-fade-in flex-1 flex flex-col min-h-0 overflow-hidden">
-                {/* Leads Title Section */}
-                <div class="flex-shrink-0">
-                  <h2 class="text-base sm:text-lg font-serif font-bold text-gray-900 tracking-wide">
-                    Leads
-                  </h2>
+              selectedHistoryLead ? (
+                /* FULL PAGE LEAD ACTIVITY HISTORY VIEW (1:1 LEADS TABLE SEQUENCE) */
+                <div class="space-y-3 animate-fade-in flex-1 flex flex-col min-h-0 overflow-hidden">
+                  
+                  {/* Lead History Title Section */}
+                  <div class="flex-shrink-0 flex items-center justify-between bg-white px-4 py-3 rounded-2xl border border-purple-100 shadow-2xs">
+                    <div class="flex items-center gap-3">
+                      <div class="w-9 h-9 rounded-xl bg-purple-100 border border-purple-200 flex items-center justify-center text-purple-700 font-bold">
+                        <i class="fa-solid fa-clock-rotate-left text-base"></i>
+                      </div>
+                      <div>
+                        <h2 class="text-base sm:text-lg font-serif font-bold text-gray-900 tracking-wide flex items-center gap-2">
+                          <span>Lead History</span>
+                        </h2>
+                        <p class="text-xs text-gray-500 font-medium">
+                          Audit changes for: <strong class="text-gray-900">{selectedHistoryLead.firstName} {selectedHistoryLead.lastName}</strong> ({selectedHistoryLead.phone})
+                        </p>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => setSelectedHistoryLead(null)}
+                      class="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold flex items-center gap-1.5 transition shadow cursor-pointer"
+                    >
+                      <i class="fa-solid fa-arrow-left text-xs"></i>
+                      <span>Back to Leads</span>
+                    </button>
+                  </div>
+
+                  {/* Lead History Table Container */}
+                  <div class="bg-white rounded-2xl shadow-sm border border-gray-200/80 relative flex-1 flex flex-col min-h-0 overflow-hidden">
+                    <div class="overflow-x-auto overflow-y-auto custom-scrollbar flex-1">
+                      {(() => {
+                        const targetKey = selectedHistoryLead._id || selectedHistoryLead.id;
+                        const historyLogs = leadHistoryMap[targetKey] || [];
+
+                        if (historyLogs.length === 0) {
+                          return (
+                            <div class="py-16 text-center text-slate-400 space-y-2">
+                              <div class="w-12 h-12 rounded-full bg-purple-50 border border-purple-100 flex items-center justify-center mx-auto text-purple-500">
+                                <i class="fa-solid fa-clock-rotate-left text-xl"></i>
+                              </div>
+                              <h4 class="text-sm font-bold text-slate-700">No Edit History Recorded Yet</h4>
+                              <p class="text-xs text-slate-400 max-w-sm mx-auto">
+                                Edits saved via the edit form or status changes for this lead will appear here as Old Value ➔ New Value comparisons.
+                              </p>
+                            </div>
+                          );
+                        }
+
+                        const displayLeadId = getLeadDisplayId(selectedHistoryLead, 0, enquiries);
+
+                        return (
+                          <table class="w-full min-w-full text-left border-collapse">
+                            <thead class="sticky top-0 z-10 bg-gray-100 text-[11px] font-bold text-gray-700 uppercase tracking-wider shadow-2xs">
+                              <tr>
+                                <th class="py-2.5 px-2.5 whitespace-nowrap w-16 min-w-[60px]">Lead ID</th>
+                                <th class="py-2.5 px-3 whitespace-nowrap w-44 min-w-[165px]">Full Name</th>
+                                <th class="py-2.5 px-3 whitespace-nowrap w-36 min-w-[142px]">Mobile No</th>
+                                <th class="py-2.5 px-2.5 whitespace-nowrap min-w-[155px]">Email Address</th>
+                                <th class="py-2.5 px-2.5 whitespace-nowrap min-w-[145px]">Edit Date & Time</th>
+                                <th class="py-2.5 px-2.5 whitespace-nowrap min-w-[130px]">Status</th>
+                                <th class="py-2.5 px-2.5 whitespace-nowrap min-w-[115px]">Followup Date</th>
+                                <th class="py-2.5 px-2.5 whitespace-nowrap min-w-[110px]">No. of Guntha</th>
+                                <th class="py-2.5 px-2.5 whitespace-nowrap min-w-[110px]">Visit Date</th>
+                                <th class="py-2.5 px-2.5 whitespace-nowrap min-w-[145px]">Assigned Agent</th>
+                                <th class="py-2.5 px-3 whitespace-nowrap min-w-[130px]">Performed By</th>
+                              </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 text-[11.5px] bg-white">
+                              {historyLogs.map((log, idx) => {
+                                const logDate = log.timestamp ? new Date(log.timestamp).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A';
+                                const logTime = log.timestamp ? new Date(log.timestamp).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '';
+                                const changes = log.changes || {};
+
+                                return (
+                                  <tr key={log.editId || idx} class="hover:bg-purple-50/20 transition">
+                                    {/* Lead ID */}
+                                    <td class="py-2.5 px-2.5 whitespace-nowrap">
+                                      <span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-rose-50 text-[#B30E2E] border border-rose-200/80">
+                                        {displayLeadId}
+                                      </span>
+                                    </td>
+
+                                    {/* Full Name */}
+                                    <td class="py-2.5 px-3 font-bold text-gray-800 whitespace-nowrap">
+                                      {changes.fullName ? (
+                                        <div class="space-y-0.5">
+                                          <span class="px-1.5 py-0.5 rounded bg-rose-50 text-rose-800 line-through text-[10px] block font-medium">
+                                            {changes.fullName.old}
+                                          </span>
+                                          <span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-950 font-bold text-[10.5px] block border border-emerald-200">
+                                            {changes.fullName.new}
+                                          </span>
+                                        </div>
+                                      ) : (
+                                        <span class="capitalize text-gray-700 font-semibold">{selectedHistoryLead.firstName} {selectedHistoryLead.lastName}</span>
+                                      )}
+                                    </td>
+
+                                    {/* Mobile No */}
+                                    <td class="py-2.5 px-3 whitespace-nowrap">
+                                      {changes.phone ? (
+                                        <div class="space-y-0.5">
+                                          <span class="px-1.5 py-0.5 rounded bg-rose-50 text-rose-800 line-through text-[10px] block font-medium">
+                                            {changes.phone.old}
+                                          </span>
+                                          <span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-950 font-bold text-[10.5px] block border border-emerald-200">
+                                            {changes.phone.new}
+                                          </span>
+                                        </div>
+                                      ) : (
+                                        <span class="text-gray-700 font-semibold">{selectedHistoryLead.phone}</span>
+                                      )}
+                                    </td>
+
+                                    {/* Email Address */}
+                                    <td class="py-2.5 px-2.5 whitespace-nowrap">
+                                      {changes.email ? (
+                                        <div class="space-y-0.5">
+                                          <span class="px-1.5 py-0.5 rounded bg-rose-50 text-rose-800 line-through text-[10px] block font-medium">
+                                            {changes.email.old}
+                                          </span>
+                                          <span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-950 font-bold text-[10.5px] block border border-emerald-200">
+                                            {changes.email.new}
+                                          </span>
+                                        </div>
+                                      ) : (
+                                        <span class="text-gray-600">{selectedHistoryLead.email || '—'}</span>
+                                      )}
+                                    </td>
+
+                                    {/* Edit Date & Time */}
+                                    <td class="py-2.5 px-2.5 whitespace-nowrap font-semibold text-gray-800 text-[10.5px]">
+                                      <i class="fa-regular fa-clock text-[8.5px] text-gray-400 mr-1"></i>
+                                      <span>{logDate}</span>
+                                      <span class="text-[9.5px] text-gray-400 ml-1.5 font-normal">{logTime}</span>
+                                    </td>
+
+                                    {/* Status */}
+                                    <td class="py-2.5 px-2.5 whitespace-nowrap">
+                                      {changes.status ? (
+                                        <div class="space-y-0.5">
+                                          <span class="px-1.5 py-0.5 rounded bg-rose-50 text-rose-800 line-through text-[10px] block font-medium">
+                                            {changes.status.old}
+                                          </span>
+                                          <span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-950 font-bold text-[10.5px] block border border-emerald-200">
+                                            {changes.status.new}
+                                          </span>
+                                        </div>
+                                      ) : (
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                                          {selectedHistoryLead.status || 'New'}
+                                        </span>
+                                      )}
+                                    </td>
+
+                                    {/* Followup Date */}
+                                    <td class="py-2.5 px-2.5 whitespace-nowrap">
+                                      {changes.followupDate ? (
+                                        <div class="space-y-0.5">
+                                          <span class="px-1.5 py-0.5 rounded bg-rose-50 text-rose-800 line-through text-[10px] block font-medium">
+                                            {changes.followupDate.old}
+                                          </span>
+                                          <span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-950 font-bold text-[10.5px] block border border-emerald-200">
+                                            {changes.followupDate.new}
+                                          </span>
+                                        </div>
+                                      ) : (
+                                        <span class="text-gray-600">{selectedHistoryLead.followupDate || '—'}</span>
+                                      )}
+                                    </td>
+
+                                    {/* No. of Guntha */}
+                                    <td class="py-2.5 px-2.5 whitespace-nowrap">
+                                      {changes.plotsCount ? (
+                                        <div class="space-y-0.5">
+                                          <span class="px-1.5 py-0.5 rounded bg-rose-50 text-rose-800 line-through text-[10px] block font-medium">
+                                            {changes.plotsCount.old}
+                                          </span>
+                                          <span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-950 font-bold text-[10.5px] block border border-emerald-200">
+                                            {changes.plotsCount.new}
+                                          </span>
+                                        </div>
+                                      ) : (
+                                        <span class="text-gray-600">{selectedHistoryLead.plotsCount || '1 Guntha'}</span>
+                                      )}
+                                    </td>
+
+                                    {/* Visit Date */}
+                                    <td class="py-2.5 px-2.5 whitespace-nowrap">
+                                      {changes.visitDate ? (
+                                        <div class="space-y-0.5">
+                                          <span class="px-1.5 py-0.5 rounded bg-rose-50 text-rose-800 line-through text-[10px] block font-medium">
+                                            {changes.visitDate.old}
+                                          </span>
+                                          <span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-950 font-bold text-[10.5px] block border border-emerald-200">
+                                            {changes.visitDate.new}
+                                          </span>
+                                        </div>
+                                      ) : (
+                                        <span class="text-gray-600">{selectedHistoryLead.visitDate || '—'}</span>
+                                      )}
+                                    </td>
+
+                                    {/* Assigned Agent */}
+                                    <td class="py-2.5 px-2.5 whitespace-nowrap">
+                                      {changes.assignedAgentName ? (
+                                        <div class="space-y-0.5">
+                                          <span class="px-1.5 py-0.5 rounded bg-rose-50 text-rose-800 line-through text-[10px] block font-medium">
+                                            {changes.assignedAgentName.old}
+                                          </span>
+                                          <span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-950 font-bold text-[10.5px] block border border-emerald-200">
+                                            {changes.assignedAgentName.new}
+                                          </span>
+                                        </div>
+                                      ) : (
+                                        <span class="text-gray-700 font-semibold">{selectedHistoryLead.assignedAgentName || 'Unassigned'}</span>
+                                      )}
+                                    </td>
+
+                                    {/* Performed By */}
+                                    <td class="py-2.5 px-3 whitespace-nowrap">
+                                      <span class="px-2 py-0.5 rounded-lg border border-gray-200 text-[10.5px] font-bold text-gray-800 bg-gray-50 inline-flex items-center gap-1 shadow-2xs">
+                                        <i class="fa-solid fa-circle-user text-[#B30E2E]"></i>
+                                        <span>{log.performedBy || 'Admin'}</span>
+                                      </span>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        );
+                      })()}
+                    </div>
+                  </div>
+
                 </div>
+              ) : (
+                <div class="space-y-3 animate-fade-in flex-1 flex flex-col min-h-0 overflow-hidden">
+                  {/* Leads Title Section */}
+                  <div class="flex-shrink-0">
+                    <h2 class="text-base sm:text-lg font-serif font-bold text-gray-900 tracking-wide">
+                      Leads
+                    </h2>
+                  </div>
 
             {/* Leads Table Container */}
             <div class="bg-white rounded-2xl shadow-sm border border-gray-200/80 relative flex-1 flex flex-col min-h-0 overflow-hidden">
@@ -1968,7 +2278,14 @@ export default function AdminDashboard({ onLogout }) {
                             {/* Column 10: Actions Column (History, Edit, Delete) */}
                             <td class="py-2.5 px-2 text-center whitespace-nowrap w-24">
                               <div class="flex items-center justify-center gap-1">
-
+                                {/* Lead Activity History Button */}
+                                <button 
+                                  onClick={() => setSelectedHistoryLead({ ...item })}
+                                  class="w-6 h-6 rounded-md bg-purple-100 hover:bg-purple-600 text-purple-800 hover:text-white flex items-center justify-center transition cursor-pointer border border-purple-200"
+                                  title="View Lead Activity History"
+                                >
+                                  <i class="fa-solid fa-clock-rotate-left text-[10.5px]"></i>
+                                </button>
 
                                 {/* Edit Lead Button */}
                                 <button 
@@ -2002,6 +2319,7 @@ export default function AdminDashboard({ onLogout }) {
 
             </div>
               </div>
+              )
             )}
           </>
         ) : (

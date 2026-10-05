@@ -3325,7 +3325,7 @@ export default function AdminDashboard({ onLogout }) {
                       handleSavePopoverNote(activeNotePopover.item._id || activeNotePopover.item.id);
                     }
                   }}
-                  placeholder="e.g. 20-10-2026 - hi nisha..."
+                  placeholder="Type note description..."
                   class="flex-1 px-2.5 py-1.5 text-xs bg-white rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] font-medium shadow-2xs"
                 />
                 <button 

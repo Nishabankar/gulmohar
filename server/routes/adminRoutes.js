@@ -145,6 +145,12 @@ router.patch('/enquiries/:id', protectAdmin, async (req, res) => {
     if (email !== undefined) updateFields.email = email;
     if (plotsCount !== undefined) updateFields.plotsCount = plotsCount;
     if (plotInfo !== undefined) updateFields.plotInfo = plotInfo;
+    if (status !== undefined) updateFields.status = status;
+    if (followupDate !== undefined) updateFields.followupDate = followupDate;
+    if (visitDate !== undefined) updateFields.visitDate = visitDate;
+    if (assignedAgentName !== undefined) updateFields.assignedAgentName = assignedAgentName;
+    if (assignedTo !== undefined) updateFields.assignedTo = assignedTo;
+    if (notes !== undefined) updateFields.notes = notes;
 
     // 1. Full Name Change Logging
     const oldFirstName = existing.firstName || '';

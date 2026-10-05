@@ -1583,12 +1583,9 @@ export default function AdminDashboard({ onLogout }) {
                         <i class="fa-solid fa-clock-rotate-left text-base"></i>
                       </div>
                       <div>
-                        <h2 class="text-base sm:text-lg font-serif font-bold text-gray-900 tracking-wide flex items-center gap-2">
-                          <span>Lead History</span>
+                        <h2 class="text-base sm:text-lg font-serif font-bold text-gray-900 tracking-wide">
+                          Lead History
                         </h2>
-                        <p class="text-xs text-gray-500 font-medium">
-                          Audit changes for: <strong class="text-gray-900">{selectedHistoryLead?.firstName || ''} {selectedHistoryLead?.lastName || ''}</strong> ({selectedHistoryLead?.phone || ''})
-                        </p>
                       </div>
                     </div>
                     <button 

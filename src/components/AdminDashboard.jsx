@@ -1621,11 +1621,13 @@ export default function AdminDashboard({ onLogout }) {
                           );
                         }
 
+                        const displayLeadId = getLeadDisplayId(selectedHistoryLead, 0, enquiries);
+
                         return (
                           <table class="w-full min-w-full text-left border-collapse">
                             <thead class="sticky top-0 z-10 bg-gray-100 text-[11px] font-bold text-gray-700 uppercase tracking-wider shadow-2xs">
                               <tr>
-                                <th class="py-2.5 px-3 whitespace-nowrap min-w-[140px]">Object ID (_id)</th>
+                                <th class="py-2.5 px-3 whitespace-nowrap min-w-[90px]">Lead ID</th>
                                 <th class="py-2.5 px-3 whitespace-nowrap min-w-[150px]">Field Name</th>
                                 <th class="py-2.5 px-3 whitespace-nowrap min-w-[160px]">Old Value</th>
                                 <th class="py-2.5 px-3 whitespace-nowrap min-w-[160px]">New Value</th>
@@ -1640,10 +1642,10 @@ export default function AdminDashboard({ onLogout }) {
 
                                 return (
                                   <tr key={item._id || idx} class="hover:bg-purple-50/20 transition">
-                                    {/* Object ID */}
+                                    {/* Lead ID */}
                                     <td class="py-2.5 px-3 whitespace-nowrap">
-                                      <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-slate-100 text-slate-700 border border-slate-200">
-                                        {item._id ? item._id.toString() : '—'}
+                                      <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-rose-50 text-[#B30E2E] border border-rose-200/80">
+                                        {displayLeadId}
                                       </span>
                                     </td>
 

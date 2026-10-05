@@ -1481,29 +1481,11 @@ export default function AdminDashboard({ onLogout }) {
       <main class="w-full px-2 sm:px-3 lg:px-4 py-3 sm:py-4 flex-1 flex flex-col min-h-0 overflow-hidden space-y-3 sm:space-y-4">
         
         {historyModalItem ? (
-          /* FULL PAGE LEAD ACTIVITY HISTORY VIEW (DIRECT TABLE ONLY) */
-          <div class="space-y-3 sm:space-y-4 animate-fade-in flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar w-full pb-6">
+          /* FULL PAGE LEAD ACTIVITY HISTORY VIEW (PURE TABLE ONLY) */
+          <div class="animate-fade-in flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar w-full pb-6">
             
             {/* Direct History Table Container (1:1 UI Sequence with Main Leads Table) */}
             <div class="bg-white rounded-2xl shadow-xs border border-gray-200/80 overflow-hidden flex flex-col">
-              {/* Minimal Header Bar with Back Button */}
-              <div class="p-3 bg-gray-50/80 border-b border-gray-200/80 flex items-center justify-between flex-shrink-0">
-                <button 
-                  onClick={() => setHistoryModalItem(null)}
-                  class="px-3.5 py-1.5 rounded-xl bg-white hover:bg-rose-50 hover:text-[#B30E2E] text-gray-800 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer border border-gray-300 shadow-2xs"
-                  title="Back to Leads Table"
-                >
-                  <i class="fa-solid fa-arrow-left text-xs text-[#B30E2E]"></i>
-                  <span>Back to Leads</span>
-                </button>
-                <div class="text-xs font-bold text-gray-700 flex items-center gap-2">
-                  <span class="bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.5 rounded-md font-extrabold text-[11px]">
-                    Lead #{historyModalItem._id || historyModalItem.id}
-                  </span>
-                  <span>{historyModalItem.firstName || ''} {historyModalItem.lastName || ''} ({historyModalItem.phone || ''})</span>
-                </div>
-              </div>
-
               <div class="overflow-x-auto">
                 {(() => {
                   const logs = getLeadHistoryLogs(historyModalItem);

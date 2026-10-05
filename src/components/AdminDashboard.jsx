@@ -870,9 +870,146 @@ export default function AdminDashboard({ onLogout }) {
     setEditModalSuccessMsg('');
     const token = localStorage.getItem('adminToken');
 
-    // Instant local UI state update
+    // Instant local UI state update with Multi-Field History Logging
+    const leadKey = editingEnquiry._id || editingEnquiry.id;
+    const existingLead = enquiries.find(item => (item._id || item.id) === leadKey);
     const updatedLead = { ...editingEnquiry };
-    const leadKey = updatedLead._id || updatedLead.id;
+    const performer = currentUser.name || 'Admin';
+
+    if (existingLead) {
+      const newLocalLogs = [];
+      const nowIso = new Date().toISOString();
+
+      // 1. Full Name Change
+      const oldFirstName = existingLead.firstName || '';
+      const oldLastName = existingLead.lastName || '';
+      const oldFullName = `${oldFirstName} ${oldLastName}`.trim() || 'N/A';
+      const newFirstName = updatedLead.firstName || '';
+      const newLastName = updatedLead.lastName || '';
+      const newFullName = `${newFirstName} ${newLastName}`.trim() || 'N/A';
+
+      if (oldFullName !== newFullName) {
+        newLocalLogs.push({
+          actionType: 'NAME_CHANGE',
+          title: 'Full Name Updated',
+          description: `Full name changed from '${oldFullName}' to '${newFullName}'`,
+          performedBy: performer,
+          oldValue: oldFullName,
+          newValue: newFullName,
+          createdAt: nowIso
+        });
+      }
+
+      // 2. Mobile No Change
+      if (updatedLead.phone && updatedLead.phone !== existingLead.phone) {
+        newLocalLogs.push({
+          actionType: 'PHONE_CHANGE',
+          title: 'Mobile No Updated',
+          description: `Mobile number changed from '${existingLead.phone || 'N/A'}' to '${updatedLead.phone}'`,
+          performedBy: performer,
+          oldValue: existingLead.phone || 'N/A',
+          newValue: updatedLead.phone,
+          createdAt: nowIso
+        });
+      }
+
+      // 3. Email Address Change
+      if (updatedLead.email !== undefined && updatedLead.email !== existingLead.email) {
+        newLocalLogs.push({
+          actionType: 'EMAIL_CHANGE',
+          title: 'Email Address Updated',
+          description: `Email address changed from '${existingLead.email || 'N/A'}' to '${updatedLead.email || 'N/A'}'`,
+          performedBy: performer,
+          oldValue: existingLead.email || 'N/A',
+          newValue: updatedLead.email || 'N/A',
+          createdAt: nowIso
+        });
+      }
+
+      // 4. No. of Guntha / Plot Info Change
+      const oldPlotVal = existingLead.plotsCount || existingLead.plotInfo || '1 Guntha';
+      const newPlotVal = updatedLead.plotsCount || updatedLead.plotInfo || oldPlotVal;
+      if (oldPlotVal !== newPlotVal) {
+        newLocalLogs.push({
+          actionType: 'PLOT_CHANGE',
+          title: 'No. of Guntha Updated',
+          description: `Plot info changed from '${oldPlotVal}' to '${newPlotVal}'`,
+          performedBy: performer,
+          oldValue: oldPlotVal,
+          newValue: newPlotVal,
+          createdAt: nowIso
+        });
+      }
+
+      // 5. Status Change
+      if (updatedLead.status && updatedLead.status !== existingLead.status) {
+        newLocalLogs.push({
+          actionType: 'STATUS_CHANGE',
+          title: 'Status Updated',
+          description: `Status changed from '${existingLead.status || 'New'}' to '${updatedLead.status}'`,
+          performedBy: performer,
+          oldValue: existingLead.status || 'New',
+          newValue: updatedLead.status,
+          createdAt: nowIso
+        });
+      }
+
+      // 6. Followup Date Change
+      if (updatedLead.followupDate !== undefined && updatedLead.followupDate !== existingLead.followupDate) {
+        newLocalLogs.push({
+          actionType: 'FOLLOWUP_CHANGE',
+          title: 'Followup Date Updated',
+          description: `Followup date changed from '${existingLead.followupDate || 'None'}' to '${updatedLead.followupDate || 'None'}'`,
+          performedBy: performer,
+          oldValue: existingLead.followupDate || 'None',
+          newValue: updatedLead.followupDate || 'None',
+          createdAt: nowIso
+        });
+      }
+
+      // 7. Site Visit Date Change
+      if (updatedLead.visitDate !== undefined && updatedLead.visitDate !== existingLead.visitDate) {
+        newLocalLogs.push({
+          actionType: 'VISIT_CHANGE',
+          title: 'Site Visit Date Updated',
+          description: `Site visit date changed from '${existingLead.visitDate || 'None'}' to '${updatedLead.visitDate || 'None'}'`,
+          performedBy: performer,
+          oldValue: existingLead.visitDate || 'None',
+          newValue: updatedLead.visitDate || 'None',
+          createdAt: nowIso
+        });
+      }
+
+      // 8. Assigned Agent Change
+      if (updatedLead.assignedAgentName && updatedLead.assignedAgentName !== existingLead.assignedAgentName) {
+        newLocalLogs.push({
+          actionType: 'AGENT_CHANGE',
+          title: 'Assigned Agent Changed',
+          description: `Agent reassigned from '${existingLead.assignedAgentName || 'Unassigned'}' to '${updatedLead.assignedAgentName}'`,
+          performedBy: performer,
+          oldValue: existingLead.assignedAgentName || 'Unassigned',
+          newValue: updatedLead.assignedAgentName,
+          createdAt: nowIso
+        });
+      }
+
+      // 9. Notes Change
+      if (updatedLead.notes !== undefined && updatedLead.notes !== existingLead.notes && updatedLead.notes.trim() !== '') {
+        newLocalLogs.push({
+          actionType: 'NOTE',
+          title: 'Note / Remark Updated',
+          description: `Note: "${updatedLead.notes}"`,
+          performedBy: performer,
+          oldValue: existingLead.notes || 'None',
+          newValue: updatedLead.notes,
+          createdAt: nowIso
+        });
+      }
+
+      if (newLocalLogs.length > 0) {
+        updatedLead.history = [...newLocalLogs, ...(existingLead.history || [])];
+      }
+    }
 
     setEnquiries(prev => prev.map(item => {
       const itemKey = item._id || item.id;

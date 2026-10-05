@@ -152,10 +152,12 @@ router.patch('/enquiries/:id', protectAdmin, async (req, res) => {
     if (assignedTo !== undefined) updateFields.assignedTo = assignedTo;
     if (notes !== undefined) updateFields.notes = notes;
 
+    console.log('📝 Updating Enquiry in MongoDB Atlas:', existing._id, updateFields);
+
     const updatedEnquiry = await Enquiry.findByIdAndUpdate(
       existing._id,
       { $set: updateFields },
-      { new: true }
+      { new: true, runValidators: true }
     );
 
     return res.json({ success: true, message: 'Enquiry updated in MongoDB', data: updatedEnquiry });

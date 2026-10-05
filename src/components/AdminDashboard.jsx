@@ -725,32 +725,6 @@ export default function AdminDashboard({ onLogout }) {
     const updatedLead = { ...editingEnquiry };
 
 
-    setEnquiries(prev => prev.map(item => {
-      const itemKey = item._id || item.id;
-      return itemKey === leadKey ? updatedLead : item;
-    }));
-
-    // Update local enquiries cache in localStorage
-    const localCache = JSON.parse(localStorage.getItem('localEnquiriesCache') || '[]');
-    let foundInCache = false;
-    const updatedCache = localCache.map(item => {
-      const itemKey = item._id || item.id;
-      if (itemKey === leadKey) {
-        foundInCache = true;
-        return updatedLead;
-      }
-      return item;
-    });
-    if (!foundInCache) {
-      updatedCache.push(updatedLead);
-    }
-    localStorage.setItem('localEnquiriesCache', JSON.stringify(updatedCache));
-
-    // If status filter was set to a specific status different from new status, sync statusFilter so edited lead stays visible on screen
-    if (statusFilter !== 'All' && statusFilter !== updatedLead.status) {
-      setStatusFilter(updatedLead.status);
-    }
-
     try {
       const res = await fetch(`${API_BASE_URL}/api/admin/enquiries/${leadKey}`, {
         method: 'PATCH',
@@ -776,30 +750,50 @@ export default function AdminDashboard({ onLogout }) {
       });
 
       const data = await res.json();
-      if (data.success && data.data) {
+      if (res.ok && data.success && data.data) {
         const finalSynced = { ...data.data, followupDate: updatedLead.followupDate || data.data.followupDate || '' };
+        
+        // 1. Sync React state strictly with MongoDB Atlas returned record
         setEnquiries(prev => prev.map(item => {
           const itemKey = item._id || item.id;
           return itemKey === leadKey ? finalSynced : item;
         }));
 
-        // Also update local cache with database updated record
-        const freshCache = JSON.parse(localStorage.getItem('localEnquiriesCache') || '[]');
-        const syncedCache = freshCache.map(item => {
+        // 2. Sync Local Cache strictly with MongoDB Atlas returned record
+        const localCache = JSON.parse(localStorage.getItem('localEnquiriesCache') || '[]');
+        let foundInCache = false;
+        const updatedCache = localCache.map(item => {
           const itemKey = item._id || item.id;
-          return itemKey === leadKey ? finalSynced : item;
+          if (itemKey === leadKey) {
+            foundInCache = true;
+            return finalSynced;
+          }
+          return item;
         });
-        localStorage.setItem('localEnquiriesCache', JSON.stringify(syncedCache));
+        if (!foundInCache) {
+          updatedCache.push(finalSynced);
+        }
+        localStorage.setItem('localEnquiriesCache', JSON.stringify(updatedCache));
+
+        if (statusFilter !== 'All' && statusFilter !== finalSynced.status) {
+          setStatusFilter(finalSynced.status);
+        }
+
+        setEditModalSuccessMsg(`Enquiry Updated Successfully in Database!`);
+        setTimeout(() => {
+          setEditingEnquiry(null);
+          setEditModalSuccessMsg('');
+        }, 1200);
+      } else {
+        alert(`Database Update Error: ${data.message || 'Could not update lead in database'}`);
+        setEditModalSuccessMsg(`Error: ${data.message || 'Database update failed'}`);
       }
     } catch (err) {
-      console.warn('Backend patch update note:', err);
+      console.error('Backend patch update error:', err);
+      alert(`Network / Database Connection Error: ${err.message}`);
+      setEditModalSuccessMsg(`Connection Error: ${err.message}`);
     } finally {
       setSavingEdit(false);
-      setEditModalSuccessMsg(`Enquiry Edited Successfully! (Status: ${updatedLead.status})`);
-      setTimeout(() => {
-        setEditingEnquiry(null);
-        setEditModalSuccessMsg('');
-      }, 1500);
     }
   };
 

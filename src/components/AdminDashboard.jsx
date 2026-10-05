@@ -37,11 +37,23 @@ export default function AdminDashboard({ onLogout }) {
   const [errorMsg, setErrorMsg] = useState('');
 
   // Logged in user info & Role
-  const rawUser = JSON.parse(
-    localStorage.getItem('adminUser') || '{}'
-  );
+  const rawUser = (() => {
+    try {
+      const stored = localStorage.getItem('adminUser');
+      return stored ? JSON.parse(stored) : {};
+    } catch (e) {
+      return {};
+    }
+  })();
 
-  const registeredAgentsList = JSON.parse(localStorage.getItem('registeredAgents') || '[]');
+  const registeredAgentsList = (() => {
+    try {
+      const stored = localStorage.getItem('registeredAgents');
+      return stored ? JSON.parse(stored) : [];
+    } catch (e) {
+      return [];
+    }
+  })();
   const matchedAgentObj = registeredAgentsList.find(a => 
     (a.username && a.username.toLowerCase() === (rawUser.username || '').toLowerCase()) ||
     (a.id && (a.id === rawUser.id || a.id === rawUser._id))
@@ -97,6 +109,7 @@ export default function AdminDashboard({ onLogout }) {
 
   // State for Full Lead Edit Modal & Floating Note Popover
   const [editingEnquiry, setEditingEnquiry] = useState(null);
+  const [activeNotePopover, setActiveNotePopover] = useState(null);
   // State for Lead Activity History View & Tracking Map
   const [selectedHistoryLead, setSelectedHistoryLead] = useState(null);
   const [leadHistoryMap, setLeadHistoryMap] = useState(() => {
@@ -1622,7 +1635,7 @@ export default function AdminDashboard({ onLogout }) {
                           <span>Lead History</span>
                         </h2>
                         <p class="text-xs text-gray-500 font-medium">
-                          Audit changes for: <strong class="text-gray-900">{selectedHistoryLead.firstName} {selectedHistoryLead.lastName}</strong> ({selectedHistoryLead.phone})
+                          Audit changes for: <strong class="text-gray-900">{selectedHistoryLead?.firstName || ''} {selectedHistoryLead?.lastName || ''}</strong> ({selectedHistoryLead?.phone || ''})
                         </p>
                       </div>
                     </div>
@@ -1639,7 +1652,8 @@ export default function AdminDashboard({ onLogout }) {
                   <div class="bg-white rounded-2xl shadow-sm border border-gray-200/80 relative flex-1 flex flex-col min-h-0 overflow-hidden">
                     <div class="overflow-x-auto overflow-y-auto custom-scrollbar flex-1">
                       {(() => {
-                        const targetKey = selectedHistoryLead._id || selectedHistoryLead.id;
+                        if (!selectedHistoryLead) return null;
+                        const targetKey = selectedHistoryLead._id || selectedHistoryLead.id || '';
                         const historyLogs = leadHistoryMap[targetKey] || [];
 
                         if (historyLogs.length === 0) {
@@ -1702,7 +1716,7 @@ export default function AdminDashboard({ onLogout }) {
                                           </span>
                                         </div>
                                       ) : (
-                                        <span class="capitalize text-gray-700 font-semibold">{selectedHistoryLead.firstName} {selectedHistoryLead.lastName}</span>
+                                        <span class="capitalize text-gray-700 font-semibold">{selectedHistoryLead?.firstName || ''} {selectedHistoryLead?.lastName || ''}</span>
                                       )}
                                     </td>
 
@@ -1718,7 +1732,7 @@ export default function AdminDashboard({ onLogout }) {
                                           </span>
                                         </div>
                                       ) : (
-                                        <span class="text-gray-700 font-semibold">{selectedHistoryLead.phone}</span>
+                                        <span class="text-gray-700 font-semibold">{selectedHistoryLead?.phone || ''}</span>
                                       )}
                                     </td>
 
@@ -1734,7 +1748,7 @@ export default function AdminDashboard({ onLogout }) {
                                           </span>
                                         </div>
                                       ) : (
-                                        <span class="text-gray-600">{selectedHistoryLead.email || '—'}</span>
+                                        <span class="text-gray-600">{selectedHistoryLead?.email || '—'}</span>
                                       )}
                                     </td>
 
@@ -1758,7 +1772,7 @@ export default function AdminDashboard({ onLogout }) {
                                         </div>
                                       ) : (
                                         <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
-                                          {selectedHistoryLead.status || 'New'}
+                                          {selectedHistoryLead?.status || 'New'}
                                         </span>
                                       )}
                                     </td>
@@ -1775,7 +1789,7 @@ export default function AdminDashboard({ onLogout }) {
                                           </span>
                                         </div>
                                       ) : (
-                                        <span class="text-gray-600">{selectedHistoryLead.followupDate || '—'}</span>
+                                        <span class="text-gray-600">{selectedHistoryLead?.followupDate || '—'}</span>
                                       )}
                                     </td>
 
@@ -1791,7 +1805,7 @@ export default function AdminDashboard({ onLogout }) {
                                           </span>
                                         </div>
                                       ) : (
-                                        <span class="text-gray-600">{selectedHistoryLead.plotsCount || '1 Guntha'}</span>
+                                        <span class="text-gray-600">{selectedHistoryLead?.plotsCount || '1 Guntha'}</span>
                                       )}
                                     </td>
 
@@ -1807,7 +1821,7 @@ export default function AdminDashboard({ onLogout }) {
                                           </span>
                                         </div>
                                       ) : (
-                                        <span class="text-gray-600">{selectedHistoryLead.visitDate || '—'}</span>
+                                        <span class="text-gray-600">{selectedHistoryLead?.visitDate || '—'}</span>
                                       )}
                                     </td>
 
@@ -1823,7 +1837,7 @@ export default function AdminDashboard({ onLogout }) {
                                           </span>
                                         </div>
                                       ) : (
-                                        <span class="text-gray-700 font-semibold">{selectedHistoryLead.assignedAgentName || 'Unassigned'}</span>
+                                        <span class="text-gray-700 font-semibold">{selectedHistoryLead?.assignedAgentName || 'Unassigned'}</span>
                                       )}
                                     </td>
 

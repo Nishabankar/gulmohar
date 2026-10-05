@@ -1711,15 +1711,15 @@ export default function AdminDashboard({ onLogout }) {
                                     </td>
 
                                     {/* Old Value */}
-                                    <td class="py-2.5 px-3 whitespace-nowrap">
-                                      <span class="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-800 line-through text-xs font-medium border border-rose-200 inline-block">
+                                    <td class="py-2.5 px-3 whitespace-normal min-w-[130px] max-w-[240px] sm:max-w-[300px]">
+                                      <span class="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-800 line-through text-xs font-medium border border-rose-200 inline-block break-words break-all whitespace-pre-wrap leading-relaxed">
                                         {item.oldValue || '—'}
                                       </span>
                                     </td>
 
                                     {/* New Value */}
-                                    <td class="py-2.5 px-3 whitespace-nowrap">
-                                      <span class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-950 font-bold text-xs border border-emerald-200 inline-block shadow-2xs">
+                                    <td class="py-2.5 px-3 whitespace-normal min-w-[130px] max-w-[260px] sm:max-w-[340px]">
+                                      <span class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-950 font-bold text-xs border border-emerald-200 inline-block shadow-2xs break-words break-all whitespace-pre-wrap leading-relaxed">
                                         {item.newValue || '—'}
                                       </span>
                                     </td>
@@ -3276,7 +3276,7 @@ export default function AdminDashboard({ onLogout }) {
                             {log.modifiedBy || 'Admin'}
                           </span>
                         </div>
-                        <p class="text-[11.5px] font-medium leading-relaxed break-words text-slate-800 pt-0.5">
+                        <p class="text-[11.5px] font-medium leading-relaxed break-words break-all text-slate-800 pt-0.5 max-h-24 overflow-y-auto custom-scrollbar pr-1">
                           {log.newValue}
                         </p>
                       </div>
@@ -3288,7 +3288,7 @@ export default function AdminDashboard({ onLogout }) {
                       <div class="flex items-center justify-between text-[10px] text-gray-500 font-medium">
                         <span class="font-bold text-[#B30E2E]">Initial Lead Note</span>
                       </div>
-                      <p class="text-[11.5px] font-medium leading-relaxed break-words text-slate-800 pt-0.5">
+                      <p class="text-[11.5px] font-medium leading-relaxed break-words break-all text-slate-800 pt-0.5 max-h-24 overflow-y-auto custom-scrollbar pr-1">
                         {targetLead.notes}
                       </p>
                     </div>

@@ -1,5 +1,31 @@
 const mongoose = require('mongoose');
 
+const historySchema = new mongoose.Schema(
+  {
+    fieldName: {
+      type: String,
+      required: true
+    },
+    oldValue: {
+      type: String,
+      default: '—'
+    },
+    newValue: {
+      type: String,
+      default: '—'
+    },
+    modifiedBy: {
+      type: String,
+      default: 'Admin'
+    },
+    modifiedDate: {
+      type: Date,
+      default: Date.now
+    }
+  },
+  { _id: true }
+);
+
 const enquirySchema = new mongoose.Schema(
   {
     firstName: {
@@ -54,7 +80,7 @@ const enquirySchema = new mongoose.Schema(
       type: String,
       default: ''
     },
-
+    history: [historySchema]
   },
   {
     timestamps: true

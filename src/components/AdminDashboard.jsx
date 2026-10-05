@@ -112,13 +112,28 @@ export default function AdminDashboard({ onLogout }) {
   const [activeNotePopover, setActiveNotePopover] = useState(null);
   // State for Lead Activity History View & Tracking Map
   const [selectedHistoryLead, setSelectedHistoryLead] = useState(null);
-  const [leadHistoryMap, setLeadHistoryMap] = useState(() => {
+
+  const handleOpenHistoryModal = async (leadItem) => {
+    if (!leadItem) return;
+    setSelectedHistoryLead({ ...leadItem });
+    const targetId = leadItem._id || leadItem.id;
+    if (!targetId) return;
+
+    const token = localStorage.getItem('adminToken');
     try {
-      return JSON.parse(localStorage.getItem('leadHistoryMap') || '{}');
+      const res = await fetch(`${API_BASE_URL}/api/admin/enquiries/${targetId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (data.success && data.data) {
+        setSelectedHistoryLead(data.data);
+      }
     } catch (e) {
-      return {};
+      console.warn('Could not fetch single lead history from MongoDB Atlas:', e);
     }
-  });
+  };
 
 
 
@@ -1653,200 +1668,83 @@ export default function AdminDashboard({ onLogout }) {
                     <div class="overflow-x-auto overflow-y-auto custom-scrollbar flex-1">
                       {(() => {
                         if (!selectedHistoryLead) return null;
-                        const targetKey = selectedHistoryLead._id || selectedHistoryLead.id || '';
-                        const historyLogs = leadHistoryMap[targetKey] || [];
+                        const mongoHistory = selectedHistoryLead.history || [];
 
-                        if (historyLogs.length === 0) {
+                        if (mongoHistory.length === 0) {
                           return (
                             <div class="py-16 text-center text-slate-400 space-y-2">
                               <div class="w-12 h-12 rounded-full bg-purple-50 border border-purple-100 flex items-center justify-center mx-auto text-purple-500">
                                 <i class="fa-solid fa-clock-rotate-left text-xl"></i>
                               </div>
-                              <h4 class="text-sm font-bold text-slate-700">No Edit History Recorded Yet</h4>
+                              <h4 class="text-sm font-bold text-slate-700">No Edit History Recorded Yet in MongoDB Database</h4>
                               <p class="text-xs text-slate-400 max-w-sm mx-auto">
-                                Edits saved via the edit form or status changes for this lead will appear here as Old Value ➔ New Value comparisons.
+                                Edits saved via the edit form or status changes for this lead will appear here directly from MongoDB Atlas schema as Old Value ➔ New Value history entries.
                               </p>
                             </div>
                           );
                         }
 
-                        const displayLeadId = getLeadDisplayId(selectedHistoryLead, 0, enquiries);
-
                         return (
                           <table class="w-full min-w-full text-left border-collapse">
                             <thead class="sticky top-0 z-10 bg-gray-100 text-[11px] font-bold text-gray-700 uppercase tracking-wider shadow-2xs">
                               <tr>
-                                <th class="py-2.5 px-2.5 whitespace-nowrap w-16 min-w-[60px]">Lead ID</th>
-                                <th class="py-2.5 px-3 whitespace-nowrap w-44 min-w-[165px]">Full Name</th>
-                                <th class="py-2.5 px-3 whitespace-nowrap w-36 min-w-[142px]">Mobile No</th>
-                                <th class="py-2.5 px-2.5 whitespace-nowrap min-w-[155px]">Email Address</th>
-                                <th class="py-2.5 px-2.5 whitespace-nowrap min-w-[145px]">Edit Date & Time</th>
-                                <th class="py-2.5 px-2.5 whitespace-nowrap min-w-[130px]">Status</th>
-                                <th class="py-2.5 px-2.5 whitespace-nowrap min-w-[115px]">Followup Date</th>
-                                <th class="py-2.5 px-2.5 whitespace-nowrap min-w-[110px]">No. of Guntha</th>
-                                <th class="py-2.5 px-2.5 whitespace-nowrap min-w-[110px]">Visit Date</th>
-                                <th class="py-2.5 px-2.5 whitespace-nowrap min-w-[145px]">Assigned Agent</th>
-                                <th class="py-2.5 px-3 whitespace-nowrap min-w-[130px]">Performed By</th>
+                                <th class="py-2.5 px-3 whitespace-nowrap min-w-[140px]">Object ID (_id)</th>
+                                <th class="py-2.5 px-3 whitespace-nowrap min-w-[150px]">Field Name</th>
+                                <th class="py-2.5 px-3 whitespace-nowrap min-w-[160px]">Old Value</th>
+                                <th class="py-2.5 px-3 whitespace-nowrap min-w-[160px]">New Value</th>
+                                <th class="py-2.5 px-3 whitespace-nowrap min-w-[140px]">Modified By</th>
+                                <th class="py-2.5 px-3 whitespace-nowrap min-w-[165px]">Modified Date & Time</th>
                               </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100 text-[11.5px] bg-white">
-                              {historyLogs.map((log, idx) => {
-                                const logDate = log.timestamp ? new Date(log.timestamp).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A';
-                                const logTime = log.timestamp ? new Date(log.timestamp).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '';
-                                const changes = log.changes || {};
+                              {mongoHistory.map((item, idx) => {
+                                const modDate = item.modifiedDate ? new Date(item.modifiedDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A';
+                                const modTime = item.modifiedDate ? new Date(item.modifiedDate).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '';
 
                                 return (
-                                  <tr key={log.editId || idx} class="hover:bg-purple-50/20 transition">
-                                    {/* Lead ID */}
-                                    <td class="py-2.5 px-2.5 whitespace-nowrap">
-                                      <span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-rose-50 text-[#B30E2E] border border-rose-200/80">
-                                        {displayLeadId}
+                                  <tr key={item._id || idx} class="hover:bg-purple-50/20 transition">
+                                    {/* Object ID */}
+                                    <td class="py-2.5 px-3 whitespace-nowrap">
+                                      <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                                        {item._id ? item._id.toString() : '—'}
                                       </span>
                                     </td>
 
-                                    {/* Full Name */}
+                                    {/* Field Name */}
                                     <td class="py-2.5 px-3 font-bold text-gray-800 whitespace-nowrap">
-                                      {changes.fullName ? (
-                                        <div class="space-y-0.5">
-                                          <span class="px-1.5 py-0.5 rounded bg-rose-50 text-rose-800 line-through text-[10px] block font-medium">
-                                            {changes.fullName.old}
-                                          </span>
-                                          <span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-950 font-bold text-[10.5px] block border border-emerald-200">
-                                            {changes.fullName.new}
-                                          </span>
-                                        </div>
-                                      ) : (
-                                        <span class="capitalize text-gray-700 font-semibold">{selectedHistoryLead?.firstName || ''} {selectedHistoryLead?.lastName || ''}</span>
-                                      )}
-                                    </td>
-
-                                    {/* Mobile No */}
-                                    <td class="py-2.5 px-3 whitespace-nowrap">
-                                      {changes.phone ? (
-                                        <div class="space-y-0.5">
-                                          <span class="px-1.5 py-0.5 rounded bg-rose-50 text-rose-800 line-through text-[10px] block font-medium">
-                                            {changes.phone.old}
-                                          </span>
-                                          <span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-950 font-bold text-[10.5px] block border border-emerald-200">
-                                            {changes.phone.new}
-                                          </span>
-                                        </div>
-                                      ) : (
-                                        <span class="text-gray-700 font-semibold">{selectedHistoryLead?.phone || ''}</span>
-                                      )}
-                                    </td>
-
-                                    {/* Email Address */}
-                                    <td class="py-2.5 px-2.5 whitespace-nowrap">
-                                      {changes.email ? (
-                                        <div class="space-y-0.5">
-                                          <span class="px-1.5 py-0.5 rounded bg-rose-50 text-rose-800 line-through text-[10px] block font-medium">
-                                            {changes.email.old}
-                                          </span>
-                                          <span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-950 font-bold text-[10.5px] block border border-emerald-200">
-                                            {changes.email.new}
-                                          </span>
-                                        </div>
-                                      ) : (
-                                        <span class="text-gray-600">{selectedHistoryLead?.email || '—'}</span>
-                                      )}
-                                    </td>
-
-                                    {/* Edit Date & Time */}
-                                    <td class="py-2.5 px-2.5 whitespace-nowrap font-semibold text-gray-800 text-[10.5px]">
-                                      <i class="fa-regular fa-clock text-[8.5px] text-gray-400 mr-1"></i>
-                                      <span>{logDate}</span>
-                                      <span class="text-[9.5px] text-gray-400 ml-1.5 font-normal">{logTime}</span>
-                                    </td>
-
-                                    {/* Status */}
-                                    <td class="py-2.5 px-2.5 whitespace-nowrap">
-                                      {changes.status ? (
-                                        <div class="space-y-0.5">
-                                          <span class="px-1.5 py-0.5 rounded bg-rose-50 text-rose-800 line-through text-[10px] block font-medium">
-                                            {changes.status.old}
-                                          </span>
-                                          <span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-950 font-bold text-[10.5px] block border border-emerald-200">
-                                            {changes.status.new}
-                                          </span>
-                                        </div>
-                                      ) : (
-                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
-                                          {selectedHistoryLead?.status || 'New'}
-                                        </span>
-                                      )}
-                                    </td>
-
-                                    {/* Followup Date */}
-                                    <td class="py-2.5 px-2.5 whitespace-nowrap">
-                                      {changes.followupDate ? (
-                                        <div class="space-y-0.5">
-                                          <span class="px-1.5 py-0.5 rounded bg-rose-50 text-rose-800 line-through text-[10px] block font-medium">
-                                            {changes.followupDate.old}
-                                          </span>
-                                          <span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-950 font-bold text-[10.5px] block border border-emerald-200">
-                                            {changes.followupDate.new}
-                                          </span>
-                                        </div>
-                                      ) : (
-                                        <span class="text-gray-600">{selectedHistoryLead?.followupDate || '—'}</span>
-                                      )}
-                                    </td>
-
-                                    {/* No. of Guntha */}
-                                    <td class="py-2.5 px-2.5 whitespace-nowrap">
-                                      {changes.plotsCount ? (
-                                        <div class="space-y-0.5">
-                                          <span class="px-1.5 py-0.5 rounded bg-rose-50 text-rose-800 line-through text-[10px] block font-medium">
-                                            {changes.plotsCount.old}
-                                          </span>
-                                          <span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-950 font-bold text-[10.5px] block border border-emerald-200">
-                                            {changes.plotsCount.new}
-                                          </span>
-                                        </div>
-                                      ) : (
-                                        <span class="text-gray-600">{selectedHistoryLead?.plotsCount || '1 Guntha'}</span>
-                                      )}
-                                    </td>
-
-                                    {/* Visit Date */}
-                                    <td class="py-2.5 px-2.5 whitespace-nowrap">
-                                      {changes.visitDate ? (
-                                        <div class="space-y-0.5">
-                                          <span class="px-1.5 py-0.5 rounded bg-rose-50 text-rose-800 line-through text-[10px] block font-medium">
-                                            {changes.visitDate.old}
-                                          </span>
-                                          <span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-950 font-bold text-[10.5px] block border border-emerald-200">
-                                            {changes.visitDate.new}
-                                          </span>
-                                        </div>
-                                      ) : (
-                                        <span class="text-gray-600">{selectedHistoryLead?.visitDate || '—'}</span>
-                                      )}
-                                    </td>
-
-                                    {/* Assigned Agent */}
-                                    <td class="py-2.5 px-2.5 whitespace-nowrap">
-                                      {changes.assignedAgentName ? (
-                                        <div class="space-y-0.5">
-                                          <span class="px-1.5 py-0.5 rounded bg-rose-50 text-rose-800 line-through text-[10px] block font-medium">
-                                            {changes.assignedAgentName.old}
-                                          </span>
-                                          <span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-950 font-bold text-[10.5px] block border border-emerald-200">
-                                            {changes.assignedAgentName.new}
-                                          </span>
-                                        </div>
-                                      ) : (
-                                        <span class="text-gray-700 font-semibold">{selectedHistoryLead?.assignedAgentName || 'Unassigned'}</span>
-                                      )}
-                                    </td>
-
-                                    {/* Performed By */}
-                                    <td class="py-2.5 px-3 whitespace-nowrap">
-                                      <span class="px-2 py-0.5 rounded-lg border border-gray-200 text-[10.5px] font-bold text-gray-800 bg-gray-50 inline-flex items-center gap-1 shadow-2xs">
-                                        <i class="fa-solid fa-circle-user text-[#B30E2E]"></i>
-                                        <span>{log.performedBy || 'Admin'}</span>
+                                      <span class="inline-flex items-center gap-1.5 text-purple-900 bg-purple-50 px-2.5 py-1 rounded-lg border border-purple-200 font-bold text-xs">
+                                        <i class="fa-solid fa-pen-line text-[10px] text-purple-600"></i>
+                                        <span>{item.fieldName || '—'}</span>
                                       </span>
+                                    </td>
+
+                                    {/* Old Value */}
+                                    <td class="py-2.5 px-3 whitespace-nowrap">
+                                      <span class="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-800 line-through text-xs font-medium border border-rose-200 inline-block">
+                                        {item.oldValue || '—'}
+                                      </span>
+                                    </td>
+
+                                    {/* New Value */}
+                                    <td class="py-2.5 px-3 whitespace-nowrap">
+                                      <span class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-950 font-bold text-xs border border-emerald-200 inline-block shadow-2xs">
+                                        {item.newValue || '—'}
+                                      </span>
+                                    </td>
+
+                                    {/* Modified By */}
+                                    <td class="py-2.5 px-3 whitespace-nowrap">
+                                      <span class="px-2.5 py-1 rounded-lg border border-gray-200 text-xs font-bold text-gray-800 bg-gray-50 inline-flex items-center gap-1.5 shadow-2xs">
+                                        <i class="fa-solid fa-circle-user text-[#B30E2E]"></i>
+                                        <span>{item.modifiedBy || 'Admin'}</span>
+                                      </span>
+                                    </td>
+
+                                    {/* Modified Date & Time */}
+                                    <td class="py-2.5 px-3 whitespace-nowrap font-semibold text-gray-800 text-xs">
+                                      <i class="fa-regular fa-clock text-[10px] text-gray-400 mr-1.5"></i>
+                                      <span>{modDate}</span>
+                                      <span class="text-[10.5px] text-gray-500 ml-1.5 font-normal">{modTime}</span>
                                     </td>
                                   </tr>
                                 );
@@ -2294,7 +2192,7 @@ export default function AdminDashboard({ onLogout }) {
                               <div class="flex items-center justify-center gap-1">
                                 {/* Lead Activity History Button */}
                                 <button 
-                                  onClick={() => setSelectedHistoryLead({ ...item })}
+                                  onClick={() => handleOpenHistoryModal(item)}
                                   class="w-6 h-6 rounded-md bg-purple-100 hover:bg-purple-600 text-purple-800 hover:text-white flex items-center justify-center transition cursor-pointer border border-purple-200"
                                   title="View Lead Activity History"
                                 >

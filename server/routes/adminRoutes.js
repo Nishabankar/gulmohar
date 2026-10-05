@@ -117,12 +117,28 @@ router.get('/stats', protectAdmin, async (req, res) => {
   }
 });
 
+// @route   GET /api/admin/enquiries/:id
+// @desc    Get single lead details with history directly from MongoDB
+// @access  Protected
+router.get('/enquiries/:id', protectAdmin, async (req, res) => {
+  try {
+    const enquiry = await Enquiry.findById(req.params.id);
+    if (!enquiry) {
+      return res.status(404).json({ success: false, message: 'Enquiry record not found in MongoDB' });
+    }
+    return res.json({ success: true, data: enquiry });
+  } catch (error) {
+    console.error('Error fetching single enquiry:', error.message);
+    return res.status(500).json({ success: false, message: 'Database Error' });
+  }
+});
+
 // @route   PATCH /api/admin/enquiries/:id
 // @desc    Update any lead details (name, phone, email, plots, visit date, status, notes) directly in MongoDB & log history
 // @access  Protected
 router.patch('/enquiries/:id', protectAdmin, async (req, res) => {
   try {
-    const { firstName, lastName, phone, oldPhone, email, plotsCount, plotInfo, visitDate, followupDate, status, notes, assignedAgentName, assignedTo, historyEntry, updatedBy } = req.body;
+    const { firstName, lastName, phone, oldPhone, email, plotsCount, plotInfo, visitDate, followupDate, status, notes, assignedAgentName, assignedTo, updatedBy } = req.body;
     
     let existing = null;
     if (mongoose.Types.ObjectId.isValid(req.params.id)) {
@@ -138,32 +154,63 @@ router.patch('/enquiries/:id', protectAdmin, async (req, res) => {
       return res.status(404).json({ success: false, message: 'Enquiry record not found in MongoDB' });
     }
 
+    const performer = updatedBy || (req.admin ? (req.admin.name || req.admin.username || 'Admin') : 'Admin');
+
+    const fieldsToCompare = [
+      { key: 'firstName', label: 'First Name', incoming: firstName },
+      { key: 'lastName', label: 'Last Name', incoming: lastName },
+      { key: 'phone', label: 'Mobile No.', incoming: phone },
+      { key: 'email', label: 'Email Address', incoming: email },
+      { key: 'plotsCount', label: 'No. of Guntha', incoming: plotsCount },
+      { key: 'plotInfo', label: 'Plot Info', incoming: plotInfo },
+      { key: 'visitDate', label: 'Visit Date', incoming: visitDate },
+      { key: 'followupDate', label: 'Followup Date', incoming: followupDate },
+      { key: 'status', label: 'Status', incoming: status },
+      { key: 'notes', label: 'Notes', incoming: notes },
+      { key: 'assignedAgentName', label: 'Assigned Agent', incoming: assignedAgentName }
+    ];
+
+    let newHistoryEntries = [];
     let updateFields = {};
-    if (firstName !== undefined) updateFields.firstName = firstName;
-    if (lastName !== undefined) updateFields.lastName = lastName;
-    if (phone !== undefined) updateFields.phone = phone;
-    if (email !== undefined) updateFields.email = email;
-    if (plotsCount !== undefined) updateFields.plotsCount = plotsCount;
-    if (plotInfo !== undefined) updateFields.plotInfo = plotInfo;
-    if (status !== undefined) updateFields.status = status;
-    if (followupDate !== undefined) updateFields.followupDate = followupDate;
-    if (visitDate !== undefined) updateFields.visitDate = visitDate;
-    if (assignedAgentName !== undefined) updateFields.assignedAgentName = assignedAgentName;
+
+    fieldsToCompare.forEach(f => {
+      if (f.incoming !== undefined) {
+        updateFields[f.key] = f.incoming;
+        const oldVal = (existing[f.key] || '').toString().trim();
+        const newVal = (f.incoming || '').toString().trim();
+        
+        if (oldVal !== newVal) {
+          newHistoryEntries.push({
+            fieldName: f.label,
+            oldValue: oldVal || '—',
+            newValue: newVal || '—',
+            modifiedBy: performer,
+            modifiedDate: new Date()
+          });
+        }
+      }
+    });
+
     if (assignedTo !== undefined) updateFields.assignedTo = assignedTo;
-    if (notes !== undefined) updateFields.notes = notes;
 
     console.log('📝 Updating Enquiry in MongoDB Atlas:', existing._id, updateFields);
+    console.log('📜 History entries created:', newHistoryEntries.length);
+
+    let updateQuery = { $set: updateFields };
+    if (newHistoryEntries.length > 0) {
+      updateQuery.$push = { history: { $each: newHistoryEntries } };
+    }
 
     const updatedEnquiry = await Enquiry.findByIdAndUpdate(
       existing._id,
-      { $set: updateFields },
+      updateQuery,
       { new: true, runValidators: true }
     );
 
     return res.json({ success: true, message: 'Enquiry updated in MongoDB', data: updatedEnquiry });
   } catch (error) {
     console.error('Error updating enquiry in MongoDB:', error.message);
-    return res.status(500).json({ success: false, message: 'Database Error' });
+    return res.status(500).json({ success: false, message: 'Database Error', error: error.message });
   }
 });
 

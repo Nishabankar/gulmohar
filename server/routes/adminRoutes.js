@@ -146,6 +146,68 @@ router.patch('/enquiries/:id', protectAdmin, async (req, res) => {
     if (plotsCount !== undefined) updateFields.plotsCount = plotsCount;
     if (plotInfo !== undefined) updateFields.plotInfo = plotInfo;
 
+    // 1. Full Name Change Logging
+    const oldFirstName = existing.firstName || '';
+    const oldLastName = existing.lastName || '';
+    const oldFullName = `${oldFirstName} ${oldLastName}`.trim() || 'N/A';
+    const newFirstName = firstName !== undefined ? firstName : oldFirstName;
+    const newLastName = lastName !== undefined ? lastName : oldLastName;
+    const newFullName = `${newFirstName} ${newLastName}`.trim() || 'N/A';
+
+    if ((firstName !== undefined || lastName !== undefined) && oldFullName !== newFullName) {
+      newHistoryEntries.push({
+        actionType: 'NAME_CHANGE',
+        title: 'Full Name Updated',
+        description: `Full name changed from '${oldFullName}' to '${newFullName}'`,
+        performedBy: performer,
+        oldValue: oldFullName,
+        newValue: newFullName,
+        createdAt: new Date()
+      });
+    }
+
+    // 2. Mobile No (Phone) Change Logging
+    if (phone !== undefined && phone !== existing.phone) {
+      newHistoryEntries.push({
+        actionType: 'PHONE_CHANGE',
+        title: 'Mobile No Updated',
+        description: `Mobile number changed from '${existing.phone || 'N/A'}' to '${phone}'`,
+        performedBy: performer,
+        oldValue: existing.phone || 'N/A',
+        newValue: phone,
+        createdAt: new Date()
+      });
+    }
+
+    // 3. Email Address Change Logging
+    if (email !== undefined && email !== existing.email) {
+      newHistoryEntries.push({
+        actionType: 'EMAIL_CHANGE',
+        title: 'Email Address Updated',
+        description: `Email address changed from '${existing.email || 'N/A'}' to '${email || 'N/A'}'`,
+        performedBy: performer,
+        oldValue: existing.email || 'N/A',
+        newValue: email || 'N/A',
+        createdAt: new Date()
+      });
+    }
+
+    // 4. Plot Info / Guntha Change Logging
+    const oldPlotVal = existing.plotsCount || existing.plotInfo || '1 Guntha';
+    const newPlotVal = plotsCount || plotInfo || oldPlotVal;
+    if ((plotsCount !== undefined || plotInfo !== undefined) && oldPlotVal !== newPlotVal) {
+      newHistoryEntries.push({
+        actionType: 'PLOT_CHANGE',
+        title: 'No. of Guntha Updated',
+        description: `Plot info changed from '${oldPlotVal}' to '${newPlotVal}'`,
+        performedBy: performer,
+        oldValue: oldPlotVal,
+        newValue: newPlotVal,
+        createdAt: new Date()
+      });
+    }
+
+    // 5. Status Change Logging
     if (status !== undefined && status !== existing.status) {
       updateFields.status = status;
       newHistoryEntries.push({
@@ -159,12 +221,13 @@ router.patch('/enquiries/:id', protectAdmin, async (req, res) => {
       });
     }
 
+    // 6. Followup Date Logging
     if (followupDate !== undefined && followupDate !== existing.followupDate) {
       updateFields.followupDate = followupDate;
       newHistoryEntries.push({
         actionType: 'FOLLOWUP_CHANGE',
         title: 'Followup Date Updated',
-        description: `Followup date set to '${followupDate || 'None'}'`,
+        description: `Followup date changed from '${existing.followupDate || 'None'}' to '${followupDate || 'None'}'`,
         performedBy: performer,
         oldValue: existing.followupDate || 'None',
         newValue: followupDate || 'None',
@@ -172,12 +235,13 @@ router.patch('/enquiries/:id', protectAdmin, async (req, res) => {
       });
     }
 
+    // 7. Visit Date Logging
     if (visitDate !== undefined && visitDate !== existing.visitDate) {
       updateFields.visitDate = visitDate;
       newHistoryEntries.push({
         actionType: 'VISIT_CHANGE',
         title: 'Site Visit Date Updated',
-        description: `Site visit date set to '${visitDate || 'None'}'`,
+        description: `Site visit date changed from '${existing.visitDate || 'None'}' to '${visitDate || 'None'}'`,
         performedBy: performer,
         oldValue: existing.visitDate || 'None',
         newValue: visitDate || 'None',
@@ -185,13 +249,14 @@ router.patch('/enquiries/:id', protectAdmin, async (req, res) => {
       });
     }
 
+    // 8. Assigned Agent Logging
     if (assignedAgentName !== undefined && assignedAgentName !== existing.assignedAgentName) {
       updateFields.assignedAgentName = assignedAgentName;
       if (assignedTo !== undefined) updateFields.assignedTo = assignedTo;
       newHistoryEntries.push({
         actionType: 'AGENT_CHANGE',
         title: 'Assigned Agent Changed',
-        description: `Lead assigned to '${assignedAgentName}'`,
+        description: `Agent reassigned from '${existing.assignedAgentName || 'Unassigned'}' to '${assignedAgentName}'`,
         performedBy: performer,
         oldValue: existing.assignedAgentName || 'Unassigned',
         newValue: assignedAgentName,
@@ -199,6 +264,7 @@ router.patch('/enquiries/:id', protectAdmin, async (req, res) => {
       });
     }
 
+    // 9. Notes Logging
     if (notes !== undefined && notes !== existing.notes && notes.trim() !== '') {
       updateFields.notes = notes;
       newHistoryEntries.push({
@@ -206,7 +272,7 @@ router.patch('/enquiries/:id', protectAdmin, async (req, res) => {
         title: 'Note / Remark Updated',
         description: `Note: "${notes}"`,
         performedBy: performer,
-        oldValue: existing.notes || '',
+        oldValue: existing.notes || 'None',
         newValue: notes,
         createdAt: new Date()
       });

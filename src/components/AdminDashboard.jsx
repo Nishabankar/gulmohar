@@ -3322,8 +3322,9 @@ export default function AdminDashboard({ onLogout }) {
                     <thead class="sticky top-0 z-10 bg-gray-100 shadow-2xs">
                       <tr>
                         <th class="py-2.5 px-3 text-[11px] font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">DATE & TIME</th>
-                        <th class="py-2.5 px-3 text-[11px] font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">ACTION / EVENT</th>
-                        <th class="py-2.5 px-3 text-[11px] font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">CHANGE DETAILS</th>
+                        <th class="py-2.5 px-3 text-[11px] font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">CHANGED FIELD / ACTION</th>
+                        <th class="py-2.5 px-3 text-[11px] font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">OLD VALUE</th>
+                        <th class="py-2.5 px-3 text-[11px] font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">NEW VALUE</th>
                         <th class="py-2.5 px-3 text-[11px] font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">PERFORMED BY</th>
                       </tr>
                     </thead>
@@ -3334,29 +3335,58 @@ export default function AdminDashboard({ onLogout }) {
                         const isVisit = log.actionType === 'VISIT_CHANGE';
                         const isAgent = log.actionType === 'AGENT_CHANGE';
                         const isCreated = log.actionType === 'CREATED';
+                        const isName = log.actionType === 'NAME_CHANGE';
+                        const isPhone = log.actionType === 'PHONE_CHANGE';
+                        const isEmail = log.actionType === 'EMAIL_CHANGE';
+                        const isPlot = log.actionType === 'PLOT_CHANGE';
 
                         let badgeStyle = 'bg-purple-50 text-purple-800 border-purple-200';
                         let iconClass = 'fa-comment-dots text-purple-600';
+                        let fieldLabel = log.title || 'Activity';
 
                         if (isStatus) {
                           badgeStyle = 'bg-amber-50 text-amber-900 border-amber-300';
                           iconClass = 'fa-arrows-rotate text-amber-600';
+                          fieldLabel = 'Status';
                         } else if (isFollowup) {
                           badgeStyle = 'bg-blue-50 text-blue-900 border-blue-200';
                           iconClass = 'fa-calendar-check text-blue-600';
+                          fieldLabel = 'Followup Date';
                         } else if (isVisit) {
                           badgeStyle = 'bg-indigo-50 text-indigo-900 border-indigo-200';
                           iconClass = 'fa-calendar-days text-indigo-600';
+                          fieldLabel = 'Site Visit Date';
                         } else if (isAgent) {
                           badgeStyle = 'bg-emerald-50 text-emerald-900 border-emerald-200';
                           iconClass = 'fa-user-check text-emerald-600';
+                          fieldLabel = 'Assigned Agent';
                         } else if (isCreated) {
                           badgeStyle = 'bg-rose-50 text-[#B30E2E] border-rose-200';
                           iconClass = 'fa-circle-plus text-[#B30E2E]';
+                          fieldLabel = 'Lead Created';
+                        } else if (isName) {
+                          badgeStyle = 'bg-cyan-50 text-cyan-900 border-cyan-200';
+                          iconClass = 'fa-signature text-cyan-600';
+                          fieldLabel = 'Full Name';
+                        } else if (isPhone) {
+                          badgeStyle = 'bg-teal-50 text-teal-900 border-teal-200';
+                          iconClass = 'fa-phone text-teal-600';
+                          fieldLabel = 'Mobile No';
+                        } else if (isEmail) {
+                          badgeStyle = 'bg-sky-50 text-sky-900 border-sky-200';
+                          iconClass = 'fa-envelope text-sky-600';
+                          fieldLabel = 'Email Address';
+                        } else if (isPlot) {
+                          badgeStyle = 'bg-orange-50 text-orange-900 border-orange-200';
+                          iconClass = 'fa-vector-square text-orange-600';
+                          fieldLabel = 'No. of Guntha';
                         }
 
                         const logDate = log.createdAt ? new Date(log.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A';
                         const logTime = log.createdAt ? new Date(log.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '';
+
+                        const oldValDisplay = isCreated ? '—' : (log.oldValue || '—');
+                        const newValDisplay = log.newValue || (isCreated ? (log.description || 'New Enquiry Created') : (log.description || '—'));
 
                         return (
                           <tr key={idx} class="hover:bg-rose-50/40 transition">
@@ -3367,22 +3397,35 @@ export default function AdminDashboard({ onLogout }) {
                               <span class="text-[9.5px] text-gray-400 ml-1.5 font-normal">{logTime}</span>
                             </td>
 
-                            {/* Column 2: Action / Event Badge */}
+                            {/* Column 2: Changed Field / Action Badge */}
                             <td class="py-2.5 px-3 whitespace-nowrap">
                               <span class={`px-2 py-0.5 rounded-md border text-[10px] font-bold inline-flex items-center gap-1 shadow-2xs ${badgeStyle}`}>
                                 <i class={`fa-solid ${iconClass} text-[9px]`}></i>
-                                <span>{log.title || 'Activity'}</span>
+                                <span>{fieldLabel}</span>
                               </span>
                             </td>
 
-                            {/* Column 3: Change Details */}
-                            <td class="py-2.5 px-3 text-[11px] text-gray-800 font-medium break-words leading-relaxed max-w-sm">
-                              {log.description}
+                            {/* Column 3: Old Value */}
+                            <td class="py-2.5 px-3 text-[11px] text-gray-600 font-medium break-words max-w-[140px]">
+                              {oldValDisplay !== '—' ? (
+                                <span class="px-2 py-0.5 rounded border border-rose-200 bg-rose-50/80 text-rose-900 text-[10.5px] font-semibold inline-block">
+                                  {oldValDisplay}
+                                </span>
+                              ) : (
+                                <span class="text-gray-400 font-normal">{oldValDisplay}</span>
+                              )}
                             </td>
 
-                            {/* Column 4: Performed By */}
+                            {/* Column 4: New Value */}
+                            <td class="py-2.5 px-3 text-[11px] text-gray-800 font-medium break-words max-w-[200px]">
+                              <span class="px-2 py-0.5 rounded border border-emerald-200 bg-emerald-50 text-emerald-950 text-[10.5px] font-semibold inline-block">
+                                {newValDisplay}
+                              </span>
+                            </td>
+
+                            {/* Column 5: Performed By */}
                             <td class="py-2.5 px-3 whitespace-nowrap">
-                              <span class="px-1.5 py-0.5 rounded-lg border border-gray-200 text-[10.5px] font-bold text-gray-700 bg-gray-50 inline-flex items-center gap-1 shadow-2xs">
+                              <span class="px-2 py-0.5 rounded-lg border border-gray-200 text-[10.5px] font-bold text-gray-700 bg-gray-50 inline-flex items-center gap-1 shadow-2xs">
                                 <i class="fa-solid fa-circle-user text-[9.5px] text-emerald-600"></i>
                                 <span>{log.performedBy || 'System'}</span>
                               </span>

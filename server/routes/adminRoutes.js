@@ -122,11 +122,14 @@ router.get('/stats', protectAdmin, async (req, res) => {
 // @access  Protected
 router.patch('/enquiries/:id', protectAdmin, async (req, res) => {
   try {
-    const { firstName, lastName, phone, email, plotsCount, plotInfo, visitDate, followupDate, status, notes, assignedAgentName, assignedTo, historyEntry, updatedBy } = req.body;
+    const { firstName, lastName, phone, oldPhone, email, plotsCount, plotInfo, visitDate, followupDate, status, notes, assignedAgentName, assignedTo, historyEntry, updatedBy } = req.body;
     
     let existing = null;
     if (mongoose.Types.ObjectId.isValid(req.params.id)) {
       existing = await Enquiry.findById(req.params.id);
+    }
+    if (!existing && oldPhone) {
+      existing = await Enquiry.findOne({ phone: oldPhone.trim() });
     }
     if (!existing && phone) {
       existing = await Enquiry.findOne({ phone: phone.trim() });

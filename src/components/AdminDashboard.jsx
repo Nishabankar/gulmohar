@@ -287,18 +287,9 @@ export default function AdminDashboard({ onLogout }) {
 
       if (data.success && Array.isArray(data.data)) {
         const filteredMongo = data.data.filter(item => !deletedIds.includes(item._id));
-        const localMap = new Map(filteredLocal.map(item => [item._id || item.id, item]));
-        const mergedMongo = filteredMongo.map(mItem => {
-          const key = mItem._id || mItem.id;
-          const cached = localMap.get(key);
-          return {
-            ...mItem,
-            followupDate: (cached && cached.followupDate) ? cached.followupDate : (mItem.followupDate || '')
-          };
-        });
-        // Only merge unsynced offline leads (id starting with 'lead-'). If database is empty, show empty list.
+        // Only merge unsynced offline leads (id starting with 'lead-'). If database is online, MongoDB Atlas is single source of truth.
         const unsyncedLocalLeads = filteredLocal.filter(l => (l._id || l.id || '').toString().startsWith('lead-'));
-        const combined = [...unsyncedLocalLeads, ...mergedMongo];
+        const combined = [...unsyncedLocalLeads, ...filteredMongo];
         const uniqueLeads = Array.from(new Map(combined.map(item => [(item._id || item.id), item])).values());
         localStorage.setItem('localEnquiriesCache', JSON.stringify(uniqueLeads));
         setEnquiries(applyRoundRobinAssignments(uniqueLeads));
@@ -1048,6 +1039,7 @@ export default function AdminDashboard({ onLogout }) {
           firstName: updatedLead.firstName,
           lastName: updatedLead.lastName,
           phone: updatedLead.phone,
+          oldPhone: existingLead ? existingLead.phone : '',
           email: updatedLead.email,
           plotsCount: updatedLead.plotsCount,
           plotInfo: updatedLead.plotInfo,

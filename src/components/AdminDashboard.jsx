@@ -1481,70 +1481,25 @@ export default function AdminDashboard({ onLogout }) {
       <main class="w-full px-2 sm:px-3 lg:px-4 py-3 sm:py-4 flex-1 flex flex-col min-h-0 overflow-hidden space-y-3 sm:space-y-4">
         
         {historyModalItem ? (
-          /* FULL PAGE LEAD ACTIVITY HISTORY VIEW (NO POPUP MODAL) */
+          /* FULL PAGE LEAD ACTIVITY HISTORY VIEW (CLEAN 1-BOX LAYOUT) */
           <div class="space-y-3 sm:space-y-4 animate-fade-in flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar w-full pb-6">
             
-            {/* Page Header Bar with Back to Leads Button */}
-            <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-xs border border-gray-200/80 flex flex-wrap items-center justify-between gap-3">
-              <div class="flex items-center gap-3.5">
-                <button 
-                  onClick={() => setHistoryModalItem(null)}
-                  class="px-3.5 py-2 rounded-xl bg-gray-100 hover:bg-rose-50 hover:text-[#B30E2E] text-gray-700 font-bold text-xs flex items-center gap-2 transition cursor-pointer border border-gray-200 shadow-2xs"
-                  title="Back to Leads Table"
-                >
-                  <i class="fa-solid fa-arrow-left text-sm text-[#B30E2E]"></i>
-                  <span>Back to Leads</span>
-                </button>
-
-                <div>
-                  <div class="flex items-center gap-2">
-                    <h2 class="text-lg sm:text-xl font-serif font-bold text-gray-900 tracking-wide">
-                      Lead Activity History
-                    </h2>
-                    <span class="bg-amber-400 text-slate-950 text-xs font-extrabold px-2.5 py-0.5 rounded-full shadow-2xs">
-                      #{historyModalItem._id || historyModalItem.id}
-                    </span>
-                  </div>
-                  <p class="text-xs text-gray-500 font-medium mt-0.5">
-                    Full history log for <strong class="text-gray-900">{historyModalItem.firstName || ''} {historyModalItem.lastName || ''}</strong> ({historyModalItem.phone || ''} • {historyModalItem.plotsCount || '1 Guntha'})
-                  </p>
-                </div>
-              </div>
-
-              {/* Lead Info Pill Badges */}
-              <div class="flex flex-wrap items-center gap-2.5 text-xs">
-                <div class="bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
-                  <span class="text-gray-500 font-bold">Assigned Agent:</span>
-                  <span class="font-bold text-gray-800 flex items-center gap-1">
-                    <i class="fa-solid fa-circle-user text-emerald-600 text-xs"></i>
-                    <span>{historyModalItem.assignedAgentName || 'Unassigned'}</span>
-                  </span>
-                </div>
-
-                <div class="bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
-                  <span class="text-gray-500 font-bold">Status:</span>
-                  <span class={`px-2 py-0.5 rounded-md font-bold text-[11px] ${getStatusBadge(historyModalItem.status || 'New')}`}>
-                    {historyModalItem.status || 'New'}
-                  </span>
-                </div>
-
-                {historyModalItem.followupDate && (
-                  <div class="bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
-                    <span class="text-gray-500 font-bold">Followup:</span>
-                    <span class="bg-blue-50 text-blue-800 border border-blue-200 px-2 py-0.5 rounded-md font-bold text-[11px]">
-                      {historyModalItem.followupDate}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-
             {/* Filter Pills & Quick Note Entry Bar */}
             <div class="bg-white rounded-2xl p-4 shadow-xs border border-gray-200/80 space-y-4">
               <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 pb-3.5">
                 
-                {/* Log Category Filter Tabs */}
+                {/* Back Button + Log Category Filter Tabs */}
                 <div class="flex items-center gap-2 overflow-x-auto custom-scrollbar">
+                  {/* Inline Back to Leads Button */}
+                  <button 
+                    onClick={() => setHistoryModalItem(null)}
+                    class="px-3.5 py-1.5 rounded-xl bg-gray-100 hover:bg-rose-50 hover:text-[#B30E2E] text-gray-800 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer border border-gray-300 shadow-2xs mr-1"
+                    title="Back to Leads Table"
+                  >
+                    <i class="fa-solid fa-arrow-left text-xs text-[#B30E2E]"></i>
+                    <span>Back to Leads</span>
+                  </button>
+
                   <button 
                     onClick={() => setHistoryFilterCategory('all')} 
                     class={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${

@@ -3235,7 +3235,7 @@ export default function AdminDashboard({ onLogout }) {
               left: `${activeNotePopover.left}px`,
               transform: activeNotePopover.positionAbove ? 'translateY(-100%)' : 'none'
             }}
-            class="fixed w-84 max-w-[340px] h-[450px] flex flex-col bg-white rounded-2xl shadow-2xl z-50 text-left border border-rose-100 overflow-hidden animate-fade-in pointer-events-auto"
+            class="fixed w-84 max-w-[340px] h-[520px] max-h-[calc(100vh-120px)] flex flex-col bg-white rounded-2xl shadow-2xl z-50 text-left border border-rose-100 overflow-hidden animate-fade-in pointer-events-auto"
           >
             {/* Header: Gulmohar Maroon Gradient */}
             <div class="bg-gradient-to-r from-[#B30E2E] via-[#8A0B22] to-[#590414] px-3.5 py-2.5 text-white flex items-center justify-between flex-shrink-0">
@@ -3252,8 +3252,8 @@ export default function AdminDashboard({ onLogout }) {
               </button>
             </div>
 
-            {/* Note Content Body: Timeline List of Notes (Scrollbar Hidden Visually) */}
-            <div class="flex-1 p-3 bg-[#FFFDFD] overflow-y-auto space-y-2.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            {/* Note Content Body: Timeline List of Notes (Custom Scrollbar when notes exceed height) */}
+            <div class="flex-1 p-3 bg-[#FFFDFD] overflow-y-auto custom-scrollbar space-y-2.5">
               {(() => {
                 const targetLead = activeNotePopover.item;
                 const noteLogs = (targetLead.history || []).filter(h => 
@@ -3276,7 +3276,7 @@ export default function AdminDashboard({ onLogout }) {
                             {log.modifiedBy || 'Admin'}
                           </span>
                         </div>
-                        <p class="text-[11.5px] font-medium leading-relaxed break-words break-all text-slate-800 pt-0.5">
+                        <p class="text-[11.5px] font-medium leading-relaxed break-words break-all text-slate-800 pt-0.5 max-h-28 overflow-y-auto custom-scrollbar pr-1">
                           {log.newValue}
                         </p>
                       </div>
@@ -3288,7 +3288,7 @@ export default function AdminDashboard({ onLogout }) {
                       <div class="flex items-center justify-between text-[10px] text-gray-500 font-medium">
                         <span class="font-bold text-[#B30E2E]">Initial Lead Note</span>
                       </div>
-                      <p class="text-[11.5px] font-medium leading-relaxed break-words break-all text-slate-800 pt-0.5">
+                      <p class="text-[11.5px] font-medium leading-relaxed break-words break-all text-slate-800 pt-0.5 max-h-28 overflow-y-auto custom-scrollbar pr-1">
                         {targetLead.notes}
                       </p>
                     </div>

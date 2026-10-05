@@ -54,17 +54,7 @@ const enquirySchema = new mongoose.Schema(
       type: String,
       default: ''
     },
-    history: [
-      {
-        actionType: { type: String, default: 'NOTE' },
-        title: { type: String, default: '' },
-        description: { type: String, default: '' },
-        performedBy: { type: String, default: 'System' },
-        oldValue: { type: String, default: '' },
-        newValue: { type: String, default: '' },
-        createdAt: { type: Date, default: Date.now }
-      }
-    ]
+
   },
   {
     timestamps: true

@@ -195,10 +195,9 @@ export default function AdminDashboard({ onLogout }) {
       if (left + popoverWidth > window.innerWidth - 10) {
         left = window.innerWidth - popoverWidth - 10;
       }
-      const tableEl = e.currentTarget.closest('table');
-      let top = rect.top - 48;
-      if (tableEl) {
-        top = tableEl.getBoundingClientRect().top + 2;
+      let top = 80;
+      if (rect.top > 250) {
+        top = Math.max(75, rect.top - 200);
       }
 
       setActiveNotePopover({

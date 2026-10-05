@@ -683,30 +683,6 @@ export default function AdminDashboard({ onLogout }) {
     const token = localStorage.getItem('adminToken');
     const performer = currentUser.name || (isAdmin ? 'Admin' : 'Sales Executive');
 
-    const existing = enquiries.find(item => (item._id === id || item.id === id));
-    const oldStatus = existing ? (existing.status || 'New') : 'New';
-
-    if (existing && oldStatus !== newStatus) {
-      const newLog = {
-        editId: 'edit-' + Date.now(),
-        performedBy: performer,
-        timestamp: new Date().toISOString(),
-        changes: {
-          status: { old: oldStatus, new: newStatus }
-        },
-        snapshot: { ...existing, status: newStatus }
-      };
-
-      setLeadHistoryMap(prev => {
-        const leadKey = existing._id || existing.id;
-        const currentLogs = prev[leadKey] || [];
-        const updatedLogs = [newLog, ...currentLogs];
-        const newMap = { ...prev, [leadKey]: updatedLogs };
-        localStorage.setItem('leadHistoryMap', JSON.stringify(newMap));
-        return newMap;
-      });
-    }
-
     setEnquiries(prev => prev.map(item => {
       if (item._id === id || item.id === id) {
         return { ...item, status: newStatus };
@@ -841,45 +817,6 @@ export default function AdminDashboard({ onLogout }) {
           updatedCache.push(finalSynced);
         }
         localStorage.setItem('localEnquiriesCache', JSON.stringify(updatedCache));
-
-        // 3. Log History Comparison Entry in local memory map
-        if (existingLead) {
-          const oldFirstName = existingLead.firstName || '';
-          const oldLastName = existingLead.lastName || '';
-          const oldFullName = `${oldFirstName} ${oldLastName}`.trim() || 'N/A';
-          const newFirstName = finalSynced.firstName || '';
-          const newLastName = finalSynced.lastName || '';
-          const newFullName = `${newFirstName} ${newLastName}`.trim() || 'N/A';
-
-          const changes = {};
-          if (oldFullName !== newFullName) changes.fullName = { old: oldFullName, new: newFullName };
-          if ((existingLead.phone || '') !== (finalSynced.phone || '')) changes.phone = { old: existingLead.phone || 'N/A', new: finalSynced.phone };
-          if ((existingLead.email || '') !== (finalSynced.email || '')) changes.email = { old: existingLead.email || 'N/A', new: finalSynced.email || 'N/A' };
-          if ((existingLead.plotsCount || '1 Guntha') !== (finalSynced.plotsCount || '1 Guntha')) changes.plotsCount = { old: existingLead.plotsCount || '1 Guntha', new: finalSynced.plotsCount || '1 Guntha' };
-          if ((existingLead.visitDate || '') !== (finalSynced.visitDate || '')) changes.visitDate = { old: existingLead.visitDate || 'None', new: finalSynced.visitDate || 'None' };
-          if ((existingLead.followupDate || '') !== (finalSynced.followupDate || '')) changes.followupDate = { old: existingLead.followupDate || 'None', new: finalSynced.followupDate || 'None' };
-          if ((existingLead.status || 'New') !== (finalSynced.status || 'New')) changes.status = { old: existingLead.status || 'New', new: finalSynced.status || 'New' };
-          if ((existingLead.assignedAgentName || '') !== (finalSynced.assignedAgentName || '')) changes.assignedAgentName = { old: existingLead.assignedAgentName || 'Unassigned', new: finalSynced.assignedAgentName || 'Unassigned' };
-          if ((existingLead.notes || '') !== (finalSynced.notes || '')) changes.notes = { old: existingLead.notes || 'None', new: finalSynced.notes || 'None' };
-
-          if (Object.keys(changes).length > 0) {
-            const newLog = {
-              editId: 'edit-' + Date.now(),
-              performedBy: currentUser.name || (isAdmin ? 'Admin' : 'Sales Executive'),
-              timestamp: new Date().toISOString(),
-              changes,
-              snapshot: finalSynced
-            };
-
-            setLeadHistoryMap(prev => {
-              const currentLogs = prev[leadKey] || [];
-              const updatedLogs = [newLog, ...currentLogs];
-              const newMap = { ...prev, [leadKey]: updatedLogs };
-              localStorage.setItem('leadHistoryMap', JSON.stringify(newMap));
-              return newMap;
-            });
-          }
-        }
 
         if (statusFilter !== 'All' && statusFilter !== finalSynced.status) {
           setStatusFilter(finalSynced.status);

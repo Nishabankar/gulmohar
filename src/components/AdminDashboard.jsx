@@ -2316,11 +2316,10 @@ export default function AdminDashboard({ onLogout }) {
                   </table>
                 </div>
               )}
-
             </div>
-              </div>
-              )
-            )}
+          </div>
+        )
+      )}
           </>
         ) : (
           <>

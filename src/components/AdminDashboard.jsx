@@ -137,13 +137,59 @@ export default function AdminDashboard({ onLogout }) {
 
 
 
-  const handleOpenNotePopover = (e, item) => {
+  // State for Lead Note Popover Timeline & Input
+  const [popoverNoteInput, setPopoverNoteInput] = useState('');
+  const [savingPopoverNote, setSavingPopoverNote] = useState(false);
+
+  const handleSavePopoverNote = async (leadId) => {
+    if (!popoverNoteInput || !popoverNoteInput.trim()) return;
+    setSavingPopoverNote(true);
+
+    const token = localStorage.getItem('adminToken');
+    const newNoteContent = popoverNoteInput.trim();
+    const performer = currentUser.name || (isAdmin ? 'Admin' : 'Sales Executive');
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/enquiries/${leadId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          notes: newNoteContent,
+          updatedBy: performer
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success && data.data) {
+        // 1. Update main enquiries state
+        setEnquiries(prev => prev.map(item => (item._id === leadId || item.id === leadId) ? data.data : item));
+        
+        // 2. Update activeNotePopover item with fresh data from MongoDB Atlas
+        setActiveNotePopover(prev => prev ? { ...prev, item: data.data } : null);
+        
+        // 3. Clear popover note input
+        setPopoverNoteInput('');
+      }
+    } catch (err) {
+      console.warn('Backend popover note patch error:', err);
+    } finally {
+      setSavingPopoverNote(false);
+    }
+  };
+
+  const handleOpenNotePopover = async (e, item) => {
     e.stopPropagation();
-    if (activeNotePopover && activeNotePopover.item._id === item._id) {
+    setPopoverNoteInput('');
+    const targetId = item._id || item.id;
+    
+    if (activeNotePopover && (activeNotePopover.item._id === targetId || activeNotePopover.item.id === targetId)) {
       setActiveNotePopover(null);
     } else {
       const rect = e.currentTarget.getBoundingClientRect();
-      const popoverWidth = 280;
+      const popoverWidth = 320;
       let left = rect.right - popoverWidth;
       if (left < 10) left = 10;
       if (left + popoverWidth > window.innerWidth - 10) {
@@ -161,6 +207,21 @@ export default function AdminDashboard({ onLogout }) {
         left,
         positionAbove: false
       });
+
+      if (targetId) {
+        const token = localStorage.getItem('adminToken');
+        try {
+          const res = await fetch(`${API_BASE_URL}/api/admin/enquiries/${targetId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const data = await res.json();
+          if (data.success && data.data) {
+            setActiveNotePopover(prev => (prev && (prev.item._id === targetId || prev.item.id === targetId)) ? { ...prev, item: data.data } : prev);
+          }
+        } catch (e) {
+          console.warn('Could not fetch fresh lead notes popover history:', e);
+        }
+      }
     }
   };
   const [policyModal, setPolicyModal] = useState({ isOpen: false, type: 'privacy' });
@@ -3164,7 +3225,7 @@ export default function AdminDashboard({ onLogout }) {
         </div>
       )}
 
-      {/* Small Floating Lead Note Popover (Gulmohar Maroon & White Branding Theme) */}
+      {/* Small Floating Lead Note Popover with History Timeline & Quick Add (Gulmohar Maroon & White Theme) */}
       {activeNotePopover && (
         <>
           <div class="fixed inset-0 z-40" onClick={() => setActiveNotePopover(null)}></div>
@@ -3174,13 +3235,13 @@ export default function AdminDashboard({ onLogout }) {
               left: `${activeNotePopover.left}px`,
               transform: activeNotePopover.positionAbove ? 'translateY(-100%)' : 'none'
             }}
-            class="fixed w-72 max-w-[290px] h-[320px] flex flex-col bg-white rounded-2xl shadow-2xl z-50 text-left border border-rose-100 overflow-hidden animate-fade-in pointer-events-auto"
+            class="fixed w-80 max-w-[325px] h-[370px] flex flex-col bg-white rounded-2xl shadow-2xl z-50 text-left border border-rose-100 overflow-hidden animate-fade-in pointer-events-auto"
           >
             {/* Header: Gulmohar Maroon Gradient */}
-            <div class="bg-gradient-to-r from-[#B30E2E] via-[#8A0B22] to-[#590414] px-3.5 py-2 text-white flex items-center justify-between flex-shrink-0">
+            <div class="bg-gradient-to-r from-[#B30E2E] via-[#8A0B22] to-[#590414] px-3.5 py-2.5 text-white flex items-center justify-between flex-shrink-0">
               <span class="flex items-center gap-2 text-xs font-bold text-amber-300">
                 <i class="fa-solid fa-note-sticky text-amber-300 text-xs"></i>
-                <span>Lead Note</span>
+                <span>Lead Note & Activity</span>
               </span>
               <button 
                 type="button"
@@ -3190,24 +3251,99 @@ export default function AdminDashboard({ onLogout }) {
                 <i class="fa-solid fa-xmark text-xs"></i>
               </button>
             </div>
-            {/* Note Content Body */}
-            <div class="flex-1 p-3 bg-[#FFFDFD] overflow-y-auto custom-scrollbar flex flex-col">
-              {activeNotePopover.item.notes && activeNotePopover.item.notes.trim() !== '' ? (
-                <p class="text-xs text-gray-800 leading-relaxed whitespace-pre-wrap break-words break-all font-medium">
-                  {activeNotePopover.item.notes}
-                </p>
-              ) : (
-                <div class="my-auto text-center py-4 px-2 space-y-2">
-                  <div class="w-10 h-10 rounded-full bg-amber-50 border border-amber-200/80 flex items-center justify-center mx-auto text-amber-600">
-                    <i class="fa-regular fa-note-sticky text-base"></i>
-                  </div>
-                  <h4 class="text-xs font-bold text-gray-800">No Note Added Yet</h4>
-                  <p class="text-[10.5px] text-gray-400 leading-normal">
-                    No notes have been added for this lead. You can click the Edit icon under Actions to add a note.
-                  </p>
-                </div>
-              )}
+
+            {/* Note Content Body: Timeline List of Notes */}
+            <div class="flex-1 p-3 bg-[#FFFDFD] overflow-y-auto custom-scrollbar space-y-2">
+              {(() => {
+                const targetLead = activeNotePopover.item;
+                const noteLogs = (targetLead.history || []).filter(h => 
+                  (h.fieldName || '').toLowerCase() === 'notes' || (h.fieldName || '').toLowerCase() === 'note'
+                );
+
+                if (noteLogs.length > 0) {
+                  return noteLogs.map((log, nIdx) => {
+                    const nDate = log.modifiedDate ? new Date(log.modifiedDate).toLocaleDateString('en-GB') : '';
+                    const nTime = log.modifiedDate ? new Date(log.modifiedDate).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '';
+
+                    return (
+                      <div key={log._id || nIdx} class="p-2.5 rounded-xl bg-amber-50/70 border border-amber-200/80 text-xs text-gray-800 space-y-1.5 shadow-2xs">
+                        <div class="flex items-center justify-between text-[10px] text-amber-900 font-bold border-b border-amber-200/60 pb-1">
+                          <span class="flex items-center gap-1 font-mono">
+                            <i class="fa-regular fa-clock text-[9px] text-amber-700"></i>
+                            <span>{nDate} {nTime}</span>
+                          </span>
+                          <span class="px-1.5 py-0.2 rounded bg-amber-200/80 text-amber-950 font-bold text-[9.5px]">
+                            {log.modifiedBy || 'Admin'}
+                          </span>
+                        </div>
+                        <p class="text-[11.5px] font-medium leading-relaxed break-words text-gray-800 pt-0.5">
+                          {log.newValue}
+                        </p>
+                      </div>
+                    );
+                  });
+                } else if (targetLead.notes && targetLead.notes.trim() !== '') {
+                  return (
+                    <div class="p-2.5 rounded-xl bg-amber-50/70 border border-amber-200/80 text-xs text-gray-800 space-y-1 shadow-2xs">
+                      <div class="text-[10px] text-amber-900 font-bold border-b border-amber-200/60 pb-1">
+                        <span>Initial Lead Note</span>
+                      </div>
+                      <p class="text-[11.5px] font-medium leading-relaxed break-words text-gray-800 pt-0.5">
+                        {targetLead.notes}
+                      </p>
+                    </div>
+                  );
+                } else {
+                  return (
+                    <div class="my-auto text-center py-6 px-2 space-y-2">
+                      <div class="w-10 h-10 rounded-full bg-amber-50 border border-amber-200/80 flex items-center justify-center mx-auto text-amber-600">
+                        <i class="fa-regular fa-note-sticky text-base"></i>
+                      </div>
+                      <h4 class="text-xs font-bold text-gray-800">No Note Added Yet</h4>
+                      <p class="text-[10.5px] text-gray-400 leading-normal">
+                        Add a new note description below. It will save to MongoDB Atlas and appear in history.
+                      </p>
+                    </div>
+                  );
+                }
+              })()}
             </div>
+
+            {/* Bottom Quick Add Note Field */}
+            <div class="p-2.5 bg-gray-50 border-t border-gray-200/80 flex flex-col gap-1.5 flex-shrink-0">
+              <span class="text-[10.5px] font-bold text-gray-700 flex items-center gap-1">
+                <i class="fa-solid fa-pen text-[9.5px] text-[#B30E2E]"></i>
+                <span>Add Note Description:</span>
+              </span>
+              <div class="flex items-center gap-1.5">
+                <input 
+                  type="text"
+                  value={popoverNoteInput}
+                  onChange={(e) => setPopoverNoteInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleSavePopoverNote(activeNotePopover.item._id || activeNotePopover.item.id);
+                    }
+                  }}
+                  placeholder="e.g. 20-10-2026 - hi nisha..."
+                  class="flex-1 px-2.5 py-1.5 text-xs bg-white rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] font-medium shadow-2xs"
+                />
+                <button 
+                  type="button"
+                  disabled={savingPopoverNote || !popoverNoteInput.trim()}
+                  onClick={() => handleSavePopoverNote(activeNotePopover.item._id || activeNotePopover.item.id)}
+                  class="px-3 py-1.5 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] disabled:opacity-50 text-white text-xs font-bold transition shadow cursor-pointer flex-shrink-0 flex items-center justify-center"
+                >
+                  {savingPopoverNote ? (
+                    <i class="fa-solid fa-spinner fa-spin text-xs"></i>
+                  ) : (
+                    <span>Save</span>
+                  )}
+                </button>
+              </div>
+            </div>
+
           </div>
         </>
       )}

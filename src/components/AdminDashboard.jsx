@@ -2181,15 +2181,6 @@ export default function AdminDashboard({ onLogout }) {
                             {/* Column 10: Actions Column (History, Edit, Delete) */}
                             <td class="py-2.5 px-2 text-center whitespace-nowrap w-24">
                               <div class="flex items-center justify-center gap-1">
-                                {/* Lead Activity History Button */}
-                                <button 
-                                  onClick={() => handleOpenHistoryModal(item)}
-                                  class="w-6 h-6 rounded-md bg-purple-100 hover:bg-purple-600 text-purple-800 hover:text-white flex items-center justify-center transition cursor-pointer border border-purple-200"
-                                  title="View Lead Activity History"
-                                >
-                                  <i class="fa-solid fa-clock-rotate-left text-[10.5px]"></i>
-                                </button>
-
                                 {/* Edit Lead Button */}
                                 <button 
                                   onClick={() => { setEditingEnquiry({ ...item }); setEditModalSuccessMsg(''); }}
@@ -2197,6 +2188,15 @@ export default function AdminDashboard({ onLogout }) {
                                   title="Edit Lead Details"
                                 >
                                   <i class="fa-solid fa-pen-to-square text-[10.5px]"></i>
+                                </button>
+
+                                {/* Lead Activity History Button */}
+                                <button 
+                                  onClick={() => handleOpenHistoryModal(item)}
+                                  class="w-6 h-6 rounded-md bg-purple-100 hover:bg-purple-600 text-purple-800 hover:text-white flex items-center justify-center transition cursor-pointer border border-purple-200"
+                                  title="View Lead Activity History"
+                                >
+                                  <i class="fa-solid fa-clock-rotate-left text-[10.5px]"></i>
                                 </button>
 
                                 {/* Delete Lead Button (Admin Only) */}

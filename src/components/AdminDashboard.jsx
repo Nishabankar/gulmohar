@@ -1630,22 +1630,11 @@ export default function AdminDashboard({ onLogout }) {
                                 const modDate = item.modifiedDate ? new Date(item.modifiedDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A';
                                 const modTime = item.modifiedDate ? new Date(item.modifiedDate).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '';
 
-                                // Check if this entry is the first of its edit session/batch
-                                const isFirstOfBatch = idx === 0 || (() => {
-                                  const prevItem = mongoHistory[idx - 1];
-                                  if (!prevItem) return true;
-                                  const currTime = item.modifiedDate ? new Date(item.modifiedDate).getTime() : 0;
-                                  const prevTime = prevItem.modifiedDate ? new Date(prevItem.modifiedDate).getTime() : 0;
-                                  const sameBatch = Math.abs(currTime - prevTime) < 3000;
-                                  const sameUser = (item.modifiedBy || 'Admin') === (prevItem.modifiedBy || 'Admin');
-                                  return !(sameBatch && sameUser);
-                                })();
-
                                 return (
                                   <tr key={item._id || idx} class="hover:bg-purple-50/20 transition">
-                                    {/* Lead ID - Displayed only on the 1st row of an edit session */}
+                                    {/* Lead ID - Displayed ONLY on the 1st row of the entire table */}
                                     <td class="py-2.5 px-3 whitespace-nowrap">
-                                      {isFirstOfBatch ? (
+                                      {idx === 0 ? (
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-rose-50 text-[#B30E2E] border border-rose-200/80">
                                           {displayLeadId}
                                         </span>

@@ -3266,17 +3266,17 @@ export default function AdminDashboard({ onLogout }) {
                     const nTime = log.modifiedDate ? new Date(log.modifiedDate).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '';
 
                     return (
-                      <div key={log._id || nIdx} class="p-2.5 rounded-xl bg-amber-50/70 border border-amber-200/80 text-xs text-gray-800 space-y-1.5 shadow-2xs">
-                        <div class="flex items-center justify-between text-[10px] text-amber-900 font-bold border-b border-amber-200/60 pb-1">
-                          <span class="flex items-center gap-1 font-mono">
-                            <i class="fa-regular fa-clock text-[9px] text-amber-700"></i>
+                      <div key={log._id || nIdx} class="p-2.5 rounded-xl bg-white border border-rose-100 border-l-4 border-l-[#B30E2E] text-xs text-slate-800 space-y-1.5 shadow-2xs">
+                        <div class="flex items-center justify-between text-[10px] text-gray-500 font-medium">
+                          <span class="flex items-center gap-1 font-mono text-slate-600 font-semibold">
+                            <i class="fa-regular fa-clock text-[9.5px] text-[#B30E2E]"></i>
                             <span>{nDate} {nTime}</span>
                           </span>
-                          <span class="px-1.5 py-0.2 rounded bg-amber-200/80 text-amber-950 font-bold text-[9.5px]">
+                          <span class="px-1.5 py-0.5 rounded-md bg-rose-50 text-[#B30E2E] font-bold text-[9.5px] border border-rose-100">
                             {log.modifiedBy || 'Admin'}
                           </span>
                         </div>
-                        <p class="text-[11.5px] font-medium leading-relaxed break-words text-gray-800 pt-0.5">
+                        <p class="text-[11.5px] font-medium leading-relaxed break-words text-slate-800 pt-0.5">
                           {log.newValue}
                         </p>
                       </div>
@@ -3284,11 +3284,11 @@ export default function AdminDashboard({ onLogout }) {
                   });
                 } else if (targetLead.notes && targetLead.notes.trim() !== '') {
                   return (
-                    <div class="p-2.5 rounded-xl bg-amber-50/70 border border-amber-200/80 text-xs text-gray-800 space-y-1 shadow-2xs">
-                      <div class="text-[10px] text-amber-900 font-bold border-b border-amber-200/60 pb-1">
-                        <span>Initial Lead Note</span>
+                    <div class="p-2.5 rounded-xl bg-white border border-rose-100 border-l-4 border-l-[#B30E2E] text-xs text-slate-800 space-y-1 shadow-2xs">
+                      <div class="flex items-center justify-between text-[10px] text-gray-500 font-medium">
+                        <span class="font-bold text-[#B30E2E]">Initial Lead Note</span>
                       </div>
-                      <p class="text-[11.5px] font-medium leading-relaxed break-words text-gray-800 pt-0.5">
+                      <p class="text-[11.5px] font-medium leading-relaxed break-words text-slate-800 pt-0.5">
                         {targetLead.notes}
                       </p>
                     </div>

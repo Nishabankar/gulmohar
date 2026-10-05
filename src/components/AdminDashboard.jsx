@@ -1067,10 +1067,19 @@ export default function AdminDashboard({ onLogout }) {
       clearTimeout(timeoutId);
       const data = await res.json();
       if (data.success && data.data) {
+        const finalSynced = { ...data.data, followupDate: updatedLead.followupDate || data.data.followupDate || '' };
         setEnquiries(prev => prev.map(item => {
           const itemKey = item._id || item.id;
-          return itemKey === leadKey ? { ...data.data, followupDate: updatedLead.followupDate || data.data.followupDate || '' } : item;
+          return itemKey === leadKey ? finalSynced : item;
         }));
+
+        // Also update local cache with database updated record
+        const freshCache = JSON.parse(localStorage.getItem('localEnquiriesCache') || '[]');
+        const syncedCache = freshCache.map(item => {
+          const itemKey = item._id || item.id;
+          return itemKey === leadKey ? finalSynced : item;
+        });
+        localStorage.setItem('localEnquiriesCache', JSON.stringify(syncedCache));
       }
     } catch (err) {
       console.warn('Backend patch update note:', err);

@@ -296,7 +296,7 @@ router.patch('/enquiries/:id', protectAdmin, async (req, res) => {
     }
 
     const updatedEnquiry = await Enquiry.findByIdAndUpdate(
-      req.params.id,
+      existing._id,
       updateQuery,
       { new: true }
     );

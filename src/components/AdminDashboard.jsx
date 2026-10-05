@@ -99,11 +99,7 @@ export default function AdminDashboard({ onLogout }) {
   const [editingEnquiry, setEditingEnquiry] = useState(null);
   const [activeNotePopover, setActiveNotePopover] = useState(null);
 
-  // State for Lead Activity History Modal
-  const [historyModalItem, setHistoryModalItem] = useState(null);
-  const [historyFilterCategory, setHistoryFilterCategory] = useState('all');
-  const [newQuickNoteText, setNewQuickNoteText] = useState('');
-  const [submittingHistoryNote, setSubmittingHistoryNote] = useState(false);
+
 
   const handleOpenNotePopover = (e, item) => {
     e.stopPropagation();
@@ -342,78 +338,7 @@ export default function AdminDashboard({ onLogout }) {
     fetchAgents();
   }, []);
 
-  // Helper to get or synthesize Lead Activity History Logs
-  const getLeadHistoryLogs = (item) => {
-    if (!item) return [];
-    let logs = Array.isArray(item.history) && item.history.length > 0 ? [...item.history] : [];
 
-    if (logs.length === 0) {
-      logs.push({
-        actionType: 'CREATED',
-        title: 'Lead Created',
-        description: `New enquiry created for ${item.plotsCount || '1 Guntha'}`,
-        performedBy: `${item.firstName || ''} ${item.lastName || ''}`.trim() || 'Customer / System',
-        createdAt: item.createdAt || new Date().toISOString()
-      });
-
-      if (item.assignedAgentName) {
-        logs.push({
-          actionType: 'AGENT_CHANGE',
-          title: 'Agent Assigned',
-          description: `Lead assigned to ${item.assignedAgentName}`,
-          performedBy: 'System (Round-Robin)',
-          newValue: item.assignedAgentName,
-          createdAt: item.createdAt || new Date().toISOString()
-        });
-      }
-
-      if (item.status && item.status !== 'New') {
-        logs.push({
-          actionType: 'STATUS_CHANGE',
-          title: 'Status Updated',
-          description: `Status set to '${item.status}'`,
-          performedBy: item.assignedAgentName || 'Sales Executive',
-          newValue: item.status,
-          createdAt: item.updatedAt || item.createdAt || new Date().toISOString()
-        });
-      }
-
-      if (item.followupDate) {
-        logs.push({
-          actionType: 'FOLLOWUP_CHANGE',
-          title: 'Followup Date Scheduled',
-          description: `Followup date set to '${item.followupDate}'`,
-          performedBy: item.assignedAgentName || 'Sales Executive',
-          newValue: item.followupDate,
-          createdAt: item.updatedAt || item.createdAt || new Date().toISOString()
-        });
-      }
-
-      if (item.visitDate) {
-        logs.push({
-          actionType: 'VISIT_CHANGE',
-          title: 'Site Visit Date Scheduled',
-          description: `Site visit date set to '${item.visitDate}'`,
-          performedBy: item.assignedAgentName || 'Sales Executive',
-          newValue: item.visitDate,
-          createdAt: item.updatedAt || item.createdAt || new Date().toISOString()
-        });
-      }
-
-      if (item.notes && item.notes.trim() !== '') {
-        logs.push({
-          actionType: 'NOTE',
-          title: 'Note / Remark Added',
-          description: `Note: "${item.notes}"`,
-          performedBy: item.assignedAgentName || 'Sales Executive',
-          newValue: item.notes,
-          createdAt: item.updatedAt || item.createdAt || new Date().toISOString()
-        });
-      }
-    }
-
-    return logs.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-  };
 
   // Handler: Create New Lead (Identical 6 Homepage Fields + Auto Agent Assignment)
   const handleCreateLeadSubmit = async (e) => {
@@ -717,27 +642,14 @@ export default function AdminDashboard({ onLogout }) {
     }
   };
 
-  // Update Status handler with History logging
+  // Update Status handler
   const handleStatusChange = async (id, newStatus) => {
     const token = localStorage.getItem('adminToken');
-    const existing = enquiries.find(item => (item._id === id || item.id === id));
-    const oldStatus = existing ? (existing.status || 'New') : 'New';
     const performer = currentUser.name || 'Sales Executive';
-
-    const newHistoryRecord = {
-      actionType: 'STATUS_CHANGE',
-      title: 'Status Updated',
-      description: `Status changed from '${oldStatus}' to '${newStatus}'`,
-      performedBy: performer,
-      oldValue: oldStatus,
-      newValue: newStatus,
-      createdAt: new Date().toISOString()
-    };
 
     setEnquiries(prev => prev.map(item => {
       if (item._id === id || item.id === id) {
-        const historyList = [newHistoryRecord, ...(item.history || [])];
-        return { ...item, status: newStatus, history: historyList };
+        return { ...item, status: newStatus };
       }
       return item;
     }));
@@ -745,8 +657,7 @@ export default function AdminDashboard({ onLogout }) {
     const localCache = JSON.parse(localStorage.getItem('localEnquiriesCache') || '[]');
     const updatedCache = localCache.map(item => {
       if (item._id === id || item.id === id) {
-        const historyList = [newHistoryRecord, ...(item.history || [])];
-        return { ...item, status: newStatus, history: historyList };
+        return { ...item, status: newStatus };
       }
       return item;
     });
@@ -767,59 +678,6 @@ export default function AdminDashboard({ onLogout }) {
       }
     } catch (err) {
       console.warn('Backend status patch error:', err);
-    }
-  };
-
-  // Quick Add Activity / Call Note to Lead History
-  const handleAddHistoryNote = async (e) => {
-    e.preventDefault();
-    if (!newQuickNoteText || !newQuickNoteText.trim() || !historyModalItem) return;
-    const noteText = newQuickNoteText.trim();
-    setSubmittingHistoryNote(true);
-    const performer = currentUser.name || 'Sales Executive';
-
-    const newRecord = {
-      actionType: 'NOTE',
-      title: 'Activity Note Added',
-      description: `Note: "${noteText}"`,
-      performedBy: performer,
-      createdAt: new Date().toISOString()
-    };
-
-    const updatedItem = {
-      ...historyModalItem,
-      history: [newRecord, ...(historyModalItem.history || [])],
-      notes: noteText
-    };
-
-    setHistoryModalItem(updatedItem);
-    setEnquiries(prev => prev.map(item => (item._id === updatedItem._id || item.id === updatedItem.id) ? updatedItem : item));
-
-    const localCache = JSON.parse(localStorage.getItem('localEnquiriesCache') || '[]');
-    const updatedCache = localCache.map(item => (item._id === updatedItem._id || item.id === updatedItem.id) ? updatedItem : item);
-    localStorage.setItem('localEnquiriesCache', JSON.stringify(updatedCache));
-
-    try {
-      const token = localStorage.getItem('adminToken');
-      const targetId = updatedItem._id || updatedItem.id;
-      await fetch(`${API_BASE_URL}/api/admin/enquiries/${targetId}/history`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          actionType: 'NOTE',
-          title: 'Activity Note Added',
-          description: `Note: "${noteText}"`,
-          performedBy: performer
-        })
-      });
-    } catch (err) {
-      console.warn('Backend history note save error:', err);
-    } finally {
-      setSubmittingHistoryNote(false);
-      setNewQuickNoteText('');
     }
   };
 
@@ -865,142 +723,7 @@ export default function AdminDashboard({ onLogout }) {
     const leadKey = editingEnquiry._id || editingEnquiry.id;
     const existingLead = enquiries.find(item => (item._id || item.id) === leadKey);
     const updatedLead = { ...editingEnquiry };
-    const performer = currentUser.name || 'Admin';
 
-    if (existingLead) {
-      const newLocalLogs = [];
-      const nowIso = new Date().toISOString();
-
-      // 1. Full Name Change
-      const oldFirstName = existingLead.firstName || '';
-      const oldLastName = existingLead.lastName || '';
-      const oldFullName = `${oldFirstName} ${oldLastName}`.trim() || 'N/A';
-      const newFirstName = updatedLead.firstName || '';
-      const newLastName = updatedLead.lastName || '';
-      const newFullName = `${newFirstName} ${newLastName}`.trim() || 'N/A';
-
-      if (oldFullName !== newFullName) {
-        newLocalLogs.push({
-          actionType: 'NAME_CHANGE',
-          title: 'Full Name Updated',
-          description: `Full name changed from '${oldFullName}' to '${newFullName}'`,
-          performedBy: performer,
-          oldValue: oldFullName,
-          newValue: newFullName,
-          createdAt: nowIso
-        });
-      }
-
-      // 2. Mobile No Change
-      if (updatedLead.phone && updatedLead.phone !== existingLead.phone) {
-        newLocalLogs.push({
-          actionType: 'PHONE_CHANGE',
-          title: 'Mobile No Updated',
-          description: `Mobile number changed from '${existingLead.phone || 'N/A'}' to '${updatedLead.phone}'`,
-          performedBy: performer,
-          oldValue: existingLead.phone || 'N/A',
-          newValue: updatedLead.phone,
-          createdAt: nowIso
-        });
-      }
-
-      // 3. Email Address Change
-      if (updatedLead.email !== undefined && updatedLead.email !== existingLead.email) {
-        newLocalLogs.push({
-          actionType: 'EMAIL_CHANGE',
-          title: 'Email Address Updated',
-          description: `Email address changed from '${existingLead.email || 'N/A'}' to '${updatedLead.email || 'N/A'}'`,
-          performedBy: performer,
-          oldValue: existingLead.email || 'N/A',
-          newValue: updatedLead.email || 'N/A',
-          createdAt: nowIso
-        });
-      }
-
-      // 4. No. of Guntha / Plot Info Change
-      const oldPlotVal = existingLead.plotsCount || existingLead.plotInfo || '1 Guntha';
-      const newPlotVal = updatedLead.plotsCount || updatedLead.plotInfo || oldPlotVal;
-      if (oldPlotVal !== newPlotVal) {
-        newLocalLogs.push({
-          actionType: 'PLOT_CHANGE',
-          title: 'No. of Guntha Updated',
-          description: `Plot info changed from '${oldPlotVal}' to '${newPlotVal}'`,
-          performedBy: performer,
-          oldValue: oldPlotVal,
-          newValue: newPlotVal,
-          createdAt: nowIso
-        });
-      }
-
-      // 5. Status Change
-      if (updatedLead.status && updatedLead.status !== existingLead.status) {
-        newLocalLogs.push({
-          actionType: 'STATUS_CHANGE',
-          title: 'Status Updated',
-          description: `Status changed from '${existingLead.status || 'New'}' to '${updatedLead.status}'`,
-          performedBy: performer,
-          oldValue: existingLead.status || 'New',
-          newValue: updatedLead.status,
-          createdAt: nowIso
-        });
-      }
-
-      // 6. Followup Date Change
-      if (updatedLead.followupDate !== undefined && updatedLead.followupDate !== existingLead.followupDate) {
-        newLocalLogs.push({
-          actionType: 'FOLLOWUP_CHANGE',
-          title: 'Followup Date Updated',
-          description: `Followup date changed from '${existingLead.followupDate || 'None'}' to '${updatedLead.followupDate || 'None'}'`,
-          performedBy: performer,
-          oldValue: existingLead.followupDate || 'None',
-          newValue: updatedLead.followupDate || 'None',
-          createdAt: nowIso
-        });
-      }
-
-      // 7. Site Visit Date Change
-      if (updatedLead.visitDate !== undefined && updatedLead.visitDate !== existingLead.visitDate) {
-        newLocalLogs.push({
-          actionType: 'VISIT_CHANGE',
-          title: 'Site Visit Date Updated',
-          description: `Site visit date changed from '${existingLead.visitDate || 'None'}' to '${updatedLead.visitDate || 'None'}'`,
-          performedBy: performer,
-          oldValue: existingLead.visitDate || 'None',
-          newValue: updatedLead.visitDate || 'None',
-          createdAt: nowIso
-        });
-      }
-
-      // 8. Assigned Agent Change
-      if (updatedLead.assignedAgentName && updatedLead.assignedAgentName !== existingLead.assignedAgentName) {
-        newLocalLogs.push({
-          actionType: 'AGENT_CHANGE',
-          title: 'Assigned Agent Changed',
-          description: `Agent reassigned from '${existingLead.assignedAgentName || 'Unassigned'}' to '${updatedLead.assignedAgentName}'`,
-          performedBy: performer,
-          oldValue: existingLead.assignedAgentName || 'Unassigned',
-          newValue: updatedLead.assignedAgentName,
-          createdAt: nowIso
-        });
-      }
-
-      // 9. Notes Change
-      if (updatedLead.notes !== undefined && updatedLead.notes !== existingLead.notes && updatedLead.notes.trim() !== '') {
-        newLocalLogs.push({
-          actionType: 'NOTE',
-          title: 'Note / Remark Updated',
-          description: `Note: "${updatedLead.notes}"`,
-          performedBy: performer,
-          oldValue: existingLead.notes || 'None',
-          newValue: updatedLead.notes,
-          createdAt: nowIso
-        });
-      }
-
-      if (newLocalLogs.length > 0) {
-        updatedLead.history = [...newLocalLogs, ...(existingLead.history || [])];
-      }
-    }
 
     setEnquiries(prev => prev.map(item => {
       const itemKey = item._id || item.id;
@@ -1476,7 +1199,7 @@ export default function AdminDashboard({ onLogout }) {
             
             {/* Dashboard View Standalone Button */}
             <button 
-              onClick={() => { setHistoryModalItem(null); setActiveTab('enquiries'); setActiveView('dashboard'); }}
+              onClick={() => { setActiveTab('enquiries'); setActiveView('dashboard'); }}
               class={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition shadow-md border cursor-pointer ${
                 activeTab === 'enquiries' && activeView === 'dashboard'
                   ? 'bg-amber-400 text-slate-900 border-amber-300 ring-2 ring-amber-300/50 font-extrabold scale-105'
@@ -1489,7 +1212,7 @@ export default function AdminDashboard({ onLogout }) {
 
             {/* Leads View Standalone Button */}
             <button 
-              onClick={() => { setHistoryModalItem(null); setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('New'); setVisitDateFilter('All'); }}
+              onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('New'); setVisitDateFilter('All'); }}
               class={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition shadow-md border cursor-pointer relative ${
                 activeTab === 'enquiries' && activeView === 'leads'
                   ? 'bg-amber-400 text-slate-900 border-amber-300 ring-2 ring-amber-300/50 font-extrabold scale-105'
@@ -1613,157 +1336,7 @@ export default function AdminDashboard({ onLogout }) {
       {/* Main Dashboard Container */}
       <main class="w-full px-2 sm:px-3 lg:px-4 py-3 sm:py-4 flex-1 flex flex-col min-h-0 overflow-hidden space-y-3 sm:space-y-4">
         
-        {historyModalItem ? (
-          /* FULL PAGE LEAD ACTIVITY HISTORY VIEW (PURE TABLE ONLY) */
-          <div class="animate-fade-in flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar w-full pb-6">
-            
-            {/* Direct History Table Container (1:1 UI Sequence with Main Leads Table) */}
-            <div class="bg-white rounded-2xl shadow-xs border border-gray-200/80 overflow-hidden flex flex-col">
-              <div class="overflow-x-auto">
-                {(() => {
-                  const logs = getLeadHistoryLogs(historyModalItem);
-                  const filtered = logs.filter(log => {
-                    if (historyFilterCategory === 'status') return log.actionType === 'STATUS_CHANGE';
-                    if (historyFilterCategory === 'followup') return log.actionType === 'FOLLOWUP_CHANGE' || log.actionType === 'VISIT_CHANGE';
-                    if (historyFilterCategory === 'notes') return log.actionType === 'NOTE';
-                    return true;
-                  });
-
-                  if (filtered.length === 0) {
-                    return (
-                      <div class="py-12 text-center text-slate-400 space-y-2">
-                        <i class="fa-solid fa-clock-rotate-left text-3xl text-slate-300"></i>
-                        <p class="text-xs font-semibold text-slate-600">No activity history records found for this category.</p>
-                        <p class="text-[11px] text-slate-400">Add a quick note or update lead status to start tracking history.</p>
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <table class="w-full min-w-full text-left border-collapse">
-                      <thead class="sticky top-0 z-10 bg-gray-100 shadow-2xs">
-                        <tr>
-                          <th class="py-2.5 px-3 text-[11px] font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">DATE & TIME</th>
-                          <th class="py-2.5 px-3 text-[11px] font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">CHANGED FIELD / ACTION</th>
-                          <th class="py-2.5 px-3 text-[11px] font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">OLD VALUE</th>
-                          <th class="py-2.5 px-3 text-[11px] font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">NEW VALUE</th>
-                          <th class="py-2.5 px-3 text-[11px] font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">PERFORMED BY</th>
-                        </tr>
-                      </thead>
-                      <tbody class="divide-y divide-gray-100 bg-white">
-                        {filtered.map((log, idx) => {
-                          const isStatus = log.actionType === 'STATUS_CHANGE';
-                          const isFollowup = log.actionType === 'FOLLOWUP_CHANGE';
-                          const isVisit = log.actionType === 'VISIT_CHANGE';
-                          const isAgent = log.actionType === 'AGENT_CHANGE';
-                          const isCreated = log.actionType === 'CREATED';
-                          const isName = log.actionType === 'NAME_CHANGE';
-                          const isPhone = log.actionType === 'PHONE_CHANGE';
-                          const isEmail = log.actionType === 'EMAIL_CHANGE';
-                          const isPlot = log.actionType === 'PLOT_CHANGE';
-
-                          let badgeStyle = 'bg-purple-50 text-purple-800 border-purple-200';
-                          let iconClass = 'fa-comment-dots text-purple-600';
-                          let fieldLabel = log.title || 'Activity';
-
-                          if (isStatus) {
-                            badgeStyle = 'bg-amber-50 text-amber-900 border-amber-300';
-                            iconClass = 'fa-arrows-rotate text-amber-600';
-                            fieldLabel = 'Status';
-                          } else if (isFollowup) {
-                            badgeStyle = 'bg-blue-50 text-blue-900 border-blue-200';
-                            iconClass = 'fa-calendar-check text-blue-600';
-                            fieldLabel = 'Followup Date';
-                          } else if (isVisit) {
-                            badgeStyle = 'bg-indigo-50 text-indigo-900 border-indigo-200';
-                            iconClass = 'fa-calendar-days text-indigo-600';
-                            fieldLabel = 'Site Visit Date';
-                          } else if (isAgent) {
-                            badgeStyle = 'bg-emerald-50 text-emerald-900 border-emerald-200';
-                            iconClass = 'fa-user-check text-emerald-600';
-                            fieldLabel = 'Assigned Agent';
-                          } else if (isCreated) {
-                            badgeStyle = 'bg-rose-50 text-[#B30E2E] border-rose-200';
-                            iconClass = 'fa-circle-plus text-[#B30E2E]';
-                            fieldLabel = 'Lead Created';
-                          } else if (isName) {
-                            badgeStyle = 'bg-cyan-50 text-cyan-900 border-cyan-200';
-                            iconClass = 'fa-signature text-cyan-600';
-                            fieldLabel = 'Full Name';
-                          } else if (isPhone) {
-                            badgeStyle = 'bg-teal-50 text-teal-900 border-teal-200';
-                            iconClass = 'fa-phone text-teal-600';
-                            fieldLabel = 'Mobile No';
-                          } else if (isEmail) {
-                            badgeStyle = 'bg-sky-50 text-sky-900 border-sky-200';
-                            iconClass = 'fa-envelope text-sky-600';
-                            fieldLabel = 'Email Address';
-                          } else if (isPlot) {
-                            badgeStyle = 'bg-orange-50 text-orange-900 border-orange-200';
-                            iconClass = 'fa-vector-square text-orange-600';
-                            fieldLabel = 'No. of Guntha';
-                          }
-
-                          const logDate = log.createdAt ? new Date(log.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A';
-                          const logTime = log.createdAt ? new Date(log.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '';
-
-                          const oldValDisplay = isCreated ? '—' : (log.oldValue || '—');
-                          const newValDisplay = log.newValue || (isCreated ? (log.description || 'New Enquiry Created') : (log.description || '—'));
-
-                          return (
-                            <tr key={idx} class="hover:bg-rose-50/40 transition">
-                              {/* Column 1: Date & Time */}
-                              <td class="py-2.5 px-3 whitespace-nowrap font-semibold text-gray-800 text-[10.5px]">
-                                <i class="fa-regular fa-clock text-[8.5px] text-gray-400 mr-1"></i>
-                                <span>{logDate}</span>
-                                <span class="text-[9.5px] text-gray-400 ml-1.5 font-normal">{logTime}</span>
-                              </td>
-
-                              {/* Column 2: Changed Field / Action Badge */}
-                              <td class="py-2.5 px-3 whitespace-nowrap">
-                                <span class={`px-2 py-0.5 rounded-md border text-[10px] font-bold inline-flex items-center gap-1 shadow-2xs ${badgeStyle}`}>
-                                  <i class={`fa-solid ${iconClass} text-[9px]`}></i>
-                                  <span>{fieldLabel}</span>
-                                </span>
-                              </td>
-
-                              {/* Column 3: Old Value */}
-                              <td class="py-2.5 px-3 text-[11px] text-gray-600 font-medium break-words max-w-[160px]">
-                                {oldValDisplay !== '—' ? (
-                                  <span class="px-2 py-0.5 rounded border border-rose-200 bg-rose-50/80 text-rose-900 text-[10.5px] font-semibold inline-block">
-                                    {oldValDisplay}
-                                  </span>
-                                ) : (
-                                  <span class="text-gray-400 font-normal">{oldValDisplay}</span>
-                                )}
-                              </td>
-
-                              {/* Column 4: New Value */}
-                              <td class="py-2.5 px-3 text-[11px] text-gray-800 font-medium break-words max-w-[240px]">
-                                <span class="px-2 py-0.5 rounded border border-emerald-200 bg-emerald-50 text-emerald-950 text-[10.5px] font-semibold inline-block">
-                                  {newValDisplay}
-                                </span>
-                              </td>
-
-                              {/* Column 5: Performed By */}
-                              <td class="py-2.5 px-3 whitespace-nowrap">
-                                <span class="px-2 py-0.5 rounded-lg border border-gray-200 text-[10.5px] font-bold text-gray-700 bg-gray-50 inline-flex items-center gap-1 shadow-2xs">
-                                  <i class="fa-solid fa-circle-user text-[9.5px] text-emerald-600"></i>
-                                  <span>{log.performedBy || 'System'}</span>
-                                </span>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  );
-                })()}
-              </div>
-            </div>
-
-          </div>
-        ) : activeTab === 'enquiries' || !isAdmin ? (
+        {activeTab === 'enquiries' || !isAdmin ? (
           <>
             {/* Dashboard View Tab: 2 Distinct Sections */}
             {activeView === 'dashboard' && (
@@ -2394,14 +1967,7 @@ export default function AdminDashboard({ onLogout }) {
                             {/* Column 10: Actions Column (History, Edit, Delete) */}
                             <td class="py-2.5 px-2 text-center whitespace-nowrap w-24">
                               <div class="flex items-center justify-center gap-1">
-                                {/* Lead Activity History Button */}
-                                <button 
-                                  onClick={() => { setHistoryModalItem({ ...item }); setHistoryFilterCategory('all'); setNewQuickNoteText(''); }}
-                                  class="w-6 h-6 rounded-md bg-purple-100 hover:bg-purple-600 text-purple-800 hover:text-white flex items-center justify-center transition cursor-pointer border border-purple-200"
-                                  title="View Lead Activity History & Timeline"
-                                >
-                                  <i class="fa-solid fa-clock-rotate-left text-[10.5px]"></i>
-                                </button>
+
 
                                 {/* Edit Lead Button */}
                                 <button 

@@ -139,9 +139,6 @@ router.patch('/enquiries/:id', protectAdmin, async (req, res) => {
     }
 
     let updateFields = {};
-    let newHistoryEntries = [];
-    const performer = updatedBy || (req.admin ? (req.admin.name || req.admin.username) : 'System');
-
     if (firstName !== undefined) updateFields.firstName = firstName;
     if (lastName !== undefined) updateFields.lastName = lastName;
     if (phone !== undefined) updateFields.phone = phone;
@@ -155,199 +152,15 @@ router.patch('/enquiries/:id', protectAdmin, async (req, res) => {
     if (assignedTo !== undefined) updateFields.assignedTo = assignedTo;
     if (notes !== undefined) updateFields.notes = notes;
 
-    // 1. Full Name Change Logging
-    const oldFirstName = existing.firstName || '';
-    const oldLastName = existing.lastName || '';
-    const oldFullName = `${oldFirstName} ${oldLastName}`.trim() || 'N/A';
-    const newFirstName = firstName !== undefined ? firstName : oldFirstName;
-    const newLastName = lastName !== undefined ? lastName : oldLastName;
-    const newFullName = `${newFirstName} ${newLastName}`.trim() || 'N/A';
-
-    if ((firstName !== undefined || lastName !== undefined) && oldFullName !== newFullName) {
-      newHistoryEntries.push({
-        actionType: 'NAME_CHANGE',
-        title: 'Full Name Updated',
-        description: `Full name changed from '${oldFullName}' to '${newFullName}'`,
-        performedBy: performer,
-        oldValue: oldFullName,
-        newValue: newFullName,
-        createdAt: new Date()
-      });
-    }
-
-    // 2. Mobile No (Phone) Change Logging
-    if (phone !== undefined && phone !== existing.phone) {
-      newHistoryEntries.push({
-        actionType: 'PHONE_CHANGE',
-        title: 'Mobile No Updated',
-        description: `Mobile number changed from '${existing.phone || 'N/A'}' to '${phone}'`,
-        performedBy: performer,
-        oldValue: existing.phone || 'N/A',
-        newValue: phone,
-        createdAt: new Date()
-      });
-    }
-
-    // 3. Email Address Change Logging
-    if (email !== undefined && email !== existing.email) {
-      newHistoryEntries.push({
-        actionType: 'EMAIL_CHANGE',
-        title: 'Email Address Updated',
-        description: `Email address changed from '${existing.email || 'N/A'}' to '${email || 'N/A'}'`,
-        performedBy: performer,
-        oldValue: existing.email || 'N/A',
-        newValue: email || 'N/A',
-        createdAt: new Date()
-      });
-    }
-
-    // 4. Plot Info / Guntha Change Logging
-    const oldPlotVal = existing.plotsCount || existing.plotInfo || '1 Guntha';
-    const newPlotVal = plotsCount || plotInfo || oldPlotVal;
-    if ((plotsCount !== undefined || plotInfo !== undefined) && oldPlotVal !== newPlotVal) {
-      newHistoryEntries.push({
-        actionType: 'PLOT_CHANGE',
-        title: 'No. of Guntha Updated',
-        description: `Plot info changed from '${oldPlotVal}' to '${newPlotVal}'`,
-        performedBy: performer,
-        oldValue: oldPlotVal,
-        newValue: newPlotVal,
-        createdAt: new Date()
-      });
-    }
-
-    // 5. Status Change Logging
-    if (status !== undefined && status !== existing.status) {
-      updateFields.status = status;
-      newHistoryEntries.push({
-        actionType: 'STATUS_CHANGE',
-        title: 'Status Updated',
-        description: `Status changed from '${existing.status || 'New'}' to '${status}'`,
-        performedBy: performer,
-        oldValue: existing.status || 'New',
-        newValue: status,
-        createdAt: new Date()
-      });
-    }
-
-    // 6. Followup Date Logging
-    if (followupDate !== undefined && followupDate !== existing.followupDate) {
-      updateFields.followupDate = followupDate;
-      newHistoryEntries.push({
-        actionType: 'FOLLOWUP_CHANGE',
-        title: 'Followup Date Updated',
-        description: `Followup date changed from '${existing.followupDate || 'None'}' to '${followupDate || 'None'}'`,
-        performedBy: performer,
-        oldValue: existing.followupDate || 'None',
-        newValue: followupDate || 'None',
-        createdAt: new Date()
-      });
-    }
-
-    // 7. Visit Date Logging
-    if (visitDate !== undefined && visitDate !== existing.visitDate) {
-      updateFields.visitDate = visitDate;
-      newHistoryEntries.push({
-        actionType: 'VISIT_CHANGE',
-        title: 'Site Visit Date Updated',
-        description: `Site visit date changed from '${existing.visitDate || 'None'}' to '${visitDate || 'None'}'`,
-        performedBy: performer,
-        oldValue: existing.visitDate || 'None',
-        newValue: visitDate || 'None',
-        createdAt: new Date()
-      });
-    }
-
-    // 8. Assigned Agent Logging
-    if (assignedAgentName !== undefined && assignedAgentName !== existing.assignedAgentName) {
-      updateFields.assignedAgentName = assignedAgentName;
-      if (assignedTo !== undefined) updateFields.assignedTo = assignedTo;
-      newHistoryEntries.push({
-        actionType: 'AGENT_CHANGE',
-        title: 'Assigned Agent Changed',
-        description: `Agent reassigned from '${existing.assignedAgentName || 'Unassigned'}' to '${assignedAgentName}'`,
-        performedBy: performer,
-        oldValue: existing.assignedAgentName || 'Unassigned',
-        newValue: assignedAgentName,
-        createdAt: new Date()
-      });
-    }
-
-    // 9. Notes Logging
-    if (notes !== undefined && notes !== existing.notes && notes.trim() !== '') {
-      updateFields.notes = notes;
-      newHistoryEntries.push({
-        actionType: 'NOTE',
-        title: 'Note / Remark Updated',
-        description: `Note: "${notes}"`,
-        performedBy: performer,
-        oldValue: existing.notes || 'None',
-        newValue: notes,
-        createdAt: new Date()
-      });
-    }
-
-    if (historyEntry) {
-      newHistoryEntries.push({
-        actionType: historyEntry.actionType || 'NOTE',
-        title: historyEntry.title || 'Activity Logged',
-        description: historyEntry.description || historyEntry.text || '',
-        performedBy: historyEntry.performedBy || performer,
-        oldValue: historyEntry.oldValue || '',
-        newValue: historyEntry.newValue || '',
-        createdAt: new Date()
-      });
-    }
-
-    let updateQuery = { $set: updateFields };
-    if (newHistoryEntries.length > 0) {
-      updateQuery.$push = { history: { $each: newHistoryEntries } };
-    }
-
     const updatedEnquiry = await Enquiry.findByIdAndUpdate(
       existing._id,
-      updateQuery,
+      { $set: updateFields },
       { new: true }
     );
 
     return res.json({ success: true, message: 'Enquiry updated in MongoDB', data: updatedEnquiry });
   } catch (error) {
     console.error('Error updating enquiry in MongoDB:', error.message);
-    return res.status(500).json({ success: false, message: 'Database Error' });
-  }
-});
-
-// @route   POST /api/admin/enquiries/:id/history
-// @desc    Add quick activity / call note to enquiry history
-// @access  Protected
-router.post('/enquiries/:id/history', protectAdmin, async (req, res) => {
-  try {
-    const { actionType, title, description, performedBy, oldValue, newValue } = req.body;
-    const performer = performedBy || (req.admin ? (req.admin.name || req.admin.username) : 'System');
-
-    const historyRecord = {
-      actionType: actionType || 'NOTE',
-      title: title || 'Activity Logged',
-      description: description || '',
-      performedBy: performer,
-      oldValue: oldValue || '',
-      newValue: newValue || '',
-      createdAt: new Date()
-    };
-
-    const updated = await Enquiry.findByIdAndUpdate(
-      req.params.id,
-      { $push: { history: [historyRecord] } },
-      { new: true }
-    );
-
-    if (!updated) {
-      return res.status(404).json({ success: false, message: 'Enquiry record not found' });
-    }
-
-    return res.json({ success: true, message: 'History record added', data: updated });
-  } catch (err) {
-    console.error('Error adding history entry:', err.message);
     return res.status(500).json({ success: false, message: 'Database Error' });
   }
 });

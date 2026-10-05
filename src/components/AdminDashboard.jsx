@@ -750,6 +750,13 @@ export default function AdminDashboard({ onLogout }) {
       });
 
       const data = await res.json();
+
+      if (res.status === 401) {
+        setEditModalSuccessMsg('Session Expired / Invalid Token. Please Log Out & Log In again.');
+        alert('Your session has expired or token is invalid. Please Log Out and Log In again to save changes to MongoDB Atlas.');
+        return;
+      }
+
       if (res.ok && data.success && data.data) {
         const finalSynced = { ...data.data, followupDate: updatedLead.followupDate || data.data.followupDate || '' };
         

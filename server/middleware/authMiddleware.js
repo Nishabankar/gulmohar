@@ -11,7 +11,7 @@ const protectAdmin = (req, res, next) => {
       req.admin = decoded;
       return next();
     } catch (error) {
-      return res.status(401).json({ success: false, message: 'Not authorized, invalid token' });
+      return res.status(401).json({ success: false, message: 'Session Expired or Invalid Token. Please Log Out and Log In again.' });
     }
   }
 

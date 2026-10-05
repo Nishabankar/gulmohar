@@ -1577,23 +1577,16 @@ export default function AdminDashboard({ onLogout }) {
                 <div class="space-y-3 animate-fade-in flex-1 flex flex-col min-h-0 overflow-hidden">
                   
                   {/* Lead History Title Section */}
-                  <div class="flex-shrink-0 flex items-center justify-between bg-white px-4 py-3 rounded-2xl border border-purple-100 shadow-2xs">
-                    <div class="flex items-center gap-3">
-                      <div class="w-9 h-9 rounded-xl bg-purple-100 border border-purple-200 flex items-center justify-center text-purple-700 font-bold">
-                        <i class="fa-solid fa-clock-rotate-left text-base"></i>
-                      </div>
-                      <div>
-                        <h2 class="text-base sm:text-lg font-serif font-bold text-gray-900 tracking-wide">
-                          Lead History
-                        </h2>
-                      </div>
-                    </div>
+                  <div class="flex-shrink-0 flex items-center justify-between px-1">
+                    <h2 class="text-base sm:text-lg font-serif font-bold text-gray-900 tracking-wide">
+                      Lead History
+                    </h2>
                     <button 
                       onClick={() => setSelectedHistoryLead(null)}
-                      class="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold flex items-center gap-1.5 transition shadow cursor-pointer"
+                      class="w-8 h-8 rounded-xl bg-purple-600 hover:bg-purple-700 text-white flex items-center justify-center transition shadow cursor-pointer"
+                      title="Back to Leads"
                     >
                       <i class="fa-solid fa-arrow-left text-xs"></i>
-                      <span>Back to Leads</span>
                     </button>
                   </div>
 

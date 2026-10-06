@@ -3262,7 +3262,7 @@ export default function AdminDashboard({ onLogout }) {
 
                 if (noteLogs.length > 0) {
                   return noteLogs.map((log, nIdx) => {
-                    const nDate = log.modifiedDate ? new Date(log.modifiedDate).toLocaleDateString('en-GB') : '';
+                    const nDate = log.modifiedDate ? new Date(log.modifiedDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
                     const nTime = log.modifiedDate ? new Date(log.modifiedDate).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '';
 
                     return (

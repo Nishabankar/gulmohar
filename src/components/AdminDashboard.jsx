@@ -1436,7 +1436,7 @@ export default function AdminDashboard({ onLogout }) {
 
   // Helpers for Status filtering
   const isPendingVisitStatus = (status) => status === 'Site Visit Scheduled';
-  const isFollowupStatus = (status) => ['Contacted', 'Interested', 'Details Provided', 'Site Visit Scheduled'].includes(status);
+  const isFollowupStatus = (status) => ['Contacted', 'Interested', 'Details Provided'].includes(status);
 
   // Filtered enquiries by Search, Status, Agent & Visit Date
   const filteredEnquiries = (scopedEnquiries || []).filter(item => {

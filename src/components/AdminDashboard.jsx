@@ -1465,7 +1465,15 @@ export default function AdminDashboard({ onLogout }) {
       displayLeadId.includes(query) ||
       displayUserId.includes(query);
 
-    const matchesStatus = statusFilter === 'All' ? true : (statusFilter === 'New' ? isNewLead(item) : item.status === statusFilter);
+    const matchesStatus = statusFilter === 'All' 
+      ? true 
+      : (statusFilter === 'New' 
+          ? isNewLead(item) 
+          : (statusFilter === 'Lost' 
+              ? (item.status === 'Lost' || item.status === 'Not Interested')
+              : (statusFilter === 'Won' 
+                  ? (item.status === 'Won' || item.status === 'Closed')
+                  : item.status === statusFilter)));
 
     // Visit Date Filter Matching (Calculated using status === 'Site Visit Scheduled' & followupDate)
     let matchesVisitDate = true;
@@ -1529,7 +1537,7 @@ export default function AdminDashboard({ onLogout }) {
   const interestedLeadsCount = scopedEnquiries.filter(e => e.status === 'Interested').length;
   const siteVisitDoneCount = scopedEnquiries.filter(e => e.status === 'Site Visit Done').length;
   const wonDealsCount = scopedEnquiries.filter(e => e.status === 'Won' || e.status === 'Closed').length;
-  const lostDealsCount = scopedEnquiries.filter(e => e.status === 'Lost').length;
+  const lostDealsCount = scopedEnquiries.filter(e => e.status === 'Lost' || e.status === 'Not Interested').length;
 
   const siteVisitsCount = scopedEnquiries.filter(e => isPendingVisitStatus(e.status) && !!e.followupDate && e.followupDate.trim() !== '').length;
   const todayVisitsCount = scopedEnquiries.filter(e => isPendingVisitStatus(e.status) && !!e.followupDate && e.followupDate === getTodayString()).length;

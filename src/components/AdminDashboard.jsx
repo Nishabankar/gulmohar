@@ -1437,6 +1437,12 @@ export default function AdminDashboard({ onLogout }) {
   // Helpers for Status filtering
   const isPendingVisitStatus = (status) => status === 'Site Visit Scheduled';
   const isFollowupStatus = (status) => ['Contacted', 'Interested', 'Details Provided'].includes(status);
+  const isNewLead = (e) => {
+    if (!e) return false;
+    const isCompletedOrClosed = ['Site Visit Done', 'Won', 'Closed', 'Lost', 'Not Interested'].includes(e.status);
+    const hasFollowupDate = !!e.followupDate && e.followupDate.trim() !== '';
+    return !isCompletedOrClosed && !hasFollowupDate;
+  };
 
   // Filtered enquiries by Search, Status, Agent & Visit Date
   const filteredEnquiries = (scopedEnquiries || []).filter(item => {
@@ -1459,7 +1465,7 @@ export default function AdminDashboard({ onLogout }) {
       displayLeadId.includes(query) ||
       displayUserId.includes(query);
 
-    const matchesStatus = statusFilter === 'All' || item.status === statusFilter;
+    const matchesStatus = statusFilter === 'All' ? true : (statusFilter === 'New' ? isNewLead(item) : item.status === statusFilter);
 
     // Visit Date Filter Matching (Calculated using status === 'Site Visit Scheduled' & followupDate)
     let matchesVisitDate = true;
@@ -1514,7 +1520,7 @@ export default function AdminDashboard({ onLogout }) {
 
   // Calculate stats
   const totalLeads = scopedEnquiries.length;
-  const newLeadsCount = scopedEnquiries.filter(e => e.status === 'New').length;
+  const newLeadsCount = scopedEnquiries.filter(e => isNewLead(e)).length;
   const todaysFollowupCount = scopedEnquiries.filter(e => isFollowupStatus(e.status) && e.followupDate === getTodayString()).length;
   const tomorrowsFollowupCount = scopedEnquiries.filter(e => isFollowupStatus(e.status) && e.followupDate === getTomorrowString()).length;
   const thisWeekFollowupCount = scopedEnquiries.filter(e => isFollowupStatus(e.status) && isDateInThisWeek(e.followupDate)).length;

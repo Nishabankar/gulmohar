@@ -2650,20 +2650,25 @@ export default function AdminDashboard({ onLogout }) {
       )}
           </>
         ) : (
-          <>
+          <div class="space-y-3 sm:space-y-4 flex-1 flex flex-col min-h-0">
             {/* Registered Users View Tab */}
             {/* Users Title Section */}
-            <div class="pt-2">
-              <h2 class="text-base sm:text-lg font-serif font-bold text-gray-900 tracking-wide">
-                User Management
-              </h2>
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div class="flex items-center gap-2">
+                <h2 class="text-base sm:text-lg font-serif font-bold text-gray-900 tracking-wide">
+                  User Management
+                </h2>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FFF0F2] text-[#B30E2E] border border-[#FCD6DC]">
+                  {filteredUsers.length} Total
+                </span>
+              </div>
             </div>
 
             {/* Registered Users Table Card */}
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-200/80 overflow-hidden">
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200/80 overflow-hidden flex flex-col min-h-0 flex-1">
               
               {/* Search Header Bar */}
-              <div class="px-4 py-3 border-b border-gray-100 bg-gray-50/70 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              <div class="p-3.5 sm:p-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3 bg-white">
                 <div class="relative flex-1 max-w-md">
                   <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                     <i class="fa-solid fa-magnifying-glass text-xs"></i>
@@ -2690,7 +2695,7 @@ export default function AdminDashboard({ onLogout }) {
                   <div class="flex items-center gap-2 flex-shrink-0">
                     <button 
                       onClick={() => setShowCreateAgentModal(true)}
-                      class="w-9 h-9 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-500/40 font-extrabold flex items-center justify-center transition shadow-sm cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
+                      class="w-9 h-9 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition shadow-sm border border-emerald-500/40 cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
                       title="Create User Account"
                     >
                       <i class="fa-solid fa-user-plus text-sm"></i>
@@ -2707,21 +2712,21 @@ export default function AdminDashboard({ onLogout }) {
                   <p class="text-xs text-gray-400">Click "+ Create User" button to create a user.</p>
                 </div>
               ) : (
-                <div class="overflow-x-auto overflow-y-auto max-h-[calc(100vh-270px)] custom-scrollbar w-full rounded-b-2xl">
-                  <table class="w-full min-w-[700px] text-left border-collapse">
+                <div class="overflow-x-auto overflow-y-auto flex-1 min-h-0 custom-scrollbar w-full rounded-b-2xl">
+                  <table class="w-full min-w-full text-left border-collapse">
                       <thead class="sticky top-0 z-10 bg-gray-100 shadow-2xs">
-                        <tr class="bg-gray-100 border-b border-gray-200 text-[10.5px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">
-                          <th class="py-2.5 px-3 whitespace-nowrap">User ID</th>
-                          <th class="py-2.5 px-3 whitespace-nowrap">Full Name</th>
-                          <th class="py-2.5 px-3 whitespace-nowrap">Username</th>
-                          <th class="py-2.5 px-3 whitespace-nowrap">Password</th>
-                          <th class="py-2.5 px-3 whitespace-nowrap">Mobile No</th>
-                          <th class="py-2.5 px-3 whitespace-nowrap">Email Address</th>
-                          <th class="py-2.5 px-3 whitespace-nowrap">Assigned Leads</th>
-                          <th class="py-2.5 px-3 text-center whitespace-nowrap">Actions</th>
+                        <tr class="bg-gray-100 border-b border-gray-200 text-[10px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                          <th class="py-2.5 px-2.5 whitespace-nowrap w-16 min-w-[60px]">User ID</th>
+                          <th class="py-2.5 px-3 whitespace-nowrap w-44 min-w-[165px]">Full Name</th>
+                          <th class="py-2.5 px-3 whitespace-nowrap w-36 min-w-[120px]">Username</th>
+                          <th class="py-2.5 px-3 whitespace-nowrap w-36 min-w-[120px]">Password</th>
+                          <th class="py-2.5 px-3 whitespace-nowrap w-36 min-w-[142px]">Mobile No</th>
+                          <th class="py-2.5 px-2.5 whitespace-nowrap min-w-[155px]">Email Address</th>
+                          <th class="py-2.5 px-2.5 whitespace-nowrap min-w-[130px]">Assigned Leads</th>
+                          <th class="py-2.5 px-2 text-center whitespace-nowrap w-16">Actions</th>
                         </tr>
                       </thead>
-                      <tbody class="divide-y divide-gray-100 text-xs">
+                      <tbody class="divide-y divide-gray-100 text-[11.5px] font-medium text-gray-700">
                         {filteredUsers.map((agent, agentIdx) => {
                           const assignedCount = enquiries.filter(e => {
                             const leadAgent = (e.assignedAgentName || '').toLowerCase().trim();
@@ -2742,26 +2747,26 @@ export default function AdminDashboard({ onLogout }) {
                             );
                           }).length;
                           return (
-                            <tr key={agent.id || agent.username} class="hover:bg-slate-50/80 transition">
+                            <tr key={agent.id || agent.username} class="hover:bg-slate-50/80 transition group">
                               
                               {/* User ID */}
-                              <td class="py-3 px-3 whitespace-nowrap">
-                                <span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-blue-50 text-blue-700 border border-blue-200/80 shadow-xs">
+                              <td class="py-2.5 px-2.5 whitespace-nowrap">
+                                <span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-rose-50 text-rose-700 border border-rose-200/80 shadow-2xs">
                                   {String(agentIdx + 1).padStart(2, '0')}
                                 </span>
                               </td>
                               
                               {/* Full Name */}
-                              <td class="py-3 px-3 font-bold text-gray-900 whitespace-nowrap">
+                              <td class="py-2.5 px-3 font-bold text-gray-900 whitespace-nowrap">
                                 <div class="flex items-center gap-2">
                                   {getAgentProfilePhoto(agent) ? (
                                     <img 
                                       src={getAgentProfilePhoto(agent)} 
                                       alt={agent.name} 
-                                      class="w-7 h-7 rounded-full object-cover border border-gray-200 shadow-xs flex-shrink-0" 
+                                      class="w-6.5 h-6.5 rounded-full object-cover border border-gray-200 shadow-2xs flex-shrink-0" 
                                     />
                                   ) : (
-                                    <div class="w-7 h-7 rounded-full bg-[#B30E2E] text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-xs">
+                                    <div class="w-6.5 h-6.5 rounded-full bg-[#B30E2E] text-white font-bold text-[10px] flex items-center justify-center flex-shrink-0 shadow-2xs">
                                       {((agent.name || agent.username || 'U').trim()[0] || 'U').toUpperCase()}
                                     </div>
                                   )}
@@ -2770,24 +2775,24 @@ export default function AdminDashboard({ onLogout }) {
                               </td>
 
                               {/* Username */}
-                              <td class="py-3 px-3 font-semibold text-gray-800 whitespace-nowrap">
-                                <span class="bg-gray-100 border border-gray-200 px-2 py-0.5 rounded-md text-[11px] font-mono text-gray-800">
+                              <td class="py-2.5 px-3 font-semibold text-gray-800 whitespace-nowrap">
+                                <span class="bg-gray-100 border border-gray-200 px-2 py-0.5 rounded-md text-[10.5px] font-mono text-gray-800">
                                   {agent.username}
                                 </span>
                               </td>
 
                               {/* Password */}
-                              <td class="py-3 px-3 font-semibold text-gray-800 whitespace-nowrap">
-                                <span class="bg-gray-100 border border-gray-200 px-2 py-0.5 rounded-md text-[11px] font-mono text-gray-700">
+                              <td class="py-2.5 px-3 font-semibold text-gray-800 whitespace-nowrap">
+                                <span class="bg-gray-100 border border-gray-200 px-2 py-0.5 rounded-md text-[10.5px] font-mono text-gray-700">
                                   {agent.password || '••••••••'}
                                 </span>
                               </td>
 
                               {/* Mobile No */}
-                              <td class="py-3 px-3 whitespace-nowrap">
+                              <td class="py-2.5 px-3 whitespace-nowrap">
                                 {agent.phone ? (
-                                  <a href={`tel:${agent.phone}`} class="text-[#B30E2E] font-bold hover:underline flex items-center gap-1 text-xs">
-                                    <i class="fa-solid fa-phone text-[9px]"></i>
+                                  <a href={`tel:${agent.phone}`} class="text-[#B30E2E] font-bold hover:underline flex items-center gap-1.5 text-xs">
+                                    <i class="fa-solid fa-phone text-[9.5px]"></i>
                                     <span>{agent.phone}</span>
                                   </a>
                                 ) : (
@@ -2796,10 +2801,10 @@ export default function AdminDashboard({ onLogout }) {
                               </td>
 
                               {/* Email Address */}
-                              <td class="py-3 px-3 whitespace-nowrap">
+                              <td class="py-2.5 px-2.5 whitespace-nowrap">
                                 {agent.email ? (
-                                  <a href={`mailto:${agent.email}`} class="text-gray-700 hover:text-[#B30E2E] flex items-center gap-1 text-[11px]">
-                                    <i class="fa-regular fa-envelope text-[10px] text-gray-400"></i>
+                                  <a href={`mailto:${agent.email}`} class="text-gray-700 hover:text-[#B30E2E] flex items-center gap-1.5 text-xs">
+                                    <i class="fa-regular fa-envelope text-xs text-gray-400"></i>
                                     <span>{agent.email}</span>
                                   </a>
                                 ) : (
@@ -2808,29 +2813,29 @@ export default function AdminDashboard({ onLogout }) {
                               </td>
 
                               {/* Assigned Leads */}
-                              <td class="py-3 px-3 whitespace-nowrap">
-                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                                  <i class="fa-solid fa-list-check text-[9px]"></i>
+                              <td class="py-2.5 px-2.5 whitespace-nowrap">
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-50 text-emerald-900 border border-emerald-300 shadow-2xs">
+                                  <i class="fa-solid fa-list-check text-[9.5px] text-emerald-700"></i>
                                   <span>{assignedCount} Leads</span>
                                 </span>
                               </td>
 
                               {/* Actions */}
-                              <td class="py-3 px-3 text-center whitespace-nowrap">
+                              <td class="py-2.5 px-2 text-center whitespace-nowrap">
                                 <div class="flex items-center justify-center gap-1.5">
                                   <button
                                     onClick={() => { setEditingUser({ ...agent }); setUserEditSuccessMsg(''); }}
                                     class="w-7 h-7 rounded-lg bg-indigo-100 hover:bg-indigo-200 text-indigo-700 flex items-center justify-center transition cursor-pointer"
                                     title="Edit User Details"
                                   >
-                                    <i class="fa-solid fa-pen-to-square text-xs"></i>
+                                    <i class="fa-solid fa-pen-to-square text-[11px]"></i>
                                   </button>
                                   <button
                                     onClick={() => handleDeleteAgent(agent.id || agent.username)}
                                     class="w-7 h-7 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700 flex items-center justify-center transition cursor-pointer"
                                     title="Delete User Account"
                                   >
-                                    <i class="fa-regular fa-trash-can text-xs"></i>
+                                    <i class="fa-regular fa-trash-can text-[11px]"></i>
                                   </button>
                                 </div>
                               </td>
@@ -2844,7 +2849,7 @@ export default function AdminDashboard({ onLogout }) {
                 )}
 
             </div>
-          </>
+          </div>
         )}
 
       </main>

@@ -3582,26 +3582,15 @@ export default function AdminDashboard({ onLogout }) {
                 </select>
               </div>
 
-              {/* 4. Site Visit Date & Followup Date */}
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label class="block text-xs font-bold text-gray-700 mb-1">Site Visit Date</label>
-                  <input 
-                    type="date" 
-                    value={newLeadFormData.visitDate || ''}
-                    onChange={(e) => setNewLeadFormData({ ...newLeadFormData, visitDate: e.target.value })}
-                    class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800"
-                  />
-                </div>
-                <div>
-                  <label class="block text-xs font-bold text-gray-700 mb-1">Followup Date</label>
-                  <input 
-                    type="date" 
-                    value={newLeadFormData.followupDate || ''}
-                    onChange={(e) => setNewLeadFormData({ ...newLeadFormData, followupDate: e.target.value })}
-                    class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800"
-                  />
-                </div>
+              {/* 4. Followup Date */}
+              <div>
+                <label class="block text-xs font-bold text-gray-700 mb-1">Followup Date</label>
+                <input 
+                  type="date" 
+                  value={newLeadFormData.followupDate || ''}
+                  onChange={(e) => setNewLeadFormData({ ...newLeadFormData, followupDate: e.target.value })}
+                  class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800"
+                />
               </div>
 
               {/* 4. Notes */}

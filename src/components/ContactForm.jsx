@@ -229,50 +229,30 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
                     </div>
                   </div>
 
-                  {/* 2-Column Grid Row: Number of Guntha & Site Visit Date */}
-                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {/* Input Number of Guntha (1 to 10 and 11+) */}
-                    <div>
-                      <label class="block text-xs font-bold text-gray-700 mb-1">Number of Guntha</label>
-                      <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 text-xs">
-                          <i class="fa-solid fa-shapes text-[#B30E2E]"></i>
-                        </div>
-                        <select 
-                          value={formData.plotsCount || '1 Guntha'}
-                          onChange={(e) => setFormData({ ...formData, plotsCount: e.target.value })}
-                          class="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition text-xs bg-gray-50 focus:bg-white text-gray-800"
-                        >
-                          <option value="1 Guntha">1 Guntha</option>
-                          <option value="2 Guntha">2 Guntha</option>
-                          <option value="3 Guntha">3 Guntha</option>
-                          <option value="4 Guntha">4 Guntha</option>
-                          <option value="5 Guntha">5 Guntha</option>
-                          <option value="6 Guntha">6 Guntha</option>
-                          <option value="7 Guntha">7 Guntha</option>
-                          <option value="8 Guntha">8 Guntha</option>
-                          <option value="9 Guntha">9 Guntha</option>
-                          <option value="10 Guntha">10 Guntha</option>
-                          <option value="11+ Guntha (Bulk / Investment)">11+ Guntha (Bulk / Investment)</option>
-                        </select>
+                  {/* Number of Guntha */}
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Number of Guntha</label>
+                    <div class="relative">
+                      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 text-xs">
+                        <i class="fa-solid fa-shapes text-[#B30E2E]"></i>
                       </div>
-                    </div>
-
-                    {/* Input Site Visit Date (Calendar Picker) */}
-                    <div>
-                      <label class="block text-xs font-bold text-gray-700 mb-1">Site Visit Date</label>
-                      <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 text-xs">
-                          <i class="fa-solid fa-calendar-days text-[#B30E2E]"></i>
-                        </div>
-                        <input 
-                          type="date"
-                          min={new Date().toISOString().split('T')[0]}
-                          value={formData.visitDate || ''}
-                          onChange={(e) => setFormData({ ...formData, visitDate: e.target.value })}
-                          class="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition text-xs bg-gray-50 focus:bg-white text-gray-800 cursor-pointer"
-                        />
-                      </div>
+                      <select 
+                        value={formData.plotsCount || '1 Guntha'}
+                        onChange={(e) => setFormData({ ...formData, plotsCount: e.target.value })}
+                        class="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition text-xs bg-gray-50 focus:bg-white text-gray-800"
+                      >
+                        <option value="1 Guntha">1 Guntha</option>
+                        <option value="2 Guntha">2 Guntha</option>
+                        <option value="3 Guntha">3 Guntha</option>
+                        <option value="4 Guntha">4 Guntha</option>
+                        <option value="5 Guntha">5 Guntha</option>
+                        <option value="6 Guntha">6 Guntha</option>
+                        <option value="7 Guntha">7 Guntha</option>
+                        <option value="8 Guntha">8 Guntha</option>
+                        <option value="9 Guntha">9 Guntha</option>
+                        <option value="10 Guntha">10 Guntha</option>
+                        <option value="11+ Guntha (Bulk / Investment)">11+ Guntha (Bulk / Investment)</option>
+                      </select>
                     </div>
                   </div>
 

@@ -2710,7 +2710,7 @@ export default function AdminDashboard({ onLogout }) {
                 <div class="overflow-x-auto overflow-y-auto max-h-[calc(100vh-270px)] custom-scrollbar w-full rounded-b-2xl">
                   <table class="w-full min-w-[700px] text-left border-collapse">
                       <thead class="sticky top-0 z-10 bg-gray-100 shadow-2xs">
-                        <tr class="bg-gray-100 border-b border-gray-200 text-[10.5px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                        <tr class="bg-gray-100 border-b border-gray-200 text-[10px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">
                           <th class="py-2.5 px-3 whitespace-nowrap">User ID</th>
                           <th class="py-2.5 px-3 whitespace-nowrap">Full Name</th>
                           <th class="py-2.5 px-3 whitespace-nowrap">Username</th>
@@ -2721,7 +2721,7 @@ export default function AdminDashboard({ onLogout }) {
                           <th class="py-2.5 px-3 text-center whitespace-nowrap">Actions</th>
                         </tr>
                       </thead>
-                      <tbody class="divide-y divide-gray-100 text-xs">
+                      <tbody class="divide-y divide-gray-100 text-[11.5px]">
                         {filteredUsers.map((agent, agentIdx) => {
                           const assignedCount = enquiries.filter(e => {
                             const leadAgent = (e.assignedAgentName || '').toLowerCase().trim();
@@ -2745,78 +2745,78 @@ export default function AdminDashboard({ onLogout }) {
                             <tr key={agent.id || agent.username} class="hover:bg-slate-50/80 transition">
                               
                               {/* User ID */}
-                              <td class="py-3 px-3 whitespace-nowrap">
-                                <span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-blue-50 text-blue-700 border border-blue-200/80 shadow-xs">
+                              <td class="py-2.5 px-3 whitespace-nowrap">
+                                <span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-blue-50 text-blue-700 border border-blue-200/80 shadow-2xs">
                                   {String(agentIdx + 1).padStart(2, '0')}
                                 </span>
                               </td>
                               
                               {/* Full Name */}
-                              <td class="py-3 px-3 font-bold text-gray-900 whitespace-nowrap">
+                              <td class="py-2.5 px-3 font-bold text-gray-900 whitespace-nowrap">
                                 <div class="flex items-center gap-2">
                                   {getAgentProfilePhoto(agent) ? (
                                     <img 
                                       src={getAgentProfilePhoto(agent)} 
                                       alt={agent.name} 
-                                      class="w-7 h-7 rounded-full object-cover border border-gray-200 shadow-xs flex-shrink-0" 
+                                      class="w-6.5 h-6.5 rounded-full object-cover border border-gray-200 shadow-2xs flex-shrink-0" 
                                     />
                                   ) : (
-                                    <div class="w-7 h-7 rounded-full bg-[#B30E2E] text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-xs">
+                                    <div class="w-6.5 h-6.5 rounded-full bg-[#B30E2E] text-white font-bold text-[10px] flex items-center justify-center flex-shrink-0 shadow-2xs">
                                       {((agent.name || agent.username || 'U').trim()[0] || 'U').toUpperCase()}
                                     </div>
                                   )}
-                                  <span class="text-xs font-bold text-gray-900">{agent.name}</span>
+                                  <span class="text-[11.5px] font-bold text-gray-900">{agent.name}</span>
                                 </div>
                               </td>
 
                               {/* Username */}
-                              <td class="py-3 px-3 font-semibold text-gray-800 whitespace-nowrap">
-                                <span class="bg-gray-100 border border-gray-200 px-2 py-0.5 rounded-md text-[11px] font-mono text-gray-800">
+                              <td class="py-2.5 px-3 font-semibold text-gray-800 whitespace-nowrap">
+                                <span class="bg-gray-100 border border-gray-200 px-2 py-0.5 rounded-md text-[10.5px] font-mono text-gray-800">
                                   {agent.username}
                                 </span>
                               </td>
 
                               {/* Password */}
-                              <td class="py-3 px-3 font-semibold text-gray-800 whitespace-nowrap">
-                                <span class="bg-gray-100 border border-gray-200 px-2 py-0.5 rounded-md text-[11px] font-mono text-gray-700">
+                              <td class="py-2.5 px-3 font-semibold text-gray-800 whitespace-nowrap">
+                                <span class="bg-gray-100 border border-gray-200 px-2 py-0.5 rounded-md text-[10.5px] font-mono text-gray-700">
                                   {agent.password || '••••••••'}
                                 </span>
                               </td>
 
                               {/* Mobile No */}
-                              <td class="py-3 px-3 whitespace-nowrap">
+                              <td class="py-2.5 px-3 whitespace-nowrap">
                                 {agent.phone ? (
-                                  <a href={`tel:${agent.phone}`} class="text-[#B30E2E] font-bold hover:underline flex items-center gap-1 text-xs">
-                                    <i class="fa-solid fa-phone text-[9px]"></i>
+                                  <a href={`tel:${agent.phone}`} class="text-[#B30E2E] font-bold hover:underline flex items-center gap-1 text-[11.5px]">
+                                    <i class="fa-solid fa-phone text-[8.5px]"></i>
                                     <span>{agent.phone}</span>
                                   </a>
                                 ) : (
-                                  <span class="text-gray-400 italic text-[11px]">N/A</span>
+                                  <span class="text-gray-400 italic text-[10.5px]">N/A</span>
                                 )}
                               </td>
 
                               {/* Email Address */}
-                              <td class="py-3 px-3 whitespace-nowrap">
+                              <td class="py-2.5 px-3 whitespace-nowrap">
                                 {agent.email ? (
-                                  <a href={`mailto:${agent.email}`} class="text-gray-700 hover:text-[#B30E2E] flex items-center gap-1 text-[11px]">
-                                    <i class="fa-regular fa-envelope text-[10px] text-gray-400"></i>
+                                  <a href={`mailto:${agent.email}`} class="text-gray-700 hover:text-[#B30E2E] flex items-center gap-1 text-[10.5px]">
+                                    <i class="fa-regular fa-envelope text-[9.5px] text-gray-400"></i>
                                     <span>{agent.email}</span>
                                   </a>
                                 ) : (
-                                  <span class="text-gray-400 italic text-[11px]">N/A</span>
+                                  <span class="text-gray-400 italic text-[10.5px]">N/A</span>
                                 )}
                               </td>
 
                               {/* Assigned Leads */}
-                              <td class="py-3 px-3 whitespace-nowrap">
-                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                              <td class="py-2.5 px-3 whitespace-nowrap">
+                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
                                   <i class="fa-solid fa-list-check text-[9px]"></i>
                                   <span>{assignedCount} Leads</span>
                                 </span>
                               </td>
 
                               {/* Actions */}
-                              <td class="py-3 px-3 text-center whitespace-nowrap">
+                              <td class="py-2.5 px-3 text-center whitespace-nowrap">
                                 <div class="flex items-center justify-center gap-1.5">
                                   <button
                                     onClick={() => { setEditingUser({ ...agent }); setUserEditSuccessMsg(''); }}

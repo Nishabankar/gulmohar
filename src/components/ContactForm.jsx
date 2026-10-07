@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { API_BASE_URL, CONTACT_PHONE, CONTACT_PHONE_DISPLAY, CONTACT_EMAIL, WHATSAPP_URL } from '../config';
 
 export default function ContactForm({ selectedPlotForEnquiry }) {
-  const [formData, setFormData] = useState({ firstName: '', lastName: '', phone: '', email: '', plotInfo: '', plotsCount: '1 Guntha', visitDate: '' });
+  const [formData, setFormData] = useState({ firstName: '', lastName: '', phone: '', email: '', plotInfo: '', plotsCount: '1 Guntha' });
   const [submitting, setSubmitting] = useState(false);
   const [statusMsg, setStatusMsg] = useState(null);
 
@@ -66,7 +66,7 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
           text: 'Enquiry Submitted Successfully!',
           type: 'success'
         });
-        setFormData({ firstName: '', lastName: '', phone: '', email: '', plotInfo: '', plotsCount: '1 Guntha', visitDate: '' });
+        setFormData({ firstName: '', lastName: '', phone: '', email: '', plotInfo: '', plotsCount: '1 Guntha' });
       } else {
         setStatusMsg({
           text: data.message || `Could not save enquiry. Please call us directly at ${CONTACT_PHONE_DISPLAY}.`,
@@ -89,7 +89,7 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
         text: 'Enquiry Submitted Successfully!',
         type: 'success'
       });
-      setFormData({ firstName: '', lastName: '', phone: '', email: '', plotInfo: '', plotsCount: '1 Guntha', visitDate: '' });
+      setFormData({ firstName: '', lastName: '', phone: '', email: '', plotInfo: '', plotsCount: '1 Guntha' });
     } finally {
       setSubmitting(false);
       setTimeout(() => setStatusMsg(null), 8000);

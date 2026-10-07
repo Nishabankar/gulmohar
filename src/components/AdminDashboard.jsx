@@ -72,7 +72,6 @@ const DEFAULT_COLUMNS = [
   { id: 'status', label: 'Status', visible: true },
   { id: 'followupDate', label: 'Followup Date', visible: true },
   { id: 'plotsCount', label: 'No. of Guntha', visible: true },
-  { id: 'visitDate', label: 'Visit Date', visible: true },
   { id: 'assignedAgent', label: 'Assigned Agent', visible: true },
   { id: 'notes', label: 'Notes', visible: true },
   { id: 'actions', label: 'Actions', visible: true }
@@ -96,7 +95,10 @@ export default function AdminDashboard({ onLogout }) {
       const stored = localStorage.getItem('leadsTableColumnConfig');
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const filtered = parsed.filter(c => c.id !== 'visitDate');
+          if (filtered.length > 0) return filtered;
+        }
       }
     } catch (e) {}
     return DEFAULT_COLUMNS;
@@ -114,7 +116,8 @@ export default function AdminDashboard({ onLogout }) {
         });
         const data = await res.json();
         if (data.success && Array.isArray(data.columnPreferences) && data.columnPreferences.length > 0) {
-          const merged = data.columnPreferences.map(col => {
+          const filteredPrefs = data.columnPreferences.filter(c => c.id !== 'visitDate');
+          const merged = filteredPrefs.map(col => {
             const def = DEFAULT_COLUMNS.find(d => d.id === col.id);
             return {
               id: col.id,
@@ -1312,7 +1315,7 @@ export default function AdminDashboard({ onLogout }) {
       return;
     }
 
-    const headers = ['Lead ID', 'Full Name', 'Mobile No', 'Email Address', 'Number of Guntha', 'Selected Plot', 'Submitted Date', 'Visit Date', 'Status', 'Assigned Agent', 'Notes'];
+    const headers = ['Lead ID', 'Full Name', 'Mobile No', 'Email Address', 'Number of Guntha', 'Selected Plot', 'Submitted Date', 'Status', 'Assigned Agent', 'Notes'];
     const rows = filteredEnquiries.map((item, idx) => [
       `"${getLeadDisplayId(item, idx, enquiries)}"`,
       `"${item.firstName || ''} ${item.lastName || ''}"`,
@@ -1321,7 +1324,6 @@ export default function AdminDashboard({ onLogout }) {
       `"${item.plotsCount || '1 Guntha'}"`,
       `"${item.plotInfo || ''}"`,
       `"${new Date(item.createdAt).toLocaleString()}"`,
-      `"${item.visitDate || 'N/A'}"`,
       `"${item.status || 'New'}"`,
       `"${item.assignedAgentName || 'Rahul Patil'}"`,
       `"${(item.notes || '').replace(/"/g, '""')}"`
@@ -2357,8 +2359,6 @@ export default function AdminDashboard({ onLogout }) {
                               return <th key="followupDate" class="py-2.5 px-2.5 whitespace-nowrap min-w-[115px]">Followup Date</th>;
                             case 'plotsCount':
                               return <th key="plotsCount" class="py-2.5 px-2.5 whitespace-nowrap min-w-[110px]">No. of Guntha</th>;
-                            case 'visitDate':
-                              return <th key="visitDate" class="py-2.5 px-2.5 whitespace-nowrap min-w-[110px]">Visit Date</th>;
                             case 'assignedAgent':
                               return <th key="assignedAgent" class="py-2.5 px-2.5 whitespace-nowrap min-w-[145px]">Assigned Agent</th>;
                             case 'notes':
@@ -2543,18 +2543,6 @@ export default function AdminDashboard({ onLogout }) {
                                           </span>
                                         )}
                                       </div>
-                                    </td>
-                                  );
-                                case 'visitDate':
-                                  return (
-                                    <td key="visitDate" class="py-2.5 px-2.5 whitespace-nowrap min-w-[110px]">
-                                      <input
-                                        type="date"
-                                        value={formatToInputDate(item.visitDate)}
-                                        onChange={(e) => handleInlineFieldChange(currentId, 'visitDate', e.target.value)}
-                                        class="px-1.5 py-0.5 rounded-md border border-indigo-300 text-[10px] font-bold text-indigo-900 bg-indigo-50 hover:bg-indigo-100 outline-none cursor-pointer transition shadow-2xs"
-                                        title="Click to edit Visit Date inline"
-                                      />
                                     </td>
                                   );
                                 case 'assignedAgent':
@@ -3223,25 +3211,14 @@ export default function AdminDashboard({ onLogout }) {
                 </select>
               </div>
 
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label class="block text-xs font-bold text-gray-700 mb-1">Site Visit Date</label>
-                  <input 
-                    type="date" 
-                    value={editingEnquiry.visitDate || ''} 
-                    onChange={(e) => setEditingEnquiry({ ...editingEnquiry, visitDate: e.target.value })}
-                    class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
-                  />
-                </div>
-                <div>
-                  <label class="block text-xs font-bold text-gray-700 mb-1">Followup Date</label>
-                  <input 
-                    type="date" 
-                    value={editingEnquiry.followupDate || ''} 
-                    onChange={(e) => setEditingEnquiry({ ...editingEnquiry, followupDate: e.target.value })}
-                    class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
-                  />
-                </div>
+              <div>
+                <label class="block text-xs font-bold text-gray-700 mb-1">Followup Date</label>
+                <input 
+                  type="date" 
+                  value={editingEnquiry.followupDate || ''} 
+                  onChange={(e) => setEditingEnquiry({ ...editingEnquiry, followupDate: e.target.value })}
+                  class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
+                />
               </div>
 
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">

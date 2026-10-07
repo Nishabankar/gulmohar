@@ -331,4 +331,41 @@ router.patch('/agents/:id', protectAdmin, async (req, res) => {
   }
 });
 
+// @route   GET /api/admin/column-preferences
+// @desc    Get logged-in user's customized column preferences from MongoDB Atlas
+// @access  Protected
+router.get('/column-preferences', protectAdmin, async (req, res) => {
+  try {
+    const admin = await Admin.findById(req.admin.id).select('columnPreferences');
+    if (!admin) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    return res.json({ success: true, columnPreferences: admin.columnPreferences || [] });
+  } catch (error) {
+    console.error('Error fetching column preferences:', error.message);
+    return res.status(500).json({ success: false, message: 'Database Error', error: error.message });
+  }
+});
+
+// @route   PUT /api/admin/column-preferences
+// @desc    Update logged-in user's customized column preferences in MongoDB Atlas
+// @access  Protected
+router.put('/column-preferences', protectAdmin, async (req, res) => {
+  try {
+    const { columnPreferences } = req.body;
+    if (!Array.isArray(columnPreferences)) {
+      return res.status(400).json({ success: false, message: 'columnPreferences must be an array' });
+    }
+    const admin = await Admin.findByIdAndUpdate(
+      req.admin.id,
+      { $set: { columnPreferences } },
+      { new: true }
+    ).select('columnPreferences');
+    return res.json({ success: true, message: 'Column preferences updated successfully', columnPreferences: admin.columnPreferences });
+  } catch (error) {
+    console.error('Error updating column preferences:', error.message);
+    return res.status(500).json({ success: false, message: 'Database Error', error: error.message });
+  }
+});
+
 module.exports = router;

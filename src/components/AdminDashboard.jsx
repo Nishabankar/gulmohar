@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { API_BASE_URL } from '../config';
 import PolicyModal from './PolicyModal';
 
@@ -21,6 +21,43 @@ const getAgentProfilePhoto = (agentObj) => {
   return '';
 };
 
+const formatDateShortMonth = (dateStr) => {
+  if (!dateStr) return '';
+  if (typeof dateStr === 'string' && /^\d{2}\s[A-Za-z]{3}\s\d{4}$/.test(dateStr.trim())) {
+    return dateStr.trim();
+  }
+  try {
+    let d;
+    if (typeof dateStr === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateStr.trim())) {
+      const [year, month, day] = dateStr.trim().split('-').map(Number);
+      d = new Date(year, month - 1, day);
+    } else {
+      d = new Date(dateStr);
+    }
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  } catch (e) {
+    return dateStr;
+  }
+};
+
+
+const DEFAULT_COLUMNS = [
+  { id: 'leadId', label: 'Lead ID', visible: true },
+  { id: 'fullName', label: 'Full Name', visible: true },
+  { id: 'mobile', label: 'Mobile No.', visible: true },
+  { id: 'email', label: 'Email Address', visible: true },
+  { id: 'enquiryDate', label: 'Enquiry Date', visible: true },
+  { id: 'status', label: 'Status', visible: true },
+  { id: 'followupDate', label: 'Followup Date', visible: true },
+  { id: 'plotsCount', label: 'No. of Guntha', visible: true },
+  { id: 'visitDate', label: 'Visit Date', visible: true },
+  { id: 'assignedAgent', label: 'Assigned Agent', visible: true },
+  { id: 'notes', label: 'Notes', visible: true },
+  { id: 'actions', label: 'Actions', visible: true }
+];
+
+
 export default function AdminDashboard({ onLogout }) {
   const [enquiries, setEnquiries] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -31,6 +68,110 @@ export default function AdminDashboard({ onLogout }) {
   const [visitDateFilter, setVisitDateFilter] = useState('All'); // 'All' | 'Today' | 'Tomorrow' | 'ThisWeek'
   const [followupDateFilter, setFollowupDateFilter] = useState('All'); // 'All' | 'Today' | 'Tomorrow' | 'ThisWeek'
   const [isAgentDropdownOpen, setIsAgentDropdownOpen] = useState(false);
+
+  // Column Configuration State & Persistence
+  const [columnConfig, setColumnConfig] = useState(() => {
+    try {
+      const stored = localStorage.getItem('leadsTableColumnConfig');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return DEFAULT_COLUMNS;
+  });
+  const [showColumnConfigModal, setShowColumnConfigModal] = useState(false);
+  const [draggedColumnIndex, setDraggedColumnIndex] = useState(null);
+
+  useEffect(() => {
+    const fetchColumnPreferences = async () => {
+      const token = localStorage.getItem('adminToken');
+      if (!token) return;
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/admin/column-preferences`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.success && Array.isArray(data.columnPreferences) && data.columnPreferences.length > 0) {
+          const merged = data.columnPreferences.map(col => {
+            const def = DEFAULT_COLUMNS.find(d => d.id === col.id);
+            return {
+              id: col.id,
+              label: col.label || (def ? def.label : col.id),
+              visible: col.visible !== undefined ? col.visible : true
+            };
+          });
+          DEFAULT_COLUMNS.forEach(def => {
+            if (!merged.some(m => m.id === def.id)) {
+              merged.push(def);
+            }
+          });
+          setColumnConfig(merged);
+          localStorage.setItem('leadsTableColumnConfig', JSON.stringify(merged));
+        }
+      } catch (e) {
+        console.warn('Could not fetch column preferences from MongoDB:', e);
+      }
+    };
+    fetchColumnPreferences();
+  }, []);
+
+  const handleUpdateColumnConfig = async (newConfig) => {
+    setColumnConfig(newConfig);
+    localStorage.setItem('leadsTableColumnConfig', JSON.stringify(newConfig));
+
+    const token = localStorage.getItem('adminToken');
+    if (!token) return;
+    try {
+      await fetch(`${API_BASE_URL}/api/admin/column-preferences`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ columnPreferences: newConfig })
+      });
+    } catch (e) {
+      console.warn('Could not save column preferences to MongoDB Atlas:', e);
+    }
+  };
+
+  const toggleColumnVisibility = (colId) => {
+    const updated = columnConfig.map(col => 
+      col.id === colId ? { ...col, visible: !col.visible } : col
+    );
+    handleUpdateColumnConfig(updated);
+  };
+
+  const moveColumn = (fromIdx, toIdx) => {
+    if (toIdx < 0 || toIdx >= columnConfig.length) return;
+    const updated = [...columnConfig];
+    const [moved] = updated.splice(fromIdx, 1);
+    updated.splice(toIdx, 0, moved);
+    handleUpdateColumnConfig(updated);
+  };
+
+  const resetColumnConfig = () => {
+    handleUpdateColumnConfig(DEFAULT_COLUMNS);
+  };
+
+  const statusDropdownRef = useRef(null);
+  const agentDropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target)) {
+        setIsStatusDropdownOpen(false);
+      }
+      if (agentDropdownRef.current && !agentDropdownRef.current.contains(event.target)) {
+        setIsAgentDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
   const [selectedLeadIds, setSelectedLeadIds] = useState([]);
   const [editingNoteId, setEditingNoteId] = useState(null);
   const [noteText, setNoteText] = useState('');
@@ -1168,6 +1309,10 @@ export default function AdminDashboard({ onLogout }) {
     return target >= startOfWeek && target <= endOfWeek;
   };
 
+  // Helpers for Status filtering
+  const isPendingVisitStatus = (status) => !['Site Visit Done', 'Won', 'Closed', 'Lost', 'Not Interested'].includes(status);
+  const isFollowupStatus = (status) => ['Contacted', 'Interested', 'Details Provided'].includes(status);
+
   // Filtered enquiries by Search, Status, Agent & Visit Date
   const filteredEnquiries = (scopedEnquiries || []).filter(item => {
     if (!item) return false;
@@ -1193,22 +1338,32 @@ export default function AdminDashboard({ onLogout }) {
 
     // Visit Date Filter Matching
     let matchesVisitDate = true;
-    if (visitDateFilter === 'Today') {
-      matchesVisitDate = item.visitDate === getTodayString();
-    } else if (visitDateFilter === 'Tomorrow') {
-      matchesVisitDate = item.visitDate === getTomorrowString();
-    } else if (visitDateFilter === 'ThisWeek') {
-      matchesVisitDate = isDateInThisWeek(item.visitDate);
+    if (visitDateFilter !== 'All') {
+      const isPending = isPendingVisitStatus(item.status);
+      if (visitDateFilter === 'Today') {
+        matchesVisitDate = isPending && !!item.visitDate && item.visitDate === getTodayString();
+      } else if (visitDateFilter === 'Tomorrow') {
+        matchesVisitDate = isPending && !!item.visitDate && item.visitDate === getTomorrowString();
+      } else if (visitDateFilter === 'ThisWeek') {
+        matchesVisitDate = isPending && !!item.visitDate && isDateInThisWeek(item.visitDate);
+      } else if (visitDateFilter === 'AllScheduled') {
+        matchesVisitDate = isPending && !!item.visitDate && item.visitDate.trim() !== '';
+      }
     }
 
     // Followup Date Filter Matching
     let matchesFollowupDate = true;
-    if (followupDateFilter === 'Today') {
-      matchesFollowupDate = item.followupDate === getTodayString();
-    } else if (followupDateFilter === 'Tomorrow') {
-      matchesFollowupDate = item.followupDate === getTomorrowString();
-    } else if (followupDateFilter === 'ThisWeek') {
-      matchesFollowupDate = isDateInThisWeek(item.followupDate);
+    if (followupDateFilter !== 'All') {
+      const isStatusMatched = isFollowupStatus(item.status);
+      if (followupDateFilter === 'Today') {
+        matchesFollowupDate = isStatusMatched && item.followupDate === getTodayString();
+      } else if (followupDateFilter === 'Tomorrow') {
+        matchesFollowupDate = isStatusMatched && item.followupDate === getTomorrowString();
+      } else if (followupDateFilter === 'ThisWeek') {
+        matchesFollowupDate = isStatusMatched && isDateInThisWeek(item.followupDate);
+      } else if (followupDateFilter === 'AllScheduled') {
+        matchesFollowupDate = isStatusMatched && !!item.followupDate && item.followupDate.trim() !== '';
+      }
     }
 
     const assignedAgentName = (item.assignedAgentName || '').toLowerCase().trim();
@@ -1235,16 +1390,20 @@ export default function AdminDashboard({ onLogout }) {
   // Calculate stats
   const totalLeads = scopedEnquiries.length;
   const newLeadsCount = scopedEnquiries.filter(e => e.status === 'New').length;
-  const todaysFollowupCount = scopedEnquiries.filter(e => e.followupDate === getTodayString()).length;
+  const todaysFollowupCount = scopedEnquiries.filter(e => isFollowupStatus(e.status) && e.followupDate === getTodayString()).length;
+  const tomorrowsFollowupCount = scopedEnquiries.filter(e => isFollowupStatus(e.status) && e.followupDate === getTomorrowString()).length;
+  const thisWeekFollowupCount = scopedEnquiries.filter(e => isFollowupStatus(e.status) && isDateInThisWeek(e.followupDate)).length;
+  const allFollowupsCount = scopedEnquiries.filter(e => isFollowupStatus(e.status) && !!e.followupDate && e.followupDate.trim() !== '').length;
+
   const interestedLeadsCount = scopedEnquiries.filter(e => e.status === 'Interested').length;
   const siteVisitDoneCount = scopedEnquiries.filter(e => e.status === 'Site Visit Done').length;
   const wonDealsCount = scopedEnquiries.filter(e => e.status === 'Won' || e.status === 'Closed').length;
   const lostDealsCount = scopedEnquiries.filter(e => e.status === 'Lost').length;
 
-  const siteVisitsCount = scopedEnquiries.filter(e => e.status === 'Site Visit Scheduled' || e.status === 'Site Visit Done' || !!e.visitDate).length;
-  const todayVisitsCount = scopedEnquiries.filter(e => e.visitDate === getTodayString()).length;
-  const tomorrowVisitsCount = scopedEnquiries.filter(e => e.visitDate === getTomorrowString()).length;
-  const thisWeekVisitsCount = scopedEnquiries.filter(e => isDateInThisWeek(e.visitDate)).length;
+  const siteVisitsCount = scopedEnquiries.filter(e => isPendingVisitStatus(e.status) && !!e.visitDate && e.visitDate.trim() !== '').length;
+  const todayVisitsCount = scopedEnquiries.filter(e => isPendingVisitStatus(e.status) && !!e.visitDate && e.visitDate === getTodayString()).length;
+  const tomorrowVisitsCount = scopedEnquiries.filter(e => isPendingVisitStatus(e.status) && !!e.visitDate && e.visitDate === getTomorrowString()).length;
+  const thisWeekVisitsCount = scopedEnquiries.filter(e => isPendingVisitStatus(e.status) && !!e.visitDate && isDateInThisWeek(e.visitDate)).length;
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -1254,8 +1413,6 @@ export default function AdminDashboard({ onLogout }) {
         return 'bg-blue-100 text-blue-800 border-blue-300';
       case 'Interested':
         return 'bg-purple-100 text-purple-800 border-purple-300';
-      case 'Not Interested':
-        return 'bg-slate-100 text-slate-700 border-slate-300';
       case 'Details Provided':
         return 'bg-cyan-100 text-cyan-800 border-cyan-300';
       case 'Site Visit Scheduled':
@@ -1265,6 +1422,8 @@ export default function AdminDashboard({ onLogout }) {
       case 'Won':
       case 'Closed':
         return 'bg-emerald-100 text-emerald-800 border-emerald-300';
+      case 'Not Interested':
+        return 'bg-amber-100 text-amber-900 border-amber-300';
       case 'Lost':
         return 'bg-rose-100 text-rose-800 border-rose-300';
       default:
@@ -1277,14 +1436,14 @@ export default function AdminDashboard({ onLogout }) {
       
       {/* Admin Top Navbar */}
       <header class="bg-gradient-to-r from-[#B30E2E] via-[#8A0B22] to-[#590414] text-white flex-shrink-0 shadow-xl border-b border-rose-900/40">
-        <div class="w-full px-2.5 sm:px-6 lg:px-8 flex items-center justify-between h-16 sm:h-20 gap-2 sm:gap-4">
+        <div class="w-full px-2.5 sm:px-6 lg:px-8 flex items-center justify-between h-14 sm:h-16 gap-2 sm:gap-4">
           
           {/* Left: Branding & System Title */}
           <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
             <img 
               src="/assets/images/gulmohar-city-footer-logo.png" 
               alt="Gulmohar City" 
-              class="h-11 sm:h-14 w-auto object-contain flex-shrink-0 py-0.5"
+              class="h-9 sm:h-11 w-auto object-contain flex-shrink-0 py-0.5"
             />
             <h1 class="hidden md:block text-base sm:text-lg font-serif font-bold text-white tracking-wide">
               Lead Management System
@@ -1315,7 +1474,7 @@ export default function AdminDashboard({ onLogout }) {
                   ? 'bg-amber-400 text-slate-900 border-amber-300 ring-2 ring-amber-300/50 font-extrabold scale-105'
                   : 'bg-white/10 hover:bg-white/20 text-white border-white/20'
               }`}
-              title="Leads"
+              title="Lead Management"
             >
               <i class="fa-solid fa-address-book text-xs sm:text-sm"></i>
               {scopedEnquiries.length > 0 && (
@@ -1338,7 +1497,7 @@ export default function AdminDashboard({ onLogout }) {
                     ? 'bg-amber-400 text-slate-900 border-amber-300 ring-2 ring-amber-300/50 font-extrabold scale-105'
                     : 'bg-white/10 hover:bg-white/20 text-white border-white/20'
                 }`}
-                title="Users"
+                title="User Management"
               >
                 <i class="fa-solid fa-users text-xs sm:text-sm"></i>
               </button>
@@ -1431,196 +1590,258 @@ export default function AdminDashboard({ onLogout }) {
 
       {/* Main Dashboard Container */}
       {/* Main Dashboard Container */}
-      <main class="w-full px-2 sm:px-3 lg:px-4 py-3 sm:py-4 flex-1 flex flex-col min-h-0 overflow-hidden space-y-3 sm:space-y-4">
+      <main class="w-full px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5 flex-1 flex flex-col min-h-0 overflow-hidden space-y-2 sm:space-y-3">
         
         {activeTab === 'enquiries' || !isAdmin ? (
           <>
             {/* Dashboard View Tab: 2 Distinct Sections */}
             {activeView === 'dashboard' && (
-              <div class="space-y-6 animate-fade-in flex-1 overflow-y-auto custom-scrollbar">
+              <div class="space-y-2.5 sm:space-y-3.5 animate-fade-in flex-1 flex flex-col overflow-y-auto custom-scrollbar">
                 
                 {/* SECTION 1: Status */}
-                <div class="space-y-3">
-                  <div class="flex items-center gap-2 border-b border-gray-200/80 pb-2">
-                    <div class="w-2.5 h-6 rounded-full bg-[#B30E2E]"></div>
-                    <h2 class="text-base sm:text-lg font-serif font-bold text-gray-900 tracking-wide">
+                <div class="space-y-1 sm:space-y-2">
+                  <div class="flex items-center gap-1.5 border-b border-gray-200/80 pb-0.5 sm:pb-1">
+                    <div class="w-1.5 h-3.5 sm:w-2 sm:h-4.5 rounded-full bg-[#B30E2E]"></div>
+                    <h2 class="text-xs sm:text-base font-serif font-bold text-gray-900 tracking-wide">
                       Status
                     </h2>
                   </div>
 
-                  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-4">
+                  <div class="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-5 gap-1.5 sm:gap-3">
                     
                     {/* Card 1: New */}
                     <div 
                       onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('New'); setVisitDateFilter('All'); }}
-                      class="bg-white rounded-2xl p-3 sm:p-4.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-amber-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      class="bg-white rounded-lg sm:rounded-xl p-1.5 sm:p-3 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-amber-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view New leads"
                     >
                       <div class="min-w-0 flex-1 pr-1 sm:pr-2">
-                        <p class="text-[10px] sm:text-[11px] font-bold text-amber-600 uppercase tracking-wider truncate">New</p>
-                        <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mt-0.5 sm:mt-1">{newLeadsCount}</h3>
-                        <p class="text-[9px] sm:text-[10px] text-gray-500 mt-0.5 truncate">Fresh enquiries</p>
+                        <p class="text-[8.5px] sm:text-[10px] font-bold text-amber-600 uppercase tracking-wider truncate">New</p>
+                        <h3 class="text-xs sm:text-xl font-bold text-gray-900 mt-0 sm:mt-0.5">{newLeadsCount}</h3>
+                        <p class="hidden sm:block text-[9.5px] text-gray-500 mt-0.5 truncate">Fresh enquiries</p>
                       </div>
-                      <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 group-hover:bg-amber-600 group-hover:text-white transition-colors flex-shrink-0">
-                        <i class="fa-solid fa-bell text-xs sm:text-base"></i>
-                      </div>
-                    </div>
-
-                    {/* Card 2: Today's Followup */}
-                    <div 
-                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setVisitDateFilter('All'); setFollowupDateFilter('Today'); }}
-                      class="bg-white rounded-2xl p-3 sm:p-4.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-blue-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
-                      title="Click to view Today's Followups"
-                    >
-                      <div class="min-w-0 flex-1 pr-1 sm:pr-2">
-                        <p class="text-[10px] sm:text-[11px] font-bold text-blue-600 uppercase tracking-wider truncate">Today's Followup</p>
-                        <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mt-0.5 sm:mt-1">{todaysFollowupCount}</h3>
-                        <p class="text-[9px] sm:text-[10px] text-gray-500 mt-0.5 truncate">Scheduled for today</p>
-                      </div>
-                      <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors flex-shrink-0">
-                        <i class="fa-solid fa-phone-volume text-xs sm:text-base"></i>
+                      <div class="w-6 h-6 sm:w-8.5 sm:h-8.5 rounded-md sm:rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 group-hover:bg-amber-600 group-hover:text-white transition-colors flex-shrink-0">
+                        <i class="fa-solid fa-bell text-[10px] sm:text-sm"></i>
                       </div>
                     </div>
 
                     {/* Card 3: Interested */}
                     <div 
                       onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Interested'); setVisitDateFilter('All'); }}
-                      class="bg-white rounded-2xl p-3 sm:p-4.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-purple-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      class="bg-white rounded-lg sm:rounded-xl p-1.5 sm:p-3 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-purple-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view Interested leads"
                     >
                       <div class="min-w-0 flex-1 pr-1 sm:pr-2">
-                        <p class="text-[10px] sm:text-[11px] font-bold text-purple-600 uppercase tracking-wider truncate">Interested</p>
-                        <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mt-0.5 sm:mt-1">{interestedLeadsCount}</h3>
-                        <p class="text-[9px] sm:text-[10px] text-gray-500 mt-0.5 truncate">Interested prospects</p>
+                        <p class="text-[8.5px] sm:text-[10px] font-bold text-purple-600 uppercase tracking-wider truncate">Interested</p>
+                        <h3 class="text-xs sm:text-xl font-bold text-gray-900 mt-0 sm:mt-0.5">{interestedLeadsCount}</h3>
+                        <p class="hidden sm:block text-[9.5px] text-gray-500 mt-0.5 truncate">Interested prospects</p>
                       </div>
-                      <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors flex-shrink-0">
-                        <i class="fa-solid fa-thumbs-up text-xs sm:text-base"></i>
+                      <div class="w-6 h-6 sm:w-8.5 sm:h-8.5 rounded-md sm:rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors flex-shrink-0">
+                        <i class="fa-solid fa-thumbs-up text-[10px] sm:text-sm"></i>
                       </div>
                     </div>
 
                     {/* Card 4: Site Visit Done */}
                     <div 
                       onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Site Visit Done'); setVisitDateFilter('All'); }}
-                      class="bg-white rounded-2xl p-3 sm:p-4.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-sky-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      class="bg-white rounded-lg sm:rounded-xl p-1.5 sm:p-3 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-sky-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view Completed Visits"
                     >
                       <div class="min-w-0 flex-1 pr-1 sm:pr-2">
-                        <p class="text-[10px] sm:text-[11px] font-bold text-sky-600 uppercase tracking-wider truncate">Site Visit Done</p>
-                        <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mt-0.5 sm:mt-1">{siteVisitDoneCount}</h3>
-                        <p class="text-[9px] sm:text-[10px] text-gray-500 mt-0.5 truncate">Visited project site</p>
+                        <p class="text-[8.5px] sm:text-[10px] font-bold text-sky-600 uppercase tracking-wider truncate">Visit Done</p>
+                        <h3 class="text-xs sm:text-xl font-bold text-gray-900 mt-0 sm:mt-0.5">{siteVisitDoneCount}</h3>
+                        <p class="hidden sm:block text-[9.5px] text-gray-500 mt-0.5 truncate">Visited project site</p>
                       </div>
-                      <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-600 group-hover:bg-sky-600 group-hover:text-white transition-colors flex-shrink-0">
-                        <i class="fa-solid fa-location-dot text-xs sm:text-base"></i>
+                      <div class="w-6 h-6 sm:w-8.5 sm:h-8.5 rounded-md sm:rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-600 group-hover:bg-sky-600 group-hover:text-white transition-colors flex-shrink-0">
+                        <i class="fa-solid fa-location-dot text-[10px] sm:text-sm"></i>
                       </div>
                     </div>
 
                     {/* Card 5: Won */}
                     <div 
                       onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Won'); setVisitDateFilter('All'); }}
-                      class="bg-white rounded-2xl p-3 sm:p-4.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-emerald-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      class="bg-white rounded-lg sm:rounded-xl p-1.5 sm:p-3 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-emerald-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view Won/Booked deals"
                     >
                       <div class="min-w-0 flex-1 pr-1 sm:pr-2">
-                        <p class="text-[10px] sm:text-[11px] font-bold text-emerald-600 uppercase tracking-wider truncate">Won</p>
-                        <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mt-0.5 sm:mt-1">{wonDealsCount}</h3>
-                        <p class="text-[9px] sm:text-[10px] text-gray-500 mt-0.5 truncate">Booked plot deals</p>
+                        <p class="text-[8.5px] sm:text-[10px] font-bold text-emerald-600 uppercase tracking-wider truncate">Won</p>
+                        <h3 class="text-xs sm:text-xl font-bold text-gray-900 mt-0 sm:mt-0.5">{wonDealsCount}</h3>
+                        <p class="hidden sm:block text-[9.5px] text-gray-500 mt-0.5 truncate">Booked plot deals</p>
                       </div>
-                      <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors flex-shrink-0">
-                        <i class="fa-solid fa-trophy text-xs sm:text-base"></i>
+                      <div class="w-6 h-6 sm:w-8.5 sm:h-8.5 rounded-md sm:rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors flex-shrink-0">
+                        <i class="fa-solid fa-trophy text-[10px] sm:text-sm"></i>
                       </div>
                     </div>
 
                     {/* Card 6: Lost */}
                     <div 
                       onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Lost'); setVisitDateFilter('All'); }}
-                      class="bg-white rounded-2xl p-3 sm:p-4.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-rose-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      class="bg-white rounded-lg sm:rounded-xl p-1.5 sm:p-3 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-rose-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view Lost leads"
                     >
                       <div class="min-w-0 flex-1 pr-1 sm:pr-2">
-                        <p class="text-[10px] sm:text-[11px] font-bold text-rose-600 uppercase tracking-wider truncate">Lost</p>
-                        <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mt-0.5 sm:mt-1">{lostDealsCount}</h3>
-                        <p class="text-[9px] sm:text-[10px] text-gray-500 mt-0.5 truncate">Dropped / Cancelled</p>
+                        <p class="text-[8.5px] sm:text-[10px] font-bold text-rose-600 uppercase tracking-wider truncate">Lost</p>
+                        <h3 class="text-xs sm:text-xl font-bold text-gray-900 mt-0 sm:mt-0.5">{lostDealsCount}</h3>
+                        <p class="hidden sm:block text-[9.5px] text-gray-500 mt-0.5 truncate">Dropped / Cancelled</p>
                       </div>
-                      <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 group-hover:bg-rose-600 group-hover:text-white transition-colors flex-shrink-0">
-                        <i class="fa-solid fa-thumbs-down text-xs sm:text-base"></i>
+                      <div class="w-6 h-6 sm:w-8.5 sm:h-8.5 rounded-md sm:rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 group-hover:bg-rose-600 group-hover:text-white transition-colors flex-shrink-0">
+                        <i class="fa-solid fa-thumbs-down text-[10px] sm:text-sm"></i>
                       </div>
                     </div>
 
                   </div>
                 </div>
 
-                {/* SECTION 2: Visit Schedule */}
-                <div class="space-y-3 pt-2">
-                  <div class="flex items-center gap-2 border-b border-gray-200/80 pb-2">
-                    <div class="w-2.5 h-6 rounded-full bg-indigo-600"></div>
-                    <h2 class="text-base sm:text-lg font-serif font-bold text-gray-900 tracking-wide">
+                {/* SECTION 2: Followup Schedule */}
+                <div class="space-y-1 sm:space-y-1.5 pt-0.5">
+                  <div class="flex items-center gap-1.5 border-b border-gray-200/80 pb-0.5 sm:pb-1">
+                    <div class="w-1.5 h-3.5 sm:w-2 sm:h-4.5 rounded-full bg-teal-600"></div>
+                    <h2 class="text-xs sm:text-base font-serif font-bold text-gray-900 tracking-wide">
+                      Followup Schedule
+                    </h2>
+                  </div>
+
+                  <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-1.5 sm:gap-3">
+                    
+                    {/* Card 1: All Followup Scheduled */}
+                    <div 
+                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setVisitDateFilter('All'); setFollowupDateFilter('AllScheduled'); }}
+                      class="bg-white rounded-lg sm:rounded-xl p-1.5 sm:p-3.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-teal-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      title="Click to view all scheduled follow-ups"
+                    >
+                      <div class="min-w-0 flex-1 pr-1 sm:pr-2">
+                        <p class="text-[8.5px] sm:text-[11px] font-bold text-teal-600 uppercase tracking-wider truncate">All Followup</p>
+                        <h3 class="text-xs sm:text-2xl font-bold text-gray-900 mt-0 sm:mt-0.5">{allFollowupsCount}</h3>
+                        <p class="hidden sm:block text-[10px] text-gray-500 mt-0.5 truncate">All follow-up reminders</p>
+                      </div>
+                      <div class="w-6 h-6 sm:w-9 sm:h-9 rounded-md sm:rounded-xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600 group-hover:bg-teal-600 group-hover:text-white transition-colors flex-shrink-0">
+                        <i class="fa-solid fa-phone-volume text-[10px] sm:text-base"></i>
+                      </div>
+                    </div>
+
+                    {/* Card 2: Today's Followup */}
+                    <div 
+                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setVisitDateFilter('All'); setFollowupDateFilter('Today'); }}
+                      class="bg-white rounded-lg sm:rounded-xl p-1.5 sm:p-3.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-blue-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      title="Click to view today's scheduled follow-ups"
+                    >
+                      <div class="min-w-0 flex-1 pr-1 sm:pr-2">
+                        <p class="text-[8.5px] sm:text-[11px] font-bold text-blue-600 uppercase tracking-wider truncate">Today's Followup</p>
+                        <h3 class="text-xs sm:text-2xl font-bold text-blue-600 mt-0 sm:mt-0.5">{todaysFollowupCount}</h3>
+                        <p class="hidden sm:block text-[10px] text-blue-700/80 mt-0.5 truncate">Scheduled for today</p>
+                      </div>
+                      <div class="w-6 h-6 sm:w-9 sm:h-9 rounded-md sm:rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors flex-shrink-0">
+                        <i class="fa-solid fa-clock text-[10px] sm:text-base"></i>
+                      </div>
+                    </div>
+
+                    {/* Card 3: Tomorrow's Followup */}
+                    <div 
+                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setVisitDateFilter('All'); setFollowupDateFilter('Tomorrow'); }}
+                      class="bg-white rounded-lg sm:rounded-xl p-1.5 sm:p-3.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-cyan-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      title="Click to view tomorrow's scheduled follow-ups"
+                    >
+                      <div class="min-w-0 flex-1 pr-1 sm:pr-2">
+                        <p class="text-[8.5px] sm:text-[11px] font-bold text-cyan-600 uppercase tracking-wider truncate">Tomorrow's Followup</p>
+                        <h3 class="text-xs sm:text-2xl font-bold text-cyan-600 mt-0 sm:mt-0.5">{tomorrowsFollowupCount}</h3>
+                        <p class="hidden sm:block text-[10px] text-cyan-700/80 mt-0.5 truncate">Scheduled for tomorrow</p>
+                      </div>
+                      <div class="w-6 h-6 sm:w-9 sm:h-9 rounded-md sm:rounded-xl bg-cyan-50 border border-cyan-100 flex items-center justify-center text-cyan-600 group-hover:bg-cyan-600 group-hover:text-white transition-colors flex-shrink-0">
+                        <i class="fa-solid fa-calendar-plus text-[10px] sm:text-base"></i>
+                      </div>
+                    </div>
+
+                    {/* Card 4: This Week's Followup */}
+                    <div 
+                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setVisitDateFilter('All'); setFollowupDateFilter('ThisWeek'); }}
+                      class="bg-white rounded-lg sm:rounded-xl p-1.5 sm:p-3.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-emerald-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      title="Click to view this week's scheduled follow-ups"
+                    >
+                      <div class="min-w-0 flex-1 pr-1 sm:pr-2">
+                        <p class="text-[8.5px] sm:text-[11px] font-bold text-emerald-600 uppercase tracking-wider truncate">This Week's Followup</p>
+                        <h3 class="text-xs sm:text-2xl font-bold text-emerald-600 mt-0 sm:mt-0.5">{thisWeekFollowupCount}</h3>
+                        <p class="hidden sm:block text-[10px] text-emerald-700/80 mt-0.5 truncate">Current week follow-ups</p>
+                      </div>
+                      <div class="w-6 h-6 sm:w-9 sm:h-9 rounded-md sm:rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors flex-shrink-0">
+                        <i class="fa-solid fa-calendar-week text-[10px] sm:text-base"></i>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+
+                {/* SECTION 3: Visit Schedule */}
+                <div class="space-y-1 sm:space-y-1.5 pt-0.5">
+                  <div class="flex items-center gap-1.5 border-b border-gray-200/80 pb-0.5 sm:pb-1">
+                    <div class="w-1.5 h-3.5 sm:w-2 sm:h-4.5 rounded-full bg-indigo-600"></div>
+                    <h2 class="text-xs sm:text-base font-serif font-bold text-gray-900 tracking-wide">
                       Visit Schedule
                     </h2>
                   </div>
 
-                  <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-5">
+                  <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-1.5 sm:gap-3">
                     
                     {/* Card 1: All Site Visit Scheduled */}
                     <div 
-                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setVisitDateFilter('All'); }}
-                      class="bg-white rounded-2xl p-3 sm:p-5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-indigo-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setFollowupDateFilter('All'); setVisitDateFilter('AllScheduled'); }}
+                      class="bg-white rounded-lg sm:rounded-xl p-1.5 sm:p-3.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-indigo-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view all scheduled site visits"
                     >
                       <div class="min-w-0 flex-1 pr-1 sm:pr-2">
-                        <p class="text-[10px] sm:text-xs font-bold text-indigo-600 uppercase tracking-wider truncate">All Site Visit Scheduled</p>
-                        <h3 class="text-xl sm:text-3xl font-bold text-gray-900 mt-0.5 sm:mt-1">{siteVisitsCount}</h3>
-                        <p class="text-[9px] sm:text-[11px] text-gray-500 mt-0.5 sm:mt-1 truncate">All site appointments</p>
+                        <p class="text-[8.5px] sm:text-[11px] font-bold text-indigo-600 uppercase tracking-wider truncate">All Visit Scheduled</p>
+                        <h3 class="text-xs sm:text-2xl font-bold text-gray-900 mt-0 sm:mt-0.5">{siteVisitsCount}</h3>
+                        <p class="hidden sm:block text-[10px] text-gray-500 mt-0.5 truncate">All site appointments</p>
                       </div>
-                      <div class="w-8 h-8 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors flex-shrink-0">
-                        <i class="fa-solid fa-calendar-check text-xs sm:text-xl"></i>
+                      <div class="w-6 h-6 sm:w-9 sm:h-9 rounded-md sm:rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors flex-shrink-0">
+                        <i class="fa-solid fa-calendar-check text-[10px] sm:text-base"></i>
                       </div>
                     </div>
 
                     {/* Card 2: Today's Visit */}
                     <div 
-                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setVisitDateFilter('Today'); }}
-                      class="bg-white rounded-2xl p-3 sm:p-5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-purple-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setFollowupDateFilter('All'); setVisitDateFilter('Today'); }}
+                      class="bg-white rounded-lg sm:rounded-xl p-1.5 sm:p-3.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-purple-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view today's scheduled visits"
                     >
                       <div class="min-w-0 flex-1 pr-1 sm:pr-2">
-                        <p class="text-[10px] sm:text-xs font-bold text-purple-600 uppercase tracking-wider truncate">Today's Visit</p>
-                        <h3 class="text-xl sm:text-3xl font-bold text-purple-600 mt-0.5 sm:mt-1">{todayVisitsCount}</h3>
-                        <p class="text-[9px] sm:text-[11px] text-purple-700/80 mt-0.5 sm:mt-1 truncate">Scheduled for today</p>
+                        <p class="text-[8.5px] sm:text-[11px] font-bold text-purple-600 uppercase tracking-wider truncate">Today's Visit</p>
+                        <h3 class="text-xs sm:text-2xl font-bold text-purple-600 mt-0 sm:mt-0.5">{todayVisitsCount}</h3>
+                        <p class="hidden sm:block text-[10px] text-purple-700/80 mt-0.5 truncate">Scheduled for today</p>
                       </div>
-                      <div class="w-8 h-8 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors flex-shrink-0">
-                        <i class="fa-solid fa-calendar-day text-xs sm:text-xl"></i>
+                      <div class="w-6 h-6 sm:w-9 sm:h-9 rounded-md sm:rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors flex-shrink-0">
+                        <i class="fa-solid fa-calendar-day text-[10px] sm:text-base"></i>
                       </div>
                     </div>
 
                     {/* Card 3: Tomorrow's Visit */}
                     <div 
-                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setVisitDateFilter('Tomorrow'); }}
-                      class="bg-white rounded-2xl p-3 sm:p-5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-blue-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setFollowupDateFilter('All'); setVisitDateFilter('Tomorrow'); }}
+                      class="bg-white rounded-lg sm:rounded-xl p-1.5 sm:p-3.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-blue-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view tomorrow's scheduled visits"
                     >
                       <div class="min-w-0 flex-1 pr-1 sm:pr-2">
-                        <p class="text-[10px] sm:text-xs font-bold text-blue-600 uppercase tracking-wider truncate">Tomorrow's Visit</p>
-                        <h3 class="text-xl sm:text-3xl font-bold text-blue-600 mt-0.5 sm:mt-1">{tomorrowVisitsCount}</h3>
-                        <p class="text-[9px] sm:text-[11px] text-blue-700/80 mt-0.5 sm:mt-1 truncate">Scheduled for tomorrow</p>
+                        <p class="text-[8.5px] sm:text-[11px] font-bold text-blue-600 uppercase tracking-wider truncate">Tomorrow's Visit</p>
+                        <h3 class="text-xs sm:text-2xl font-bold text-blue-600 mt-0 sm:mt-0.5">{tomorrowVisitsCount}</h3>
+                        <p class="hidden sm:block text-[10px] text-blue-700/80 mt-0.5 truncate">Scheduled for tomorrow</p>
                       </div>
-                      <div class="w-8 h-8 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors flex-shrink-0">
-                        <i class="fa-solid fa-calendar-plus text-xs sm:text-xl"></i>
+                      <div class="w-6 h-6 sm:w-9 sm:h-9 rounded-md sm:rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors flex-shrink-0">
+                        <i class="fa-solid fa-calendar-plus text-[10px] sm:text-base"></i>
                       </div>
                     </div>
 
                     {/* Card 4: This Week's Visit */}
                     <div 
-                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setVisitDateFilter('ThisWeek'); }}
-                      class="bg-white rounded-2xl p-3 sm:p-5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-[#B30E2E]/30 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setFollowupDateFilter('All'); setVisitDateFilter('ThisWeek'); }}
+                      class="bg-white rounded-lg sm:rounded-xl p-1.5 sm:p-3.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-[#B30E2E]/30 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view this week's scheduled visits"
                     >
                       <div class="min-w-0 flex-1 pr-1 sm:pr-2">
-                        <p class="text-[10px] sm:text-xs font-bold text-[#B30E2E] uppercase tracking-wider truncate">This Week's Visit</p>
-                        <h3 class="text-xl sm:text-3xl font-bold text-[#B30E2E] mt-0.5 sm:mt-1">{thisWeekVisitsCount}</h3>
-                        <p class="text-[9px] sm:text-[11px] text-[#B30E2E]/80 mt-0.5 sm:mt-1 truncate">Current week appointments</p>
+                        <p class="text-[8.5px] sm:text-[11px] font-bold text-[#B30E2E] uppercase tracking-wider truncate">This Week's Visit</p>
+                        <h3 class="text-xs sm:text-2xl font-bold text-[#B30E2E] mt-0 sm:mt-0.5">{thisWeekVisitsCount}</h3>
+                        <p class="hidden sm:block text-[10px] text-[#B30E2E]/80 mt-0.5 truncate">Current week appointments</p>
                       </div>
-                      <div class="w-8 h-8 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center text-[#B30E2E] group-hover:bg-[#B30E2E] group-hover:text-white transition-colors flex-shrink-0">
-                        <i class="fa-solid fa-calendar-week text-xs sm:text-xl"></i>
+                      <div class="w-6 h-6 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center text-[#B30E2E] group-hover:bg-[#B30E2E] group-hover:text-white transition-colors flex-shrink-0">
+                        <i class="fa-solid fa-calendar-week text-[10px] sm:text-base"></i>
                       </div>
                     </div>
 
@@ -1637,13 +1858,29 @@ export default function AdminDashboard({ onLogout }) {
                 <div class="space-y-3 animate-fade-in flex-1 flex flex-col min-h-0 overflow-hidden">
                   
                   {/* Lead History Title Section */}
-                  <div class="flex-shrink-0 flex items-center justify-between px-1">
-                    <h2 class="text-base sm:text-lg font-serif font-bold text-gray-900 tracking-wide">
-                      Lead History
-                    </h2>
+                  <div class="flex-shrink-0 flex items-start justify-between px-1">
+                    <div class="flex flex-col gap-2 min-w-0 flex-1">
+                      <div class="flex items-center gap-2 text-base sm:text-lg font-serif font-bold text-gray-900 tracking-wide">
+                        <span>Lead :</span>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs sm:text-sm font-mono font-bold bg-rose-50 text-[#B30E2E] border border-rose-200/80">
+                          {getLeadDisplayId(selectedHistoryLead, 0, enquiries)}
+                        </span>
+                      </div>
+                      
+                      {/* Extensible Tab Navigation Bar */}
+                      <div class="flex items-center gap-2 pt-0.5">
+                        <button 
+                          type="button"
+                          class="px-2.5 py-1 text-[11px] font-bold text-[#B30E2E] bg-rose-50 border border-rose-200/80 rounded-lg shadow-2xs hover:bg-rose-100 hover:border-rose-300 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer select-none"
+                        >
+                          History
+                        </button>
+                      </div>
+                    </div>
+
                     <button 
                       onClick={() => setSelectedHistoryLead(null)}
-                      class="w-8 h-8 rounded-xl bg-purple-600 hover:bg-purple-700 text-white flex items-center justify-center transition shadow cursor-pointer"
+                      class="w-8 h-8 rounded-xl bg-purple-600 hover:bg-purple-700 text-white flex items-center justify-center transition shadow cursor-pointer mt-1 flex-shrink-0 ml-3"
                       title="Back to Leads"
                     >
                       <i class="fa-solid fa-arrow-left text-xs"></i>
@@ -1651,7 +1888,7 @@ export default function AdminDashboard({ onLogout }) {
                   </div>
 
                   {/* Lead History Table Container */}
-                  <div class="bg-white rounded-2xl shadow-sm border border-gray-200/80 relative flex-1 flex flex-col min-h-0 overflow-hidden">
+                  <div class="relative flex-1 flex flex-col min-h-0 overflow-hidden">
                     <div class="overflow-x-auto overflow-y-auto custom-scrollbar flex-1">
                       {(() => {
                         if (!selectedHistoryLead) return null;
@@ -1671,77 +1908,87 @@ export default function AdminDashboard({ onLogout }) {
                           );
                         }
 
-                        const displayLeadId = getLeadDisplayId(selectedHistoryLead, 0, enquiries);
+                        // Group history items by modification timestamp (exact edit session & modifiedBy)
+                        const groupedHistory = [];
+                        mongoHistory.forEach((item) => {
+                          const dateObj = item.modifiedDate ? new Date(item.modifiedDate) : new Date();
+                          const dateKey = isNaN(dateObj.getTime())
+                            ? (item.modifiedDate || 'N/A')
+                            : dateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+                          const timeKey = isNaN(dateObj.getTime())
+                            ? ''
+                            : dateObj.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+                          const key = `${item.modifiedDate || dateKey}_${item.modifiedBy || 'Admin'}`;
+                          
+                          let existingGroup = groupedHistory.find(g => g.key === key);
+                          if (existingGroup) {
+                            existingGroup.items.push(item);
+                          } else {
+                            groupedHistory.push({
+                              key,
+                              dateKey,
+                              timeKey,
+                              modifiedDate: item.modifiedDate,
+                              modifiedBy: item.modifiedBy || 'Admin',
+                              items: [item]
+                            });
+                          }
+                        });
+
+                        // Show newest edit sessions at top
+                        groupedHistory.reverse();
 
                         return (
-                          <table class="w-full min-w-full text-left border-collapse">
-                            <thead class="sticky top-0 z-10 bg-gray-100 text-[11px] font-bold text-gray-700 uppercase tracking-wider shadow-2xs">
-                              <tr>
-                                <th class="py-2.5 px-3 whitespace-nowrap min-w-[90px]">Lead ID</th>
-                                <th class="py-2.5 px-3 whitespace-nowrap min-w-[150px]">Field Name</th>
-                                <th class="py-2.5 px-3 whitespace-nowrap min-w-[160px]">Old Value</th>
-                                <th class="py-2.5 px-3 whitespace-nowrap min-w-[160px]">New Value</th>
-                                <th class="py-2.5 px-3 whitespace-nowrap min-w-[140px]">Modified By</th>
-                                <th class="py-2.5 px-3 whitespace-nowrap min-w-[165px]">Modified Date & Time</th>
-                              </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-100 text-[11.5px] bg-white">
-                              {mongoHistory.map((item, idx) => {
-                                const modDate = item.modifiedDate ? new Date(item.modifiedDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A';
-                                const modTime = item.modifiedDate ? new Date(item.modifiedDate).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '';
+                          <div class="space-y-3.5 py-1 px-0 overflow-y-auto custom-scrollbar flex-1 w-full">
+                            {groupedHistory.map((group, groupIdx) => {
+                              const modDate = group.dateKey || 'N/A';
+                              const modTime = group.timeKey || '';
 
-                                return (
-                                  <tr key={item._id || idx} class="hover:bg-purple-50/20 transition">
-                                    {/* Lead ID - Displayed ONLY on the 1st row of the entire table */}
-                                    <td class="py-2.5 px-3 whitespace-nowrap">
-                                      {idx === 0 ? (
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-rose-50 text-[#B30E2E] border border-rose-200/80">
-                                          {displayLeadId}
-                                        </span>
-                                      ) : null}
-                                    </td>
-
-                                    {/* Field Name */}
-                                    <td class="py-2.5 px-3 font-bold text-gray-800 whitespace-nowrap">
-                                      <span class="inline-flex items-center gap-1.5 text-purple-900 bg-purple-50 px-2.5 py-1 rounded-lg border border-purple-200 font-bold text-xs">
-                                        <i class="fa-solid fa-pen-line text-[10px] text-purple-600"></i>
-                                        <span>{item.fieldName || '—'}</span>
+                              return (
+                                <div key={groupIdx} class="bg-white rounded-xl border border-gray-200/90 shadow-2xs overflow-hidden">
+                                  {/* Section Header: Date & User */}
+                                  <div class="bg-gray-50/90 border-b border-gray-200/80 px-3.5 py-2 flex items-center justify-between gap-2 text-xs">
+                                    <span class="inline-flex items-center gap-1.5 font-medium text-gray-500">
+                                      <i class="fa-regular fa-calendar-check text-[#B30E2E]"></i>
+                                      <span>{modDate}{modTime ? `, ${modTime}` : ''}</span>
+                                    </span>
+                                    <span class="inline-flex items-center gap-1.5 font-bold text-gray-800">
+                                      <i class="fa-solid fa-user-circle text-purple-600"></i>
+                                      <span class="px-2 py-0.5 rounded-md bg-purple-50 text-purple-900 border border-purple-200 font-bold text-[11px]">
+                                        {group.modifiedBy}
                                       </span>
-                                    </td>
+                                    </span>
+                                  </div>
 
-                                    {/* Old Value */}
-                                    <td class="py-2.5 px-3 whitespace-normal min-w-[130px] max-w-[240px] sm:max-w-[300px]">
-                                      <span class="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-800 line-through text-xs font-medium border border-rose-200 inline-block break-words break-all whitespace-pre-wrap leading-relaxed">
-                                        {item.oldValue || '—'}
-                                      </span>
-                                    </td>
+                                  {/* Table for Modified Fields */}
+                                  <div class="overflow-x-auto">
+                                    <table class="w-full text-left border-collapse">
+                                      <tbody class="divide-y divide-gray-100 text-[11.5px] bg-white">
+                                        {group.items.map((item, itemIdx) => (
+                                          <tr key={item._id || itemIdx} class="hover:bg-purple-50/15 transition">
+                                            {/* Field Name */}
+                                            <td class="py-2.5 px-4 font-bold text-gray-800 whitespace-nowrap w-1/3 text-left">
+                                              {item.fieldName || '—'}
+                                            </td>
 
-                                    {/* New Value */}
-                                    <td class="py-2.5 px-3 whitespace-normal min-w-[130px] max-w-[260px] sm:max-w-[340px]">
-                                      <span class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-950 font-bold text-xs border border-emerald-200 inline-block shadow-2xs break-words break-all whitespace-pre-wrap leading-relaxed">
-                                        {item.newValue || '—'}
-                                      </span>
-                                    </td>
+                                            {/* Old Value */}
+                                            <td class="py-2.5 px-4 whitespace-normal text-gray-700 font-medium w-1/3 text-left break-words break-all whitespace-pre-wrap">
+                                              {item.oldValue || '—'}
+                                            </td>
 
-                                    {/* Modified By */}
-                                    <td class="py-2.5 px-3 whitespace-nowrap">
-                                      <span class="px-2.5 py-1 rounded-lg border border-gray-200 text-xs font-bold text-gray-800 bg-gray-50 inline-flex items-center gap-1.5 shadow-2xs">
-                                        <i class="fa-solid fa-circle-user text-[#B30E2E]"></i>
-                                        <span>{item.modifiedBy || 'Admin'}</span>
-                                      </span>
-                                    </td>
-
-                                    {/* Modified Date & Time */}
-                                    <td class="py-2.5 px-3 whitespace-nowrap font-semibold text-gray-800 text-xs">
-                                      <i class="fa-regular fa-clock text-[10px] text-gray-400 mr-1.5"></i>
-                                      <span>{modDate}</span>
-                                      <span class="text-[10.5px] text-gray-500 ml-1.5 font-normal">{modTime}</span>
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
+                                            {/* New Value */}
+                                            <td class="py-2.5 px-4 whitespace-normal text-gray-700 font-medium w-1/3 text-left break-words break-all whitespace-pre-wrap">
+                                              {item.newValue || '—'}
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
                         );
                       })()}
                     </div>
@@ -1789,7 +2036,7 @@ export default function AdminDashboard({ onLogout }) {
                   </div>
 
                   {/* Status Filter Custom Dropdown */}
-                  <div class="w-full sm:w-44 flex-shrink-0 relative">
+                  <div ref={statusDropdownRef} class="w-full sm:w-44 flex-shrink-0 relative">
                     <button
                       type="button"
                       onClick={() => {
@@ -1804,7 +2051,7 @@ export default function AdminDashboard({ onLogout }) {
 
                     {isStatusDropdownOpen && (
                       <div class="absolute left-0 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-1 max-h-48 overflow-y-auto custom-scrollbar animate-fade-in">
-                        {['All', 'New', 'Contacted', 'Interested', 'Not Interested', 'Details Provided', 'Site Visit Scheduled', 'Site Visit Done', 'Won', 'Lost'].map((status) => (
+                        {['All', 'New', 'Contacted', 'Interested', 'Details Provided', 'Not Interested', 'Site Visit Scheduled', 'Site Visit Done', 'Won', 'Lost'].map((status) => (
                           <button
                             key={status}
                             type="button"
@@ -1826,7 +2073,7 @@ export default function AdminDashboard({ onLogout }) {
 
                   {/* Agent Filter Custom Dropdown (Admin Only) */}
                   {isAdmin && (
-                    <div class="w-full sm:w-48 flex-shrink-0 relative">
+                    <div ref={agentDropdownRef} class="w-full sm:w-48 flex-shrink-0 relative">
                       <button
                         type="button"
                         onClick={() => {
@@ -1919,12 +2166,21 @@ export default function AdminDashboard({ onLogout }) {
                     <i class="fa-solid fa-user-pen text-sm"></i>
                   </button>
 
+                  {/* Column Config Icon Button */}
+                  <button 
+                    onClick={() => setShowColumnConfigModal(true)}
+                    class="w-9 h-9 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition shadow-sm border border-emerald-500/40 cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
+                    title="Column Configuration"
+                  >
+                    <i class="fa-solid fa-sliders text-sm"></i>
+                  </button>
+
                   {/* Export CSV Icon Button (Admin Only) */}
                   {isAdmin && (
                     <button 
                       onClick={handleExportCSV}
                       class="w-9 h-9 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition shadow-sm border border-emerald-500/40 cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
-                      title="Export filtered enquiries to CSV file"
+                      title="Export"
                     >
                       <i class="fa-solid fa-file-excel text-sm"></i>
                     </button>
@@ -1960,18 +2216,36 @@ export default function AdminDashboard({ onLogout }) {
                             />
                           </th>
                         )}
-                        <th class="py-2.5 px-2.5 whitespace-nowrap w-16 min-w-[60px]">Lead ID</th>
-                        <th class="py-2.5 px-3 whitespace-nowrap w-44 min-w-[165px]">Full Name</th>
-                        <th class="py-2.5 px-3 whitespace-nowrap w-36 min-w-[142px]">Mobile No</th>
-                        <th class="py-2.5 px-2.5 whitespace-nowrap min-w-[155px]">Email Address</th>
-                        <th class="py-2.5 px-2.5 whitespace-nowrap min-w-[145px]">Enquiry Date</th>
-                        <th class="py-2.5 px-2.5 whitespace-nowrap min-w-[130px]">Status</th>
-                        <th class="py-2.5 px-2.5 whitespace-nowrap min-w-[115px]">Followup Date</th>
-                        <th class="py-2.5 px-2.5 whitespace-nowrap min-w-[110px]">No. of Guntha</th>
-                        <th class="py-2.5 px-2.5 whitespace-nowrap min-w-[110px]">Visit Date</th>
-                        <th class="py-2.5 px-2.5 whitespace-nowrap min-w-[145px]">Assigned Agent</th>
-                        <th class="py-2.5 px-2 text-center whitespace-nowrap w-12">Notes</th>
-                        <th class="py-2.5 px-2 text-center whitespace-nowrap w-16">Actions</th>
+                        {columnConfig.filter(c => c.visible).map(col => {
+                          switch (col.id) {
+                            case 'leadId':
+                              return <th key="leadId" class="py-2.5 px-2.5 whitespace-nowrap w-16 min-w-[60px]">Lead ID</th>;
+                            case 'fullName':
+                              return <th key="fullName" class="py-2.5 px-3 whitespace-nowrap w-44 min-w-[165px]">Full Name</th>;
+                            case 'mobile':
+                              return <th key="mobile" class="py-2.5 px-3 whitespace-nowrap w-36 min-w-[142px]">Mobile No</th>;
+                            case 'email':
+                              return <th key="email" class="py-2.5 px-2.5 whitespace-nowrap min-w-[155px]">Email Address</th>;
+                            case 'enquiryDate':
+                              return <th key="enquiryDate" class="py-2.5 px-2.5 whitespace-nowrap min-w-[145px]">Enquiry Date</th>;
+                            case 'status':
+                              return <th key="status" class="py-2.5 px-2.5 whitespace-nowrap min-w-[130px]">Status</th>;
+                            case 'followupDate':
+                              return <th key="followupDate" class="py-2.5 px-2.5 whitespace-nowrap min-w-[115px]">Followup Date</th>;
+                            case 'plotsCount':
+                              return <th key="plotsCount" class="py-2.5 px-2.5 whitespace-nowrap min-w-[110px]">No. of Guntha</th>;
+                            case 'visitDate':
+                              return <th key="visitDate" class="py-2.5 px-2.5 whitespace-nowrap min-w-[110px]">Visit Date</th>;
+                            case 'assignedAgent':
+                              return <th key="assignedAgent" class="py-2.5 px-2.5 whitespace-nowrap min-w-[145px]">Assigned Agent</th>;
+                            case 'notes':
+                              return <th key="notes" class="py-2.5 px-2 text-center whitespace-nowrap w-12">Notes</th>;
+                            case 'actions':
+                              return <th key="actions" class="py-2.5 px-2 text-center whitespace-nowrap w-16">Actions</th>;
+                            default:
+                              return null;
+                          }
+                        })}
                       </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100 text-[11.5px]">
@@ -1992,225 +2266,239 @@ export default function AdminDashboard({ onLogout }) {
                               </td>
                             )}
 
-                            {/* Lead ID */}
-                            <td class="py-2.5 px-2.5 whitespace-nowrap w-16 min-w-[60px]">
-                              <span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-rose-50 text-[#B30E2E] border border-rose-200/80 shadow-xs">
-                                {displayLeadId}
-                              </span>
-                            </td>
-
-                            {/* Column 1: Full Name */}
-                            <td class="py-2.5 px-3 font-bold text-gray-800 whitespace-nowrap w-44 min-w-[165px] max-w-[165px]">
-                              <div class="flex items-center gap-1 truncate">
-                                <div class="w-5 h-5 rounded-full bg-[#FCD6DC] text-[#B30E2E] font-bold text-[10px] flex items-center justify-center flex-shrink-0 border border-[#FCD6DC]">
-                                  {(item.firstName || 'C')[0].toUpperCase()}
-                                </div>
-                                <span class="capitalize text-[11.5px] text-gray-900 font-bold whitespace-nowrap truncate">
-                                  {item.firstName || ''} {item.lastName || ''}
-                                </span>
-                              </div>
-                            </td>
-
-                            {/* Column 2: Mobile No & WhatsApp Action */}
-                            <td class="py-2.5 px-3 whitespace-nowrap w-36 min-w-[142px]">
-                              {item.phone ? (
-                                <div class="flex items-center gap-1.5 whitespace-nowrap">
-                                  <a 
-                                    href={`tel:${item.phone}`} 
-                                    class="text-[#B30E2E] hover:underline font-bold flex items-center gap-1 whitespace-nowrap text-[11.5px] w-[90px] shrink-0"
-                                    title="Call Lead"
-                                  >
-                                    <i class="fa-solid fa-phone text-[8.5px] text-[#B30E2E]"></i>
-                                    <span>{item.phone}</span>
-                                  </a>
-                                  {(() => {
-                                    const cleanPhone = (item.phone || '').replace(/\D/g, '');
-                                    const formattedPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
-                                    const formatCapitalizedName = (str) => {
-                                      if (!str) return '';
-                                      return str.trim().split(/\s+/).map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
-                                    };
-                                    const rawName = `${item.firstName || ''} ${item.lastName || ''}`.trim() || 'Customer';
-                                    const customerName = formatCapitalizedName(rawName);
-                                    const waMsg = encodeURIComponent(`Hello ${customerName}, Thank you for your enquiry at Gulmohar City!`);
-                                    const waUrl = `https://wa.me/${formattedPhone}?text=${waMsg}`;
-                                    return (
-                                      <a
-                                        href={waUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        class="w-5 h-5 rounded-full bg-emerald-100 hover:bg-emerald-600 text-emerald-600 hover:text-white flex items-center justify-center transition-colors shadow-2xs border border-emerald-200 cursor-pointer shrink-0"
-                                        title={`Chat on WhatsApp with ${customerName}`}
+                            {columnConfig.filter(c => c.visible).map(col => {
+                              switch (col.id) {
+                                case 'leadId':
+                                  return (
+                                    <td key="leadId" class="py-2.5 px-2.5 whitespace-nowrap w-16 min-w-[60px]">
+                                      <span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-rose-50 text-[#B30E2E] border border-rose-200/80 shadow-xs">
+                                        {displayLeadId}
+                                      </span>
+                                    </td>
+                                  );
+                                case 'fullName':
+                                  return (
+                                    <td key="fullName" class="py-2.5 px-3 font-bold text-gray-800 whitespace-nowrap w-44 min-w-[165px] max-w-[165px]">
+                                      <div class="flex items-center gap-1 truncate">
+                                        <div class="w-5 h-5 rounded-full bg-[#FCD6DC] text-[#B30E2E] font-bold text-[10px] flex items-center justify-center flex-shrink-0 border border-[#FCD6DC]">
+                                          {(item.firstName || 'C')[0].toUpperCase()}
+                                        </div>
+                                        <span class="capitalize text-[11.5px] text-gray-900 font-bold whitespace-nowrap truncate">
+                                          {item.firstName || ''} {item.lastName || ''}
+                                        </span>
+                                      </div>
+                                    </td>
+                                  );
+                                case 'mobile':
+                                  return (
+                                    <td key="mobile" class="py-2.5 px-3 whitespace-nowrap w-36 min-w-[142px]">
+                                      {item.phone ? (
+                                        <div class="flex items-center gap-1.5 whitespace-nowrap">
+                                          <a 
+                                            href={`tel:${item.phone}`} 
+                                            class="text-[#B30E2E] hover:underline font-bold flex items-center gap-1 whitespace-nowrap text-[11.5px] w-[90px] shrink-0"
+                                            title="Call Lead"
+                                          >
+                                            <i class="fa-solid fa-phone text-[8.5px] text-[#B30E2E]"></i>
+                                            <span>{item.phone}</span>
+                                          </a>
+                                          {(() => {
+                                            const cleanPhone = (item.phone || '').replace(/\D/g, '');
+                                            const formattedPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+                                            const formatCapitalizedName = (str) => {
+                                              if (!str) return '';
+                                              return str.trim().split(/\s+/).map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
+                                            };
+                                            const rawName = `${item.firstName || ''} ${item.lastName || ''}`.trim() || 'Customer';
+                                            const customerName = formatCapitalizedName(rawName);
+                                            const waMsg = encodeURIComponent(`Hello ${customerName}, Thank you for your enquiry at Gulmohar City!`);
+                                            const waUrl = `https://wa.me/${formattedPhone}?text=${waMsg}`;
+                                            return (
+                                              <a
+                                                href={waUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                class="w-5 h-5 rounded-full bg-emerald-100 hover:bg-emerald-600 text-emerald-600 hover:text-white flex items-center justify-center transition-colors shadow-2xs border border-emerald-200 cursor-pointer shrink-0"
+                                                title={`Chat on WhatsApp with ${customerName}`}
+                                              >
+                                                <i class="fa-brands fa-whatsapp text-[11px]"></i>
+                                              </a>
+                                            );
+                                          })()}
+                                        </div>
+                                      ) : (
+                                        <span class="text-gray-400 italic text-[10.5px]">N/A</span>
+                                      )}
+                                    </td>
+                                  );
+                                case 'email':
+                                  return (
+                                    <td key="email" class="py-2.5 px-2.5 whitespace-nowrap min-w-[155px]">
+                                      {item.email ? (
+                                        <a 
+                                          href={`mailto:${item.email}`}
+                                          class="text-gray-600 hover:text-[#B30E2E] flex items-center gap-1 text-[10.5px] whitespace-nowrap"
+                                          title={item.email}
+                                        >
+                                          <i class="fa-regular fa-envelope text-[9.5px] text-gray-400"></i>
+                                          <span>{item.email}</span>
+                                        </a>
+                                      ) : (
+                                        <span class="text-gray-400 italic text-[10px]">Optional / None</span>
+                                      )}
+                                    </td>
+                                  );
+                                case 'enquiryDate':
+                                  return (
+                                    <td key="enquiryDate" class="py-2.5 px-2.5 whitespace-nowrap min-w-[145px]">
+                                      <div class="font-semibold text-gray-800 text-[10px] whitespace-nowrap">
+                                        <i class="fa-regular fa-clock text-[8.5px] text-gray-400 mr-0.5"></i>
+                                        {new Date(item.createdAt || Date.now()).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                        <span class="text-[9px] text-gray-400 ml-1 font-normal">
+                                          {new Date(item.createdAt || Date.now()).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                                        </span>
+                                      </div>
+                                    </td>
+                                  );
+                                case 'status':
+                                  return (
+                                    <td key="status" class="py-2.5 px-2.5 whitespace-nowrap min-w-[130px]">
+                                      <select
+                                        value={item.status || 'New'}
+                                        onChange={(e) => handleStatusChange(currentId, e.target.value)}
+                                        class={`px-1 py-0.5 rounded-md border text-[10px] font-bold outline-none cursor-pointer transition ${getStatusBadge(item.status || 'New')}`}
                                       >
-                                        <i class="fa-brands fa-whatsapp text-[11px]"></i>
-                                      </a>
-                                    );
-                                  })()}
-                                </div>
-                              ) : (
-                                <span class="text-gray-400 italic text-[10.5px]">N/A</span>
-                              )}
-                            </td>
-
-                            {/* Column 3: Email Address */}
-                            <td class="py-2.5 px-2.5 whitespace-nowrap min-w-[155px]">
-                              {item.email ? (
-                                <a 
-                                  href={`mailto:${item.email}`}
-                                  class="text-gray-600 hover:text-[#B30E2E] flex items-center gap-1 text-[10.5px] whitespace-nowrap"
-                                  title={item.email}
-                                >
-                                  <i class="fa-regular fa-envelope text-[9.5px] text-gray-400"></i>
-                                  <span>{item.email}</span>
-                                </a>
-                              ) : (
-                                <span class="text-gray-400 italic text-[10px]">Optional / None</span>
-                              )}
-                            </td>
-
-                            {/* Column 5: Enquiry Date */}
-                            <td class="py-2.5 px-2.5 whitespace-nowrap min-w-[145px]">
-                              <div class="font-semibold text-gray-800 text-[10px] whitespace-nowrap">
-                                <i class="fa-regular fa-clock text-[8.5px] text-gray-400 mr-0.5"></i>
-                                {new Date(item.createdAt || Date.now()).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                                <span class="text-[9px] text-gray-400 ml-1 font-normal">
-                                  {new Date(item.createdAt || Date.now()).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
-                                </span>
-                              </div>
-                            </td>
-
-                            {/* Column 6: Status Dropdown */}
-                            <td class="py-2.5 px-2.5 whitespace-nowrap min-w-[130px]">
-                              <select
-                                value={item.status || 'New'}
-                                onChange={(e) => handleStatusChange(currentId, e.target.value)}
-                                class={`px-1 py-0.5 rounded-md border text-[10px] font-bold outline-none cursor-pointer transition ${getStatusBadge(item.status || 'New')}`}
-                              >
-                                <option value="New" class="bg-white text-gray-800 font-medium">New</option>
-                                <option value="Contacted" class="bg-white text-gray-800 font-medium">Contacted</option>
-                                <option value="Interested" class="bg-white text-gray-800 font-medium">Interested</option>
-                                <option value="Not Interested" class="bg-white text-gray-800 font-medium">Not Interested</option>
-                                <option value="Details Provided" class="bg-white text-gray-800 font-medium">Details Provided</option>
-                                <option value="Site Visit Scheduled" class="bg-white text-gray-800 font-medium">Site Visit Scheduled</option>
-                                <option value="Site Visit Done" class="bg-white text-gray-800 font-medium">Site Visit Done</option>
-                                <option value="Won" class="bg-white text-gray-800 font-medium">Won</option>
-                                <option value="Lost" class="bg-white text-gray-800 font-medium">Lost</option>
-                              </select>
-                            </td>
-
-                            {/* Column 7: Followup Date */}
-                            <td class="py-2.5 px-2.5 whitespace-nowrap min-w-[115px]">
-                              {item.followupDate ? (
-                                <div class="text-[10px] text-amber-800 bg-amber-50 border border-amber-200/80 rounded-md px-1.5 py-0.5 inline-flex items-center gap-1 font-semibold whitespace-nowrap">
-                                  <i class="fa-regular fa-calendar-check text-[8.5px] text-amber-600"></i>
-                                  <span>{item.followupDate}</span>
-                                </div>
-                              ) : (
-                                <span class="text-gray-400 italic text-[10px]">Not Scheduled</span>
-                              )}
-                            </td>
-
-                            {/* Column 8: Number of Guntha */}
-                            <td class="py-2.5 px-2.5 whitespace-nowrap min-w-[110px]">
-                              <div class="flex items-center gap-1 whitespace-nowrap">
-                                <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200/80 whitespace-nowrap">
-                                  <i class="fa-solid fa-shapes text-[8.5px] text-amber-600"></i>
-                                  <span>{item.plotsCount || '1 Guntha'}</span>
-                                </span>
-                                {item.plotInfo && (
-                                  <span class="text-[9px] text-gray-500 font-medium whitespace-nowrap" title={item.plotInfo}>
-                                    ({item.plotInfo})
-                                  </span>
-                                )}
-                              </div>
-                            </td>
-
-                            {/* Column 9: Site Visit Date */}
-                            <td class="py-2.5 px-2.5 whitespace-nowrap min-w-[110px]">
-                              {item.visitDate ? (
-                                <div class="text-[10px] text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-md px-1.5 py-0.5 inline-flex items-center gap-1 font-semibold whitespace-nowrap">
-                                  <i class="fa-regular fa-calendar-days text-[8.5px] text-indigo-500"></i>
-                                  <span>{item.visitDate}</span>
-                                </div>
-                              ) : (
-                                <span class="text-gray-400 italic text-[10px]">Not Scheduled</span>
-                              )}
-                            </td>
-
-                            {/* Column 10: Assigned Agent (Admin dropdown vs Agent static badge) */}
-                            <td class="py-2.5 px-2.5 whitespace-nowrap min-w-[145px]">
-                              {isAdmin ? (
-                                <select
-                                  value={item.assignedAgentName || (allAgents[0] ? allAgents[0].name : '')}
-                                  onChange={(e) => handleReassignAgent(currentId, e.target.value)}
-                                  class="px-1.5 py-0.5 rounded-lg border border-emerald-300 text-[10px] font-bold text-emerald-900 bg-emerald-50 hover:bg-emerald-100 outline-none cursor-pointer transition shadow-2xs"
-                                  title="Re-assign lead to salesperson"
-                                >
-                                  {allAgents.map(agent => (
-                                    <option key={agent.id || agent.username} value={agent.name} class="bg-white text-gray-800 font-semibold">
-                                      👤 {agent.name}
-                                    </option>
-                                  ))}
-                                </select>
-                              ) : (
-                                <span class="px-1.5 py-0.5 rounded-lg border border-emerald-300 text-[10px] font-bold text-emerald-900 bg-emerald-50 inline-flex items-center gap-1 shadow-2xs">
-                                  <i class="fa-solid fa-user-check text-[8.5px] text-emerald-600"></i>
-                                  <span>{item.assignedAgentName || currentUser.name}</span>
-                                </span>
-                              )}
-                            </td>
-
-                            {/* Column 9: Notes Symbol Icon */}
-                            <td class="py-2.5 px-2 text-center whitespace-nowrap w-12">
-                              <button 
-                                type="button"
-                                onClick={(e) => handleOpenNotePopover(e, item)}
-                                class={`w-6 h-6 rounded-md flex items-center justify-center transition shadow-2xs cursor-pointer mx-auto transform hover:scale-105 active:scale-95 ${
-                                  item.notes && item.notes.trim() !== ''
-                                    ? 'bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300/70'
-                                    : 'bg-gray-100 hover:bg-gray-200 text-gray-500 border border-gray-200'
-                                }`}
-                                title={item.notes && item.notes.trim() !== '' ? "Click to view note" : "Empty note - Click to view/add note"}
-                              >
-                                <i class={`fa-solid fa-note-sticky text-[10.5px] ${
-                                  item.notes && item.notes.trim() !== '' ? 'text-amber-700' : 'text-gray-400'
-                                }`}></i>
-                              </button>
-                            </td>
-
-                            {/* Column 10: Actions Column (History, Edit, Delete) */}
-                            <td class="py-2.5 px-2 text-center whitespace-nowrap w-24">
-                              <div class="flex items-center justify-center gap-1">
-                                {/* Edit Lead Button */}
-                                <button 
-                                  onClick={() => { setEditingEnquiry({ ...item }); setEditModalSuccessMsg(''); }}
-                                  class="w-6 h-6 rounded-md bg-amber-100 hover:bg-amber-200 text-amber-800 flex items-center justify-center transition cursor-pointer"
-                                  title="Edit Lead Details"
-                                >
-                                  <i class="fa-solid fa-pen-to-square text-[10.5px]"></i>
-                                </button>
-
-                                {/* Lead Activity History Button */}
-                                <button 
-                                  onClick={() => handleOpenHistoryModal(item)}
-                                  class="w-6 h-6 rounded-md bg-purple-100 hover:bg-purple-600 text-purple-800 hover:text-white flex items-center justify-center transition cursor-pointer border border-purple-200"
-                                  title="View Lead Activity History"
-                                >
-                                  <i class="fa-solid fa-clock-rotate-left text-[10.5px]"></i>
-                                </button>
-
-                                {/* Delete Lead Button (Admin Only) */}
-                                {isAdmin && (
-                                  <button 
-                                    onClick={() => handleDeleteEnquiry(currentId)}
-                                    class="w-6 h-6 rounded-md bg-rose-100 hover:bg-rose-200 text-rose-700 flex items-center justify-center transition cursor-pointer"
-                                    title="Delete Lead"
-                                  >
-                                    <i class="fa-regular fa-trash-can text-[10.5px]"></i>
-                                  </button>
-                                )}
-                              </div>
-                            </td>
+                                        <option value="New" class="bg-white text-gray-800 font-medium">New</option>
+                                        <option value="Contacted" class="bg-white text-gray-800 font-medium">Contacted</option>
+                                        <option value="Interested" class="bg-white text-gray-800 font-medium">Interested</option>
+                                        <option value="Details Provided" class="bg-white text-gray-800 font-medium">Details Provided</option>
+                                        <option value="Not Interested" class="bg-white text-gray-800 font-medium">Not Interested</option>
+                                        <option value="Site Visit Scheduled" class="bg-white text-gray-800 font-medium">Site Visit Scheduled</option>
+                                        <option value="Site Visit Done" class="bg-white text-gray-800 font-medium">Site Visit Done</option>
+                                        <option value="Won" class="bg-white text-gray-800 font-medium">Won</option>
+                                        <option value="Lost" class="bg-white text-gray-800 font-medium">Lost</option>
+                                      </select>
+                                    </td>
+                                  );
+                                case 'followupDate':
+                                  return (
+                                    <td key="followupDate" class="py-2.5 px-2.5 whitespace-nowrap min-w-[115px]">
+                                      {item.followupDate ? (
+                                        <div class="text-[10px] text-amber-800 bg-amber-50 border border-amber-200/80 rounded-md px-1.5 py-0.5 inline-flex items-center gap-1 font-semibold whitespace-nowrap">
+                                          <i class="fa-regular fa-calendar-check text-[8.5px] text-amber-600"></i>
+                                          <span>{formatDateShortMonth(item.followupDate)}</span>
+                                        </div>
+                                      ) : (
+                                        <span class="text-gray-400 italic text-[10px]">Not Scheduled</span>
+                                      )}
+                                    </td>
+                                  );
+                                case 'plotsCount':
+                                  return (
+                                    <td key="plotsCount" class="py-2.5 px-2.5 whitespace-nowrap min-w-[110px]">
+                                      <div class="flex items-center gap-1 whitespace-nowrap">
+                                        <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200/80 whitespace-nowrap">
+                                          <i class="fa-solid fa-shapes text-[8.5px] text-amber-600"></i>
+                                          <span>{item.plotsCount || '1 Guntha'}</span>
+                                        </span>
+                                        {item.plotInfo && (
+                                          <span class="text-[9px] text-gray-500 font-medium whitespace-nowrap" title={item.plotInfo}>
+                                            ({item.plotInfo})
+                                          </span>
+                                        )}
+                                      </div>
+                                    </td>
+                                  );
+                                case 'visitDate':
+                                  return (
+                                    <td key="visitDate" class="py-2.5 px-2.5 whitespace-nowrap min-w-[110px]">
+                                      {item.visitDate ? (
+                                        <div class="text-[10px] text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-md px-1.5 py-0.5 inline-flex items-center gap-1 font-semibold whitespace-nowrap">
+                                          <i class="fa-regular fa-calendar-days text-[8.5px] text-indigo-500"></i>
+                                          <span>{formatDateShortMonth(item.visitDate)}</span>
+                                        </div>
+                                      ) : (
+                                        <span class="text-gray-400 italic text-[10px]">Not Scheduled</span>
+                                      )}
+                                    </td>
+                                  );
+                                case 'assignedAgent':
+                                  return (
+                                    <td key="assignedAgent" class="py-2.5 px-2.5 whitespace-nowrap min-w-[145px]">
+                                      {isAdmin ? (
+                                        <select
+                                          value={item.assignedAgentName || (allAgents[0] ? allAgents[0].name : '')}
+                                          onChange={(e) => handleReassignAgent(currentId, e.target.value)}
+                                          class="px-1.5 py-0.5 rounded-lg border border-emerald-300 text-[10px] font-bold text-emerald-900 bg-emerald-50 hover:bg-emerald-100 outline-none cursor-pointer transition shadow-2xs"
+                                          title="Re-assign lead to salesperson"
+                                        >
+                                          {allAgents.map(agent => (
+                                            <option key={agent.id || agent.username} value={agent.name} class="bg-white text-gray-800 font-semibold">
+                                              👤 {agent.name}
+                                            </option>
+                                          ))}
+                                        </select>
+                                      ) : (
+                                        <span class="px-1.5 py-0.5 rounded-lg border border-emerald-300 text-[10px] font-bold text-emerald-900 bg-emerald-50 inline-flex items-center gap-1 shadow-2xs">
+                                          <i class="fa-solid fa-user-check text-[8.5px] text-emerald-600"></i>
+                                          <span>{item.assignedAgentName || currentUser.name}</span>
+                                        </span>
+                                      )}
+                                    </td>
+                                  );
+                                case 'notes':
+                                  return (
+                                    <td key="notes" class="py-2.5 px-2 text-center whitespace-nowrap w-12">
+                                      <button 
+                                        type="button"
+                                        onClick={(e) => handleOpenNotePopover(e, item)}
+                                        class={`w-6 h-6 rounded-md flex items-center justify-center transition shadow-2xs cursor-pointer mx-auto transform hover:scale-105 active:scale-95 ${
+                                          item.notes && item.notes.trim() !== ''
+                                            ? 'bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300/70'
+                                            : 'bg-gray-100 hover:bg-gray-200 text-gray-500 border border-gray-200'
+                                        }`}
+                                        title={item.notes && item.notes.trim() !== '' ? "Click to view note" : "Empty note - Click to view/add note"}
+                                      >
+                                        <i class={`fa-solid fa-note-sticky text-[10.5px] ${
+                                          item.notes && item.notes.trim() !== '' ? 'text-amber-700' : 'text-gray-400'
+                                        }`}></i>
+                                      </button>
+                                    </td>
+                                  );
+                                case 'actions':
+                                  return (
+                                    <td key="actions" class="py-2.5 px-2 text-center whitespace-nowrap w-24">
+                                      <div class="flex items-center justify-center gap-1">
+                                        <button 
+                                          onClick={() => { setEditingEnquiry({ ...item }); setEditModalSuccessMsg(''); }}
+                                          class="w-6 h-6 rounded-md bg-amber-100 hover:bg-amber-200 text-amber-800 flex items-center justify-center transition cursor-pointer"
+                                          title="Edit Lead Details"
+                                        >
+                                          <i class="fa-solid fa-pen-to-square text-[10.5px]"></i>
+                                        </button>
+                                        <button 
+                                          onClick={() => handleOpenHistoryModal(item)}
+                                          class="w-6 h-6 rounded-md bg-purple-100 hover:bg-purple-600 text-purple-800 hover:text-white flex items-center justify-center transition cursor-pointer border border-purple-200"
+                                          title="View Lead Activity History"
+                                        >
+                                          <i class="fa-solid fa-clock-rotate-left text-[10.5px]"></i>
+                                        </button>
+                                        {isAdmin && (
+                                          <button 
+                                            onClick={() => handleDeleteEnquiry(currentId)}
+                                            class="w-6 h-6 rounded-md bg-rose-100 hover:bg-rose-200 text-rose-700 flex items-center justify-center transition cursor-pointer"
+                                            title="Delete Lead"
+                                          >
+                                            <i class="fa-regular fa-trash-can text-[10.5px]"></i>
+                                          </button>
+                                        )}
+                                      </div>
+                                    </td>
+                                  );
+                                default:
+                                  return null;
+                              }
+                            })}
 
                           </tr>
                         );
@@ -2230,7 +2518,7 @@ export default function AdminDashboard({ onLogout }) {
             {/* Users Title Section */}
             <div class="pt-2">
               <h2 class="text-base sm:text-lg font-serif font-bold text-gray-900 tracking-wide">
-                Users
+                User Management
               </h2>
             </div>
 
@@ -2425,7 +2713,7 @@ export default function AdminDashboard({ onLogout }) {
       </main>
 
       {/* Dashboard Bottom Legal Footer Strip (Identical to Homepage Footer) */}
-      <footer class="bg-white border-t border-gray-200 text-gray-700 min-h-[48px] py-2 sm:py-3 flex items-center mt-auto z-10 w-full overflow-hidden">
+      <footer class="bg-white border-t border-gray-200 text-gray-700 min-h-[36px] py-1 sm:py-1.5 flex items-center mt-auto z-10 w-full overflow-hidden">
         <div class="w-full max-w-full px-3 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center text-[11px] sm:text-xs gap-2 text-center sm:text-left font-medium">
           
           {/* Copyright & Legal Links grouped together on the left side */}
@@ -2832,8 +3120,8 @@ export default function AdminDashboard({ onLogout }) {
                     <option value="New">New</option>
                     <option value="Contacted">Contacted</option>
                     <option value="Interested">Interested</option>
-                    <option value="Not Interested">Not Interested</option>
                     <option value="Details Provided">Details Provided</option>
+                    <option value="Not Interested">Not Interested</option>
                     <option value="Site Visit Scheduled">Site Visit Scheduled</option>
                     <option value="Site Visit Done">Site Visit Done</option>
                     <option value="Won">Won</option>
@@ -3213,7 +3501,7 @@ export default function AdminDashboard({ onLogout }) {
                       <span>Saving Lead...</span>
                     </>
                   ) : (
-                    <span>Create Lead</span>
+                    <span>Submit</span>
                   )}
                 </button>
               </div>
@@ -3252,47 +3540,75 @@ export default function AdminDashboard({ onLogout }) {
             </div>
 
             {/* Note Content Body: Timeline List of Notes (Custom Scrollbar when notes exceed height) */}
-            <div class="flex-1 p-3 bg-[#FFFDFD] overflow-y-auto custom-scrollbar space-y-2.5">
+            <div class="flex-1 p-3 bg-[#FFFDFD] overflow-y-scroll custom-scrollbar space-y-2.5 [scrollbar-gutter:stable]">
               {(() => {
                 const targetLead = activeNotePopover.item;
-                const noteLogs = (targetLead.history || [])
+                
+                // Chronological note history logs (oldest first)
+                const chronologicalNoteLogs = (targetLead.history || [])
                   .filter(h => (h.fieldName || '').toLowerCase() === 'notes' || (h.fieldName || '').toLowerCase() === 'note')
-                  .slice()
-                  .reverse();
+                  .slice();
 
-                if (noteLogs.length > 0) {
-                  return noteLogs.map((log, nIdx) => {
+                const timeline = [];
+
+                // 1. Check if the very first edit log has an oldValue that was the initial note
+                if (chronologicalNoteLogs.length > 0) {
+                  const firstOldVal = (chronologicalNoteLogs[0].oldValue || '').trim();
+                  if (firstOldVal && firstOldVal !== '—') {
+                    timeline.push({
+                      _id: 'initial-oldval-note',
+                      content: firstOldVal,
+                      modifiedBy: 'Admin',
+                      modifiedDate: targetLead.createdAt ? new Date(targetLead.createdAt) : null
+                    });
+                  }
+                  
+                  // Add all history log new values
+                  chronologicalNoteLogs.forEach(log => {
+                    if (log.newValue && log.newValue.trim() && log.newValue !== '—') {
+                      timeline.push({
+                        _id: log._id,
+                        content: log.newValue.trim(),
+                        modifiedBy: log.modifiedBy || 'Admin',
+                        modifiedDate: log.modifiedDate ? new Date(log.modifiedDate) : null
+                      });
+                    }
+                  });
+                } else if (targetLead.notes && targetLead.notes.trim() !== '' && targetLead.notes.trim() !== '—') {
+                  // No history log yet, but targetLead.notes exists
+                  timeline.push({
+                    _id: 'initial-lead-notes',
+                    content: targetLead.notes.trim(),
+                    modifiedBy: 'Admin',
+                    modifiedDate: targetLead.createdAt ? new Date(targetLead.createdAt) : null
+                  });
+                }
+
+                // Show newest note at top, oldest initial note at bottom
+                const sortedTimeline = timeline.reverse();
+
+                if (sortedTimeline.length > 0) {
+                  return sortedTimeline.map((log, nIdx) => {
                     const nDate = log.modifiedDate ? new Date(log.modifiedDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
-                    const nTime = log.modifiedDate ? new Date(log.modifiedDate).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '';
+                    const nTime = log.modifiedDate ? new Date(log.modifiedDate).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }) : '';
 
                     return (
                       <div key={log._id || nIdx} class="p-2.5 rounded-xl bg-white border border-rose-200/80 text-xs text-slate-800 space-y-1.5 shadow-2xs">
                         <div class="flex items-center justify-between text-[10px] text-gray-500 font-medium">
                           <span class="flex items-center gap-1 font-mono text-slate-600 font-semibold">
                             <i class="fa-regular fa-clock text-[9.5px] text-[#B30E2E]"></i>
-                            <span>{nDate} {nTime}</span>
+                            <span>{nDate ? `${nDate}${nTime ? `, ${nTime}` : ''}` : 'Initial Note'}</span>
                           </span>
                           <span class="px-1.5 py-0.5 rounded-md bg-rose-50 text-[#B30E2E] font-bold text-[9.5px] border border-rose-100">
-                            {log.modifiedBy || 'Admin'}
+                            {log.modifiedBy}
                           </span>
                         </div>
                         <p class="text-[11.5px] font-medium leading-relaxed break-words break-all text-slate-800 pt-0.5 max-h-28 overflow-y-auto custom-scrollbar pr-1">
-                          {log.newValue}
+                          {log.content}
                         </p>
                       </div>
                     );
                   });
-                } else if (targetLead.notes && targetLead.notes.trim() !== '') {
-                  return (
-                    <div class="p-2.5 rounded-xl bg-white border border-rose-200/80 text-xs text-slate-800 space-y-1 shadow-2xs">
-                      <div class="flex items-center justify-between text-[10px] text-gray-500 font-medium">
-                        <span class="font-bold text-[#B30E2E]">Initial Lead Note</span>
-                      </div>
-                      <p class="text-[11.5px] font-medium leading-relaxed break-words break-all text-slate-800 pt-0.5 max-h-28 overflow-y-auto custom-scrollbar pr-1">
-                        {targetLead.notes}
-                      </p>
-                    </div>
-                  );
                 } else {
                   return (
                     <div class="my-auto text-center py-6 px-2 space-y-2">
@@ -3346,6 +3662,98 @@ export default function AdminDashboard({ onLogout }) {
 
           </div>
         </>
+      )}
+
+      {/* Column Configuration Modal (Show/Hide & Drag-Drop Reorder) */}
+      {showColumnConfigModal && (
+        <div class="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-fade-in">
+          <div class="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-lg overflow-hidden flex flex-col max-h-[85vh] animate-scale-up">
+            {/* Modal Header */}
+            <div class="px-5 py-3.5 bg-slate-50 border-b border-gray-200 flex items-center justify-between">
+              <h3 class="font-bold text-slate-800 text-sm sm:text-base">Table Columns</h3>
+              <div class="flex items-center gap-2">
+                <button
+                  onClick={resetColumnConfig}
+                  class="px-2.5 py-1 rounded-lg text-xs font-semibold text-rose-700 hover:bg-rose-50 border border-rose-200 transition cursor-pointer"
+                  title="Reset to default columns"
+                >
+                  Reset
+                </button>
+                <button
+                  onClick={() => setShowColumnConfigModal(false)}
+                  class="w-7 h-7 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center transition cursor-pointer"
+                >
+                  <i class="fa-solid fa-xmark text-xs"></i>
+                </button>
+              </div>
+            </div>
+
+            {/* Columns List with Drag & Drop + Arrows + Checkbox */}
+            <div class="p-4 overflow-y-auto custom-scrollbar flex-1 space-y-2">
+              {columnConfig.map((col, idx) => (
+                <div
+                  key={col.id}
+                  draggable
+                  onDragStart={() => setDraggedColumnIndex(idx)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={() => {
+                    if (draggedColumnIndex !== null && draggedColumnIndex !== idx) {
+                      moveColumn(draggedColumnIndex, idx);
+                      setDraggedColumnIndex(null);
+                    }
+                  }}
+                  class={`flex items-center justify-between p-2.5 rounded-xl border transition ${
+                    col.visible ? 'bg-white border-gray-200 hover:border-purple-300' : 'bg-gray-50 border-gray-200 opacity-60'
+                  }`}
+                >
+                  <div class="flex items-center gap-3">
+                    <span class="cursor-grab active:cursor-grabbing text-slate-400 hover:text-slate-600 px-1">
+                      <i class="fa-solid fa-grip-vertical text-xs"></i>
+                    </span>
+                    <label class="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-800 select-none">
+                      <input
+                        type="checkbox"
+                        checked={col.visible}
+                        onChange={() => toggleColumnVisibility(col.id)}
+                        class="w-4 h-4 rounded text-[#B30E2E] focus:ring-[#B30E2E] cursor-pointer accent-[#B30E2E]"
+                      />
+                      <span>{col.label}</span>
+                    </label>
+                  </div>
+
+                  <div class="flex items-center gap-1">
+                    <button
+                      disabled={idx === 0}
+                      onClick={() => moveColumn(idx, idx - 1)}
+                      class="w-6 h-6 rounded-md bg-slate-100 hover:bg-purple-100 disabled:opacity-30 disabled:hover:bg-slate-100 text-slate-600 hover:text-purple-700 flex items-center justify-center text-[10px] transition cursor-pointer"
+                      title="Move Up"
+                    >
+                      <i class="fa-solid fa-arrow-up"></i>
+                    </button>
+                    <button
+                      disabled={idx === columnConfig.length - 1}
+                      onClick={() => moveColumn(idx, idx + 1)}
+                      class="w-6 h-6 rounded-md bg-slate-100 hover:bg-purple-100 disabled:opacity-30 disabled:hover:bg-slate-100 text-slate-600 hover:text-purple-700 flex items-center justify-center text-[10px] transition cursor-pointer"
+                      title="Move Down"
+                    >
+                      <i class="fa-solid fa-arrow-down"></i>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Modal Footer */}
+            <div class="px-5 py-3 bg-slate-50 border-t border-gray-200 flex items-center justify-end">
+              <button
+                onClick={() => setShowColumnConfigModal(false)}
+                class="px-4 py-1.5 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B2E] text-white text-xs font-bold transition shadow-xs cursor-pointer"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Privacy Policy & Disclaimer Terms Modal */}

@@ -32,6 +32,15 @@ router.post('/', async (req, res) => {
       }
     }
 
+    const initialNotes = notes ? notes.trim() : '';
+    const initialHistory = initialNotes !== '' ? [{
+      fieldName: 'Notes',
+      oldValue: '—',
+      newValue: initialNotes,
+      modifiedBy: 'Client',
+      modifiedDate: new Date()
+    }] : [];
+
     const newEnquiry = await Enquiry.create({
       firstName,
       lastName: lastName || '',
@@ -41,9 +50,10 @@ router.post('/', async (req, res) => {
       plotsCount: plotsCount || '1 Plot',
       visitDate: visitDate || '',
       followupDate: followupDate || '',
-      notes: notes ? notes.trim() : '',
+      notes: initialNotes,
       assignedAgentName: finalAssignedAgentName,
-      assignedTo: finalAssignedTo
+      assignedTo: finalAssignedTo,
+      history: initialHistory
     });
 
     return res.status(201).json({

@@ -33,7 +33,14 @@ const adminSchema = new mongoose.Schema(
       type: String,
       enum: ['SuperAdmin', 'Manager', 'Agent', 'Admin'],
       default: 'Agent'
-    }
+    },
+    columnPreferences: [
+      {
+        id: { type: String },
+        label: { type: String },
+        visible: { type: Boolean, default: true }
+      }
+    ]
   },
   {
     timestamps: true

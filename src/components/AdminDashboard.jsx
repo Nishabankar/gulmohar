@@ -1657,9 +1657,9 @@ export default function AdminDashboard({ onLogout }) {
         
         {activeTab === 'enquiries' || !isAdmin ? (
           <>
-            {/* Dashboard View Tab: 3 Distinct Sections (Perfectly Distributed Vertically) */}
+            {/* Dashboard View Tab: 3 Compact Sections */}
             {activeView === 'dashboard' && (
-              <div class="space-y-2 sm:space-y-3.5 animate-fade-in flex-1 flex flex-col justify-between overflow-y-auto sm:overflow-y-auto custom-scrollbar py-0.5">
+              <div class="space-y-2 sm:space-y-3 animate-fade-in flex-1 flex flex-col overflow-y-auto custom-scrollbar py-1">
                 
                 {/* SECTION 1: Status */}
                 <div class="space-y-1 sm:space-y-2">

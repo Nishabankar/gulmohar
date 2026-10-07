@@ -1435,8 +1435,8 @@ export default function AdminDashboard({ onLogout }) {
   };
 
   // Helpers for Status filtering
-  const isPendingVisitStatus = (status) => !['Site Visit Done', 'Won', 'Closed', 'Lost', 'Not Interested'].includes(status);
-  const isFollowupStatus = (status) => ['Contacted', 'Interested', 'Details Provided'].includes(status);
+  const isPendingVisitStatus = (status) => status === 'Site Visit Scheduled';
+  const isFollowupStatus = (status) => ['Contacted', 'Interested', 'Details Provided', 'Site Visit Scheduled'].includes(status);
 
   // Filtered enquiries by Search, Status, Agent & Visit Date
   const filteredEnquiries = (scopedEnquiries || []).filter(item => {
@@ -1461,18 +1461,18 @@ export default function AdminDashboard({ onLogout }) {
 
     const matchesStatus = statusFilter === 'All' || item.status === statusFilter;
 
-    // Visit Date Filter Matching
+    // Visit Date Filter Matching (Calculated using status === 'Site Visit Scheduled' & followupDate)
     let matchesVisitDate = true;
     if (visitDateFilter !== 'All') {
       const isPending = isPendingVisitStatus(item.status);
       if (visitDateFilter === 'Today') {
-        matchesVisitDate = isPending && !!item.visitDate && item.visitDate === getTodayString();
+        matchesVisitDate = isPending && !!item.followupDate && item.followupDate === getTodayString();
       } else if (visitDateFilter === 'Tomorrow') {
-        matchesVisitDate = isPending && !!item.visitDate && item.visitDate === getTomorrowString();
+        matchesVisitDate = isPending && !!item.followupDate && item.followupDate === getTomorrowString();
       } else if (visitDateFilter === 'ThisWeek') {
-        matchesVisitDate = isPending && !!item.visitDate && isDateInThisWeek(item.visitDate);
+        matchesVisitDate = isPending && !!item.followupDate && isDateInThisWeek(item.followupDate);
       } else if (visitDateFilter === 'AllScheduled') {
-        matchesVisitDate = isPending && !!item.visitDate && item.visitDate.trim() !== '';
+        matchesVisitDate = isPending && !!item.followupDate && item.followupDate.trim() !== '';
       }
     }
 
@@ -1525,10 +1525,10 @@ export default function AdminDashboard({ onLogout }) {
   const wonDealsCount = scopedEnquiries.filter(e => e.status === 'Won' || e.status === 'Closed').length;
   const lostDealsCount = scopedEnquiries.filter(e => e.status === 'Lost').length;
 
-  const siteVisitsCount = scopedEnquiries.filter(e => isPendingVisitStatus(e.status) && !!e.visitDate && e.visitDate.trim() !== '').length;
-  const todayVisitsCount = scopedEnquiries.filter(e => isPendingVisitStatus(e.status) && !!e.visitDate && e.visitDate === getTodayString()).length;
-  const tomorrowVisitsCount = scopedEnquiries.filter(e => isPendingVisitStatus(e.status) && !!e.visitDate && e.visitDate === getTomorrowString()).length;
-  const thisWeekVisitsCount = scopedEnquiries.filter(e => isPendingVisitStatus(e.status) && !!e.visitDate && isDateInThisWeek(e.visitDate)).length;
+  const siteVisitsCount = scopedEnquiries.filter(e => isPendingVisitStatus(e.status) && !!e.followupDate && e.followupDate.trim() !== '').length;
+  const todayVisitsCount = scopedEnquiries.filter(e => isPendingVisitStatus(e.status) && !!e.followupDate && e.followupDate === getTodayString()).length;
+  const tomorrowVisitsCount = scopedEnquiries.filter(e => isPendingVisitStatus(e.status) && !!e.followupDate && e.followupDate === getTomorrowString()).length;
+  const thisWeekVisitsCount = scopedEnquiries.filter(e => isPendingVisitStatus(e.status) && !!e.followupDate && isDateInThisWeek(e.followupDate)).length;
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -1908,7 +1908,7 @@ export default function AdminDashboard({ onLogout }) {
                     
                     {/* Card 1: All Site Visit Scheduled */}
                     <div 
-                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setFollowupDateFilter('All'); setVisitDateFilter('AllScheduled'); }}
+                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Site Visit Scheduled'); setFollowupDateFilter('All'); setVisitDateFilter('AllScheduled'); }}
                       class="bg-white rounded-lg sm:rounded-xl p-2.5 sm:p-3.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-indigo-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view all scheduled site visits"
                     >
@@ -1924,7 +1924,7 @@ export default function AdminDashboard({ onLogout }) {
 
                     {/* Card 2: Today's Visit */}
                     <div 
-                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setFollowupDateFilter('All'); setVisitDateFilter('Today'); }}
+                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Site Visit Scheduled'); setFollowupDateFilter('All'); setVisitDateFilter('Today'); }}
                       class="bg-white rounded-lg sm:rounded-xl p-2.5 sm:p-3.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-purple-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view today's scheduled visits"
                     >
@@ -1940,7 +1940,7 @@ export default function AdminDashboard({ onLogout }) {
 
                     {/* Card 3: Tomorrow's Visit */}
                     <div 
-                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setFollowupDateFilter('All'); setVisitDateFilter('Tomorrow'); }}
+                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Site Visit Scheduled'); setFollowupDateFilter('All'); setVisitDateFilter('Tomorrow'); }}
                       class="bg-white rounded-lg sm:rounded-xl p-2.5 sm:p-3.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-blue-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view tomorrow's scheduled visits"
                     >
@@ -1956,7 +1956,7 @@ export default function AdminDashboard({ onLogout }) {
 
                     {/* Card 4: This Week's Visit */}
                     <div 
-                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setFollowupDateFilter('All'); setVisitDateFilter('ThisWeek'); }}
+                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Site Visit Scheduled'); setFollowupDateFilter('All'); setVisitDateFilter('ThisWeek'); }}
                       class="bg-white rounded-lg sm:rounded-xl p-2.5 sm:p-3.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-[#B30E2E]/30 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view this week's scheduled visits"
                     >

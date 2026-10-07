@@ -11,8 +11,7 @@
     "start": "node server.cjs",
     "server": "node server/server.js",
     "package": "vite build",
-    "package:win": "npm run build && powershell -Command \"Remove-Item -Path 'gulmohar-deploy.zip' -ErrorAction SilentlyContinue; Compress-Archive -Path 'dist', 'server', 'src', 'public', 'package.json', 'server.cjs', 'index.html', 'vite.config.js' -DestinationPath 'gulmohar-deploy.zip' -Force\"",
-    "postinstall": "vite build"
+    "package:win": "npm run build && powershell -Command \"Remove-Item -Path 'gulmohar-deploy.zip' -ErrorAction SilentlyContinue; Compress-Archive -Path 'dist', 'server', 'src', 'public', 'package.json', 'server.cjs', 'index.html', 'vite.config.js' -DestinationPath 'gulmohar-deploy.zip' -Force\""
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.3.1",

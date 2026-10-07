@@ -305,12 +305,71 @@ export default function AdminDashboard({ onLogout }) {
 
   const handleSavePopoverNote = async (leadId) => {
     if (!popoverNoteInput || !popoverNoteInput.trim()) return;
-    setSavingPopoverNote(true);
-
-    const token = localStorage.getItem('adminToken');
     const newNoteContent = popoverNoteInput.trim();
     const performer = currentUser.name || (isAdmin ? 'Admin' : 'Sales Executive');
+    const targetItem = activeNotePopover ? activeNotePopover.item : null;
 
+    setSavingPopoverNote(true);
+
+    // 1. Create a local history entry for immediate timeline UI update
+    const newHistoryEntry = {
+      _id: `note-hist-${Date.now()}`,
+      fieldName: 'Notes',
+      oldValue: targetItem ? (targetItem.notes || '—') : '—',
+      newValue: newNoteContent,
+      modifiedBy: performer,
+      modifiedDate: new Date().toISOString()
+    };
+
+    // 2. Optimistic local update in React state
+    setEnquiries(prev => prev.map(item => {
+      const itemKey = item._id || item.id;
+      if (itemKey === leadId || (targetItem && (itemKey === (targetItem._id || targetItem.id) || (item.phone && targetItem.phone && item.phone === targetItem.phone)))) {
+        const updatedHistory = Array.isArray(item.history) ? [newHistoryEntry, ...item.history] : [newHistoryEntry];
+        return {
+          ...item,
+          notes: newNoteContent,
+          history: updatedHistory
+        };
+      }
+      return item;
+    }));
+
+    // 3. Optimistic local update in activeNotePopover
+    setActiveNotePopover(prev => {
+      if (!prev || !prev.item) return prev;
+      const updatedHistory = Array.isArray(prev.item.history) ? [newHistoryEntry, ...prev.item.history] : [newHistoryEntry];
+      return {
+        ...prev,
+        item: {
+          ...prev.item,
+          notes: newNoteContent,
+          history: updatedHistory
+        }
+      };
+    });
+
+    // 4. Update local storage cache
+    const localCache = JSON.parse(localStorage.getItem('localEnquiriesCache') || '[]');
+    const updatedCache = localCache.map(item => {
+      const itemKey = item._id || item.id;
+      if (itemKey === leadId || (targetItem && (itemKey === (targetItem._id || targetItem.id) || (item.phone && targetItem.phone && item.phone === targetItem.phone)))) {
+        const updatedHistory = Array.isArray(item.history) ? [newHistoryEntry, ...item.history] : [newHistoryEntry];
+        return {
+          ...item,
+          notes: newNoteContent,
+          history: updatedHistory
+        };
+      }
+      return item;
+    });
+    localStorage.setItem('localEnquiriesCache', JSON.stringify(updatedCache));
+
+    // 5. Clear input immediately so user gets instant UI feedback
+    setPopoverNoteInput('');
+
+    // 6. Send PATCH request to backend (with phone fallback lookup)
+    const token = localStorage.getItem('adminToken');
     try {
       const res = await fetch(`${API_BASE_URL}/api/admin/enquiries/${leadId}`, {
         method: 'PATCH',
@@ -320,20 +379,17 @@ export default function AdminDashboard({ onLogout }) {
         },
         body: JSON.stringify({
           notes: newNoteContent,
+          phone: targetItem ? targetItem.phone : undefined,
+          oldPhone: targetItem ? targetItem.phone : undefined,
           updatedBy: performer
         })
       });
 
       const data = await res.json();
       if (res.ok && data.success && data.data) {
-        // 1. Update main enquiries state
-        setEnquiries(prev => prev.map(item => (item._id === leadId || item.id === leadId) ? data.data : item));
-        
-        // 2. Update activeNotePopover item with fresh data from MongoDB Atlas
+        // Sync with official backend returned object
+        setEnquiries(prev => prev.map(item => (item._id === leadId || item.id === leadId || (targetItem && item.phone === targetItem.phone)) ? data.data : item));
         setActiveNotePopover(prev => prev ? { ...prev, item: data.data } : null);
-        
-        // 3. Clear popover note input
-        setPopoverNoteInput('');
       }
     } catch (err) {
       console.warn('Backend popover note patch error:', err);
@@ -944,6 +1000,8 @@ export default function AdminDashboard({ onLogout }) {
     const token = localStorage.getItem('adminToken');
     const performer = currentUser.name || (isAdmin ? 'Admin' : 'Sales Executive');
 
+    const targetItem = enquiries.find(item => (item._id || item.id) === id);
+
     setEnquiries(prev => prev.map(item => {
       if (item._id === id || item.id === id) {
         return { ...item, [fieldName]: fieldValue };
@@ -969,6 +1027,8 @@ export default function AdminDashboard({ onLogout }) {
         },
         body: JSON.stringify({
           [fieldName]: fieldValue,
+          phone: targetItem ? targetItem.phone : undefined,
+          oldPhone: targetItem ? targetItem.phone : undefined,
           updatedBy: performer
         })
       });

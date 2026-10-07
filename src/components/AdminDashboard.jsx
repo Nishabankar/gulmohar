@@ -41,6 +41,27 @@ const formatDateShortMonth = (dateStr) => {
   }
 };
 
+const formatToInputDate = (dateStr) => {
+  if (!dateStr) return '';
+  const str = dateStr.toString().trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+  try {
+    let d;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+      const [year, month, day] = str.split('-').map(Number);
+      d = new Date(year, month - 1, day);
+    } else {
+      d = new Date(str);
+    }
+    if (isNaN(d.getTime())) return '';
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  } catch (e) {
+    return '';
+  }
+};
 
 const DEFAULT_COLUMNS = [
   { id: 'leadId', label: 'Lead ID', visible: true },
@@ -915,6 +936,48 @@ export default function AdminDashboard({ onLogout }) {
       }
     } catch (err) {
       console.warn('Backend status patch error:', err);
+    }
+  };
+
+  // Generic handler for inline editing table fields (followupDate, plotsCount, visitDate, etc.)
+  const handleInlineFieldChange = async (id, fieldName, fieldValue) => {
+    const token = localStorage.getItem('adminToken');
+    const performer = currentUser.name || (isAdmin ? 'Admin' : 'Sales Executive');
+
+    setEnquiries(prev => prev.map(item => {
+      if (item._id === id || item.id === id) {
+        return { ...item, [fieldName]: fieldValue };
+      }
+      return item;
+    }));
+
+    const localCache = JSON.parse(localStorage.getItem('localEnquiriesCache') || '[]');
+    const updatedCache = localCache.map(item => {
+      if (item._id === id || item.id === id) {
+        return { ...item, [fieldName]: fieldValue };
+      }
+      return item;
+    });
+    localStorage.setItem('localEnquiriesCache', JSON.stringify(updatedCache));
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/enquiries/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          [fieldName]: fieldValue,
+          updatedBy: performer
+        })
+      });
+      const data = await res.json();
+      if (data.success && data.data) {
+        setEnquiries(prev => prev.map(item => (item._id === id || item.id === id) ? data.data : item));
+      }
+    } catch (err) {
+      console.warn(`Backend inline ${fieldName} patch note:`, err);
     }
   };
 
@@ -2383,24 +2446,37 @@ export default function AdminDashboard({ onLogout }) {
                                 case 'followupDate':
                                   return (
                                     <td key="followupDate" class="py-2.5 px-2.5 whitespace-nowrap min-w-[115px]">
-                                      {item.followupDate ? (
-                                        <div class="text-[10px] text-amber-800 bg-amber-50 border border-amber-200/80 rounded-md px-1.5 py-0.5 inline-flex items-center gap-1 font-semibold whitespace-nowrap">
-                                          <i class="fa-regular fa-calendar-check text-[8.5px] text-amber-600"></i>
-                                          <span>{formatDateShortMonth(item.followupDate)}</span>
-                                        </div>
-                                      ) : (
-                                        <span class="text-gray-400 italic text-[10px]">Not Scheduled</span>
-                                      )}
+                                      <input
+                                        type="date"
+                                        value={formatToInputDate(item.followupDate)}
+                                        onChange={(e) => handleInlineFieldChange(currentId, 'followupDate', e.target.value)}
+                                        class="px-1.5 py-0.5 rounded-md border border-amber-300 text-[10px] font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 outline-none cursor-pointer transition shadow-2xs"
+                                        title="Click to edit Followup Date inline"
+                                      />
                                     </td>
                                   );
                                 case 'plotsCount':
                                   return (
                                     <td key="plotsCount" class="py-2.5 px-2.5 whitespace-nowrap min-w-[110px]">
                                       <div class="flex items-center gap-1 whitespace-nowrap">
-                                        <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200/80 whitespace-nowrap">
-                                          <i class="fa-solid fa-shapes text-[8.5px] text-amber-600"></i>
-                                          <span>{item.plotsCount || '1 Guntha'}</span>
-                                        </span>
+                                        <select
+                                          value={item.plotsCount || '1 Guntha'}
+                                          onChange={(e) => handleInlineFieldChange(currentId, 'plotsCount', e.target.value)}
+                                          class="px-1.5 py-0.5 rounded-md border border-amber-300 text-[10px] font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 outline-none cursor-pointer transition shadow-2xs"
+                                          title="Click to edit No. of Guntha inline"
+                                        >
+                                          <option value="1 Guntha" class="bg-white text-gray-800 font-medium">1 Guntha</option>
+                                          <option value="2 Guntha" class="bg-white text-gray-800 font-medium">2 Guntha</option>
+                                          <option value="3 Guntha" class="bg-white text-gray-800 font-medium">3 Guntha</option>
+                                          <option value="4 Guntha" class="bg-white text-gray-800 font-medium">4 Guntha</option>
+                                          <option value="5 Guntha" class="bg-white text-gray-800 font-medium">5 Guntha</option>
+                                          <option value="6 Guntha" class="bg-white text-gray-800 font-medium">6 Guntha</option>
+                                          <option value="7 Guntha" class="bg-white text-gray-800 font-medium">7 Guntha</option>
+                                          <option value="8 Guntha" class="bg-white text-gray-800 font-medium">8 Guntha</option>
+                                          <option value="9 Guntha" class="bg-white text-gray-800 font-medium">9 Guntha</option>
+                                          <option value="10 Guntha" class="bg-white text-gray-800 font-medium">10 Guntha</option>
+                                          <option value="11+ Guntha (Bulk / Investment)" class="bg-white text-gray-800 font-medium">11+ Guntha</option>
+                                        </select>
                                         {item.plotInfo && (
                                           <span class="text-[9px] text-gray-500 font-medium whitespace-nowrap" title={item.plotInfo}>
                                             ({item.plotInfo})
@@ -2412,14 +2488,13 @@ export default function AdminDashboard({ onLogout }) {
                                 case 'visitDate':
                                   return (
                                     <td key="visitDate" class="py-2.5 px-2.5 whitespace-nowrap min-w-[110px]">
-                                      {item.visitDate ? (
-                                        <div class="text-[10px] text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-md px-1.5 py-0.5 inline-flex items-center gap-1 font-semibold whitespace-nowrap">
-                                          <i class="fa-regular fa-calendar-days text-[8.5px] text-indigo-500"></i>
-                                          <span>{formatDateShortMonth(item.visitDate)}</span>
-                                        </div>
-                                      ) : (
-                                        <span class="text-gray-400 italic text-[10px]">Not Scheduled</span>
-                                      )}
+                                      <input
+                                        type="date"
+                                        value={formatToInputDate(item.visitDate)}
+                                        onChange={(e) => handleInlineFieldChange(currentId, 'visitDate', e.target.value)}
+                                        class="px-1.5 py-0.5 rounded-md border border-indigo-300 text-[10px] font-bold text-indigo-900 bg-indigo-50 hover:bg-indigo-100 outline-none cursor-pointer transition shadow-2xs"
+                                        title="Click to edit Visit Date inline"
+                                      />
                                     </td>
                                   );
                                 case 'assignedAgent':

@@ -1767,7 +1767,7 @@ export default function AdminDashboard({ onLogout }) {
           <>
             {/* Dashboard View Tab: 3 Distinct Sections (Aligned to Red Line Level) */}
             {activeView === 'dashboard' && (
-              <div class="space-y-3.5 sm:space-y-6 animate-fade-in flex flex-col justify-between overflow-y-auto custom-scrollbar py-0.5 pb-1 flex-1">
+              <div class="space-y-2.5 sm:space-y-5 animate-fade-in flex flex-col overflow-y-auto custom-scrollbar py-1 pb-3 flex-1 min-h-0">
                 
                 {/* SECTION 1: Status */}
                 <div class="space-y-1 sm:space-y-2">
@@ -1783,15 +1783,15 @@ export default function AdminDashboard({ onLogout }) {
                     {/* Card 1: New */}
                     <div 
                       onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('New'); setVisitDateFilter('All'); }}
-                      class="bg-white rounded-lg sm:rounded-xl p-2.5 sm:p-3 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-amber-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      class="bg-white rounded-lg sm:rounded-xl p-3 sm:p-3.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-amber-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view New leads"
                     >
                       <div class="min-w-0 flex-1 pr-1 sm:pr-2">
-                        <p class="text-[9px] sm:text-[10px] font-bold text-amber-600 uppercase tracking-wider truncate">New</p>
-                        <h3 class="text-base sm:text-xl font-bold text-gray-900 mt-0.5">{newLeadsCount}</h3>
+                        <p class="text-[10px] sm:text-[11px] font-bold text-amber-600 uppercase tracking-wider truncate">New</p>
+                        <h3 class="text-lg sm:text-2xl font-bold text-gray-900 mt-0.5">{newLeadsCount}</h3>
                         <p class="hidden sm:block text-[9.5px] text-gray-500 mt-0.5 truncate">Fresh enquiries</p>
                       </div>
-                      <div class="w-7.5 h-7.5 sm:w-8.5 sm:h-8.5 rounded-md sm:rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 group-hover:bg-amber-600 group-hover:text-white transition-colors flex-shrink-0">
+                      <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-md sm:rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 group-hover:bg-amber-600 group-hover:text-white transition-colors flex-shrink-0">
                         <i class="fa-solid fa-bell text-xs sm:text-sm"></i>
                       </div>
                     </div>
@@ -1799,15 +1799,15 @@ export default function AdminDashboard({ onLogout }) {
                     {/* Card 3: Interested */}
                     <div 
                       onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Interested'); setVisitDateFilter('All'); }}
-                      class="bg-white rounded-lg sm:rounded-xl p-2.5 sm:p-3 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-purple-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      class="bg-white rounded-lg sm:rounded-xl p-3 sm:p-3.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-purple-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view Interested leads"
                     >
                       <div class="min-w-0 flex-1 pr-1 sm:pr-2">
-                        <p class="text-[9px] sm:text-[10px] font-bold text-purple-600 uppercase tracking-wider truncate">Interested</p>
-                        <h3 class="text-base sm:text-xl font-bold text-gray-900 mt-0.5">{interestedLeadsCount}</h3>
+                        <p class="text-[10px] sm:text-[11px] font-bold text-purple-600 uppercase tracking-wider truncate">Interested</p>
+                        <h3 class="text-lg sm:text-2xl font-bold text-gray-900 mt-0.5">{interestedLeadsCount}</h3>
                         <p class="hidden sm:block text-[9.5px] text-gray-500 mt-0.5 truncate">Interested prospects</p>
                       </div>
-                      <div class="w-7.5 h-7.5 sm:w-8.5 sm:h-8.5 rounded-md sm:rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors flex-shrink-0">
+                      <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-md sm:rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors flex-shrink-0">
                         <i class="fa-solid fa-thumbs-up text-xs sm:text-sm"></i>
                       </div>
                     </div>
@@ -1815,15 +1815,15 @@ export default function AdminDashboard({ onLogout }) {
                     {/* Card 4: Site Visit Done */}
                     <div 
                       onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Site Visit Done'); setVisitDateFilter('All'); }}
-                      class="bg-white rounded-lg sm:rounded-xl p-2.5 sm:p-3 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-sky-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      class="bg-white rounded-lg sm:rounded-xl p-3 sm:p-3.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-sky-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view Completed Visits"
                     >
                       <div class="min-w-0 flex-1 pr-1 sm:pr-2">
-                        <p class="text-[9px] sm:text-[10px] font-bold text-sky-600 uppercase tracking-wider truncate">Visit Done</p>
-                        <h3 class="text-base sm:text-xl font-bold text-gray-900 mt-0.5">{siteVisitDoneCount}</h3>
+                        <p class="text-[10px] sm:text-[11px] font-bold text-sky-600 uppercase tracking-wider truncate">Visit Done</p>
+                        <h3 class="text-lg sm:text-2xl font-bold text-gray-900 mt-0.5">{siteVisitDoneCount}</h3>
                         <p class="hidden sm:block text-[9.5px] text-gray-500 mt-0.5 truncate">Visited project site</p>
                       </div>
-                      <div class="w-7.5 h-7.5 sm:w-8.5 sm:h-8.5 rounded-md sm:rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-600 group-hover:bg-sky-600 group-hover:text-white transition-colors flex-shrink-0">
+                      <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-md sm:rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-600 group-hover:bg-sky-600 group-hover:text-white transition-colors flex-shrink-0">
                         <i class="fa-solid fa-location-dot text-xs sm:text-sm"></i>
                       </div>
                     </div>
@@ -1831,15 +1831,15 @@ export default function AdminDashboard({ onLogout }) {
                     {/* Card 5: Won */}
                     <div 
                       onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Won'); setVisitDateFilter('All'); }}
-                      class="bg-white rounded-lg sm:rounded-xl p-2.5 sm:p-3 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-emerald-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      class="bg-white rounded-lg sm:rounded-xl p-3 sm:p-3.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-emerald-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view Won/Booked deals"
                     >
                       <div class="min-w-0 flex-1 pr-1 sm:pr-2">
-                        <p class="text-[9px] sm:text-[10px] font-bold text-emerald-600 uppercase tracking-wider truncate">Won</p>
-                        <h3 class="text-base sm:text-xl font-bold text-gray-900 mt-0.5">{wonDealsCount}</h3>
+                        <p class="text-[10px] sm:text-[11px] font-bold text-emerald-600 uppercase tracking-wider truncate">Won</p>
+                        <h3 class="text-lg sm:text-2xl font-bold text-gray-900 mt-0.5">{wonDealsCount}</h3>
                         <p class="hidden sm:block text-[9.5px] text-gray-500 mt-0.5 truncate">Booked plot deals</p>
                       </div>
-                      <div class="w-7.5 h-7.5 sm:w-8.5 sm:h-8.5 rounded-md sm:rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors flex-shrink-0">
+                      <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-md sm:rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors flex-shrink-0">
                         <i class="fa-solid fa-trophy text-xs sm:text-sm"></i>
                       </div>
                     </div>
@@ -1847,15 +1847,15 @@ export default function AdminDashboard({ onLogout }) {
                     {/* Card 6: Lost */}
                     <div 
                       onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Lost'); setVisitDateFilter('All'); }}
-                      class="bg-white rounded-lg sm:rounded-xl p-2.5 sm:p-3 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-rose-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      class="bg-white rounded-lg sm:rounded-xl p-3 sm:p-3.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-rose-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view Lost leads"
                     >
                       <div class="min-w-0 flex-1 pr-1 sm:pr-2">
-                        <p class="text-[9px] sm:text-[10px] font-bold text-rose-600 uppercase tracking-wider truncate">Lost</p>
-                        <h3 class="text-base sm:text-xl font-bold text-gray-900 mt-0.5">{lostDealsCount}</h3>
+                        <p class="text-[10px] sm:text-[11px] font-bold text-rose-600 uppercase tracking-wider truncate">Lost</p>
+                        <h3 class="text-lg sm:text-2xl font-bold text-gray-900 mt-0.5">{lostDealsCount}</h3>
                         <p class="hidden sm:block text-[9.5px] text-gray-500 mt-0.5 truncate">Dropped / Cancelled</p>
                       </div>
-                      <div class="w-7.5 h-7.5 sm:w-8.5 sm:h-8.5 rounded-md sm:rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 group-hover:bg-rose-600 group-hover:text-white transition-colors flex-shrink-0">
+                      <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-md sm:rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 group-hover:bg-rose-600 group-hover:text-white transition-colors flex-shrink-0">
                         <i class="fa-solid fa-thumbs-down text-xs sm:text-sm"></i>
                       </div>
                     </div>
@@ -1877,15 +1877,15 @@ export default function AdminDashboard({ onLogout }) {
                     {/* Card 1: All Followup Scheduled */}
                     <div 
                       onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setVisitDateFilter('All'); setFollowupDateFilter('AllScheduled'); }}
-                      class="bg-white rounded-lg sm:rounded-xl p-3 sm:p-3.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-teal-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      class="bg-white rounded-lg sm:rounded-xl p-3.5 sm:p-4 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-teal-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view all scheduled follow-ups"
                     >
                       <div class="min-w-0 flex-1 pr-1 sm:pr-2">
-                        <p class="text-[9.5px] sm:text-[11px] font-bold text-teal-600 uppercase tracking-wider truncate">All Followup</p>
-                        <h3 class="text-lg sm:text-2xl font-bold text-gray-900 mt-0.5">{allFollowupsCount}</h3>
+                        <p class="text-[10.5px] sm:text-xs font-bold text-teal-600 uppercase tracking-wider truncate">All Followup</p>
+                        <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mt-0.5">{allFollowupsCount}</h3>
                         <p class="hidden sm:block text-[10px] text-gray-500 mt-0.5 truncate">All follow-up reminders</p>
                       </div>
-                      <div class="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-md sm:rounded-xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600 group-hover:bg-teal-600 group-hover:text-white transition-colors flex-shrink-0">
+                      <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-md sm:rounded-xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600 group-hover:bg-teal-600 group-hover:text-white transition-colors flex-shrink-0">
                         <i class="fa-solid fa-phone-volume text-sm sm:text-base"></i>
                       </div>
                     </div>
@@ -1893,15 +1893,15 @@ export default function AdminDashboard({ onLogout }) {
                     {/* Card 2: Today's Followup */}
                     <div 
                       onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setVisitDateFilter('All'); setFollowupDateFilter('Today'); }}
-                      class="bg-white rounded-lg sm:rounded-xl p-3 sm:p-3.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-blue-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      class="bg-white rounded-lg sm:rounded-xl p-3.5 sm:p-4 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-blue-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view today's scheduled follow-ups"
                     >
                       <div class="min-w-0 flex-1 pr-1 sm:pr-2">
-                        <p class="text-[9.5px] sm:text-[11px] font-bold text-blue-600 uppercase tracking-wider truncate">Today's Followup</p>
-                        <h3 class="text-lg sm:text-2xl font-bold text-blue-600 mt-0.5">{todaysFollowupCount}</h3>
+                        <p class="text-[10.5px] sm:text-xs font-bold text-blue-600 uppercase tracking-wider truncate">Today's Followup</p>
+                        <h3 class="text-xl sm:text-2xl font-bold text-blue-600 mt-0.5">{todaysFollowupCount}</h3>
                         <p class="hidden sm:block text-[10px] text-blue-700/80 mt-0.5 truncate">Scheduled for today</p>
                       </div>
-                      <div class="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-md sm:rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors flex-shrink-0">
+                      <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-md sm:rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors flex-shrink-0">
                         <i class="fa-solid fa-clock text-sm sm:text-base"></i>
                       </div>
                     </div>
@@ -1909,15 +1909,15 @@ export default function AdminDashboard({ onLogout }) {
                     {/* Card 3: Tomorrow's Followup */}
                     <div 
                       onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setVisitDateFilter('All'); setFollowupDateFilter('Tomorrow'); }}
-                      class="bg-white rounded-lg sm:rounded-xl p-3 sm:p-3.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-cyan-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      class="bg-white rounded-lg sm:rounded-xl p-3.5 sm:p-4 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-cyan-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view tomorrow's scheduled follow-ups"
                     >
                       <div class="min-w-0 flex-1 pr-1 sm:pr-2">
-                        <p class="text-[9.5px] sm:text-[11px] font-bold text-cyan-600 uppercase tracking-wider truncate">Tomorrow's Followup</p>
-                        <h3 class="text-lg sm:text-2xl font-bold text-cyan-600 mt-0.5">{tomorrowsFollowupCount}</h3>
+                        <p class="text-[10.5px] sm:text-xs font-bold text-cyan-600 uppercase tracking-wider truncate">Tomorrow's Followup</p>
+                        <h3 class="text-xl sm:text-2xl font-bold text-cyan-600 mt-0.5">{tomorrowsFollowupCount}</h3>
                         <p class="hidden sm:block text-[10px] text-cyan-700/80 mt-0.5 truncate">Scheduled for tomorrow</p>
                       </div>
-                      <div class="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-md sm:rounded-xl bg-cyan-50 border border-cyan-100 flex items-center justify-center text-cyan-600 group-hover:bg-cyan-600 group-hover:text-white transition-colors flex-shrink-0">
+                      <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-md sm:rounded-xl bg-cyan-50 border border-cyan-100 flex items-center justify-center text-cyan-600 group-hover:bg-cyan-600 group-hover:text-white transition-colors flex-shrink-0">
                         <i class="fa-solid fa-calendar-plus text-sm sm:text-base"></i>
                       </div>
                     </div>
@@ -1925,15 +1925,15 @@ export default function AdminDashboard({ onLogout }) {
                     {/* Card 4: This Week's Followup */}
                     <div 
                       onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setVisitDateFilter('All'); setFollowupDateFilter('ThisWeek'); }}
-                      class="bg-white rounded-lg sm:rounded-xl p-3 sm:p-3.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-emerald-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      class="bg-white rounded-lg sm:rounded-xl p-3.5 sm:p-4 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-emerald-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view this week's scheduled follow-ups"
                     >
                       <div class="min-w-0 flex-1 pr-1 sm:pr-2">
-                        <p class="text-[9.5px] sm:text-[11px] font-bold text-emerald-600 uppercase tracking-wider truncate">This Week's Followup</p>
-                        <h3 class="text-lg sm:text-2xl font-bold text-emerald-600 mt-0.5">{thisWeekFollowupCount}</h3>
+                        <p class="text-[10.5px] sm:text-xs font-bold text-emerald-600 uppercase tracking-wider truncate">This Week's Followup</p>
+                        <h3 class="text-xl sm:text-2xl font-bold text-emerald-600 mt-0.5">{thisWeekFollowupCount}</h3>
                         <p class="hidden sm:block text-[10px] text-emerald-700/80 mt-0.5 truncate">Current week follow-ups</p>
                       </div>
-                      <div class="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-md sm:rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors flex-shrink-0">
+                      <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-md sm:rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors flex-shrink-0">
                         <i class="fa-solid fa-calendar-week text-sm sm:text-base"></i>
                       </div>
                     </div>
@@ -1955,15 +1955,15 @@ export default function AdminDashboard({ onLogout }) {
                     {/* Card 1: All Site Visit Scheduled */}
                     <div 
                       onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Site Visit Scheduled'); setFollowupDateFilter('All'); setVisitDateFilter('AllScheduled'); }}
-                      class="bg-white rounded-lg sm:rounded-xl p-3 sm:p-3.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-indigo-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      class="bg-white rounded-lg sm:rounded-xl p-3.5 sm:p-4 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-indigo-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view all scheduled site visits"
                     >
                       <div class="min-w-0 flex-1 pr-1 sm:pr-2">
-                        <p class="text-[9.5px] sm:text-[11px] font-bold text-indigo-600 uppercase tracking-wider truncate">All Visit Scheduled</p>
-                        <h3 class="text-lg sm:text-2xl font-bold text-gray-900 mt-0.5">{siteVisitsCount}</h3>
+                        <p class="text-[10.5px] sm:text-xs font-bold text-indigo-600 uppercase tracking-wider truncate">All Visit Scheduled</p>
+                        <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mt-0.5">{siteVisitsCount}</h3>
                         <p class="hidden sm:block text-[10px] text-gray-500 mt-0.5 truncate">All site appointments</p>
                       </div>
-                      <div class="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-md sm:rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors flex-shrink-0">
+                      <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-md sm:rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors flex-shrink-0">
                         <i class="fa-solid fa-calendar-check text-sm sm:text-base"></i>
                       </div>
                     </div>
@@ -1971,15 +1971,15 @@ export default function AdminDashboard({ onLogout }) {
                     {/* Card 2: Today's Visit */}
                     <div 
                       onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Site Visit Scheduled'); setFollowupDateFilter('All'); setVisitDateFilter('Today'); }}
-                      class="bg-white rounded-lg sm:rounded-xl p-3 sm:p-3.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-purple-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      class="bg-white rounded-lg sm:rounded-xl p-3.5 sm:p-4 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-purple-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view today's scheduled visits"
                     >
                       <div class="min-w-0 flex-1 pr-1 sm:pr-2">
-                        <p class="text-[9.5px] sm:text-[11px] font-bold text-purple-600 uppercase tracking-wider truncate">Today's Visit</p>
-                        <h3 class="text-lg sm:text-2xl font-bold text-purple-600 mt-0.5">{todayVisitsCount}</h3>
+                        <p class="text-[10.5px] sm:text-xs font-bold text-purple-600 uppercase tracking-wider truncate">Today's Visit</p>
+                        <h3 class="text-xl sm:text-2xl font-bold text-purple-600 mt-0.5">{todayVisitsCount}</h3>
                         <p class="hidden sm:block text-[10px] text-purple-700/80 mt-0.5 truncate">Scheduled for today</p>
                       </div>
-                      <div class="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-md sm:rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors flex-shrink-0">
+                      <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-md sm:rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors flex-shrink-0">
                         <i class="fa-solid fa-calendar-day text-sm sm:text-base"></i>
                       </div>
                     </div>
@@ -1987,15 +1987,15 @@ export default function AdminDashboard({ onLogout }) {
                     {/* Card 3: Tomorrow's Visit */}
                     <div 
                       onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Site Visit Scheduled'); setFollowupDateFilter('All'); setVisitDateFilter('Tomorrow'); }}
-                      class="bg-white rounded-lg sm:rounded-xl p-3 sm:p-3.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-blue-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      class="bg-white rounded-lg sm:rounded-xl p-3.5 sm:p-4 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-blue-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view tomorrow's scheduled visits"
                     >
                       <div class="min-w-0 flex-1 pr-1 sm:pr-2">
-                        <p class="text-[9.5px] sm:text-[11px] font-bold text-blue-600 uppercase tracking-wider truncate">Tomorrow's Visit</p>
-                        <h3 class="text-lg sm:text-2xl font-bold text-blue-600 mt-0.5">{tomorrowVisitsCount}</h3>
+                        <p class="text-[10.5px] sm:text-xs font-bold text-blue-600 uppercase tracking-wider truncate">Tomorrow's Visit</p>
+                        <h3 class="text-xl sm:text-2xl font-bold text-blue-600 mt-0.5">{tomorrowVisitsCount}</h3>
                         <p class="hidden sm:block text-[10px] text-blue-700/80 mt-0.5 truncate">Scheduled for tomorrow</p>
                       </div>
-                      <div class="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-md sm:rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors flex-shrink-0">
+                      <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-md sm:rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors flex-shrink-0">
                         <i class="fa-solid fa-calendar-plus text-sm sm:text-base"></i>
                       </div>
                     </div>
@@ -2003,15 +2003,15 @@ export default function AdminDashboard({ onLogout }) {
                     {/* Card 4: This Week's Visit */}
                     <div 
                       onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Site Visit Scheduled'); setFollowupDateFilter('All'); setVisitDateFilter('ThisWeek'); }}
-                      class="bg-white rounded-lg sm:rounded-xl p-3 sm:p-3.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-[#B30E2E]/30 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      class="bg-white rounded-lg sm:rounded-xl p-3.5 sm:p-4 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-[#B30E2E]/30 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view this week's scheduled visits"
                     >
                       <div class="min-w-0 flex-1 pr-1 sm:pr-2">
-                        <p class="text-[9.5px] sm:text-[11px] font-bold text-[#B30E2E] uppercase tracking-wider truncate">This Week's Visit</p>
-                        <h3 class="text-lg sm:text-2xl font-bold text-[#B30E2E] mt-0.5">{thisWeekVisitsCount}</h3>
+                        <p class="text-[10.5px] sm:text-xs font-bold text-[#B30E2E] uppercase tracking-wider truncate">This Week's Visit</p>
+                        <h3 class="text-xl sm:text-2xl font-bold text-[#B30E2E] mt-0.5">{thisWeekVisitsCount}</h3>
                         <p class="hidden sm:block text-[10px] text-[#B30E2E]/80 mt-0.5 truncate">Current week appointments</p>
                       </div>
-                      <div class="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center text-[#B30E2E] group-hover:bg-[#B30E2E] group-hover:text-white transition-colors flex-shrink-0">
+                      <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-md sm:rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center text-[#B30E2E] group-hover:bg-[#B30E2E] group-hover:text-white transition-colors flex-shrink-0">
                         <i class="fa-solid fa-calendar-week text-sm sm:text-base"></i>
                       </div>
                     </div>

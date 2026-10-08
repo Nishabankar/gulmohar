@@ -2828,8 +2828,8 @@ export default function AdminDashboard({ onLogout }) {
 
                               {/* Password */}
                               <td class="py-2.5 px-3 font-semibold text-gray-800 whitespace-nowrap">
-                                <span class="bg-gray-100 border border-gray-200 px-2 py-0.5 rounded-md text-[11px] font-mono text-gray-700">
-                                  {agent.password || '••••••••'}
+                                <span class="bg-gray-100 border border-gray-200 px-2 py-0.5 rounded-md text-[11px] font-mono text-gray-500">
+                                  ••••••••
                                 </span>
                               </td>
 
@@ -3100,13 +3100,12 @@ export default function AdminDashboard({ onLogout }) {
                   />
                 </div>
                 <div>
-                  <label class="block text-xs font-bold text-gray-700 mb-1">Password *</label>
+                  <label class="block text-xs font-bold text-gray-700 mb-1">New Password (Optional)</label>
                   <input 
-                    type="text" 
-                    required 
+                    type="password" 
                     value={editingUser.password || ''}
                     onChange={(e) => setEditingUser({ ...editingUser, password: e.target.value })}
-                    placeholder="Enter password"
+                    placeholder="Enter new password"
                     class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
                   />
                 </div>

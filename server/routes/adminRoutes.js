@@ -450,8 +450,10 @@ router.patch('/agents/:id', protectAdmin, async (req, res) => {
 // @access  Protected
 router.get('/column-preferences', protectAdmin, async (req, res) => {
   try {
-    const adminId = parseInt(req.admin.id, 10);
-    const [rows] = await query('SELECT column_preferences FROM admins WHERE id = ?', [adminId]);
+    const adminId = parseInt(req.admin.id, 10) || 0;
+    const username = (req.admin.username || '').toLowerCase().trim();
+
+    const [rows] = await query('SELECT column_preferences FROM admins WHERE id = ? OR LOWER(username) = ?', [adminId, username]);
     if (!rows || rows.length === 0) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
@@ -473,14 +475,20 @@ router.get('/column-preferences', protectAdmin, async (req, res) => {
 // @access  Protected
 router.put('/column-preferences', protectAdmin, async (req, res) => {
   try {
-    const adminId = parseInt(req.admin.id, 10);
+    const adminId = parseInt(req.admin.id, 10) || 0;
+    const username = (req.admin.username || '').toLowerCase().trim();
     const { columnPreferences } = req.body;
+
     if (!Array.isArray(columnPreferences)) {
       return res.status(400).json({ success: false, message: 'columnPreferences must be an array' });
     }
 
-    await query('UPDATE admins SET column_preferences = ? WHERE id = ?', [JSON.stringify(columnPreferences), adminId]);
-    return res.json({ success: true, message: 'Column preferences updated successfully', columnPreferences });
+    await query(
+      'UPDATE admins SET column_preferences = ? WHERE id = ? OR LOWER(username) = ?',
+      [JSON.stringify(columnPreferences), adminId, username]
+    );
+
+    return res.json({ success: true, message: 'Column preferences updated successfully in MySQL', columnPreferences });
   } catch (error) {
     console.error('Error updating column preferences:', error.message);
     return res.status(500).json({ success: false, message: 'Database Error', error: error.message });

@@ -1603,10 +1603,10 @@ export default function AdminDashboard({ onLogout }) {
   };
 
   return (
-    <div class="h-screen max-h-screen bg-gray-50 text-gray-800 font-sans flex flex-col justify-between overflow-hidden w-full max-w-full">
+    <div class="h-full max-h-full h-[100dvh] bg-gray-50 text-gray-800 font-sans flex flex-col justify-between overflow-hidden w-full max-w-full">
       
       {/* Admin Top Navbar */}
-      <header class="bg-gradient-to-r from-[#B30E2E] via-[#8A0B22] to-[#590414] text-white flex-shrink-0 shadow-xl border-b border-rose-900/40">
+      <header class="bg-gradient-to-r from-[#B30E2E] via-[#8A0B22] to-[#590414] text-white flex-shrink-0 shadow-xl border-b border-rose-900/40 sticky top-0 z-40">
         <div class="w-full px-2.5 sm:px-6 lg:px-8 flex items-center justify-between h-14 sm:h-16 gap-2 sm:gap-4">
           
           {/* Left: Branding & System Title */}
@@ -2882,7 +2882,7 @@ export default function AdminDashboard({ onLogout }) {
       </main>
 
       {/* Dashboard Bottom Legal Footer Strip (Identical to Homepage Footer) */}
-      <footer class="bg-white border-t border-gray-200 text-gray-700 min-h-[36px] py-1 sm:py-1.5 flex items-center mt-auto z-10 w-full overflow-hidden">
+      <footer class="bg-white border-t border-gray-200 text-gray-700 min-h-[36px] py-1 sm:py-1.5 flex items-center mt-auto z-30 w-full overflow-hidden flex-shrink-0 sticky bottom-0">
         <div class="w-full max-w-full px-3 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center text-[11px] sm:text-xs gap-2 text-center sm:text-left font-medium">
           
           {/* Copyright & Legal Links grouped together on the left side */}

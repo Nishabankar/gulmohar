@@ -86,43 +86,45 @@ export default function App() {
   // If Admin Dashboard View is active
   if (currentView === 'dashboard' && isAdminLoggedIn) {
     return (
-      <div class="min-h-screen bg-gray-50">
+      <div class="h-screen h-[100dvh] max-h-screen bg-gray-50 overflow-hidden w-full max-w-full flex flex-col">
         <AdminDashboard onLogout={handleAdminLogout} />
       </div>
     );
   }
 
   return (
-    <div class="min-h-screen bg-white text-gray-800 font-sans">
+    <div class="h-screen h-[100dvh] max-h-screen bg-white text-gray-800 font-sans flex flex-col justify-between overflow-hidden w-full max-w-full">
       <Navbar 
         onOpenAdmin={() => setShowAdminLoginModal(true)}
         isAdminLoggedIn={isAdminLoggedIn}
         onOpenDashboard={handleOpenDashboardView}
       />
 
-      <HeroBanner />
+      <main class="flex-1 overflow-y-auto custom-scrollbar min-h-0 w-full">
+        <HeroBanner />
 
-      <About />
+        <About />
 
-      <MasterPlan 
-        onOpenLightbox={handleOpenLightbox} 
-        onSelectPlotForEnquiry={handleSelectPlotForEnquiry}
-      />
+        <MasterPlan 
+          onOpenLightbox={handleOpenLightbox} 
+          onSelectPlotForEnquiry={handleSelectPlotForEnquiry}
+        />
 
-      <LocationSection onOpenLightbox={handleOpenLightbox} />
+        <LocationSection onOpenLightbox={handleOpenLightbox} />
 
-      <Gallery onOpenLightbox={handleOpenLightbox} />
+        <Gallery onOpenLightbox={handleOpenLightbox} />
 
-      <FAQSection />
+        <FAQSection />
 
-      <ContactForm selectedPlotForEnquiry={selectedPlotForEnquiry} />
+        <ContactForm selectedPlotForEnquiry={selectedPlotForEnquiry} />
 
-      <PoweredBySlider />
+        <PoweredBySlider />
 
-      <Footer 
-        onOpenPolicy={handleOpenPolicy} 
-        onOpenAdmin={() => setShowAdminLoginModal(true)}
-      />
+        <Footer 
+          onOpenPolicy={handleOpenPolicy} 
+          onOpenAdmin={() => setShowAdminLoginModal(true)}
+        />
+      </main>
 
       {/* Lightbox Modal */}
       <LightboxModal 

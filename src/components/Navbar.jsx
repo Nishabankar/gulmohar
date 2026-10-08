@@ -5,7 +5,7 @@ export default function Navbar({ onOpenAdmin, isAdminLoggedIn, onOpenDashboard }
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <header class="sticky top-0 z-50 bg-white shadow-sm border-b border-gray-100">
+    <header class="sticky top-0 z-50 bg-white shadow-sm border-b border-gray-100 flex-shrink-0">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-20">
         
         {/* LOGO */}

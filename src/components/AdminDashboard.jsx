@@ -2332,7 +2332,7 @@ export default function AdminDashboard({ onLogout }) {
                   <button 
                     onClick={() => setShowCreateLeadModal(true)}
                     class="w-9 h-9 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition shadow-sm border border-emerald-500/40 cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
-                    title="Create New Lead"
+                    title="New Lead"
                   >
                     <i class="fa-solid fa-user-pen text-sm"></i>
                   </button>

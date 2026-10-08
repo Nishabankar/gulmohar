@@ -73,8 +73,8 @@ router.post('/', async (req, res) => {
     let historyEntries = [];
     if (initialNotes !== '') {
       await query(
-        `INSERT INTO enquiry_history (enquiry_id, field_name, old_value, new_value, modified_by, modified_date) VALUES (?, ?, ?, ?, ?, NOW())`,
-        [newEnquiryId, 'Notes', '—', initialNotes, noteAuthor]
+        `INSERT INTO enquiry_history (enquiry_id, field_name, old_value, new_value, modified_by, modified_date) VALUES (?, ?, ?, ?, ?, ?)`,
+        [newEnquiryId, 'Notes', '—', initialNotes, noteAuthor, new Date()]
       );
       historyEntries.push({
         fieldName: 'Notes',

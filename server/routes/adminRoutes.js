@@ -31,10 +31,10 @@ const formatEnquiryRow = (row, historyEntries = []) => {
       oldValue: h.old_value || '—',
       newValue: h.new_value || '—',
       modifiedBy: h.modified_by || 'Admin',
-      modifiedDate: h.modified_date
+      modifiedDate: h.modified_date ? new Date(h.modified_date).toISOString() : new Date().toISOString()
     })),
-    createdAt: row.created_at,
-    updatedAt: row.updated_at
+    createdAt: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString(),
+    updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : new Date().toISOString()
   };
 };
 
@@ -270,8 +270,8 @@ router.patch('/enquiries/:id', protectAdmin, async (req, res) => {
     // Insert history entries into enquiry_history
     for (const h of newHistoryEntries) {
       await query(
-        `INSERT INTO enquiry_history (enquiry_id, field_name, old_value, new_value, modified_by, modified_date) VALUES (?, ?, ?, ?, ?, NOW())`,
-        [targetId, h.fieldName, h.oldValue, h.newValue, h.modifiedBy]
+        `INSERT INTO enquiry_history (enquiry_id, field_name, old_value, new_value, modified_by, modified_date) VALUES (?, ?, ?, ?, ?, ?)`,
+        [targetId, h.fieldName, h.oldValue, h.newValue, h.modifiedBy, new Date()]
       );
     }
 

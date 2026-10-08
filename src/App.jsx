@@ -86,7 +86,7 @@ export default function App() {
   // If Admin Dashboard View is active
   if (currentView === 'dashboard' && isAdminLoggedIn) {
     return (
-      <div class="h-screen h-[100dvh] max-h-screen bg-gray-50 overflow-hidden w-full max-w-full flex flex-col">
+      <div class="fixed inset-0 h-screen h-[100dvh] max-h-screen bg-gray-50 overflow-hidden w-full max-w-full flex flex-col z-0">
         <AdminDashboard onLogout={handleAdminLogout} />
       </div>
     );

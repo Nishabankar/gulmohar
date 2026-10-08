@@ -1603,7 +1603,7 @@ export default function AdminDashboard({ onLogout }) {
   };
 
   return (
-    <div class="h-full max-h-full h-[100dvh] bg-gray-50 text-gray-800 font-sans flex flex-col justify-between overflow-hidden w-full max-w-full">
+    <div class="fixed inset-0 h-full max-h-full h-[100dvh] bg-gray-50 text-gray-800 font-sans flex flex-col justify-between overflow-hidden w-full max-w-full">
       
       {/* Admin Top Navbar */}
       <header class="bg-gradient-to-r from-[#B30E2E] via-[#8A0B22] to-[#590414] text-white flex-shrink-0 shadow-xl border-b border-rose-900/40 sticky top-0 z-40">
@@ -1767,7 +1767,7 @@ export default function AdminDashboard({ onLogout }) {
           <>
             {/* Dashboard View Tab: 3 Distinct Sections (Aligned to Red Line Level) */}
             {activeView === 'dashboard' && (
-              <div class="space-y-2.5 sm:space-y-5 animate-fade-in flex flex-col overflow-y-auto custom-scrollbar py-1 pb-3 flex-1 min-h-0">
+              <div class="space-y-2.5 sm:space-y-5 animate-fade-in flex flex-col overflow-y-auto overscroll-contain custom-scrollbar py-1 pb-3 flex-1 min-h-0">
                 
                 {/* SECTION 1: Status */}
                 <div class="space-y-1 sm:space-y-2">
@@ -2682,17 +2682,17 @@ export default function AdminDashboard({ onLogout }) {
       )}
           </>
         ) : (
-          <>
+          <div class="space-y-3 animate-fade-in flex-1 flex flex-col min-h-0 overflow-hidden">
             {/* Registered Users View Tab */}
             {/* Users Title Section */}
-            <div class="pt-2">
+            <div class="flex-shrink-0">
               <h2 class="text-base sm:text-lg font-serif font-bold text-gray-900 tracking-wide">
                 User Management
               </h2>
             </div>
 
             {/* Registered Users Table Card */}
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-200/80 overflow-hidden">
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200/80 relative flex-1 flex flex-col min-h-0 overflow-hidden">
               
               {/* Search Header Bar */}
               <div class="px-4 py-3 border-b border-gray-100 bg-gray-50/70 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
@@ -2739,7 +2739,7 @@ export default function AdminDashboard({ onLogout }) {
                   <p class="text-xs text-gray-400">Click "+ Create User" button to create a user.</p>
                 </div>
               ) : (
-                <div class="overflow-x-auto overflow-y-auto max-h-[calc(100vh-270px)] custom-scrollbar w-full rounded-b-2xl">
+                <div class="overflow-x-auto overflow-y-auto overscroll-contain flex-1 min-h-0 custom-scrollbar w-full rounded-b-2xl">
                   <table class="w-full min-w-[700px] text-left border-collapse">
                       <thead class="sticky top-0 z-10 bg-gray-100 shadow-2xs">
                         <tr class="bg-gray-100 border-b border-gray-200 text-[10.5px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">
@@ -2876,7 +2876,7 @@ export default function AdminDashboard({ onLogout }) {
                 )}
 
             </div>
-          </>
+          </div>
         )}
 
       </main>

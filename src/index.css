@@ -6,10 +6,12 @@
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 80px;
+  overscroll-behavior-y: none;
 }
 body {
   overflow-x: clip;
   max-width: 100%;
+  overscroll-behavior-y: none;
 }
 
 /* Custom Slim & Elegant Scrollbar */

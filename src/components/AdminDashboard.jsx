@@ -1648,13 +1648,13 @@ export default function AdminDashboard({ onLogout }) {
               title="Lead Management"
             >
               <i class="fa-solid fa-address-book text-xs sm:text-sm"></i>
-              {scopedEnquiries.length > 0 && (
+              {newLeadsCount > 0 && (
                 <span class={`absolute -top-1 -right-1 font-extrabold text-[9px] min-w-4 h-4 px-1 rounded-full flex items-center justify-center shadow ${
                   activeTab === 'enquiries' && activeView === 'leads'
                     ? 'bg-[#B30E2E] text-white'
                     : 'bg-amber-400 text-slate-900'
                 }`}>
-                  {scopedEnquiries.length}
+                  {newLeadsCount}
                 </span>
               )}
             </button>

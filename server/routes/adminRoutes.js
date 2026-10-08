@@ -1,15 +1,45 @@
 const express = require('express');
 const router = express.Router();
-const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const Admin = require('../models/Admin');
-const Enquiry = require('../models/Enquiry');
+const { query } = require('../config/db');
 const { protectAdmin } = require('../middleware/authMiddleware');
 const { JWT_SECRET, JWT_EXPIRES_IN } = require('../config/env');
 
+// Helper function to format SQL enquiry row to JSON matching frontend expectations
+const formatEnquiryRow = (row, historyEntries = []) => {
+  if (!row) return null;
+  return {
+    _id: row.id.toString(),
+    id: row.id,
+    firstName: row.first_name || '',
+    lastName: row.last_name || '',
+    phone: row.phone || '',
+    email: row.email || '',
+    plotInfo: row.plot_info || '',
+    plotsCount: row.plots_count || '1 Plot',
+    visitDate: row.visit_date || '',
+    followupDate: row.followup_date || '',
+    status: row.status || 'New',
+    notes: row.notes || '',
+    assignedAgentName: row.assigned_agent_name || '',
+    assignedTo: row.assigned_to ? row.assigned_to.toString() : '',
+    history: historyEntries.map(h => ({
+      _id: h.id ? h.id.toString() : undefined,
+      id: h.id,
+      fieldName: h.field_name,
+      oldValue: h.old_value || '—',
+      newValue: h.new_value || '—',
+      modifiedBy: h.modified_by || 'Admin',
+      modifiedDate: h.modified_date
+    })),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+};
+
 // @route   POST /api/admin/login
-// @desc    Admin login directly from MongoDB database & return JWT token
+// @desc    Admin login directly from MySQL database & return JWT token
 // @access  Public
 router.post('/login', async (req, res) => {
   try {
@@ -19,8 +49,9 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please provide username and password' });
     }
 
-    // Direct MongoDB Admin Search
-    const admin = await Admin.findOne({ username: username.toLowerCase().trim() });
+    const [rows] = await query('SELECT * FROM admins WHERE LOWER(username) = ?', [username.toLowerCase().trim()]);
+    const admin = rows[0];
+
     if (!admin) {
       return res.status(401).json({ success: false, message: 'Invalid admin username or password' });
     }
@@ -31,7 +62,7 @@ router.post('/login', async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: admin._id, username: admin.username, role: admin.role },
+      { id: admin.id, username: admin.username, role: admin.role },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRES_IN }
     );
@@ -41,7 +72,7 @@ router.post('/login', async (req, res) => {
       message: 'Login successful',
       token,
       admin: {
-        id: admin._id,
+        id: admin.id.toString(),
         username: admin.username,
         name: admin.name || (admin.role === 'SuperAdmin' ? 'Admin Control Panel' : admin.username),
         email: admin.email,
@@ -49,7 +80,7 @@ router.post('/login', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Admin Login MongoDB Error:', error.message);
+    console.error('Admin Login MySQL Error:', error.message);
     return res.status(500).json({ success: false, message: 'Database Error during Admin Login', error: error.message });
   }
 });
@@ -62,45 +93,61 @@ router.get('/verify', protectAdmin, async (req, res) => {
 });
 
 // @route   GET /api/admin/enquiries
-// @desc    Get all leads directly from MongoDB database
+// @desc    Get all leads directly from MySQL database
 // @access  Protected
 router.get('/enquiries', protectAdmin, async (req, res) => {
   try {
     const { status, search } = req.query;
-    let query = {};
+    let sql = 'SELECT * FROM enquiries WHERE 1=1';
+    let params = [];
 
     if (status && status !== 'All') {
-      query.status = status;
+      sql += ' AND status = ?';
+      params.push(status);
     }
 
-    if (search) {
-      query.$or = [
-        { firstName: { $regex: search, $options: 'i' } },
-        { lastName: { $regex: search, $options: 'i' } },
-        { phone: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
-        { plotInfo: { $regex: search, $options: 'i' } }
-      ];
+    if (search && search.trim()) {
+      const term = `%${search.trim()}%`;
+      sql += ' AND (first_name LIKE ? OR last_name LIKE ? OR phone LIKE ? OR email LIKE ? OR plot_info LIKE ?)';
+      params.push(term, term, term, term, term);
     }
 
-    // Direct MongoDB Database Query
-    const enquiries = await Enquiry.find(query).sort({ createdAt: -1 });
-    return res.json({ success: true, count: enquiries.length, data: enquiries });
+    sql += ' ORDER BY created_at DESC';
+
+    const [enquiries] = await query(sql, params);
+
+    // Fetch all history entries for these enquiries
+    let enquiryIds = enquiries.map(e => e.id);
+    let historyMap = {};
+    if (enquiryIds.length > 0) {
+      const placeholders = enquiryIds.map(() => '?').join(',');
+      const [allHistory] = await query(
+        `SELECT * FROM enquiry_history WHERE enquiry_id IN (${placeholders}) ORDER BY modified_date ASC`,
+        enquiryIds
+      );
+      allHistory.forEach(h => {
+        if (!historyMap[h.enquiry_id]) historyMap[h.enquiry_id] = [];
+        historyMap[h.enquiry_id].push(h);
+      });
+    }
+
+    const formattedData = enquiries.map(e => formatEnquiryRow(e, historyMap[e.id] || []));
+    return res.json({ success: true, count: formattedData.length, data: formattedData });
   } catch (error) {
-    console.error('Error fetching enquiries from MongoDB:', error.message);
-    return res.status(500).json({ success: false, message: 'Database Error: Could not fetch enquiries from MongoDB', error: error.message });
+    console.error('Error fetching enquiries from MySQL:', error.message);
+    return res.status(500).json({ success: false, message: 'Database Error: Could not fetch enquiries from MySQL', error: error.message });
   }
 });
 
 // @route   GET /api/admin/stats
-// @desc    Get metrics stats summary directly from MongoDB
+// @desc    Get metrics stats summary directly from MySQL
 // @access  Protected
 router.get('/stats', protectAdmin, async (req, res) => {
   try {
-    const totalLeads = await Enquiry.countDocuments();
-    const newLeads = await Enquiry.countDocuments({ status: 'New' });
-    const scheduledVisits = await Enquiry.countDocuments({ status: 'Site Visit Scheduled' });
-    const closedDeals = await Enquiry.countDocuments({ status: 'Closed' });
+    const [[{ totalLeads }]] = await query('SELECT COUNT(*) AS totalLeads FROM enquiries');
+    const [[{ newLeads }]] = await query("SELECT COUNT(*) AS newLeads FROM enquiries WHERE status = 'New'");
+    const [[{ scheduledVisits }]] = await query("SELECT COUNT(*) AS scheduledVisits FROM enquiries WHERE status = 'Site Visit Scheduled'");
+    const [[{ closedDeals }]] = await query("SELECT COUNT(*) AS closedDeals FROM enquiries WHERE status = 'Closed'");
 
     return res.json({
       success: true,
@@ -112,21 +159,30 @@ router.get('/stats', protectAdmin, async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching stats from MongoDB:', error.message);
+    console.error('Error fetching stats from MySQL:', error.message);
     return res.status(500).json({ success: false, message: 'Database Error' });
   }
 });
 
 // @route   GET /api/admin/enquiries/:id
-// @desc    Get single lead details with history directly from MongoDB
+// @desc    Get single lead details with history directly from MySQL
 // @access  Protected
 router.get('/enquiries/:id', protectAdmin, async (req, res) => {
   try {
-    const enquiry = await Enquiry.findById(req.params.id);
-    if (!enquiry) {
-      return res.status(404).json({ success: false, message: 'Enquiry record not found in MongoDB' });
+    const enquiryId = parseInt(req.params.id, 10);
+    if (isNaN(enquiryId)) {
+      return res.status(404).json({ success: false, message: 'Invalid enquiry ID' });
     }
-    return res.json({ success: true, data: enquiry });
+
+    const [rows] = await query('SELECT * FROM enquiries WHERE id = ?', [enquiryId]);
+    if (!rows || rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Enquiry record not found in MySQL' });
+    }
+
+    const [history] = await query('SELECT * FROM enquiry_history WHERE enquiry_id = ? ORDER BY modified_date ASC', [enquiryId]);
+    const data = formatEnquiryRow(rows[0], history);
+
+    return res.json({ success: true, data });
   } catch (error) {
     console.error('Error fetching single enquiry:', error.message);
     return res.status(500).json({ success: false, message: 'Database Error' });
@@ -134,49 +190,59 @@ router.get('/enquiries/:id', protectAdmin, async (req, res) => {
 });
 
 // @route   PATCH /api/admin/enquiries/:id
-// @desc    Update any lead details (name, phone, email, plots, visit date, status, notes) directly in MongoDB & log history
+// @desc    Update lead details directly in MySQL & log history
 // @access  Protected
 router.patch('/enquiries/:id', protectAdmin, async (req, res) => {
   try {
     const { firstName, lastName, phone, oldPhone, email, plotsCount, plotInfo, visitDate, followupDate, status, notes, assignedAgentName, assignedTo, updatedBy } = req.body;
     
+    let enquiryId = parseInt(req.params.id, 10);
     let existing = null;
-    if (mongoose.Types.ObjectId.isValid(req.params.id)) {
-      existing = await Enquiry.findById(req.params.id);
+
+    if (!isNaN(enquiryId)) {
+      const [rows] = await query('SELECT * FROM enquiries WHERE id = ?', [enquiryId]);
+      if (rows && rows.length > 0) existing = rows[0];
     }
     if (!existing && oldPhone) {
-      existing = await Enquiry.findOne({ phone: oldPhone.trim() });
+      const [rows] = await query('SELECT * FROM enquiries WHERE phone = ?', [oldPhone.trim()]);
+      if (rows && rows.length > 0) existing = rows[0];
     }
     if (!existing && phone) {
-      existing = await Enquiry.findOne({ phone: phone.trim() });
+      const [rows] = await query('SELECT * FROM enquiries WHERE phone = ?', [phone.trim()]);
+      if (rows && rows.length > 0) existing = rows[0];
     }
+
     if (!existing) {
-      return res.status(404).json({ success: false, message: 'Enquiry record not found in MongoDB' });
+      return res.status(404).json({ success: false, message: 'Enquiry record not found in MySQL' });
     }
 
     const performer = updatedBy || (req.admin ? (req.admin.name || req.admin.username || 'Admin') : 'Admin');
+    const targetId = existing.id;
 
     const fieldsToCompare = [
-      { key: 'firstName', label: 'First Name', incoming: firstName },
-      { key: 'lastName', label: 'Last Name', incoming: lastName },
-      { key: 'phone', label: 'Mobile No.', incoming: phone },
-      { key: 'email', label: 'Email Address', incoming: email },
-      { key: 'plotsCount', label: 'No. of Guntha', incoming: plotsCount },
-      { key: 'plotInfo', label: 'Plot Info', incoming: plotInfo },
-      { key: 'visitDate', label: 'Visit Date', incoming: visitDate },
-      { key: 'followupDate', label: 'Followup Date', incoming: followupDate },
-      { key: 'status', label: 'Status', incoming: status },
-      { key: 'notes', label: 'Notes', incoming: notes },
-      { key: 'assignedAgentName', label: 'Assigned Agent', incoming: assignedAgentName }
+      { col: 'first_name', label: 'First Name', incoming: firstName },
+      { col: 'last_name', label: 'Last Name', incoming: lastName },
+      { col: 'phone', label: 'Mobile No.', incoming: phone },
+      { col: 'email', label: 'Email Address', incoming: email },
+      { col: 'plots_count', label: 'No. of Guntha', incoming: plotsCount },
+      { col: 'plot_info', label: 'Plot Info', incoming: plotInfo },
+      { col: 'visit_date', label: 'Visit Date', incoming: visitDate },
+      { col: 'followup_date', label: 'Followup Date', incoming: followupDate },
+      { col: 'status', label: 'Status', incoming: status },
+      { col: 'notes', label: 'Notes', incoming: notes },
+      { col: 'assigned_agent_name', label: 'Assigned Agent', incoming: assignedAgentName }
     ];
 
     let newHistoryEntries = [];
-    let updateFields = {};
+    let updateCols = [];
+    let updateVals = [];
 
     fieldsToCompare.forEach(f => {
       if (f.incoming !== undefined) {
-        updateFields[f.key] = f.incoming;
-        const oldVal = (existing[f.key] || '').toString().trim();
+        updateCols.push(`${f.col} = ?`);
+        updateVals.push((f.incoming || '').toString().trim());
+
+        const oldVal = (existing[f.col] || '').toString().trim();
         const newVal = (f.incoming || '').toString().trim();
         
         if (oldVal !== newVal) {
@@ -184,60 +250,82 @@ router.patch('/enquiries/:id', protectAdmin, async (req, res) => {
             fieldName: f.label,
             oldValue: oldVal || '—',
             newValue: newVal || '—',
-            modifiedBy: performer,
-            modifiedDate: new Date()
+            modifiedBy: performer
           });
         }
       }
     });
 
-    if (assignedTo !== undefined) updateFields.assignedTo = assignedTo;
-
-    console.log('📝 Updating Enquiry in MongoDB Atlas:', existing._id, updateFields);
-    console.log('📜 History entries created:', newHistoryEntries.length);
-
-    let updateQuery = { $set: updateFields };
-    if (newHistoryEntries.length > 0) {
-      updateQuery.$push = { history: { $each: newHistoryEntries } };
+    if (assignedTo !== undefined) {
+      const parsedAssigned = assignedTo ? parseInt(assignedTo, 10) : null;
+      updateCols.push('assigned_to = ?');
+      updateVals.push(isNaN(parsedAssigned) ? null : parsedAssigned);
     }
 
-    const updatedEnquiry = await Enquiry.findByIdAndUpdate(
-      existing._id,
-      updateQuery,
-      { new: true, runValidators: true }
-    );
+    if (updateCols.length > 0) {
+      updateVals.push(targetId);
+      await query(`UPDATE enquiries SET ${updateCols.join(', ')} WHERE id = ?`, updateVals);
+    }
 
-    return res.json({ success: true, message: 'Enquiry updated in MongoDB', data: updatedEnquiry });
+    // Insert history entries into enquiry_history
+    for (const h of newHistoryEntries) {
+      await query(
+        `INSERT INTO enquiry_history (enquiry_id, field_name, old_value, new_value, modified_by, modified_date) VALUES (?, ?, ?, ?, ?, NOW())`,
+        [targetId, h.fieldName, h.oldValue, h.newValue, h.modifiedBy]
+      );
+    }
+
+    const [updatedRows] = await query('SELECT * FROM enquiries WHERE id = ?', [targetId]);
+    const [historyRows] = await query('SELECT * FROM enquiry_history WHERE enquiry_id = ? ORDER BY modified_date ASC', [targetId]);
+    const updatedEnquiry = formatEnquiryRow(updatedRows[0], historyRows);
+
+    return res.json({ success: true, message: 'Enquiry updated in MySQL', data: updatedEnquiry });
   } catch (error) {
-    console.error('Error updating enquiry in MongoDB:', error.message);
+    console.error('Error updating enquiry in MySQL:', error.message);
     return res.status(500).json({ success: false, message: 'Database Error', error: error.message });
   }
 });
 
 // @route   DELETE /api/admin/enquiries/:id
-// @desc    Delete an enquiry directly from MongoDB
+// @desc    Delete an enquiry directly from MySQL
 // @access  Protected
 router.delete('/enquiries/:id', protectAdmin, async (req, res) => {
   try {
-    const deleted = await Enquiry.findByIdAndDelete(req.params.id);
-    if (!deleted) {
-      return res.status(404).json({ success: false, message: 'Enquiry record not found in MongoDB' });
+    const enquiryId = parseInt(req.params.id, 10);
+    if (isNaN(enquiryId)) {
+      return res.status(404).json({ success: false, message: 'Invalid enquiry ID' });
     }
 
-    return res.json({ success: true, message: 'Enquiry deleted from MongoDB' });
+    const [result] = await query('DELETE FROM enquiries WHERE id = ?', [enquiryId]);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, message: 'Enquiry record not found in MySQL' });
+    }
+
+    return res.json({ success: true, message: 'Enquiry deleted from MySQL' });
   } catch (error) {
-    console.error('Error deleting enquiry from MongoDB:', error.message);
+    console.error('Error deleting enquiry from MySQL:', error.message);
     return res.status(500).json({ success: false, message: 'Database Error' });
   }
 });
 
 // @route   GET /api/admin/agents
-// @desc    Get all created sales agents from MongoDB database
+// @desc    Get all created sales agents from MySQL database
 // @access  Protected
 router.get('/agents', protectAdmin, async (req, res) => {
   try {
-    const agents = await Admin.find({ role: 'Agent' }).select('-password');
-    return res.json({ success: true, count: agents.length, data: agents });
+    const [agents] = await query("SELECT id, name, username, email, phone, role, created_at, updated_at FROM admins WHERE role = 'Agent' ORDER BY id ASC");
+    const data = agents.map(a => ({
+      _id: a.id.toString(),
+      id: a.id,
+      name: a.name || '',
+      username: a.username,
+      email: a.email || '',
+      phone: a.phone || '',
+      role: a.role,
+      createdAt: a.created_at,
+      updatedAt: a.updated_at
+    }));
+    return res.json({ success: true, count: data.length, data });
   } catch (error) {
     console.error('Error fetching agents:', error.message);
     return res.status(500).json({ success: false, message: 'Database Error' });
@@ -245,7 +333,7 @@ router.get('/agents', protectAdmin, async (req, res) => {
 });
 
 // @route   POST /api/admin/agents
-// @desc    Create new sales agent in MongoDB database
+// @desc    Create new sales agent in MySQL database
 // @access  Protected
 router.post('/agents', protectAdmin, async (req, res) => {
   try {
@@ -254,33 +342,32 @@ router.post('/agents', protectAdmin, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please provide name, username, and password' });
     }
 
-    const existing = await Admin.findOne({ username: username.toLowerCase().trim() });
-    if (existing) {
+    const [existing] = await query('SELECT id FROM admins WHERE LOWER(username) = ?', [username.toLowerCase().trim()]);
+    if (existing && existing.length > 0) {
       return res.status(400).json({ success: false, message: 'Agent with this username already exists' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const agentEmail = (email && email.trim()) ? email.toLowerCase().trim() : `${username.toLowerCase().trim()}@gulmoharcity.com`;
 
-    const newAgent = await Admin.create({
-      name: name.trim(),
-      username: username.toLowerCase().trim(),
-      email: agentEmail,
-      phone: phone ? phone.trim() : '',
-      password: hashedPassword,
-      role: 'Agent'
-    });
+    const [result] = await query(
+      `INSERT INTO admins (name, username, email, phone, password, role) VALUES (?, ?, ?, ?, ?, 'Agent')`,
+      [name.trim(), username.toLowerCase().trim(), agentEmail, phone ? phone.trim() : '', hashedPassword]
+    );
+
+    const newAgentId = result.insertId;
 
     return res.json({
       success: true,
-      message: 'Sales Agent created successfully in MongoDB',
+      message: 'Sales Agent created successfully in MySQL',
       data: {
-        id: newAgent._id,
-        name: newAgent.name || name,
-        username: newAgent.username,
-        email: newAgent.email,
-        phone: newAgent.phone,
-        role: newAgent.role
+        _id: newAgentId.toString(),
+        id: newAgentId,
+        name: name.trim(),
+        username: username.toLowerCase().trim(),
+        email: agentEmail,
+        phone: phone ? phone.trim() : '',
+        role: 'Agent'
       }
     });
   } catch (error) {
@@ -290,11 +377,16 @@ router.post('/agents', protectAdmin, async (req, res) => {
 });
 
 // @route   DELETE /api/admin/agents/:id
-// @desc    Delete sales agent from MongoDB database
+// @desc    Delete sales agent from MySQL database
 // @access  Protected
 router.delete('/agents/:id', protectAdmin, async (req, res) => {
   try {
-    await Admin.findByIdAndDelete(req.params.id);
+    const agentId = parseInt(req.params.id, 10);
+    if (isNaN(agentId)) {
+      return res.status(404).json({ success: false, message: 'Invalid agent ID' });
+    }
+
+    await query('DELETE FROM admins WHERE id = ? AND role = "Agent"', [agentId]);
     return res.json({ success: true, message: 'Agent removed successfully' });
   } catch (error) {
     console.error('Error deleting agent:', error.message);
@@ -303,28 +395,50 @@ router.delete('/agents/:id', protectAdmin, async (req, res) => {
 });
 
 // @route   PATCH /api/admin/agents/:id
-// @desc    Update sales agent details in MongoDB database
+// @desc    Update sales agent details in MySQL database
 // @access  Protected
 router.patch('/agents/:id', protectAdmin, async (req, res) => {
   try {
-    const { name, username, password, phone, email } = req.body;
-    let updateFields = {};
-
-    if (name !== undefined) updateFields.name = name.trim();
-    if (username !== undefined) updateFields.username = username.toLowerCase().trim();
-    if (phone !== undefined) updateFields.phone = phone.trim();
-    if (email !== undefined) updateFields.email = email.toLowerCase().trim();
-    if (password && password.trim() && !password.includes('•••')) {
-      updateFields.password = await bcrypt.hash(password, 10);
+    const agentId = parseInt(req.params.id, 10);
+    if (isNaN(agentId)) {
+      return res.status(404).json({ success: false, message: 'Invalid agent ID' });
     }
 
-    const updatedAgent = await Admin.findByIdAndUpdate(
-      req.params.id,
-      { $set: updateFields },
-      { new: true }
-    ).select('-password');
+    const { name, username, password, phone, email } = req.body;
+    let updateCols = [];
+    let updateVals = [];
 
-    return res.json({ success: true, message: 'Agent updated successfully', data: updatedAgent });
+    if (name !== undefined) { updateCols.push('name = ?'); updateVals.push(name.trim()); }
+    if (username !== undefined) { updateCols.push('username = ?'); updateVals.push(username.toLowerCase().trim()); }
+    if (phone !== undefined) { updateCols.push('phone = ?'); updateVals.push(phone.trim()); }
+    if (email !== undefined) { updateCols.push('email = ?'); updateVals.push(email.toLowerCase().trim()); }
+    if (password && password.trim() && !password.includes('•••')) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      updateCols.push('password = ?');
+      updateVals.push(hashedPassword);
+    }
+
+    if (updateCols.length > 0) {
+      updateVals.push(agentId);
+      await query(`UPDATE admins SET ${updateCols.join(', ')} WHERE id = ?`, updateVals);
+    }
+
+    const [updatedRows] = await query('SELECT id, name, username, email, phone, role FROM admins WHERE id = ?', [agentId]);
+    const agent = updatedRows[0];
+
+    return res.json({
+      success: true,
+      message: 'Agent updated successfully',
+      data: {
+        _id: agent.id.toString(),
+        id: agent.id,
+        name: agent.name,
+        username: agent.username,
+        email: agent.email,
+        phone: agent.phone,
+        role: agent.role
+      }
+    });
   } catch (error) {
     console.error('Error updating agent:', error.message);
     return res.status(500).json({ success: false, message: 'Database Error' });
@@ -332,15 +446,22 @@ router.patch('/agents/:id', protectAdmin, async (req, res) => {
 });
 
 // @route   GET /api/admin/column-preferences
-// @desc    Get logged-in user's customized column preferences from MongoDB Atlas
+// @desc    Get logged-in user's customized column preferences from MySQL
 // @access  Protected
 router.get('/column-preferences', protectAdmin, async (req, res) => {
   try {
-    const admin = await Admin.findById(req.admin.id).select('columnPreferences');
-    if (!admin) {
+    const adminId = parseInt(req.admin.id, 10);
+    const [rows] = await query('SELECT column_preferences FROM admins WHERE id = ?', [adminId]);
+    if (!rows || rows.length === 0) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
-    return res.json({ success: true, columnPreferences: admin.columnPreferences || [] });
+
+    let prefs = rows[0].column_preferences;
+    if (typeof prefs === 'string') {
+      try { prefs = JSON.parse(prefs); } catch (e) { prefs = []; }
+    }
+
+    return res.json({ success: true, columnPreferences: prefs || [] });
   } catch (error) {
     console.error('Error fetching column preferences:', error.message);
     return res.status(500).json({ success: false, message: 'Database Error', error: error.message });
@@ -348,20 +469,18 @@ router.get('/column-preferences', protectAdmin, async (req, res) => {
 });
 
 // @route   PUT /api/admin/column-preferences
-// @desc    Update logged-in user's customized column preferences in MongoDB Atlas
+// @desc    Update logged-in user's customized column preferences in MySQL
 // @access  Protected
 router.put('/column-preferences', protectAdmin, async (req, res) => {
   try {
+    const adminId = parseInt(req.admin.id, 10);
     const { columnPreferences } = req.body;
     if (!Array.isArray(columnPreferences)) {
       return res.status(400).json({ success: false, message: 'columnPreferences must be an array' });
     }
-    const admin = await Admin.findByIdAndUpdate(
-      req.admin.id,
-      { $set: { columnPreferences } },
-      { new: true }
-    ).select('columnPreferences');
-    return res.json({ success: true, message: 'Column preferences updated successfully', columnPreferences: admin.columnPreferences });
+
+    await query('UPDATE admins SET column_preferences = ? WHERE id = ?', [JSON.stringify(columnPreferences), adminId]);
+    return res.json({ success: true, message: 'Column preferences updated successfully', columnPreferences });
   } catch (error) {
     console.error('Error updating column preferences:', error.message);
     return res.status(500).json({ success: false, message: 'Database Error', error: error.message });

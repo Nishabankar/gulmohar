@@ -3,8 +3,7 @@ const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
-const connectDB = require('./config/db');
-const Admin = require('./models/Admin');
+const { connectDB, query } = require('./config/db');
 
 const app = express();
 
@@ -14,10 +13,12 @@ const allowedOrigins = env.CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Bo
 app.use(cors(allowedOrigins.length ? { origin: allowedOrigins } : {}));
 app.use(express.json());
 
-// Seed Default Admin User directly into MongoDB
+// Seed Default Admin User directly into MySQL
 const seedAdminUser = async () => {
   try {
-    const adminCount = await Admin.countDocuments();
+    const [rows] = await query('SELECT COUNT(*) AS count FROM admins');
+    const adminCount = rows[0]?.count || 0;
+
     if (adminCount === 0) {
       if (!env.ADMIN_USERNAME || !env.ADMIN_PASSWORD) {
         console.warn('⚠️  No admin user exists. Set ADMIN_USERNAME and ADMIN_PASSWORD in .env to seed one.');
@@ -25,14 +26,18 @@ const seedAdminUser = async () => {
       }
       const hashedPassword = await bcrypt.hash(env.ADMIN_PASSWORD, 10);
 
-      await Admin.create({
-        username: env.ADMIN_USERNAME.toLowerCase().trim(),
-        email: env.ADMIN_EMAIL,
-        password: hashedPassword,
-        role: 'SuperAdmin'
-      });
+      await query(
+        `INSERT INTO admins (name, username, email, password, role) VALUES (?, ?, ?, ?, ?)`,
+        [
+          'Super Admin',
+          env.ADMIN_USERNAME.toLowerCase().trim(),
+          env.ADMIN_EMAIL || 'admin@gulmoharcity.com',
+          hashedPassword,
+          'SuperAdmin'
+        ]
+      );
 
-      console.log(`🔐 Admin user '${env.ADMIN_USERNAME}' seeded in MongoDB`);
+      console.log(`🔐 Admin user '${env.ADMIN_USERNAME}' seeded in MySQL`);
     }
   } catch (err) {
     console.warn('Admin seed note:', err.message);
@@ -47,7 +52,7 @@ app.use('/api/admin', require('./routes/adminRoutes'));
 app.get(env.SERVE_FRONTEND ? '/api' : '/', (req, res) => {
   res.json({
     status: 'online',
-    message: 'Gulmohar City Real Estate Pure MongoDB Backend Server Running',
+    message: 'Gulmohar City Real Estate Pure MySQL Backend Server Running',
     endpoints: {
       publicEnquiry: 'POST /api/enquiries',
       adminLogin: 'POST /api/admin/login',
@@ -67,7 +72,7 @@ const startServer = async () => {
   try {
     await connectDB();
   } catch (error) {
-    console.error(`❌ MongoDB Connection Error: ${error.message}`);
+    console.error(`❌ MySQL Connection Error: ${error.message}`);
     process.exit(1);
   }
 
@@ -79,3 +84,4 @@ const startServer = async () => {
 };
 
 startServer();
+

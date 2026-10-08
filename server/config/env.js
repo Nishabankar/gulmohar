@@ -4,7 +4,7 @@ const dotenv = require('dotenv');
 // Load server/.env regardless of the directory node is started from
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
-const required = ['MONGO_URI', 'JWT_SECRET'];
+const required = ['JWT_SECRET'];
 const missing = required.filter((key) => !process.env[key]);
 if (missing.length) {
   console.error(`❌ Missing required environment variables: ${missing.join(', ')}. See server/.env.example`);
@@ -21,5 +21,10 @@ module.exports = {
   SERVE_FRONTEND: process.env.SERVE_FRONTEND === 'true',
   ADMIN_USERNAME: process.env.ADMIN_USERNAME,
   ADMIN_PASSWORD: process.env.ADMIN_PASSWORD,
-  ADMIN_EMAIL: process.env.ADMIN_EMAIL || ''
+  ADMIN_EMAIL: process.env.ADMIN_EMAIL || '',
+  DB_HOST: process.env.DB_HOST || 'localhost',
+  DB_PORT: parseInt(process.env.DB_PORT || '3306', 10),
+  DB_USER: process.env.DB_USER || 'root',
+  DB_PASSWORD: process.env.DB_PASSWORD || '',
+  DB_NAME: process.env.DB_NAME || 'gulmohar_db'
 };

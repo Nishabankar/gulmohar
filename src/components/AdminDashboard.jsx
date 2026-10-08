@@ -410,7 +410,7 @@ export default function AdminDashboard({ onLogout }) {
       setActiveNotePopover(null);
     } else {
       const rect = e.currentTarget.getBoundingClientRect();
-      const popoverWidth = 320;
+      const popoverWidth = 340;
       let left = rect.right - popoverWidth;
       if (left < 10) left = 10;
       if (left + popoverWidth > window.innerWidth - 10) {
@@ -3637,7 +3637,7 @@ export default function AdminDashboard({ onLogout }) {
               left: `${activeNotePopover.left}px`,
               transform: activeNotePopover.positionAbove ? 'translateY(-100%)' : 'none'
             }}
-            class="fixed w-84 max-w-[340px] h-[520px] max-h-[calc(100vh-120px)] flex flex-col bg-white rounded-2xl shadow-2xl z-50 text-left border border-rose-100 overflow-hidden animate-fade-in pointer-events-auto"
+            class="fixed w-[340px] h-[520px] max-h-[calc(100vh-120px)] flex flex-col bg-white rounded-2xl shadow-2xl z-50 text-left border border-rose-100 overflow-hidden animate-fade-in pointer-events-auto"
           >
             {/* Header: Gulmohar Maroon Gradient */}
             <div class="bg-gradient-to-r from-[#B30E2E] via-[#8A0B22] to-[#590414] px-3.5 py-2.5 text-white flex items-center justify-between flex-shrink-0">

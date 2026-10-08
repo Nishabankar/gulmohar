@@ -104,12 +104,19 @@ CREATE TABLE `admin_column_preferences` (
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- ============================================================
--- Seed Default Admin Credentials
--- Username: admin
--- Password: admin123 (Hashed via bcrypt)
+-- Seed Default Credentials
+-- SuperAdmin: admin / admin123
+-- Sales Agents: (Created via Admin Panel or SQL below)
+-- Password bcrypt hash for 'admin123': $2a$10$4EO8IIMqBorf0nWZqpSszeCJVoWRCvlErOX89xthD3wIt36U4y2aG
 -- ============================================================
 
 INSERT INTO `admins` (`name`, `username`, `email`, `phone`, `password`, `role`)
 VALUES 
 ('Super Admin', 'admin', 'admin@gulmoharcity.com', '9876543210', '$2a$10$4EO8IIMqBorf0nWZqpSszeCJVoWRCvlErOX89xthD3wIt36U4y2aG', 'SuperAdmin')
 ON DUPLICATE KEY UPDATE `username`=`username`;
+
+-- Optional: Add your Sales Agents directly via SQL (or use the Admin Panel UI under 'Sales Agents')
+-- INSERT INTO `admins` (`name`, `username`, `email`, `phone`, `password`, `role`) VALUES
+-- ('Sales Agent 1', 'agent1', 'agent1@gulmoharcity.com', '9876543211', '$2a$10$4EO8IIMqBorf0nWZqpSszeCJVoWRCvlErOX89xthD3wIt36U4y2aG', 'Agent'),
+-- ('Sales Agent 2', 'agent2', 'agent2@gulmoharcity.com', '9876543212', '$2a$10$4EO8IIMqBorf0nWZqpSszeCJVoWRCvlErOX89xthD3wIt36U4y2aG', 'Agent');
+

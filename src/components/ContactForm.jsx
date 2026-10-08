@@ -29,25 +29,8 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
 
     setSubmitting(true);
 
-    // Dynamic Round-Robin Agent Auto-Assignment
-    let registeredAgents = JSON.parse(localStorage.getItem('registeredAgents') || '[]');
-
-    let assignedAgentId = null;
-    let assignedAgentName = '';
-
-    if (registeredAgents.length > 0) {
-      const lastAssignedIndex = parseInt(localStorage.getItem('lastAssignedAgentIndex') || '-1', 10);
-      const nextIndex = (lastAssignedIndex + 1) % registeredAgents.length;
-      const assignedAgent = registeredAgents[nextIndex];
-      localStorage.setItem('lastAssignedAgentIndex', nextIndex.toString());
-      assignedAgentId = assignedAgent.id || assignedAgent._id;
-      assignedAgentName = assignedAgent.name;
-    }
-
     const submissionPayload = {
-      ...formData,
-      assignedTo: assignedAgentId,
-      assignedAgentName: assignedAgentName
+      ...formData
     };
 
     try {

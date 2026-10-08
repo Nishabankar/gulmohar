@@ -20,11 +20,23 @@ router.post('/', async (req, res) => {
     let finalAssignedTo = assignedTo ? parseInt(assignedTo, 10) : null;
     if (isNaN(finalAssignedTo)) finalAssignedTo = null;
 
+    // Validate if finalAssignedTo exists in MySQL admins table
+    if (finalAssignedTo) {
+      const [agentRows] = await query('SELECT id, name, username FROM admins WHERE id = ?', [finalAssignedTo]);
+      if (!agentRows || agentRows.length === 0) {
+        finalAssignedTo = null;
+        finalAssignedAgentName = '';
+      } else {
+        finalAssignedAgentName = agentRows[0].name || agentRows[0].username;
+      }
+    }
+
     // If agent name is missing or Unassigned, perform Round-Robin across active Sales Agents in MySQL
     if (!finalAssignedAgentName) {
       const [activeAgents] = await query("SELECT id, name, username FROM admins WHERE role = 'Agent' ORDER BY id ASC");
       if (activeAgents && activeAgents.length > 0) {
-        const [[{ total }]] = await query("SELECT COUNT(*) AS total FROM enquiries");
+        const [countRows] = await query("SELECT COUNT(*) AS total FROM enquiries");
+        const total = countRows[0]?.total || 0;
         const agentIndex = total % activeAgents.length;
         const selectedAgent = activeAgents[agentIndex];
         finalAssignedAgentName = selectedAgent.name || selectedAgent.username;
@@ -46,7 +58,7 @@ router.post('/', async (req, res) => {
         phone.trim(),
         (email || '').trim(),
         (plotInfo || '').trim(),
-        plotsCount || '1 Plot',
+        plotsCount || '1 Guntha',
         visitDate || '',
         followupDate || '',
         initialNotes,
@@ -82,7 +94,7 @@ router.post('/', async (req, res) => {
       phone,
       email: email || '',
       plotInfo: plotInfo || '',
-      plotsCount: plotsCount || '1 Plot',
+      plotsCount: plotsCount || '1 Guntha',
       visitDate: visitDate || '',
       followupDate: followupDate || '',
       status: 'New',

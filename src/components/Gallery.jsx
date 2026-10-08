@@ -6,28 +6,28 @@ export default function Gallery({ onOpenLightbox }) {
   const galleryItems = [
     {
       id: 1,
-      title: 'Gulmohar City Plot Site View 1',
+      title: 'Gulmohar City Plot Site View',
       src: '/assets/images/plot-image-1.jpeg',
       type: 'image',
       tag: 'Plot Image'
     },
     {
       id: 2,
-      title: 'Plot Walkthrough Video 1',
+      title: 'Plot Walkthrough Video',
       src: '/assets/images/plot-video-1.mp4',
       type: 'video',
       tag: 'Plot Video'
     },
     {
       id: 3,
-      title: 'Township Overview Video 2',
+      title: 'Township Overview Video',
       src: '/assets/images/plot-video-2.mp4',
       type: 'video',
       tag: 'Plot Video'
     },
     {
       id: 4,
-      title: 'Site Development Video 4',
+      title: 'Site Development Video',
       src: '/assets/images/plot-video-4.mp4',
       type: 'video',
       tag: 'Plot Video'

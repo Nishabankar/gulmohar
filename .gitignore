@@ -18,6 +18,10 @@ out/
 .env.production.local
 server/.env
 *.env
+!hostinger.env
+!server/hostinger.env
+!.env.hostinger
+!server/.env.hostinger
 
 # Logs
 logs

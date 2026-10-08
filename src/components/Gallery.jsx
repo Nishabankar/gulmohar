@@ -27,8 +27,8 @@ export default function Gallery({ onOpenLightbox }) {
     },
     {
       id: 4,
-      title: 'Site Development Video 3',
-      src: '/assets/images/plot-video-3.mp4',
+      title: 'Site Development Video 4',
+      src: '/assets/images/plot-video-4.mp4',
       type: 'video',
       tag: 'Plot Video'
     },

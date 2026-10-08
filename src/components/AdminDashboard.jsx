@@ -3154,11 +3154,11 @@ export default function AdminDashboard({ onLogout }) {
         </div>
       )}
       {editingEnquiry && (
-        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-fade-in">
-          <div class="bg-white rounded-3xl shadow-2xl border border-gray-100 max-w-lg w-full overflow-hidden relative">
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-3 sm:p-4 animate-fade-in">
+          <div class="bg-white rounded-3xl shadow-2xl border border-gray-100 max-w-lg w-full max-h-[85vh] flex flex-col overflow-hidden relative">
             
             {/* Header */}
-            <div class="bg-gradient-to-r from-[#B30E2E] via-[#8A0B22] to-[#590414] p-5 text-white flex items-center justify-between">
+            <div class="bg-gradient-to-r from-[#B30E2E] via-[#8A0B22] to-[#590414] p-4 sm:p-5 text-white flex items-center justify-between flex-shrink-0">
               <div>
                 <h3 class="font-serif font-bold text-base">Edit Lead</h3>
               </div>
@@ -3171,170 +3171,174 @@ export default function AdminDashboard({ onLogout }) {
             </div>
 
             {/* Form */}
-            <form onSubmit={handleSaveFullEdit} class="p-5 space-y-3.5 max-h-[85vh] overflow-y-auto">
+            <form onSubmit={handleSaveFullEdit} class="flex-1 flex flex-col min-h-0 overflow-hidden">
               
-              {/* Success Alert inside Modal */}
-              {editModalSuccessMsg && (
-                <div class="bg-emerald-100 border border-emerald-300 text-emerald-950 px-4 py-2.5 rounded-2xl flex items-center justify-between text-xs font-bold shadow-sm animate-fade-in">
-                  <div class="flex items-center gap-2.5">
-                    <div class="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs flex-shrink-0">
-                      <i class="fa-solid fa-check"></i>
+              {/* Scrollable Middle Content */}
+              <div class="p-4 sm:p-5 space-y-3.5 overflow-y-auto flex-1 custom-scrollbar">
+                {/* Success Alert inside Modal */}
+                {editModalSuccessMsg && (
+                  <div class="bg-emerald-100 border border-emerald-300 text-emerald-950 px-4 py-2.5 rounded-2xl flex items-center justify-between text-xs font-bold shadow-sm animate-fade-in">
+                    <div class="flex items-center gap-2.5">
+                      <div class="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs flex-shrink-0">
+                        <i class="fa-solid fa-check"></i>
+                      </div>
+                      <span class="text-xs font-bold text-emerald-900">{editModalSuccessMsg}</span>
                     </div>
-                    <span class="text-xs font-bold text-emerald-900">{editModalSuccessMsg}</span>
                   </div>
-                </div>
-              )}
+                )}
 
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label class="block text-xs font-bold text-gray-700 mb-1">First Name *</label>
-                  <input 
-                    type="text" 
-                    required 
-                    value={editingEnquiry.firstName || ''} 
-                    onChange={(e) => setEditingEnquiry({ ...editingEnquiry, firstName: e.target.value })}
-                    class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
-                  />
-                </div>
-                <div>
-                  <label class="block text-xs font-bold text-gray-700 mb-1">Last Name</label>
-                  <input 
-                    type="text" 
-                    value={editingEnquiry.lastName || ''} 
-                    onChange={(e) => setEditingEnquiry({ ...editingEnquiry, lastName: e.target.value })}
-                    class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
-                  />
-                </div>
-              </div>
-
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label class="block text-xs font-bold text-gray-700 mb-1">Mobile Number *</label>
-                  <input 
-                    type="tel" 
-                    required 
-                    maxLength={10}
-                    pattern="[6-9][0-9]{9}"
-                    value={editingEnquiry.phone || ''} 
-                    onChange={(e) => {
-                      const cleaned = e.target.value.replace(/\D/g, '').slice(0, 10);
-                      setEditingEnquiry({ ...editingEnquiry, phone: cleaned });
-                    }}
-                    disabled={!isAdmin}
-                    class={`w-full px-3 py-2 rounded-xl border text-xs focus:outline-none ${!isAdmin ? 'bg-gray-100 text-gray-600 border-gray-200 cursor-not-allowed font-semibold' : 'border-gray-300 focus:border-[#B30E2E]'}`}
-                  />
-                </div>
-                <div>
-                  <label class="block text-xs font-bold text-gray-700 mb-1">Email Address</label>
-                  <input 
-                    type="email" 
-                    value={editingEnquiry.email || ''} 
-                    onChange={(e) => setEditingEnquiry({ ...editingEnquiry, email: e.target.value })}
-                    disabled={!isAdmin}
-                    class={`w-full px-3 py-2 rounded-xl border text-xs focus:outline-none ${!isAdmin ? 'bg-gray-100 text-gray-600 border-gray-200 cursor-not-allowed font-semibold' : 'border-gray-300 focus:border-[#B30E2E]'}`}
-                  />
-                </div>
-              </div>
-
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label class="block text-xs font-bold text-gray-700 mb-1">Number of Guntha</label>
-                  <select 
-                    value={editingEnquiry.plotsCount || '1 Guntha'} 
-                    onChange={(e) => setEditingEnquiry({ ...editingEnquiry, plotsCount: e.target.value })}
-                    class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
-                  >
-                    <option value="1 Guntha">1 Guntha</option>
-                    <option value="2 Guntha">2 Guntha</option>
-                    <option value="3 Guntha">3 Guntha</option>
-                    <option value="4 Guntha">4 Guntha</option>
-                    <option value="5 Guntha">5 Guntha</option>
-                    <option value="6 Guntha">6 Guntha</option>
-                    <option value="7 Guntha">7 Guntha</option>
-                    <option value="8 Guntha">8 Guntha</option>
-                    <option value="9 Guntha">9 Guntha</option>
-                    <option value="10 Guntha">10 Guntha</option>
-                    <option value="11+ Guntha (Bulk / Investment)">11+ Guntha (Bulk / Investment)</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="block text-xs font-bold text-gray-700 mb-1">Followup Date</label>
-                  <input 
-                    type="date" 
-                    value={editingEnquiry.followupDate || ''} 
-                    onChange={(e) => setEditingEnquiry({ ...editingEnquiry, followupDate: e.target.value })}
-                    class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
-                  />
-                </div>
-              </div>
-
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label class="block text-xs font-bold text-gray-700 mb-1">Status</label>
-                  <select 
-                    value={editingEnquiry.status || 'New'} 
-                    onChange={(e) => setEditingEnquiry({ ...editingEnquiry, status: e.target.value })}
-                    class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E]"
-                  >
-                    <option value="New">New</option>
-                    <option value="Contacted">Contacted</option>
-                    <option value="Interested">Interested</option>
-                    <option value="Details Provided">Details Provided</option>
-                    <option value="Not Interested">Not Interested</option>
-                    <option value="Site Visit Scheduled">Site Visit Scheduled</option>
-                    <option value="Site Visit Done">Site Visit Done</option>
-                    <option value="Won">Won</option>
-                    <option value="Lost">Lost</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="block text-xs font-bold text-gray-700 mb-1">Assigned Agent</label>
-                  {isAdmin ? (
-                    <select 
-                      value={editingEnquiry.assignedAgentName || ''} 
-                      onChange={(e) => setEditingEnquiry({ ...editingEnquiry, assignedAgentName: e.target.value })}
-                      class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E]"
-                    >
-                      {allAgents.map(agent => (
-                        <option key={agent.id || agent.username} value={agent.name}>
-                          {agent.name}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">First Name *</label>
                     <input 
                       type="text" 
-                      disabled 
-                      value={editingEnquiry.assignedAgentName || currentUser.name} 
-                      class="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-semibold bg-gray-100 text-gray-600 cursor-not-allowed"
+                      required 
+                      value={editingEnquiry.firstName || ''} 
+                      onChange={(e) => setEditingEnquiry({ ...editingEnquiry, firstName: e.target.value })}
+                      class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
                     />
-                  )}
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Last Name</label>
+                    <input 
+                      type="text" 
+                      value={editingEnquiry.lastName || ''} 
+                      onChange={(e) => setEditingEnquiry({ ...editingEnquiry, lastName: e.target.value })}
+                      class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
+                    />
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Mobile Number *</label>
+                    <input 
+                      type="tel" 
+                      required 
+                      maxLength={10}
+                      pattern="[6-9][0-9]{9}"
+                      value={editingEnquiry.phone || ''} 
+                      onChange={(e) => {
+                        const cleaned = e.target.value.replace(/\D/g, '').slice(0, 10);
+                        setEditingEnquiry({ ...editingEnquiry, phone: cleaned });
+                      }}
+                      disabled={!isAdmin}
+                      class={`w-full px-3 py-2 rounded-xl border text-xs focus:outline-none ${!isAdmin ? 'bg-gray-100 text-gray-600 border-gray-200 cursor-not-allowed font-semibold' : 'border-gray-300 focus:border-[#B30E2E]'}`}
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Email Address</label>
+                    <input 
+                      type="email" 
+                      value={editingEnquiry.email || ''} 
+                      onChange={(e) => setEditingEnquiry({ ...editingEnquiry, email: e.target.value })}
+                      disabled={!isAdmin}
+                      class={`w-full px-3 py-2 rounded-xl border text-xs focus:outline-none ${!isAdmin ? 'bg-gray-100 text-gray-600 border-gray-200 cursor-not-allowed font-semibold' : 'border-gray-300 focus:border-[#B30E2E]'}`}
+                    />
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Number of Guntha</label>
+                    <select 
+                      value={editingEnquiry.plotsCount || '1 Guntha'} 
+                      onChange={(e) => setEditingEnquiry({ ...editingEnquiry, plotsCount: e.target.value })}
+                      class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
+                    >
+                      <option value="1 Guntha">1 Guntha</option>
+                      <option value="2 Guntha">2 Guntha</option>
+                      <option value="3 Guntha">3 Guntha</option>
+                      <option value="4 Guntha">4 Guntha</option>
+                      <option value="5 Guntha">5 Guntha</option>
+                      <option value="6 Guntha">6 Guntha</option>
+                      <option value="7 Guntha">7 Guntha</option>
+                      <option value="8 Guntha">8 Guntha</option>
+                      <option value="9 Guntha">9 Guntha</option>
+                      <option value="10 Guntha">10 Guntha</option>
+                      <option value="11+ Guntha (Bulk / Investment)">11+ Guntha (Bulk / Investment)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Followup Date</label>
+                    <input 
+                      type="date" 
+                      value={editingEnquiry.followupDate || ''} 
+                      onChange={(e) => setEditingEnquiry({ ...editingEnquiry, followupDate: e.target.value })}
+                      class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
+                    />
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Status</label>
+                    <select 
+                      value={editingEnquiry.status || 'New'} 
+                      onChange={(e) => setEditingEnquiry({ ...editingEnquiry, status: e.target.value })}
+                      class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E]"
+                    >
+                      <option value="New">New</option>
+                      <option value="Contacted">Contacted</option>
+                      <option value="Interested">Interested</option>
+                      <option value="Details Provided">Details Provided</option>
+                      <option value="Not Interested">Not Interested</option>
+                      <option value="Site Visit Scheduled">Site Visit Scheduled</option>
+                      <option value="Site Visit Done">Site Visit Done</option>
+                      <option value="Won">Won</option>
+                      <option value="Lost">Lost</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Assigned Agent</label>
+                    {isAdmin ? (
+                      <select 
+                        value={editingEnquiry.assignedAgentName || ''} 
+                        onChange={(e) => setEditingEnquiry({ ...editingEnquiry, assignedAgentName: e.target.value })}
+                        class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E]"
+                      >
+                        {allAgents.map(agent => (
+                          <option key={agent.id || agent.username} value={agent.name}>
+                            {agent.name}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input 
+                        type="text" 
+                        disabled 
+                        value={editingEnquiry.assignedAgentName || currentUser.name} 
+                        class="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-semibold bg-gray-100 text-gray-600 cursor-not-allowed"
+                      />
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-gray-700 mb-1">Notes</label>
+                  <textarea 
+                    rows="2"
+                    value={editingEnquiry.notes || ''} 
+                    onChange={(e) => setEditingEnquiry({ ...editingEnquiry, notes: e.target.value })}
+                    placeholder="Enter notes"
+                    class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
+                  ></textarea>
                 </div>
               </div>
 
-              <div>
-                <label class="block text-xs font-bold text-gray-700 mb-1">Notes</label>
-                <textarea 
-                  rows="2"
-                  value={editingEnquiry.notes || ''} 
-                  onChange={(e) => setEditingEnquiry({ ...editingEnquiry, notes: e.target.value })}
-                  placeholder="Enter notes"
-                  class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
-                ></textarea>
-              </div>
-
-              <div class="pt-2 flex items-center justify-end gap-2 border-t border-gray-100">
+              {/* Action Buttons: Fixed Bottom Bar */}
+              <div class="px-4 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-2 flex-shrink-0">
                 <button 
                   type="button" 
                   onClick={() => setEditingEnquiry(null)}
-                  class="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold"
+                  class="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit" 
                   disabled={savingEdit}
-                  class="px-5 py-2 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white text-xs font-bold flex items-center gap-1.5 shadow"
+                  class="px-5 py-2 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer"
                 >
                   {savingEdit ? (
                     <>
@@ -3502,9 +3506,10 @@ export default function AdminDashboard({ onLogout }) {
       )}
 
       {/* Create New Lead Modal (6 Homepage Fields) */}
+      {/* Create New Lead Modal */}
       {showCreateLeadModal && (
-        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-fade-in">
-          <div class="bg-white rounded-3xl shadow-2xl border border-gray-100 max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col relative">
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-3 sm:p-4 animate-fade-in">
+          <div class="bg-white rounded-3xl shadow-2xl border border-gray-100 max-w-lg w-full max-h-[85vh] flex flex-col overflow-hidden relative">
             
             {/* Header */}
             <div class="bg-gradient-to-r from-[#B30E2E] via-[#8A0B22] to-[#590414] p-4 sm:p-5 text-white flex items-center justify-between flex-shrink-0">
@@ -3519,118 +3524,121 @@ export default function AdminDashboard({ onLogout }) {
               </button>
             </div>
 
-            {/* Form Body */}
-            <form onSubmit={handleCreateLeadSubmit} class="p-4 sm:p-5 space-y-3.5 overflow-y-auto max-h-[calc(90vh-70px)]">
+            {/* Form */}
+            <form onSubmit={handleCreateLeadSubmit} class="flex-1 flex flex-col min-h-0 overflow-hidden">
               
-              {createLeadMsg && (
-                <div class="p-2.5 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-900 text-xs font-bold flex items-center gap-2">
-                  <i class="fa-solid fa-check text-emerald-600"></i>
-                  <span>{createLeadMsg}</span>
-                </div>
-              )}
+              {/* Middle Scrollable Content */}
+              <div class="p-4 sm:p-5 space-y-3.5 overflow-y-auto flex-1 custom-scrollbar">
+                {createLeadMsg && (
+                  <div class="p-2.5 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-900 text-xs font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-check text-emerald-600"></i>
+                    <span>{createLeadMsg}</span>
+                  </div>
+                )}
 
-              {/* 1. First Name & Last Name */}
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label class="block text-xs font-bold text-gray-700 mb-1">First Name *</label>
-                  <input 
-                    type="text" 
-                    required 
-                    value={newLeadFormData.firstName}
-                    onChange={(e) => setNewLeadFormData({ ...newLeadFormData, firstName: e.target.value })}
-                    placeholder="Enter first name"
-                    class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC]"
-                  />
+                {/* 1. First Name & Last Name */}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">First Name *</label>
+                    <input 
+                      type="text" 
+                      required 
+                      value={newLeadFormData.firstName}
+                      onChange={(e) => setNewLeadFormData({ ...newLeadFormData, firstName: e.target.value })}
+                      placeholder="Enter first name"
+                      class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC]"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Last Name</label>
+                    <input 
+                      type="text" 
+                      value={newLeadFormData.lastName}
+                      onChange={(e) => setNewLeadFormData({ ...newLeadFormData, lastName: e.target.value })}
+                      placeholder="Enter last name"
+                      class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC]"
+                    />
+                  </div>
                 </div>
+
+                {/* 2. Mobile Number & Email Address */}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Mobile Number *</label>
+                    <input 
+                      type="tel" 
+                      required 
+                      maxLength={10}
+                      pattern="[6-9][0-9]{9}"
+                      value={newLeadFormData.phone}
+                      onChange={(e) => {
+                        const cleaned = e.target.value.replace(/\D/g, '').slice(0, 10);
+                        setNewLeadFormData({ ...newLeadFormData, phone: cleaned });
+                      }}
+                      placeholder="Enter mobile number"
+                      class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC]"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Email Address</label>
+                    <input 
+                      type="email" 
+                      value={newLeadFormData.email}
+                      onChange={(e) => setNewLeadFormData({ ...newLeadFormData, email: e.target.value })}
+                      placeholder="Enter email address"
+                      class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC]"
+                    />
+                  </div>
+                </div>
+
+                {/* 3. Number of Guntha & Followup Date */}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Number of Guntha</label>
+                    <select 
+                      value={newLeadFormData.plotsCount}
+                      onChange={(e) => setNewLeadFormData({ ...newLeadFormData, plotsCount: e.target.value })}
+                      class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800"
+                    >
+                      <option value="1 Guntha">1 Guntha</option>
+                      <option value="2 Guntha">2 Guntha</option>
+                      <option value="3 Guntha">3 Guntha</option>
+                      <option value="4 Guntha">4 Guntha</option>
+                      <option value="5 Guntha">5 Guntha</option>
+                      <option value="6 Guntha">6 Guntha</option>
+                      <option value="7 Guntha">7 Guntha</option>
+                      <option value="8 Guntha">8 Guntha</option>
+                      <option value="9 Guntha">9 Guntha</option>
+                      <option value="10 Guntha">10 Guntha</option>
+                      <option value="11+ Guntha (Bulk / Investment)">11+ Guntha (Bulk / Investment)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Followup Date</label>
+                    <input 
+                      type="date" 
+                      value={newLeadFormData.followupDate || ''}
+                      onChange={(e) => setNewLeadFormData({ ...newLeadFormData, followupDate: e.target.value })}
+                      class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800"
+                    />
+                  </div>
+                </div>
+
+                {/* 4. Notes */}
                 <div>
-                  <label class="block text-xs font-bold text-gray-700 mb-1">Last Name</label>
-                  <input 
-                    type="text" 
-                    value={newLeadFormData.lastName}
-                    onChange={(e) => setNewLeadFormData({ ...newLeadFormData, lastName: e.target.value })}
-                    placeholder="Enter last name"
+                  <label class="block text-xs font-bold text-gray-700 mb-1">Notes</label>
+                  <textarea 
+                    rows="2"
+                    value={newLeadFormData.notes || ''}
+                    onChange={(e) => setNewLeadFormData({ ...newLeadFormData, notes: e.target.value })}
+                    placeholder="Enter notes"
                     class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC]"
-                  />
+                  ></textarea>
                 </div>
               </div>
 
-              {/* 2. Mobile Number & Email Address */}
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label class="block text-xs font-bold text-gray-700 mb-1">Mobile Number *</label>
-                  <input 
-                    type="tel" 
-                    required 
-                    maxLength={10}
-                    pattern="[6-9][0-9]{9}"
-                    value={newLeadFormData.phone}
-                    onChange={(e) => {
-                      const cleaned = e.target.value.replace(/\D/g, '').slice(0, 10);
-                      setNewLeadFormData({ ...newLeadFormData, phone: cleaned });
-                    }}
-                    placeholder="Enter mobile number"
-                    class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC]"
-                  />
-                </div>
-                <div>
-                  <label class="block text-xs font-bold text-gray-700 mb-1">Email Address</label>
-                  <input 
-                    type="email" 
-                    value={newLeadFormData.email}
-                    onChange={(e) => setNewLeadFormData({ ...newLeadFormData, email: e.target.value })}
-                    placeholder="Enter email address"
-                    class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC]"
-                  />
-                </div>
-              </div>
-
-              {/* 3. Number of Guntha & Followup Date */}
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label class="block text-xs font-bold text-gray-700 mb-1">Number of Guntha</label>
-                  <select 
-                    value={newLeadFormData.plotsCount}
-                    onChange={(e) => setNewLeadFormData({ ...newLeadFormData, plotsCount: e.target.value })}
-                    class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800"
-                  >
-                    <option value="1 Guntha">1 Guntha</option>
-                    <option value="2 Guntha">2 Guntha</option>
-                    <option value="3 Guntha">3 Guntha</option>
-                    <option value="4 Guntha">4 Guntha</option>
-                    <option value="5 Guntha">5 Guntha</option>
-                    <option value="6 Guntha">6 Guntha</option>
-                    <option value="7 Guntha">7 Guntha</option>
-                    <option value="8 Guntha">8 Guntha</option>
-                    <option value="9 Guntha">9 Guntha</option>
-                    <option value="10 Guntha">10 Guntha</option>
-                    <option value="11+ Guntha (Bulk / Investment)">11+ Guntha (Bulk / Investment)</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="block text-xs font-bold text-gray-700 mb-1">Followup Date</label>
-                  <input 
-                    type="date" 
-                    value={newLeadFormData.followupDate || ''}
-                    onChange={(e) => setNewLeadFormData({ ...newLeadFormData, followupDate: e.target.value })}
-                    class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800"
-                  />
-                </div>
-              </div>
-
-              {/* 4. Notes */}
-              <div>
-                <label class="block text-xs font-bold text-gray-700 mb-1">Notes</label>
-                <textarea 
-                  rows="2"
-                  value={newLeadFormData.notes || ''}
-                  onChange={(e) => setNewLeadFormData({ ...newLeadFormData, notes: e.target.value })}
-                  placeholder="Enter notes"
-                  class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC]"
-                ></textarea>
-              </div>
-
-              {/* Action Buttons */}
-              <div class="pt-3 flex items-center justify-end gap-2 border-t border-gray-100">
+              {/* Action Buttons: Fixed Bottom Bar */}
+              <div class="px-4 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-2 flex-shrink-0">
                 <button 
                   type="button" 
                   onClick={() => setShowCreateLeadModal(false)}

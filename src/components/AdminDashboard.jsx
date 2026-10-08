@@ -591,14 +591,30 @@ export default function AdminDashboard({ onLogout }) {
     });
   };
 
+  const getLeadIdKey = (item) => {
+    if (!item) return '';
+    return (item._id || item.id || '').toString();
+  };
+
+  const deduplicateLeads = (leadsList) => {
+    if (!Array.isArray(leadsList)) return [];
+    const map = new Map();
+    leadsList.forEach(item => {
+      if (!item) return;
+      const key = getLeadIdKey(item);
+      if (key) map.set(key, item);
+    });
+    return Array.from(map.values());
+  };
+
   const fetchEnquiries = async () => {
     setLoading(true);
     setErrorMsg('');
     const token = localStorage.getItem('adminToken');
 
     const localCache = JSON.parse(localStorage.getItem('localEnquiriesCache') || '[]');
-    const deletedIds = JSON.parse(localStorage.getItem('deletedEnquiryIds') || '[]');
-    const filteredLocal = localCache.filter(item => !deletedIds.includes(item._id));
+    const deletedIds = (JSON.parse(localStorage.getItem('deletedEnquiryIds') || '[]')).map(id => id.toString());
+    const filteredLocal = localCache.filter(item => !deletedIds.includes(getLeadIdKey(item)));
 
     try {
       const res = await fetch(`${API_BASE_URL}/api/admin/enquiries`, {
@@ -609,22 +625,22 @@ export default function AdminDashboard({ onLogout }) {
       const data = await res.json();
 
       if (data.success && Array.isArray(data.data)) {
-        const filteredMongo = data.data.filter(item => !deletedIds.includes(item._id));
-        // Only merge unsynced offline leads (id starting with 'lead-'). If database is online, MongoDB Atlas is single source of truth.
-        const unsyncedLocalLeads = filteredLocal.filter(l => (l._id || l.id || '').toString().startsWith('lead-'));
-        const combined = [...unsyncedLocalLeads, ...filteredMongo];
-        const uniqueLeads = Array.from(new Map(combined.map(item => [(item._id || item.id), item])).values());
+        const filteredDb = data.data.filter(item => !deletedIds.includes(getLeadIdKey(item)));
+        // Only merge unsynced offline leads (id starting with 'lead-'). If database is online, MySQL is single source of truth.
+        const unsyncedLocalLeads = filteredLocal.filter(l => getLeadIdKey(l).startsWith('lead-'));
+        const combined = [...unsyncedLocalLeads, ...filteredDb];
+        const uniqueLeads = deduplicateLeads(combined);
         localStorage.setItem('localEnquiriesCache', JSON.stringify(uniqueLeads));
         setEnquiries(applyRoundRobinAssignments(uniqueLeads));
       } else {
-        const fallbackSource = filteredLocal.length > 0 ? filteredLocal : mockEnquiries.filter(item => !deletedIds.includes(item._id));
-        const uniqueLeads = Array.from(new Map(fallbackSource.map(item => [item._id, item])).values());
+        const fallbackSource = filteredLocal.length > 0 ? filteredLocal : mockEnquiries.filter(item => !deletedIds.includes(getLeadIdKey(item)));
+        const uniqueLeads = deduplicateLeads(fallbackSource);
         setEnquiries(applyRoundRobinAssignments(uniqueLeads));
       }
     } catch (err) {
       console.warn('Backend server connection note:', err);
-      const fallbackSource = filteredLocal.length > 0 ? filteredLocal : mockEnquiries.filter(item => !deletedIds.includes(item._id));
-      const uniqueLeads = Array.from(new Map(fallbackSource.map(item => [item._id, item])).values());
+      const fallbackSource = filteredLocal.length > 0 ? filteredLocal : mockEnquiries.filter(item => !deletedIds.includes(getLeadIdKey(item)));
+      const uniqueLeads = deduplicateLeads(fallbackSource);
       setEnquiries(applyRoundRobinAssignments(uniqueLeads));
     } finally {
       setLoading(false);
@@ -730,9 +746,9 @@ export default function AdminDashboard({ onLogout }) {
       const data = await response.json();
 
       if (data.success && data.data) {
-        setEnquiries(prev => [data.data, ...prev]);
+        setEnquiries(prev => deduplicateLeads([data.data, ...prev]));
         const cached = JSON.parse(localStorage.getItem('localEnquiriesCache') || '[]');
-        localStorage.setItem('localEnquiriesCache', JSON.stringify([data.data, ...cached]));
+        localStorage.setItem('localEnquiriesCache', JSON.stringify(deduplicateLeads([data.data, ...cached])));
       } else {
         const initialNotesStr = payload.notes;
         const localLead = {

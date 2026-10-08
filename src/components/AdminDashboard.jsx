@@ -693,6 +693,8 @@ export default function AdminDashboard({ onLogout }) {
       assignedAgentName = assignedAgent.name;
     }
 
+    const creatorName = currentUser.name || (isAdmin ? 'Admin' : 'Sales Executive');
+
     const payload = {
       firstName: newLeadFormData.firstName.trim(),
       lastName: newLeadFormData.lastName.trim(),
@@ -704,7 +706,9 @@ export default function AdminDashboard({ onLogout }) {
       notes: newLeadFormData.notes ? newLeadFormData.notes.trim() : '',
       status: 'New',
       assignedTo: assignedAgentId,
-      assignedAgentName: assignedAgentName
+      assignedAgentName: assignedAgentName,
+      createdBy: creatorName,
+      modifiedBy: creatorName
     };
 
     try {
@@ -720,10 +724,19 @@ export default function AdminDashboard({ onLogout }) {
         const cached = JSON.parse(localStorage.getItem('localEnquiriesCache') || '[]');
         localStorage.setItem('localEnquiriesCache', JSON.stringify([data.data, ...cached]));
       } else {
+        const initialNotesStr = payload.notes;
         const localLead = {
           _id: `lead-${Date.now()}`,
           id: `lead-${Date.now()}`,
           ...payload,
+          history: initialNotesStr ? [{
+            _id: `note-hist-${Date.now()}`,
+            fieldName: 'Notes',
+            oldValue: '—',
+            newValue: initialNotesStr,
+            modifiedBy: creatorName,
+            modifiedDate: new Date().toISOString()
+          }] : [],
           createdAt: new Date().toISOString()
         };
         setEnquiries(prev => [localLead, ...prev]);
@@ -732,10 +745,19 @@ export default function AdminDashboard({ onLogout }) {
       }
     } catch (err) {
       console.warn('Backend server connecting... saving locally:', err);
+      const initialNotesStr = payload.notes;
       const localLead = {
         _id: `lead-${Date.now()}`,
         id: `lead-${Date.now()}`,
         ...payload,
+        history: initialNotesStr ? [{
+          _id: `note-hist-${Date.now()}`,
+          fieldName: 'Notes',
+          oldValue: '—',
+          newValue: initialNotesStr,
+          modifiedBy: creatorName,
+          modifiedDate: new Date().toISOString()
+        }] : [],
         createdAt: new Date().toISOString()
       };
       setEnquiries(prev => [localLead, ...prev]);

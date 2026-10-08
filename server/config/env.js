@@ -22,9 +22,9 @@ module.exports = {
   ADMIN_USERNAME: process.env.ADMIN_USERNAME,
   ADMIN_PASSWORD: process.env.ADMIN_PASSWORD,
   ADMIN_EMAIL: process.env.ADMIN_EMAIL || '',
-  DB_HOST: process.env.DB_HOST || 'localhost',
+  DB_HOST: process.env.DB_HOST || 'srv1002.hstgr.io',
   DB_PORT: parseInt(process.env.DB_PORT || '3306', 10),
-  DB_USER: process.env.DB_USER || 'root',
-  DB_PASSWORD: process.env.DB_PASSWORD || '',
-  DB_NAME: process.env.DB_NAME || 'gulmohar_db'
+  DB_USER: process.env.DB_USER || 'u660519083_gulmohar',
+  DB_PASSWORD: process.env.DB_PASSWORD || 'Housedeal@123',
+  DB_NAME: process.env.DB_NAME || 'u660519083_housedealcrm'
 };

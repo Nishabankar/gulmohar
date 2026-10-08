@@ -3160,18 +3160,18 @@ export default function AdminDashboard({ onLogout }) {
             {/* Header */}
             <div class="bg-gradient-to-r from-[#B30E2E] via-[#8A0B22] to-[#590414] p-5 text-white flex items-center justify-between">
               <div>
-                <h3 class="font-serif font-bold text-base">Edit Enquiry</h3>
+                <h3 class="font-serif font-bold text-base">Edit Lead</h3>
               </div>
               <button 
                 onClick={() => setEditingEnquiry(null)}
-                class="text-white/70 hover:text-white bg-white/10 hover:bg-white/20 w-8 h-8 rounded-full flex items-center justify-center transition"
+                class="text-white/70 hover:text-white bg-white/10 hover:bg-white/20 w-8 h-8 rounded-full flex items-center justify-center transition cursor-pointer"
               >
                 <i class="fa-solid fa-xmark text-sm"></i>
               </button>
             </div>
 
             {/* Form */}
-            <form onSubmit={handleSaveFullEdit} class="p-5 space-y-3.5 max-h-[80vh] overflow-y-auto">
+            <form onSubmit={handleSaveFullEdit} class="p-5 space-y-3.5 max-h-[85vh] overflow-y-auto">
               
               {/* Success Alert inside Modal */}
               {editModalSuccessMsg && (
@@ -3236,35 +3236,36 @@ export default function AdminDashboard({ onLogout }) {
                 </div>
               </div>
 
-              <div>
-                <label class="block text-xs font-bold text-gray-700 mb-1">Number of Guntha</label>
-                <select 
-                  value={editingEnquiry.plotsCount || '1 Guntha'} 
-                  onChange={(e) => setEditingEnquiry({ ...editingEnquiry, plotsCount: e.target.value })}
-                  class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
-                >
-                  <option value="1 Guntha">1 Guntha</option>
-                  <option value="2 Guntha">2 Guntha</option>
-                  <option value="3 Guntha">3 Guntha</option>
-                  <option value="4 Guntha">4 Guntha</option>
-                  <option value="5 Guntha">5 Guntha</option>
-                  <option value="6 Guntha">6 Guntha</option>
-                  <option value="7 Guntha">7 Guntha</option>
-                  <option value="8 Guntha">8 Guntha</option>
-                  <option value="9 Guntha">9 Guntha</option>
-                  <option value="10 Guntha">10 Guntha</option>
-                  <option value="11+ Guntha (Bulk / Investment)">11+ Guntha (Bulk / Investment)</option>
-                </select>
-              </div>
-
-              <div>
-                <label class="block text-xs font-bold text-gray-700 mb-1">Followup Date</label>
-                <input 
-                  type="date" 
-                  value={editingEnquiry.followupDate || ''} 
-                  onChange={(e) => setEditingEnquiry({ ...editingEnquiry, followupDate: e.target.value })}
-                  class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
-                />
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-bold text-gray-700 mb-1">Number of Guntha</label>
+                  <select 
+                    value={editingEnquiry.plotsCount || '1 Guntha'} 
+                    onChange={(e) => setEditingEnquiry({ ...editingEnquiry, plotsCount: e.target.value })}
+                    class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
+                  >
+                    <option value="1 Guntha">1 Guntha</option>
+                    <option value="2 Guntha">2 Guntha</option>
+                    <option value="3 Guntha">3 Guntha</option>
+                    <option value="4 Guntha">4 Guntha</option>
+                    <option value="5 Guntha">5 Guntha</option>
+                    <option value="6 Guntha">6 Guntha</option>
+                    <option value="7 Guntha">7 Guntha</option>
+                    <option value="8 Guntha">8 Guntha</option>
+                    <option value="9 Guntha">9 Guntha</option>
+                    <option value="10 Guntha">10 Guntha</option>
+                    <option value="11+ Guntha (Bulk / Investment)">11+ Guntha (Bulk / Investment)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-gray-700 mb-1">Followup Date</label>
+                  <input 
+                    type="date" 
+                    value={editingEnquiry.followupDate || ''} 
+                    onChange={(e) => setEditingEnquiry({ ...editingEnquiry, followupDate: e.target.value })}
+                    class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
+                  />
+                </div>
               </div>
 
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">

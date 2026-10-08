@@ -4,7 +4,7 @@ import PolicyModal from './PolicyModal';
 
 const getAgentProfilePhoto = (agentObj) => {
   if (!agentObj) return '';
-  if (agentObj.profileImage) return agentObj.profileImage;
+  if (agentObj.profileImage && agentObj.profileImage.trim() !== '') return agentObj.profileImage;
 
   const uname = (agentObj.username || '').toLowerCase();
   const name = (agentObj.name || '').toLowerCase();
@@ -14,9 +14,6 @@ const getAgentProfilePhoto = (agentObj) => {
   }
   if (uname.includes('sarika') || name.includes('sarika')) {
     return '/assets/images/sarika-profile.jpeg';
-  }
-  if (uname.includes('tejashree') || name.includes('tejashree') || uname.includes('nisha') || name.includes('nisha')) {
-    return '/assets/images/tejashree-profile.jpeg';
   }
   return '';
 };
@@ -2808,13 +2805,21 @@ export default function AdminDashboard({ onLogout }) {
                                     <img 
                                       src={getAgentProfilePhoto(agent)} 
                                       alt={agent.name} 
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = 'none';
+                                        if (e.currentTarget.nextElementSibling) {
+                                          e.currentTarget.nextElementSibling.style.display = 'flex';
+                                        }
+                                      }}
                                       class="w-7 h-7 rounded-full object-cover border border-gray-200 shadow-xs flex-shrink-0" 
                                     />
-                                  ) : (
-                                    <div class="w-7 h-7 rounded-full bg-[#B30E2E] text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-xs">
-                                      {((agent.name || agent.username || 'U').trim()[0] || 'U').toUpperCase()}
-                                    </div>
-                                  )}
+                                  ) : null}
+                                  <div 
+                                    style={{ display: getAgentProfilePhoto(agent) ? 'none' : 'flex' }}
+                                    class="w-7 h-7 rounded-full bg-[#B30E2E] text-white font-bold text-xs items-center justify-center flex-shrink-0 shadow-xs"
+                                  >
+                                    {((agent.name || agent.username || 'U').trim()[0] || 'U').toUpperCase()}
+                                  </div>
                                   <span class="text-xs font-bold text-gray-900">{agent.name}</span>
                                 </div>
                               </td>

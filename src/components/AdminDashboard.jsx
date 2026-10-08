@@ -540,7 +540,7 @@ export default function AdminDashboard({ onLogout }) {
       try {
         const token = localStorage.getItem('adminToken');
         const agentId = currentUser.id || currentUser._id;
-        if (agentId && agentId.length > 10) {
+        if (agentId && !agentId.toString().startsWith('agent-')) {
           await fetch(`${API_BASE_URL}/api/admin/agents/${agentId}`, {
             method: 'PATCH',
             headers: {
@@ -877,15 +877,16 @@ export default function AdminDashboard({ onLogout }) {
     setRegisteredAgents(updated);
     localStorage.setItem('registeredAgents', JSON.stringify(updated));
 
-    if (agentToDelete && agentToDelete.id && agentToDelete.id.length > 10) {
+    const targetAgentId = agentToDelete ? (agentToDelete.id || agentToDelete._id) : null;
+    if (targetAgentId && !targetAgentId.toString().startsWith('agent-')) {
       try {
         const token = localStorage.getItem('adminToken');
-        await fetch(`${API_BASE_URL}/api/admin/agents/${agentToDelete.id}`, {
+        await fetch(`${API_BASE_URL}/api/admin/agents/${targetAgentId}`, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${token}` }
         });
       } catch (err) {
-        console.warn('Backend delete agent MongoDB note:', err);
+        console.warn('Backend delete agent note:', err);
       }
     }
   };
@@ -944,11 +945,12 @@ export default function AdminDashboard({ onLogout }) {
       }
     }
 
-    // Update in MongoDB database via PATCH endpoint
-    if (editingUser.id && editingUser.id.length > 10) {
+    // Update in MySQL database via PATCH endpoint
+    const targetEditId = editingUser.id || editingUser._id;
+    if (targetEditId && !targetEditId.toString().startsWith('agent-')) {
       try {
         const token = localStorage.getItem('adminToken');
-        await fetch(`${API_BASE_URL}/api/admin/agents/${editingUser.id}`, {
+        await fetch(`${API_BASE_URL}/api/admin/agents/${targetEditId}`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',

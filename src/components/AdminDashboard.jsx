@@ -144,7 +144,7 @@ export default function AdminDashboard({ onLogout }) {
     const token = localStorage.getItem('adminToken');
     if (!token) return;
     try {
-      await fetch(`${API_BASE_URL}/api/admin/column-preferences`, {
+      const res = await fetch(`${API_BASE_URL}/api/admin/column-preferences`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -152,8 +152,12 @@ export default function AdminDashboard({ onLogout }) {
         },
         body: JSON.stringify({ columnPreferences: newConfig })
       });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        console.warn('Column preferences update note:', data.message);
+      }
     } catch (e) {
-      console.warn('Could not save column preferences to MongoDB Atlas:', e);
+      console.warn('Could not save column preferences to MySQL:', e);
     }
   };
 

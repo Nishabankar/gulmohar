@@ -483,12 +483,19 @@ router.put('/column-preferences', protectAdmin, async (req, res) => {
       return res.status(400).json({ success: false, message: 'columnPreferences must be an array' });
     }
 
-    await query(
+    const [result] = await query(
       'UPDATE admins SET column_preferences = ? WHERE id = ? OR LOWER(username) = ?',
       [JSON.stringify(columnPreferences), adminId, username]
     );
 
-    return res.json({ success: true, message: 'Column preferences updated successfully in MySQL', columnPreferences });
+    console.log(`📝 Column preferences updated in MySQL for user '${username}' (ID: ${adminId}, Affected: ${result.affectedRows})`);
+
+    return res.json({ 
+      success: true, 
+      message: 'Column preferences updated successfully in MySQL', 
+      affectedRows: result.affectedRows,
+      columnPreferences 
+    });
   } catch (error) {
     console.error('Error updating column preferences:', error.message);
     return res.status(500).json({ success: false, message: 'Database Error', error: error.message });

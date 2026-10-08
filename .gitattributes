@@ -1,0 +1,4 @@
+# Exclude SQL schema files from deployment zip archive while keeping them in Git repository
+*.sql export-ignore
+schema.sql export-ignore
+server/schema.sql export-ignore

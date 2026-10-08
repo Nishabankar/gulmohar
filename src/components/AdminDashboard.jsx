@@ -1757,7 +1757,7 @@ export default function AdminDashboard({ onLogout }) {
           <>
             {/* Dashboard View Tab: 3 Distinct Sections (Aligned to Red Line Level) */}
             {activeView === 'dashboard' && (
-              <div class="space-y-5.5 sm:space-y-6 animate-fade-in flex-1 flex flex-col overflow-y-auto custom-scrollbar py-1">
+              <div class="space-y-7 sm:space-y-7 animate-fade-in flex-col overflow-y-auto custom-scrollbar py-1 pb-4">
                 
                 {/* SECTION 1: Status */}
                 <div class="space-y-1 sm:space-y-2">

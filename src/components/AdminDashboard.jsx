@@ -32,7 +32,7 @@ const formatDateShortMonth = (dateStr) => {
       d = new Date(dateStr);
     }
     if (isNaN(d.getTime())) return dateStr;
-    return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' });
   } catch (e) {
     return dateStr;
   }
@@ -1374,7 +1374,7 @@ export default function AdminDashboard({ onLogout }) {
       `"${item.email || ''}"`,
       `"${item.plotsCount || '1 Guntha'}"`,
       `"${item.plotInfo || ''}"`,
-      `"${new Date(item.createdAt).toLocaleString()}"`,
+      `"${new Date(item.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}"`,
       `"${item.status || 'New'}"`,
       `"${item.assignedAgentName || 'Rahul Patil'}"`,
       `"${(item.notes || '').replace(/"/g, '""')}"`
@@ -2104,10 +2104,10 @@ export default function AdminDashboard({ onLogout }) {
                           const dateObj = item.modifiedDate ? new Date(item.modifiedDate) : new Date();
                           const dateKey = isNaN(dateObj.getTime())
                             ? (item.modifiedDate || 'N/A')
-                            : dateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+                            : dateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' });
                           const timeKey = isNaN(dateObj.getTime())
                             ? ''
-                            : dateObj.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+                            : dateObj.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' });
                           const key = `${item.modifiedDate || dateKey}_${item.modifiedBy || 'Admin'}`;
                           
                           let existingGroup = groupedHistory.find(g => g.key === key);
@@ -2541,9 +2541,9 @@ export default function AdminDashboard({ onLogout }) {
                                     <td key="enquiryDate" class="py-2.5 px-2.5 whitespace-nowrap min-w-[145px]">
                                       <div class="font-semibold text-gray-800 text-[10px] whitespace-nowrap">
                                         <i class="fa-regular fa-clock text-[8.5px] text-gray-400 mr-0.5"></i>
-                                        {new Date(item.createdAt || Date.now()).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                        {new Date(item.createdAt || Date.now()).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' })}
                                         <span class="text-[9px] text-gray-400 ml-1 font-normal">
-                                          {new Date(item.createdAt || Date.now()).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                                          {new Date(item.createdAt || Date.now()).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' })}
                                         </span>
                                       </div>
                                     </td>
@@ -3771,8 +3771,8 @@ export default function AdminDashboard({ onLogout }) {
 
                 if (sortedTimeline.length > 0) {
                   return sortedTimeline.map((log, nIdx) => {
-                    const nDate = log.modifiedDate ? new Date(log.modifiedDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
-                    const nTime = log.modifiedDate ? new Date(log.modifiedDate).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }) : '';
+                    const nDate = log.modifiedDate ? new Date(log.modifiedDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' }) : '';
+                    const nTime = log.modifiedDate ? new Date(log.modifiedDate).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' }) : '';
 
                     return (
                       <div key={log._id || nIdx} class="p-2.5 rounded-xl bg-white border border-rose-200/80 text-xs text-slate-800 space-y-1.5 shadow-2xs">

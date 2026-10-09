@@ -2652,7 +2652,7 @@ export default function AdminDashboard({ onLogout }) {
                                       </button>
 
                                       {isStatusOpen && (
-                                        <div class="absolute top-full left-0 mt-1 z-40 min-w-[150px] bg-white rounded-xl shadow-xl border border-gray-200 py-1 text-xs animate-fade-in">
+                                        <div class="absolute top-full left-0 mt-1 z-40 min-w-[155px] max-h-48 overflow-y-auto custom-scrollbar overscroll-contain bg-white rounded-xl shadow-xl border border-gray-200 py-1 text-xs animate-fade-in">
                                           {STATUS_OPTIONS.map((opt) => (
                                             <button
                                               key={opt}

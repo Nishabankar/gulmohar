@@ -1,0 +1,6 @@
+id,created_time,full_name,phone,email,lead_status,Caller Name,Remarks,Visit Arrange on Date,Follow up 1,Follow up 2,Follow up 3,Follow up 4,Priority
+1,2026-10-09 09:50:00,Rohan Sharma,9823456781,rohan.sharma@gmail.com,New,Rahul Patil,Interested in 2 Guntha plot near highway,2026-10-12,,,,High
+2,2026-10-09 10:00:00,Priya Deshmukh,9823456782,priya.d@yahoo.com,Contacted,Tejashree Patil,Requested location map on WhatsApp,2026-10-14,,,,Medium
+3,2026-10-09 10:15:00,Amit Kulkarni,9823456783,amit.kulkarni@gmail.com,Interested,,Looking for site visit this weekend,,,,Hot
+4,2026-10-09 10:30:00,Sneha Joshi,9823456784,sneha.j@gmail.com,Site Visit Scheduled,Mohini Patil,Scheduled site visit with family,2026-10-15,,,,High
+5,2026-10-09 10:45:00,Vikas Pawar,9823456785,vikas.pawar@gmail.com,Details Provided,,Sent plot pricing brochure on email,,,,Normal

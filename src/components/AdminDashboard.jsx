@@ -1400,9 +1400,19 @@ export default function AdminDashboard({ onLogout }) {
   };
 
   // CSV Parser Helper Function
+  // CSV Parser Helper Function (Supports Google Sheet CSV/TSV)
   const parseCSVText = (text) => {
     const lines = text.split(/\r\n|\n/).filter(line => line.trim() !== '');
     if (lines.length < 2) return [];
+
+    // Auto-detect delimiter: tab (\t), comma (,), or semicolon (;)
+    const firstLine = lines[0];
+    let delimiter = ',';
+    if (firstLine.includes('\t')) {
+      delimiter = '\t';
+    } else if (firstLine.includes(';') && !firstLine.includes(',')) {
+      delimiter = ';';
+    }
 
     const parseRow = (rowStr) => {
       const result = [];
@@ -1412,7 +1422,7 @@ export default function AdminDashboard({ onLogout }) {
         const char = rowStr[i];
         if (char === '"') {
           inQuotes = !inQuotes;
-        } else if (char === ',' && !inQuotes) {
+        } else if (char === delimiter && !inQuotes) {
           result.push(current.trim().replace(/^"|"$/g, ''));
           current = '';
         } else {
@@ -1432,6 +1442,7 @@ export default function AdminDashboard({ onLogout }) {
       });
     };
 
+    const createdIdx = getIndex(['createdtime', 'created_time', 'createdat', 'timestamp', 'date']);
     const nameIdx = getIndex(['fullname', 'full_name', 'customername', 'name', 'leadname']);
     const phoneIdx = getIndex(['phone', 'phonenumber', 'mobile', 'mobileno', 'contact']);
     const emailIdx = getIndex(['email', 'emailaddress', 'mail', 'mailid']);
@@ -1446,6 +1457,7 @@ export default function AdminDashboard({ onLogout }) {
       const row = parseRow(lines[i]);
       if (row.length === 0) continue;
 
+      const createdVal = createdIdx !== -1 && row[createdIdx] ? row[createdIdx].trim() : '';
       const rawName = nameIdx !== -1 && row[nameIdx] ? row[nameIdx].trim() : '';
       const phoneVal = phoneIdx !== -1 && row[phoneIdx] ? row[phoneIdx].trim() : '';
       const emailVal = emailIdx !== -1 && row[emailIdx] ? row[emailIdx].trim() : '';
@@ -1466,6 +1478,7 @@ export default function AdminDashboard({ onLogout }) {
       }
 
       parsedLeads.push({
+        createdTime: createdVal || '',
         firstName: firstName || 'Customer',
         lastName: lastName || '',
         phone: phoneVal,

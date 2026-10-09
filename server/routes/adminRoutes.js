@@ -541,6 +541,7 @@ router.post('/enquiries/import', protectAdmin, async (req, res) => {
       const notes = (lead.notes || '').trim();
       const visitDate = (lead.visitDate || '').trim();
       const followupDate = (lead.followupDate || '').trim();
+      const createdTimeVal = (lead.createdTime && lead.createdTime.trim()) ? lead.createdTime.trim() : null;
 
       // Determine Assigned Agent (if sheet provided caller name, search matching agent; else Round-Robin)
       let assignedAgent = null;
@@ -565,8 +566,8 @@ router.post('/enquiries/import', protectAdmin, async (req, res) => {
       const [insertResult] = await query(
         `INSERT INTO enquiries 
          (first_name, last_name, phone, email, plots_count, visit_date, followup_date, status, notes, assigned_to, assigned_agent_name, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-        [firstName, lastName, cleanPhone, email, plotsCount, visitDate, followupDate, status, notes, assignedTo, assignedAgentName]
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, NOW()))`,
+        [firstName, lastName, cleanPhone, email, plotsCount, visitDate, followupDate, status, notes, assignedTo, assignedAgentName, createdTimeVal]
       );
 
       const newId = insertResult.insertId;

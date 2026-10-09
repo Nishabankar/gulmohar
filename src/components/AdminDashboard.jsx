@@ -67,12 +67,32 @@ const DEFAULT_COLUMNS = [
   { id: 'email', label: 'Email Address', visible: true },
   { id: 'enquiryDate', label: 'Enquiry Date', visible: true },
   { id: 'status', label: 'Status', visible: true },
+  { id: 'priority', label: 'Priority', visible: true },
   { id: 'followupDate', label: 'Followup Date', visible: true },
   { id: 'plotsCount', label: 'No. of Guntha', visible: true },
   { id: 'assignedAgent', label: 'Assigned Agent', visible: true },
   { id: 'notes', label: 'Notes', visible: true },
   { id: 'actions', label: 'Actions', visible: true }
 ];
+
+// Add columns introduced after a user saved their layout (e.g. Priority), placed where DEFAULT_COLUMNS has them
+const withNewDefaultColumns = (cols) => {
+  const merged = [...cols];
+  DEFAULT_COLUMNS.forEach((def, i) => {
+    if (merged.some(m => m.id === def.id)) return;
+    const prevId = i > 0 ? DEFAULT_COLUMNS[i - 1].id : null;
+    const at = merged.findIndex(m => m.id === prevId);
+    merged.splice(at === -1 ? merged.length : at + 1, 0, def);
+  });
+  return merged;
+};
+
+const PRIORITY_OPTIONS = ['High', 'Medium', 'Low'];
+const PRIORITY_BADGE = {
+  High: 'bg-rose-50 border-rose-300 text-rose-700',
+  Medium: 'bg-amber-50 border-amber-300 text-amber-800',
+  Low: 'bg-emerald-50 border-emerald-300 text-emerald-700'
+};
 
 
 export default function AdminDashboard({ onLogout }) {
@@ -102,6 +122,8 @@ export default function AdminDashboard({ onLogout }) {
   const [importPreview, setImportPreview] = useState([]);
   const [isImporting, setIsImporting] = useState(false);
   const [importMsg, setImportMsg] = useState('');
+  const [importSheet, setImportSheet] = useState({ headers: [], rows: [] }); // raw sheet, for the duplicates CSV
+  const [importDuplicates, setImportDuplicates] = useState([]); // raw rows skipped as duplicates
 
   // Active Inline Dropdown Popover State: { rowId: string, field: 'status' | 'followupDate' | 'plotsCount' | 'assignedAgent' }
   const [activeDropdown, setActiveDropdown] = useState(null);
@@ -128,7 +150,7 @@ export default function AdminDashboard({ onLogout }) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed) && parsed.length > 0) {
           const filtered = parsed.filter(c => c.id !== 'visitDate');
-          if (filtered.length > 0) return filtered;
+          if (filtered.length > 0) return withNewDefaultColumns(filtered);
         }
       }
     } catch (e) {}
@@ -156,13 +178,9 @@ export default function AdminDashboard({ onLogout }) {
               visible: col.visible !== undefined ? col.visible : true
             };
           });
-          DEFAULT_COLUMNS.forEach(def => {
-            if (!merged.some(m => m.id === def.id)) {
-              merged.push(def);
-            }
-          });
-          setColumnConfig(merged);
-          localStorage.setItem('leadsTableColumnConfig', JSON.stringify(merged));
+          const withDefaults = withNewDefaultColumns(merged);
+          setColumnConfig(withDefaults);
+          localStorage.setItem('leadsTableColumnConfig', JSON.stringify(withDefaults));
         }
       } catch (e) {
         console.warn('Could not fetch column preferences from MongoDB:', e);
@@ -276,7 +294,8 @@ export default function AdminDashboard({ onLogout }) {
     return JSON.parse(localStorage.getItem('registeredAgents') || '[]');
   });
 
-  const allAgents = registeredAgents;
+  // Only Agents can be assigned leads (admins/managers never get leads)
+  const allAgents = registeredAgents.filter(a => (a.role || 'Agent') === 'Agent');
 
   // State for Navigation Tabs & Registered Users Directory
   const [activeTab, setActiveTab] = useState('enquiries'); // 'enquiries' | 'users'
@@ -296,6 +315,7 @@ export default function AdminDashboard({ onLogout }) {
     plotsCount: '1 Guntha',
     visitDate: '',
     followupDate: '',
+    priority: '',
     notes: ''
   });
   const [submittingLead, setSubmittingLead] = useState(false);
@@ -608,7 +628,7 @@ export default function AdminDashboard({ onLogout }) {
   const mockEnquiries = [];
 
   const applyRoundRobinAssignments = (leadsList, agents = null) => {
-    const agentsList = agents || JSON.parse(localStorage.getItem('registeredAgents') || '[]');
+    const agentsList = (agents || JSON.parse(localStorage.getItem('registeredAgents') || '[]')).filter(a => (a.role || 'Agent') === 'Agent');
     if (!agentsList || agentsList.length === 0) return leadsList;
 
     const validAgentNames = agentsList.map(a => (a.name || a.username || '').toLowerCase().trim());
@@ -640,9 +660,11 @@ export default function AdminDashboard({ onLogout }) {
     return Array.from(map.values());
   };
 
-  const fetchEnquiries = async () => {
-    setLoading(true);
-    setErrorMsg('');
+  const fetchEnquiries = async ({ silent = false } = {}) => {
+    if (!silent) {
+      setLoading(true);
+      setErrorMsg('');
+    }
     const token = localStorage.getItem('adminToken');
 
     const localCache = JSON.parse(localStorage.getItem('localEnquiriesCache') || '[]');
@@ -695,11 +717,10 @@ export default function AdminDashboard({ onLogout }) {
           email: a.email || '',
           username: a.username,
           password: a.password || '••••••••',
-          role: 'Agent'
+          role: a.role || 'Agent'
         }));
-        const localAgents = JSON.parse(localStorage.getItem('registeredAgents') || '[]');
-        const combined = [...mongoAgents, ...localAgents];
-        const unique = Array.from(new Map(combined.map(item => [item.username, item])).values());
+        // MySQL is the only source of agents (no browser-only agents that the server can't assign leads to)
+        const unique = Array.from(new Map(mongoAgents.map(item => [item.username, item])).values());
         setRegisteredAgents(unique);
         localStorage.setItem('registeredAgents', JSON.stringify(unique));
         setEnquiries(prev => applyRoundRobinAssignments(prev, unique));
@@ -712,6 +733,18 @@ export default function AdminDashboard({ onLogout }) {
   useEffect(() => {
     fetchEnquiries();
     fetchAgents();
+  }, []);
+
+  // Keep every user's view in sync with the DB (priority/status changes made by others)
+  // ponytail: 60s polling + refetch on tab focus; switch to websockets/SSE if near-instant sync is needed
+  useEffect(() => {
+    const refresh = () => { if (document.visibilityState === 'visible') fetchEnquiries({ silent: true }); };
+    const timer = setInterval(refresh, 60000);
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', refresh);
+    };
   }, []);
 
 
@@ -739,7 +772,7 @@ export default function AdminDashboard({ onLogout }) {
     setCreateLeadMsg('');
 
     // Dynamic Round-Robin Agent Auto-Assignment
-    let registeredAgentsList = JSON.parse(localStorage.getItem('registeredAgents') || '[]');
+    let registeredAgentsList = JSON.parse(localStorage.getItem('registeredAgents') || '[]').filter(a => (a.role || 'Agent') === 'Agent');
     let assignedAgentId = null;
     let assignedAgentName = '';
 
@@ -764,6 +797,7 @@ export default function AdminDashboard({ onLogout }) {
       followupDate: newLeadFormData.followupDate || '',
       notes: newLeadFormData.notes ? newLeadFormData.notes.trim() : '',
       status: 'New',
+      priority: newLeadFormData.priority || '',
       assignedTo: assignedAgentId,
       assignedAgentName: assignedAgentName,
       createdBy: creatorName,
@@ -771,9 +805,10 @@ export default function AdminDashboard({ onLogout }) {
     };
 
     try {
+      // Logged-in token lets the server accept dashboard-only fields (priority)
       const response = await fetch(`${API_BASE_URL}/api/enquiries`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('adminToken') || ''}` },
         body: JSON.stringify(payload)
       });
       const data = await response.json();
@@ -828,7 +863,7 @@ export default function AdminDashboard({ onLogout }) {
       setTimeout(() => {
         setShowCreateLeadModal(false);
         setCreateLeadMsg('');
-        setNewLeadFormData({ firstName: '', lastName: '', phone: '', email: '', plotsCount: '1 Guntha', visitDate: '', followupDate: '', notes: '' });
+        setNewLeadFormData({ firstName: '', lastName: '', phone: '', email: '', plotsCount: '1 Guntha', visitDate: '', followupDate: '', priority: '', notes: '' });
       }, 1000);
     }
   };
@@ -843,21 +878,7 @@ export default function AdminDashboard({ onLogout }) {
       return;
     }
 
-    const newAgentObj = {
-      id: `agent-${Date.now()}`,
-      name: newAgentData.name.trim(),
-      phone: newAgentData.phone.trim(),
-      email: newAgentData.email.trim(),
-      username: newAgentData.username.trim().toLowerCase(),
-      password: newAgentData.password,
-      role: 'Agent'
-    };
-
-    const updated = [...registeredAgents, newAgentObj];
-    setRegisteredAgents(updated);
-    localStorage.setItem('registeredAgents', JSON.stringify(updated));
-
-    // Save directly to MongoDB database
+    // Save to MySQL first; the agent only appears once the database has it
     try {
       const token = localStorage.getItem('adminToken');
       const res = await fetch(`${API_BASE_URL}/api/admin/agents`, {
@@ -874,24 +895,26 @@ export default function AdminDashboard({ onLogout }) {
           password: newAgentData.password
         })
       });
-      const data = await res.json();
-      if (data.success && data.data) {
-        // Update with MongoDB ID
-        const mongoAgent = {
-          id: data.data.id || data.data._id,
-          name: data.data.name,
-          phone: data.data.phone || newAgentData.phone.trim(),
-          email: data.data.email || newAgentData.email.trim(),
-          username: data.data.username,
-          password: newAgentData.password,
-          role: 'Agent'
-        };
-        const synced = updated.map(a => a.username === mongoAgent.username ? mongoAgent : a);
-        setRegisteredAgents(synced);
-        localStorage.setItem('registeredAgents', JSON.stringify(synced));
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success || !data.data) {
+        setAgentCreateMsg(`Error: ${data.message || `Could not save agent (HTTP ${res.status})`}`);
+        return;
       }
+      const dbAgent = {
+        id: data.data.id || data.data._id,
+        name: data.data.name,
+        phone: data.data.phone || newAgentData.phone.trim(),
+        email: data.data.email || newAgentData.email.trim(),
+        username: data.data.username,
+        password: '••••••••',
+        role: 'Agent'
+      };
+      const synced = [...registeredAgents.filter(a => a.username !== dbAgent.username), dbAgent];
+      setRegisteredAgents(synced);
+      localStorage.setItem('registeredAgents', JSON.stringify(synced));
     } catch (err) {
-      console.warn('Backend create agent MongoDB note:', err);
+      setAgentCreateMsg(`Error: Could not reach the server (${err.message})`);
+      return;
     }
 
     setAgentCreateMsg('Sales Agent Created & Saved to Database Successfully!');
@@ -916,24 +939,38 @@ export default function AdminDashboard({ onLogout }) {
     });
   };
 
-  // Handler: Delete / Remove Sales Agent (Admin Only) - Removes from MySQL & LocalStorage
+  // Handler: Delete / Remove Sales Agent (Admin Only) - removed locally only after MySQL confirms
   const processDeleteAgent = async (agentIdOrUsername) => {
     const agentToDelete = registeredAgents.find(a => a.id === agentIdOrUsername || a.username === agentIdOrUsername);
-    const updated = registeredAgents.filter(a => (a.id !== agentIdOrUsername && a.username !== agentIdOrUsername));
-    setRegisteredAgents(updated);
-    localStorage.setItem('registeredAgents', JSON.stringify(updated));
-
     const targetAgentId = agentToDelete ? (agentToDelete.id || agentToDelete._id) : null;
-    if (targetAgentId && !targetAgentId.toString().startsWith('agent-')) {
-      try {
-        const token = localStorage.getItem('adminToken');
-        await fetch(`${API_BASE_URL}/api/admin/agents/${targetAgentId}`, {
-          method: 'DELETE',
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-      } catch (err) {
-        console.warn('Backend delete agent note:', err);
+    const removeLocally = () => {
+      const updated = registeredAgents.filter(a => (a.id !== agentIdOrUsername && a.username !== agentIdOrUsername));
+      setRegisteredAgents(updated);
+      localStorage.setItem('registeredAgents', JSON.stringify(updated));
+    };
+
+    // Leftover browser-only agent (never saved to MySQL): nothing to delete on the server
+    if (!targetAgentId || targetAgentId.toString().startsWith('agent-')) {
+      removeLocally();
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_BASE_URL}/api/admin/agents/${targetAgentId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        alert(`Could not delete agent: ${data.message || `HTTP ${res.status}`}`);
+        return;
       }
+      removeLocally();
+      fetchEnquiries({ silent: true }); // server handed their leads to the remaining agents
+      if (data.reassignedCount) alert(data.message);
+    } catch (err) {
+      alert(`Could not delete agent: server not reachable (${err.message})`);
     }
   };
 
@@ -958,61 +995,48 @@ export default function AdminDashboard({ onLogout }) {
       email: (editingUser.email || '').trim()
     };
 
-    const oldAgent = registeredAgents.find(a => a.id === cleanedEditingUser.id || a.username === cleanedEditingUser.username);
-    const oldName = oldAgent ? (oldAgent.name || '').toLowerCase().trim() : '';
-    const oldUsername = oldAgent ? (oldAgent.username || '').toLowerCase().trim() : '';
-
-    const updatedAgents = registeredAgents.map(a => 
-      (a.id === cleanedEditingUser.id || a.username === cleanedEditingUser.username) ? cleanedEditingUser : a
-    );
-    setRegisteredAgents(updatedAgents);
-    localStorage.setItem('registeredAgents', JSON.stringify(updatedAgents));
-
-    // Update leads assigned to old agent name/username to the updated agent name
-    if (cleanedEditingUser.name && (oldName || oldUsername)) {
-      setEnquiries(prev => prev.map(lead => {
-        const leadAgent = (lead.assignedAgentName || '').toLowerCase().trim();
-        if (leadAgent === oldName || leadAgent === oldUsername || (oldName.length >= 3 && leadAgent.includes(oldName))) {
-          return { ...lead, assignedAgentName: cleanedEditingUser.name };
-        }
-        return lead;
-      }));
-
-      const localCache = JSON.parse(localStorage.getItem('localEnquiriesCache') || '[]');
-      if (localCache.length > 0) {
-        const updatedCache = localCache.map(lead => {
-          const leadAgent = (lead.assignedAgentName || '').toLowerCase().trim();
-          if (leadAgent === oldName || leadAgent === oldUsername || (oldName.length >= 3 && leadAgent.includes(oldName))) {
-            return { ...lead, assignedAgentName: cleanedEditingUser.name };
-          }
-          return lead;
-        });
-        localStorage.setItem('localEnquiriesCache', JSON.stringify(updatedCache));
-      }
+    // Save to MySQL first; the list only changes once the database confirms
+    const targetEditId = editingUser.id || editingUser._id;
+    if (!targetEditId || targetEditId.toString().startsWith('agent-')) {
+      setSavingUserEdit(false);
+      setUserEditSuccessMsg('Error: This agent was never saved to the database. Delete it and create it again.');
+      return;
     }
 
-    // Update in MySQL database via PATCH endpoint
-    const targetEditId = editingUser.id || editingUser._id;
-    if (targetEditId && !targetEditId.toString().startsWith('agent-')) {
-      try {
-        const token = localStorage.getItem('adminToken');
-        await fetch(`${API_BASE_URL}/api/admin/agents/${targetEditId}`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            name: editingUser.name,
-            phone: editingUser.phone,
-            email: editingUser.email,
-            username: editingUser.username,
-            password: editingUser.password
-          })
-        });
-      } catch (err) {
-        console.warn('Backend patch user error:', err);
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_BASE_URL}/api/admin/agents/${targetEditId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name: cleanedEditingUser.name,
+          phone: cleanedEditingUser.phone,
+          email: cleanedEditingUser.email,
+          username: cleanedEditingUser.username,
+          password: editingUser.password
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success || !data.data) {
+        setSavingUserEdit(false);
+        setUserEditSuccessMsg(`Error: ${data.message || `Could not save changes (HTTP ${res.status})`}`);
+        return;
       }
+
+      const dbAgent = { ...cleanedEditingUser, ...data.data, id: data.data.id, password: '••••••••' };
+      const updatedAgents = registeredAgents.map(a =>
+        (a.id === targetEditId || a.username === editingUser.username) ? dbAgent : a
+      );
+      setRegisteredAgents(updatedAgents);
+      localStorage.setItem('registeredAgents', JSON.stringify(updatedAgents));
+      fetchEnquiries({ silent: true }); // server renamed the agent on their leads too
+    } catch (err) {
+      setSavingUserEdit(false);
+      setUserEditSuccessMsg(`Error: Could not reach the server (${err.message})`);
+      return;
     }
 
     setSavingUserEdit(false);
@@ -1204,6 +1228,7 @@ export default function AdminDashboard({ onLogout }) {
           status: updatedLead.status,
           notes: updatedLead.notes,
           assignedAgentName: updatedLead.assignedAgentName,
+          priority: updatedLead.priority || '',
           updatedBy: currentUser.name || 'Sales Executive'
         })
       });
@@ -1397,100 +1422,85 @@ export default function AdminDashboard({ onLogout }) {
     }
   };
 
-  // CSV Parser Helper Function
-  // CSV Parser Helper Function (Supports Google Sheet CSV/TSV)
+  // CSV/TSV tokenizer: quoted cells, "" escapes, commas and line breaks inside quotes
+  const parseCSVRows = (text) => {
+    text = text.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
+    const firstLine = text.split('\n', 1)[0];
+    const delimiter = firstLine.includes('\t') ? '\t' : (firstLine.includes(';') && !firstLine.includes(',') ? ';' : ',');
+    const rows = [];
+    let row = [], cell = '', inQuotes = false;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (inQuotes) {
+        if (ch === '"' && text[i + 1] === '"') { cell += '"'; i++; }
+        else if (ch === '"') inQuotes = false;
+        else cell += ch;
+      } else if (ch === '"') inQuotes = true;
+      else if (ch === delimiter) { row.push(cell.trim()); cell = ''; }
+      else if (ch === '\n') {
+        row.push(cell.trim()); cell = '';
+        if (row.some(c => c !== '')) rows.push(row);
+        row = [];
+      } else cell += ch;
+    }
+    row.push(cell.trim());
+    if (row.some(c => c !== '')) rows.push(row);
+    return rows;
+  };
+
+  // Map sheet columns to lead fields. Headers are compared lowercase with spaces/symbols removed
+  // ("Caller Name" -> "callername", "Follow up 2" -> "followup2"). Exact match wins over partial.
   const parseCSVText = (text) => {
-    const lines = text.split(/\r\n|\n/).filter(line => line.trim() !== '');
-    if (lines.length < 2) return [];
-
-    // Auto-detect delimiter: tab (\t), comma (,), or semicolon (;)
-    const firstLine = lines[0];
-    let delimiter = ',';
-    if (firstLine.includes('\t')) {
-      delimiter = '\t';
-    } else if (firstLine.includes(';') && !firstLine.includes(',')) {
-      delimiter = ';';
-    }
-
-    const parseRow = (rowStr) => {
-      const result = [];
-      let current = '';
-      let inQuotes = false;
-      for (let i = 0; i < rowStr.length; i++) {
-        const char = rowStr[i];
-        if (char === '"') {
-          inQuotes = !inQuotes;
-        } else if (char === delimiter && !inQuotes) {
-          result.push(current.trim().replace(/^"|"$/g, ''));
-          current = '';
-        } else {
-          current += char;
-        }
-      }
-      result.push(current.trim().replace(/^"|"$/g, ''));
-      return result;
+    const allRows = parseCSVRows(text);
+    if (allRows.length < 2) return { headers: [], rows: [], leads: [] };
+    const headers = allRows[0];
+    const rows = allRows.slice(1);
+    const keys = headers.map(h => h.toLowerCase().replace(/[^a-z0-9]/g, ''));
+    const used = new Set();
+    const find = (exact, partial = []) => {
+      let idx = keys.findIndex((k, i) => !used.has(i) && exact.includes(k));
+      if (idx === -1) idx = keys.findIndex((k, i) => !used.has(i) && partial.some(p => k.includes(p)));
+      if (idx !== -1) used.add(idx);
+      return idx;
     };
 
-    const headers = parseRow(lines[0]);
-    
-    const getIndex = (possibleNames) => {
-      return headers.findIndex(h => {
-        const clean = h.toLowerCase().trim().replace(/[\s_]+/g, '');
-        return possibleNames.some(name => clean.includes(name));
-      });
-    };
+    // Specific columns first so generic words ("name", "date", "status") can't steal them
+    const followupIdx = keys.map((k, i) => ({ i, m: k.match(/^followup(\d*)(date)?$/) })).filter(x => x.m)
+      .sort((a, b) => (Number(a.m[1]) || 1) - (Number(b.m[1]) || 1)).map(x => { used.add(x.i); return x.i; });
+    const visitIdx = find(['visitarrangeondate', 'visitdate', 'sitevisitdate', 'visit'], ['visit']);
+    const agentIdx = find(['callername', 'caller', 'agent', 'assignedagent', 'assignedto'], ['caller', 'agent']);
+    const createdIdx = find(['createdtime', 'createdat', 'created', 'timestamp', 'date', 'enquirydate', 'submitteddate'], ['created', 'timestamp']);
+    const nameIdx = find(['fullname', 'name', 'customername', 'leadname'], ['name']);
+    const phoneIdx = find(['phone', 'phonenumber', 'mobile', 'mobileno', 'mobilenumber', 'contact', 'contactnumber'], ['phone', 'mobile']);
+    const emailIdx = find(['email', 'emailaddress', 'mail', 'mailid'], ['email']);
+    const statusIdx = find(['leadstatus', 'status', 'stage'], ['status']);
+    const remarksIdx = find(['remarks', 'remark', 'notes', 'note', 'comments', 'comment'], ['remark', 'note', 'comment']);
+    const priorityIdx = find(['priority'], ['priority']);
 
-    const createdIdx = getIndex(['createdtime', 'created_time', 'createdat', 'timestamp', 'date']);
-    const nameIdx = getIndex(['fullname', 'full_name', 'customername', 'name', 'leadname']);
-    const phoneIdx = getIndex(['phone', 'phonenumber', 'mobile', 'mobileno', 'contact']);
-    const emailIdx = getIndex(['email', 'emailaddress', 'mail', 'mailid']);
-    const statusIdx = getIndex(['leadstatus', 'lead_status', 'status', 'stage']);
-    const agentIdx = getIndex(['callername', 'caller_name', 'agent', 'assignedagent']);
-    const remarksIdx = getIndex(['remarks', 'notes', 'comments', 'comment']);
-    const visitIdx = getIndex(['visitarrangeondate', 'visitdate', 'visit_date']);
-    const followupIdx = getIndex(['followup1', 'followup', 'followup_date']);
-
-    const parsedLeads = [];
-    for (let i = 1; i < lines.length; i++) {
-      const row = parseRow(lines[i]);
-      if (row.length === 0) continue;
-
-      const createdVal = createdIdx !== -1 && row[createdIdx] ? row[createdIdx].trim() : '';
-      const rawName = nameIdx !== -1 && row[nameIdx] ? row[nameIdx].trim() : '';
-      const phoneVal = phoneIdx !== -1 && row[phoneIdx] ? row[phoneIdx].trim() : '';
-      const emailVal = emailIdx !== -1 && row[emailIdx] ? row[emailIdx].trim() : '';
-      const statusVal = statusIdx !== -1 && row[statusIdx] ? row[statusIdx].trim() : 'New';
-      const agentVal = agentIdx !== -1 && row[agentIdx] ? row[agentIdx].trim() : '';
-      const remarksVal = remarksIdx !== -1 && row[remarksIdx] ? row[remarksIdx].trim() : '';
-      const visitVal = visitIdx !== -1 && row[visitIdx] ? row[visitIdx].trim() : '';
-      const followupVal = followupIdx !== -1 && row[followupIdx] ? row[followupIdx].trim() : '';
-
-      if (!phoneVal) continue;
-
-      let firstName = rawName;
-      let lastName = '';
-      if (rawName.includes(' ')) {
-        const parts = rawName.split(/\s+/);
-        firstName = parts[0];
-        lastName = parts.slice(1).join(' ');
-      }
-
-      parsedLeads.push({
-        createdTime: createdVal || '',
+    const cell = (row, idx) => (idx !== -1 && row[idx] ? row[idx].trim() : '');
+    const leads = [];
+    rows.forEach((row, rowIndex) => {
+      const phone = cell(row, phoneIdx);
+      if (!phone) return;
+      const rawName = cell(row, nameIdx);
+      const [firstName, ...rest] = rawName.split(/\s+/);
+      leads.push({
+        row: rowIndex,
+        createdTime: cell(row, createdIdx),
         firstName: firstName || 'Customer',
-        lastName: lastName || '',
-        phone: phoneVal,
-        email: emailVal,
+        lastName: rest.join(' '),
+        phone,
+        email: cell(row, emailIdx),
         plotsCount: '1 Guntha',
-        status: statusVal || 'New',
-        notes: remarksVal || '',
-        visitDate: visitVal || '',
-        followupDate: followupVal || '',
-        assignedAgentName: agentVal || ''
+        status: cell(row, statusIdx) || 'New',
+        priority: cell(row, priorityIdx),
+        notes: cell(row, remarksIdx),
+        visitDate: cell(row, visitIdx),
+        followups: followupIdx.map(i => cell(row, i)),
+        assignedAgentName: cell(row, agentIdx)
       });
-    }
-
-    return parsedLeads;
+    });
+    return { headers, rows, leads };
   };
 
   const handleFileSelect = (e) => {
@@ -1498,17 +1508,41 @@ export default function AdminDashboard({ onLogout }) {
     if (!file) return;
     setImportFile(file);
     setImportMsg('');
+    setImportDuplicates([]);
 
     const reader = new FileReader();
     reader.onload = (evt) => {
-      const text = evt.target.result;
-      const leads = parseCSVText(text);
+      const { headers, rows, leads } = parseCSVText(evt.target.result);
+      setImportSheet({ headers, rows });
       setImportPreview(leads);
       if (leads.length === 0) {
         setImportMsg('Error: No valid leads with phone numbers found in CSV file.');
       }
     };
     reader.readAsText(file);
+  };
+
+  // Download the skipped duplicate rows exactly as they were in the uploaded sheet
+  const handleDownloadDuplicates = () => {
+    const esc = (v) => `"${(v || '').toString().replace(/"/g, '""')}"`;
+    const csv = [importSheet.headers, ...importDuplicates].map(r => r.map(esc).join(',')).join('\r\n');
+    const url = URL.createObjectURL(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Duplicate_Leads_${(importFile?.name || 'import').replace(/\.csv$/i, '')}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const resetImportModal = () => {
+    setShowImportModal(false);
+    setImportFile(null);
+    setImportPreview([]);
+    setImportMsg('');
+    setImportSheet({ headers: [], rows: [] });
+    setImportDuplicates([]);
   };
 
   const handleConfirmImport = async () => {
@@ -1541,12 +1575,11 @@ export default function AdminDashboard({ onLogout }) {
           setEnquiries(data.data);
           localStorage.setItem('localEnquiriesCache', JSON.stringify(data.data));
         }
-        setTimeout(() => {
-          setShowImportModal(false);
-          setImportFile(null);
-          setImportPreview([]);
-          setImportMsg('');
-        }, 1800);
+        const duplicates = (data.duplicateRows || []).map(i => importSheet.rows[i]).filter(Boolean);
+        setImportDuplicates(duplicates);
+        setImportPreview([]);
+        // Keep the modal open when there are duplicates to download
+        if (duplicates.length === 0) setTimeout(resetImportModal, 1800);
       } else {
         setImportMsg(`Error: ${data.message || 'Import failed'}`);
       }
@@ -1616,7 +1649,7 @@ export default function AdminDashboard({ onLogout }) {
       return;
     }
 
-    const headers = ['Lead ID', 'Full Name', 'Mobile No', 'Email Address', 'Number of Guntha', 'Selected Plot', 'Submitted Date', 'Status', 'Assigned Agent', 'Notes'];
+    const headers = ['Lead ID', 'Full Name', 'Mobile No', 'Email Address', 'Number of Guntha', 'Selected Plot', 'Submitted Date', 'Status', 'Priority', 'Assigned Agent', 'Notes'];
     const rows = filteredEnquiries.map((item, idx) => [
       `"${getLeadDisplayId(item, idx, enquiries)}"`,
       `"${item.firstName || ''} ${item.lastName || ''}"`,
@@ -1626,6 +1659,7 @@ export default function AdminDashboard({ onLogout }) {
       `"${item.plotInfo || ''}"`,
       `"${new Date(item.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}"`,
       `"${item.status || 'New'}"`,
+      `"${item.priority || ''}"`,
       `"${item.assignedAgentName || 'Rahul Patil'}"`,
       `"${(item.notes || '').replace(/"/g, '""')}"`
     ]);
@@ -2681,6 +2715,8 @@ export default function AdminDashboard({ onLogout }) {
                               return <th key="enquiryDate" class="py-2.5 px-2.5 whitespace-nowrap min-w-[145px]">Enquiry Date</th>;
                             case 'status':
                               return <th key="status" class="py-2.5 px-2.5 whitespace-nowrap min-w-[130px]">Status</th>;
+                            case 'priority':
+                              return <th key="priority" class="py-2.5 px-2.5 whitespace-nowrap min-w-[95px]">Priority</th>;
                             case 'followupDate':
                               return <th key="followupDate" class="py-2.5 px-2.5 whitespace-nowrap min-w-[115px]">Followup Date</th>;
                             case 'plotsCount':
@@ -2843,6 +2879,44 @@ export default function AdminDashboard({ onLogout }) {
                                             >
                                               <span>{opt}</span>
                                               {currentStatus === opt && <i class="fa-solid fa-check text-[10px] text-[#B30E2E]"></i>}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </td>
+                                  );
+                                }
+                                case 'priority': {
+                                  const isPriorityOpen = activeDropdown?.rowId === currentId && activeDropdown?.field === 'priority';
+                                  const currentPriority = item.priority || '';
+                                  return (
+                                    <td key="priority" class="py-2.5 px-2.5 whitespace-nowrap min-w-[95px] relative custom-dropdown-container">
+                                      <button
+                                        type="button"
+                                        onClick={() => setActiveDropdown(isPriorityOpen ? null : { rowId: currentId, field: 'priority' })}
+                                        class={`px-2 py-0.5 rounded-md border text-[10px] font-bold outline-none cursor-pointer transition flex items-center justify-between gap-1 shadow-2xs w-full ${PRIORITY_BADGE[currentPriority] || 'bg-gray-50 border-gray-200 text-gray-400'}`}
+                                        title="Click to set Priority"
+                                      >
+                                        <span class="truncate">{currentPriority || 'Set'}</span>
+                                        <i class={`fa-solid fa-chevron-down text-[8px] transition-transform ${isPriorityOpen ? 'rotate-180' : ''}`}></i>
+                                      </button>
+
+                                      {isPriorityOpen && (
+                                        <div class="absolute top-full left-0 mt-1 z-40 min-w-[110px] bg-white rounded-xl shadow-xl border border-gray-200 py-1 text-xs animate-fade-in">
+                                          {PRIORITY_OPTIONS.map((opt) => (
+                                            <button
+                                              key={opt}
+                                              type="button"
+                                              onClick={() => {
+                                                handleInlineFieldChange(currentId, 'priority', opt);
+                                                setActiveDropdown(null);
+                                              }}
+                                              class={`w-full px-3 py-1.5 text-left text-[11px] font-medium flex items-center justify-between hover:bg-slate-100 transition ${
+                                                currentPriority === opt ? 'bg-slate-100 text-[#B30E2E] font-bold' : 'text-slate-700'
+                                              }`}
+                                            >
+                                              <span>{opt}</span>
+                                              {currentPriority === opt && <i class="fa-solid fa-check text-[10px] text-[#B30E2E]"></i>}
                                             </button>
                                           ))}
                                         </div>
@@ -3289,8 +3363,8 @@ export default function AdminDashboard({ onLogout }) {
             <form onSubmit={handleCreateAgentSubmit} class="p-4 sm:p-5 space-y-3.5 overflow-y-auto max-h-[calc(90vh-70px)]">
               
               {agentCreateMsg && (
-                <div class="p-2.5 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-900 text-xs font-bold flex items-center gap-2">
-                  <i class="fa-solid fa-check text-emerald-600"></i>
+                <div class={`p-2.5 rounded-xl text-xs font-bold flex items-center gap-2 ${agentCreateMsg.includes('Successfully') ? 'bg-emerald-100 border border-emerald-300 text-emerald-900' : 'bg-rose-100 border border-rose-300 text-rose-900'}`}>
+                  <i class={`fa-solid ${agentCreateMsg.includes('Successfully') ? 'fa-check text-emerald-600' : 'fa-triangle-exclamation text-rose-600'}`}></i>
                   <span>{agentCreateMsg}</span>
                 </div>
               )}
@@ -3409,8 +3483,8 @@ export default function AdminDashboard({ onLogout }) {
             <form onSubmit={handleSaveUserEdit} class="p-5 space-y-3.5">
               
               {userEditSuccessMsg && (
-                <div class="p-2.5 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-900 text-xs font-bold flex items-center gap-2">
-                  <i class="fa-solid fa-check text-emerald-600"></i>
+                <div class={`p-2.5 rounded-xl text-xs font-bold flex items-center gap-2 ${userEditSuccessMsg.includes('Successfully') ? 'bg-emerald-100 border border-emerald-300 text-emerald-900' : 'bg-rose-100 border border-rose-300 text-rose-900'}`}>
+                  <i class={`fa-solid ${userEditSuccessMsg.includes('Successfully') ? 'fa-check text-emerald-600' : 'fa-triangle-exclamation text-rose-600'}`}></i>
                   <span>{userEditSuccessMsg}</span>
                 </div>
               )}
@@ -3671,6 +3745,18 @@ export default function AdminDashboard({ onLogout }) {
                       />
                     )}
                   </div>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-gray-700 mb-1">Priority</label>
+                  <select 
+                    value={editingEnquiry.priority || ''}
+                    onChange={(e) => setEditingEnquiry({ ...editingEnquiry, priority: e.target.value })}
+                    class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E]"
+                  >
+                    <option value="">Not set</option>
+                    {PRIORITY_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                  </select>
                 </div>
 
                 <div>
@@ -4010,6 +4096,18 @@ export default function AdminDashboard({ onLogout }) {
                       class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800"
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-gray-700 mb-1">Priority</label>
+                  <select 
+                    value={newLeadFormData.priority || ''}
+                    onChange={(e) => setNewLeadFormData({ ...newLeadFormData, priority: e.target.value })}
+                    class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800"
+                  >
+                    <option value="">Not set</option>
+                    {PRIORITY_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                  </select>
                 </div>
 
                 {/* 4. Notes */}
@@ -4358,7 +4456,7 @@ export default function AdminDashboard({ onLogout }) {
       {showImportModal && (
         <div 
           class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-3 sm:p-4 animate-fade-in"
-          onClick={() => !isImporting && setShowImportModal(false)}
+          onClick={() => !isImporting && resetImportModal()}
         >
           <div 
             class="bg-white rounded-3xl shadow-2xl border border-gray-100 max-w-lg w-full overflow-hidden flex flex-col relative"
@@ -4370,7 +4468,7 @@ export default function AdminDashboard({ onLogout }) {
                 <h3 class="font-serif font-bold text-base">Import Leads from CSV</h3>
               </div>
               <button 
-                onClick={() => { setShowImportModal(false); setImportFile(null); setImportPreview([]); setImportMsg(''); }}
+                onClick={resetImportModal}
                 class="text-white/70 hover:text-white bg-white/10 hover:bg-white/20 w-8 h-8 rounded-full flex items-center justify-center transition cursor-pointer"
               >
                 <i class="fa-solid fa-xmark text-sm"></i>
@@ -4409,6 +4507,23 @@ export default function AdminDashboard({ onLogout }) {
                 </div>
               </div>
 
+              {importDuplicates.length > 0 && (
+                <div class="p-3 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-center justify-between gap-3">
+                  <span class="font-semibold">
+                    <i class="fa-solid fa-copy mr-1.5 text-amber-600"></i>
+                    {importDuplicates.length} duplicate {importDuplicates.length === 1 ? 'row was' : 'rows were'} skipped (phone already exists)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleDownloadDuplicates}
+                    class="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-bold whitespace-nowrap flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <i class="fa-solid fa-download text-[10px]"></i>
+                    Download CSV
+                  </button>
+                </div>
+              )}
+
               {importPreview.length > 0 && (
                 <div class="space-y-2">
                   <div class="flex items-center justify-between text-xs font-bold text-slate-800 px-1">
@@ -4426,6 +4541,8 @@ export default function AdminDashboard({ onLogout }) {
                           <th class="p-2 border-b">Phone</th>
                           <th class="p-2 border-b">Email</th>
                           <th class="p-2 border-b">Status</th>
+                          <th class="p-2 border-b">Priority</th>
+                          <th class="p-2 border-b">Follow ups</th>
                           <th class="p-2 border-b">Auto Assigned Agent</th>
                         </tr>
                       </thead>
@@ -4436,6 +4553,8 @@ export default function AdminDashboard({ onLogout }) {
                             <td class="p-2 text-slate-600">{lead.phone}</td>
                             <td class="p-2 text-slate-500">{lead.email || '-'}</td>
                             <td class="p-2"><span class="px-1.5 py-0.5 rounded bg-rose-50 text-[#B30E2E] border border-rose-200 text-[10px] font-bold">{lead.status || 'New'}</span></td>
+                            <td class="p-2 text-slate-600">{lead.priority || '-'}</td>
+                            <td class="p-2 text-slate-500">{lead.followups.filter(Boolean).length || '-'}</td>
                             <td class="p-2 text-[#B30E2E] font-bold">{lead.assignedAgentName || 'Auto Round-Robin'}</td>
                           </tr>
                         ))}
@@ -4449,10 +4568,10 @@ export default function AdminDashboard({ onLogout }) {
             <div class="px-5 py-3.5 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
               <button
                 type="button"
-                onClick={() => { setShowImportModal(false); setImportFile(null); setImportPreview([]); setImportMsg(''); }}
+                onClick={resetImportModal}
                 class="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold cursor-pointer"
               >
-                Cancel
+                {importDuplicates.length > 0 ? 'Close' : 'Cancel'}
               </button>
               <button
                 type="button"

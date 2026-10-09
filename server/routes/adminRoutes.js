@@ -2,10 +2,12 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { query } = require('../config/db');
+const { query, pool } = require('../config/db');
 const { protectAdmin } = require('../middleware/authMiddleware');
 const { JWT_SECRET, JWT_EXPIRES_IN } = require('../config/env');
 const { sendPasswordResetEmail, sendPasswordChangedConfirmation } = require('../services/emailService');
+const { parseAnyDate } = require('../utils/parseAnyDate');
+const { STATUS_OPTIONS, PRIORITY_OPTIONS, matchOption } = require('../utils/leadOptions');
 
 // OTP Store Map (key: username, value: { otpCode, expiresAt, email })
 const otpStore = new Map();
@@ -28,6 +30,7 @@ const formatEnquiryRow = (row, historyEntries = []) => {
     notes: row.notes || '',
     assignedAgentName: row.assigned_agent_name || '',
     assignedTo: row.assigned_to ? row.assigned_to.toString() : '',
+    priority: row.priority || '',
     history: historyEntries.map(h => ({
       _id: h.id ? h.id.toString() : undefined,
       id: h.id,
@@ -53,7 +56,7 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please provide username and password' });
     }
 
-    const [rows] = await query('SELECT * FROM admins WHERE LOWER(username) = ?', [username.toLowerCase().trim()]);
+    const [rows] = await query('SELECT * FROM users WHERE LOWER(username) = ?', [username.toLowerCase().trim()]);
     const admin = rows[0];
 
     if (!admin) {
@@ -110,7 +113,7 @@ router.post('/request-password-reset', async (req, res) => {
     const cleanEmail = email.toLowerCase().trim();
 
     const [rows] = await query(
-      'SELECT id, name, username, email FROM admins WHERE LOWER(username) = ? AND LOWER(email) = ? LIMIT 1',
+      'SELECT id, name, username, email FROM users WHERE LOWER(username) = ? AND LOWER(email) = ? LIMIT 1',
       [cleanUsername, cleanEmail]
     );
 
@@ -177,7 +180,7 @@ router.post('/forgot-password', async (req, res) => {
     }
 
     const [rows] = await query(
-      'SELECT id, name, username, email FROM admins WHERE LOWER(username) = ? AND LOWER(email) = ? LIMIT 1',
+      'SELECT id, name, username, email FROM users WHERE LOWER(username) = ? AND LOWER(email) = ? LIMIT 1',
       [cleanUsername, cleanEmail]
     );
 
@@ -188,7 +191,7 @@ router.post('/forgot-password', async (req, res) => {
     const adminUser = rows[0];
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    await query('UPDATE admins SET password = ? WHERE id = ?', [hashedPassword, adminUser.id]);
+    await query('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, adminUser.id]);
 
     // Send password changed confirmation email
     sendPasswordChangedConfirmation(cleanEmail, adminUser.name || adminUser.username);
@@ -213,7 +216,7 @@ router.put('/profile', protectAdmin, async (req, res) => {
     const { name, email, phone, currentPassword, newPassword } = req.body;
 
     const [rows] = await query(
-      'SELECT * FROM admins WHERE id = ? OR LOWER(username) = ? LIMIT 1',
+      'SELECT * FROM users WHERE id = ? OR LOWER(username) = ? LIMIT 1',
       [adminId, adminUsername]
     );
     if (!rows || rows.length === 0) {
@@ -251,10 +254,10 @@ router.put('/profile', protectAdmin, async (req, res) => {
 
     if (updateCols.length > 0) {
       updateVals.push(targetId);
-      await query(`UPDATE admins SET ${updateCols.join(', ')} WHERE id = ?`, updateVals);
+      await query(`UPDATE users SET ${updateCols.join(', ')} WHERE id = ?`, updateVals);
     }
 
-    const [updatedRows] = await query('SELECT id, name, username, email, phone, role FROM admins WHERE id = ?', [targetId]);
+    const [updatedRows] = await query('SELECT id, name, username, email, phone, role FROM users WHERE id = ?', [targetId]);
     const updatedUser = updatedRows[0];
 
     const token = jwt.sign(
@@ -292,7 +295,7 @@ router.put('/profile', protectAdmin, async (req, res) => {
 router.get('/enquiries', protectAdmin, async (req, res) => {
   try {
     const { status, search } = req.query;
-    let sql = 'SELECT * FROM enquiries WHERE 1=1';
+    let sql = 'SELECT * FROM leads WHERE 1=1';
     let params = [];
 
     if (status && status !== 'All') {
@@ -316,12 +319,12 @@ router.get('/enquiries', protectAdmin, async (req, res) => {
     if (enquiryIds.length > 0) {
       const placeholders = enquiryIds.map(() => '?').join(',');
       const [allHistory] = await query(
-        `SELECT * FROM enquiry_history WHERE enquiry_id IN (${placeholders}) ORDER BY modified_date ASC`,
+        `SELECT * FROM lead_history WHERE lead_id IN (${placeholders}) ORDER BY modified_date ASC`,
         enquiryIds
       );
       allHistory.forEach(h => {
-        if (!historyMap[h.enquiry_id]) historyMap[h.enquiry_id] = [];
-        historyMap[h.enquiry_id].push(h);
+        if (!historyMap[h.lead_id]) historyMap[h.lead_id] = [];
+        historyMap[h.lead_id].push(h);
       });
     }
 
@@ -338,10 +341,10 @@ router.get('/enquiries', protectAdmin, async (req, res) => {
 // @access  Protected
 router.get('/stats', protectAdmin, async (req, res) => {
   try {
-    const [[{ totalLeads }]] = await query('SELECT COUNT(*) AS totalLeads FROM enquiries');
-    const [[{ newLeads }]] = await query("SELECT COUNT(*) AS newLeads FROM enquiries WHERE status = 'New'");
-    const [[{ scheduledVisits }]] = await query("SELECT COUNT(*) AS scheduledVisits FROM enquiries WHERE status = 'Site Visit Scheduled'");
-    const [[{ closedDeals }]] = await query("SELECT COUNT(*) AS closedDeals FROM enquiries WHERE status = 'Closed'");
+    const [[{ totalLeads }]] = await query('SELECT COUNT(*) AS totalLeads FROM leads');
+    const [[{ newLeads }]] = await query("SELECT COUNT(*) AS newLeads FROM leads WHERE status = 'New'");
+    const [[{ scheduledVisits }]] = await query("SELECT COUNT(*) AS scheduledVisits FROM leads WHERE status = 'Site Visit Scheduled'");
+    const [[{ closedDeals }]] = await query("SELECT COUNT(*) AS closedDeals FROM leads WHERE status = 'Closed'");
 
     return res.json({
       success: true,
@@ -368,12 +371,12 @@ router.get('/enquiries/:id', protectAdmin, async (req, res) => {
       return res.status(404).json({ success: false, message: 'Invalid enquiry ID' });
     }
 
-    const [rows] = await query('SELECT * FROM enquiries WHERE id = ?', [enquiryId]);
+    const [rows] = await query('SELECT * FROM leads WHERE id = ?', [enquiryId]);
     if (!rows || rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Enquiry record not found in MySQL' });
     }
 
-    const [history] = await query('SELECT * FROM enquiry_history WHERE enquiry_id = ? ORDER BY modified_date ASC', [enquiryId]);
+    const [history] = await query('SELECT * FROM lead_history WHERE lead_id = ? ORDER BY modified_date ASC', [enquiryId]);
     const data = formatEnquiryRow(rows[0], history);
 
     return res.json({ success: true, data });
@@ -388,21 +391,21 @@ router.get('/enquiries/:id', protectAdmin, async (req, res) => {
 // @access  Protected
 router.patch('/enquiries/:id', protectAdmin, async (req, res) => {
   try {
-    const { firstName, lastName, phone, oldPhone, email, plotsCount, plotInfo, visitDate, followupDate, status, notes, assignedAgentName, assignedTo, updatedBy } = req.body;
+    const { firstName, lastName, phone, oldPhone, email, plotsCount, plotInfo, visitDate, followupDate, status, notes, assignedAgentName, assignedTo, priority, updatedBy } = req.body;
     
     let enquiryId = parseInt(req.params.id, 10);
     let existing = null;
 
     if (!isNaN(enquiryId)) {
-      const [rows] = await query('SELECT * FROM enquiries WHERE id = ?', [enquiryId]);
+      const [rows] = await query('SELECT * FROM leads WHERE id = ?', [enquiryId]);
       if (rows && rows.length > 0) existing = rows[0];
     }
     if (!existing && oldPhone) {
-      const [rows] = await query('SELECT * FROM enquiries WHERE phone = ?', [oldPhone.trim()]);
+      const [rows] = await query('SELECT * FROM leads WHERE phone = ?', [oldPhone.trim()]);
       if (rows && rows.length > 0) existing = rows[0];
     }
     if (!existing && phone) {
-      const [rows] = await query('SELECT * FROM enquiries WHERE phone = ?', [phone.trim()]);
+      const [rows] = await query('SELECT * FROM leads WHERE phone = ?', [phone.trim()]);
       if (rows && rows.length > 0) existing = rows[0];
     }
 
@@ -412,6 +415,29 @@ router.patch('/enquiries/:id', protectAdmin, async (req, res) => {
 
     const performer = updatedBy || (req.admin ? (req.admin.name || req.admin.username || 'Admin') : 'Admin');
     const targetId = existing.id;
+
+    // Leads can only be assigned to Agents. Resolve by id, or by name when only a name is sent (edit modal)
+    // Empty name or the lead's current name with no id = no change (edit modal resends the name every save)
+    let resolvedAssignedTo;
+    let resolvedAgentName;
+    const parsedId = assignedTo ? parseInt(assignedTo, 10) : NaN;
+    const nameKey = (assignedAgentName || '').toString().toLowerCase().trim();
+    const nameUnchanged = nameKey === (existing.assigned_agent_name || '').toLowerCase().trim();
+    if (assignedTo !== undefined || (nameKey && !nameUnchanged)) {
+      if (!isNaN(parsedId) || (nameKey && nameKey !== 'unassigned')) {
+        const [agentRows] = !isNaN(parsedId)
+          ? await query("SELECT id, name, username FROM users WHERE id = ? AND role = 'Agent'", [parsedId])
+          : await query("SELECT id, name, username FROM users WHERE role = 'Agent' AND (LOWER(name) = ? OR LOWER(username) = ?) ORDER BY id LIMIT 1", [nameKey, nameKey]);
+        if (agentRows.length === 0) {
+          return res.status(400).json({ success: false, message: 'Leads can only be assigned to an Agent' });
+        }
+        resolvedAssignedTo = agentRows[0].id;
+        resolvedAgentName = agentRows[0].name || agentRows[0].username;
+      } else {
+        resolvedAssignedTo = null;
+        resolvedAgentName = 'Unassigned';
+      }
+    }
 
     const fieldsToCompare = [
       { col: 'first_name', label: 'First Name', incoming: firstName },
@@ -424,7 +450,8 @@ router.patch('/enquiries/:id', protectAdmin, async (req, res) => {
       { col: 'followup_date', label: 'Followup Date', incoming: followupDate },
       { col: 'status', label: 'Status', incoming: status },
       { col: 'notes', label: 'Notes', incoming: notes },
-      { col: 'assigned_agent_name', label: 'Assigned Agent', incoming: assignedAgentName }
+      { col: 'assigned_agent_name', label: 'Assigned Agent', incoming: resolvedAgentName },
+      { col: 'priority', label: 'Priority', incoming: priority === undefined ? undefined : (matchOption(priority, PRIORITY_OPTIONS) || '') }
     ];
 
     let newHistoryEntries = [];
@@ -450,27 +477,26 @@ router.patch('/enquiries/:id', protectAdmin, async (req, res) => {
       }
     });
 
-    if (assignedTo !== undefined) {
-      const parsedAssigned = assignedTo ? parseInt(assignedTo, 10) : null;
+    if (resolvedAssignedTo !== undefined) {
       updateCols.push('assigned_to = ?');
-      updateVals.push(isNaN(parsedAssigned) ? null : parsedAssigned);
+      updateVals.push(resolvedAssignedTo);
     }
 
     if (updateCols.length > 0) {
       updateVals.push(targetId);
-      await query(`UPDATE enquiries SET ${updateCols.join(', ')} WHERE id = ?`, updateVals);
+      await query(`UPDATE leads SET ${updateCols.join(', ')} WHERE id = ?`, updateVals);
     }
 
-    // Insert history entries into enquiry_history
+    // Insert history entries into lead_history
     for (const h of newHistoryEntries) {
       await query(
-        `INSERT INTO enquiry_history (enquiry_id, field_name, old_value, new_value, modified_by, modified_date) VALUES (?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO lead_history (lead_id, field_name, old_value, new_value, modified_by, modified_date) VALUES (?, ?, ?, ?, ?, ?)`,
         [targetId, h.fieldName, h.oldValue, h.newValue, h.modifiedBy, new Date()]
       );
     }
 
-    const [updatedRows] = await query('SELECT * FROM enquiries WHERE id = ?', [targetId]);
-    const [historyRows] = await query('SELECT * FROM enquiry_history WHERE enquiry_id = ? ORDER BY modified_date ASC', [targetId]);
+    const [updatedRows] = await query('SELECT * FROM leads WHERE id = ?', [targetId]);
+    const [historyRows] = await query('SELECT * FROM lead_history WHERE lead_id = ? ORDER BY modified_date ASC', [targetId]);
     const updatedEnquiry = formatEnquiryRow(updatedRows[0], historyRows);
 
     return res.json({ success: true, message: 'Enquiry updated in MySQL', data: updatedEnquiry });
@@ -490,7 +516,7 @@ router.delete('/enquiries/:id', protectAdmin, async (req, res) => {
       return res.status(404).json({ success: false, message: 'Invalid enquiry ID' });
     }
 
-    const [result] = await query('DELETE FROM enquiries WHERE id = ?', [enquiryId]);
+    const [result] = await query('DELETE FROM leads WHERE id = ?', [enquiryId]);
     if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, message: 'Enquiry record not found in MySQL' });
     }
@@ -507,7 +533,7 @@ router.delete('/enquiries/:id', protectAdmin, async (req, res) => {
 // @access  Protected
 router.get('/agents', protectAdmin, async (req, res) => {
   try {
-    const [agents] = await query("SELECT id, name, username, email, phone, role, created_at, updated_at FROM admins WHERE LOWER(role) != 'superadmin' ORDER BY id ASC");
+    const [agents] = await query("SELECT id, name, username, email, phone, role, created_at, updated_at FROM users WHERE LOWER(role) != 'superadmin' ORDER BY id ASC");
     const data = agents.map(a => ({
       _id: a.id.toString(),
       id: a.id,
@@ -536,7 +562,7 @@ router.post('/agents', protectAdmin, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please provide name, username, and password' });
     }
 
-    const [existing] = await query('SELECT id FROM admins WHERE LOWER(username) = ?', [username.toLowerCase().trim()]);
+    const [existing] = await query('SELECT id FROM users WHERE LOWER(username) = ?', [username.toLowerCase().trim()]);
     if (existing && existing.length > 0) {
       return res.status(400).json({ success: false, message: 'Agent with this username already exists' });
     }
@@ -545,7 +571,7 @@ router.post('/agents', protectAdmin, async (req, res) => {
     const agentEmail = (email && email.trim()) ? email.toLowerCase().trim() : `${username.toLowerCase().trim()}@gulmoharcity.com`;
 
     const [result] = await query(
-      `INSERT INTO admins (name, username, email, phone, password, role) VALUES (?, ?, ?, ?, ?, 'Agent')`,
+      `INSERT INTO users (name, username, email, phone, password, role) VALUES (?, ?, ?, ?, ?, 'Agent')`,
       [name.trim(), username.toLowerCase().trim(), agentEmail, phone ? phone.trim() : '', hashedPassword]
     );
 
@@ -580,8 +606,50 @@ router.delete('/agents/:id', protectAdmin, async (req, res) => {
       return res.status(404).json({ success: false, message: 'Invalid agent ID' });
     }
 
-    await query('DELETE FROM admins WHERE id = ? AND role = "Agent"', [agentId]);
-    return res.json({ success: true, message: 'Agent removed successfully' });
+    const performer = req.admin ? (req.admin.name || req.admin.username || 'Admin') : 'Admin';
+
+    // Delete + hand their leads to the remaining agents (round-robin) in one transaction
+    const conn = await pool.getConnection();
+    try {
+      await conn.beginTransaction();
+
+      const [agentRows] = await conn.query('SELECT id, name, username FROM users WHERE id = ? AND role = "Agent" FOR UPDATE', [agentId]);
+      if (agentRows.length === 0) {
+        await conn.rollback();
+        return res.status(404).json({ success: false, message: 'Agent not found in database' });
+      }
+      const deletedName = agentRows[0].name || agentRows[0].username;
+
+      const [leadRows] = await conn.query('SELECT id FROM leads WHERE assigned_to = ? ORDER BY id ASC', [agentId]);
+      await conn.query('DELETE FROM users WHERE id = ?', [agentId]);
+
+      // Only Agents get leads (never admins)
+      const [agents] = await conn.query("SELECT id, name, username FROM users WHERE role = 'Agent' ORDER BY id ASC");
+      const now = new Date();
+      for (let i = 0; i < leadRows.length; i++) {
+        const next = agents.length > 0 ? agents[i % agents.length] : null;
+        const nextName = next ? (next.name || next.username) : 'Unassigned';
+        await conn.query('UPDATE leads SET assigned_to = ?, assigned_agent_name = ? WHERE id = ?', [next ? next.id : null, nextName, leadRows[i].id]);
+        await conn.query(
+          'INSERT INTO lead_history (lead_id, field_name, old_value, new_value, modified_by, modified_date) VALUES (?, ?, ?, ?, ?, ?)',
+          [leadRows[i].id, 'Assigned Agent', deletedName, `${nextName} (previous agent deleted)`, performer, now]
+        );
+      }
+
+      await conn.commit();
+      return res.json({
+        success: true,
+        message: leadRows.length
+          ? `Agent removed; ${leadRows.length} leads reassigned ${agents.length ? `across ${agents.length} remaining agents` : '(no agents left, marked Unassigned)'}`
+          : 'Agent removed successfully',
+        reassignedCount: leadRows.length
+      });
+    } catch (txError) {
+      await conn.rollback();
+      throw txError;
+    } finally {
+      conn.release();
+    }
   } catch (error) {
     console.error('Error deleting agent:', error.message);
     return res.status(500).json({ success: false, message: 'Database Error' });
@@ -599,6 +667,15 @@ router.patch('/agents/:id', protectAdmin, async (req, res) => {
     }
 
     const { name, username, password, phone, email } = req.body;
+    const [existingRows] = await query('SELECT id FROM users WHERE id = ?', [agentId]);
+    if (existingRows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Agent not found in database' });
+    }
+    if (username !== undefined) {
+      const [taken] = await query('SELECT id FROM users WHERE LOWER(username) = ? AND id != ?', [username.toLowerCase().trim(), agentId]);
+      if (taken.length > 0) return res.status(400).json({ success: false, message: 'Another user already has this username' });
+    }
+
     let updateCols = [];
     let updateVals = [];
 
@@ -614,11 +691,16 @@ router.patch('/agents/:id', protectAdmin, async (req, res) => {
 
     if (updateCols.length > 0) {
       updateVals.push(agentId);
-      await query(`UPDATE admins SET ${updateCols.join(', ')} WHERE id = ?`, updateVals);
+      await query(`UPDATE users SET ${updateCols.join(', ')} WHERE id = ?`, updateVals);
     }
 
-    const [updatedRows] = await query('SELECT id, name, username, email, phone, role FROM admins WHERE id = ?', [agentId]);
+    const [updatedRows] = await query('SELECT id, name, username, email, phone, role FROM users WHERE id = ?', [agentId]);
     const agent = updatedRows[0];
+
+    // Keep the agent name stored on their leads in sync with the renamed agent
+    if (name !== undefined && agent.name) {
+      await query('UPDATE leads SET assigned_agent_name = ? WHERE assigned_to = ?', [agent.name, agentId]);
+    }
 
     return res.json({
       success: true,
@@ -647,7 +729,7 @@ router.get('/column-preferences', protectAdmin, async (req, res) => {
     const adminId = parseInt(req.admin.id, 10) || 0;
     const username = (req.admin.username || '').toLowerCase().trim();
 
-    const [rows] = await query('SELECT column_preferences FROM admins WHERE id = ? OR LOWER(username) = ?', [adminId, username]);
+    const [rows] = await query('SELECT column_preferences FROM users WHERE id = ? OR LOWER(username) = ?', [adminId, username]);
     if (!rows || rows.length === 0) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
@@ -678,7 +760,7 @@ router.put('/column-preferences', protectAdmin, async (req, res) => {
     }
 
     const [result] = await query(
-      'UPDATE admins SET column_preferences = ? WHERE id = ? OR LOWER(username) = ?',
+      'UPDATE users SET column_preferences = ? WHERE id = ? OR LOWER(username) = ?',
       [JSON.stringify(columnPreferences), adminId, username]
     );
 
@@ -706,11 +788,11 @@ router.post('/enquiries/import', protectAdmin, async (req, res) => {
       return res.status(400).json({ success: false, message: 'No leads provided for import' });
     }
 
-    // 1. Fetch all active non-SuperAdmin Agents for Alternate Round-Robin assignment
-    const [agents] = await query("SELECT id, name, username, role FROM admins WHERE LOWER(role) != 'superadmin' ORDER BY id ASC");
+    // 1. Fetch Agents for Alternate Round-Robin assignment (only Agents get leads, never admins)
+    const [agents] = await query("SELECT id, name, username, role FROM users WHERE role = 'Agent' ORDER BY id ASC");
     
     // Pick starting Round-Robin index after the last assigned agent in DB for seamless continuation
-    const [lastEnquiry] = await query("SELECT assigned_to FROM enquiries WHERE assigned_to IS NOT NULL ORDER BY id DESC LIMIT 1");
+    const [lastEnquiry] = await query("SELECT assigned_to FROM leads WHERE assigned_to IS NOT NULL ORDER BY id DESC LIMIT 1");
     let roundRobinIndex = 0;
     if (lastEnquiry.length > 0 && agents.length > 0) {
       const lastAssignedId = lastEnquiry[0].assigned_to;
@@ -721,38 +803,67 @@ router.post('/enquiries/import', protectAdmin, async (req, res) => {
     }
 
     let importedCount = 0;
-    let skippedCount = 0;
+    let invalidCount = 0;
+    const duplicateRows = []; // sheet row indexes (lead.row) skipped because the phone already exists
+    const performer = req.admin ? (req.admin.name || req.admin.username || 'Admin') : 'Admin';
+
+    // Duplicate check on the last 10 digits, so "+91 98711 10001" matches "9871110001"
+    const phoneKey = (p) => (p || '').toString().replace(/\D/g, '').slice(-10);
+    const [phoneRows] = await query('SELECT phone FROM leads');
+    const knownPhones = new Set(phoneRows.map(r => phoneKey(r.phone)));
 
     for (const lead of leads) {
       const cleanPhone = (lead.phone || '').toString().replace(/\D/g, '').trim();
       if (!cleanPhone || cleanPhone.length < 10) {
-        skippedCount++;
+        invalidCount++;
         continue;
       }
-
-      // Check if phone number already exists in MySQL database
-      const [existing] = await query('SELECT id FROM enquiries WHERE phone = ? LIMIT 1', [cleanPhone]);
-      if (existing.length > 0) {
-        skippedCount++;
+      if (knownPhones.has(phoneKey(cleanPhone))) {
+        duplicateRows.push(lead.row);
         continue;
       }
+      knownPhones.add(phoneKey(cleanPhone));
 
-      const firstName = (lead.firstName || 'Customer').trim();
-      const lastName = (lead.lastName || '').trim();
-      const email = (lead.email || '').toLowerCase().trim();
-      const plotsCount = (lead.plotsCount || '1 Guntha').trim();
-      const status = (lead.status || 'New').trim();
-      const notes = (lead.notes || '').trim();
-      const visitDate = (lead.visitDate || '').trim();
-      const followupDate = (lead.followupDate || '').trim();
-      const createdTimeVal = (lead.createdTime && lead.createdTime.trim()) ? lead.createdTime.trim() : null;
+      const str = (v) => (v === null || v === undefined ? '' : String(v)).trim();
+      const history = []; // [field_name, old_value, new_value]
+
+      const firstName = str(lead.firstName) || 'Customer';
+      const lastName = str(lead.lastName);
+      const email = str(lead.email).toLowerCase();
+      const plotsCount = str(lead.plotsCount) || '1 Guntha';
+      const notes = str(lead.notes);
+
+      // Status: map to our own list, unknown values fall back to New
+      const rawStatus = str(lead.status);
+      const status = matchOption(rawStatus, STATUS_OPTIONS) || 'New';
+      if (rawStatus && !matchOption(rawStatus, STATUS_OPTIONS)) history.push(['Sheet Status', '—', `${rawStatus} (not recognised, set to New)`]);
+
+      const priority = matchOption(lead.priority, PRIORITY_OPTIONS) || '';
+
+      // Dates: any format; unparseable values are kept in history so nothing from the sheet is lost
+      const created = parseAnyDate(lead.createdTime);
+      if (str(lead.createdTime) && !created) history.push(['Sheet Created Time', '—', str(lead.createdTime)]);
+
+      const visit = parseAnyDate(lead.visitDate);
+      const visitDate = visit ? visit.date : '';
+      if (str(lead.visitDate) && !visit) history.push(['Visit Date', '—', str(lead.visitDate)]);
+
+      // Follow up 1..N: every filled one goes to history, the latest filled one becomes followup_date
+      let followupDate = '';
+      (Array.isArray(lead.followups) ? lead.followups : []).forEach((raw, i) => {
+        const val = str(raw);
+        if (!val) return;
+        const parsed = parseAnyDate(val);
+        if (parsed) followupDate = parsed.date;
+        history.push([`Follow up ${i + 1}`, '—', parsed ? parsed.date : val]);
+      });
 
       // Determine Assigned Agent (if sheet provided caller name, search matching agent; else Round-Robin)
       let assignedAgent = null;
-      if (lead.assignedAgentName && lead.assignedAgentName.trim()) {
-        const searchName = lead.assignedAgentName.trim().toLowerCase();
-        assignedAgent = agents.find(a => 
-          (a.name || '').toLowerCase() === searchName || 
+      const searchName = str(lead.assignedAgentName).toLowerCase();
+      if (searchName) {
+        assignedAgent = agents.find(a =>
+          (a.name || '').toLowerCase() === searchName ||
           (a.username || '').toLowerCase() === searchName
         );
       }
@@ -764,52 +875,53 @@ router.post('/enquiries/import', protectAdmin, async (req, res) => {
       }
 
       const assignedTo = assignedAgent ? assignedAgent.id : null;
-      const assignedAgentName = assignedAgent ? assignedAgent.name : (lead.assignedAgentName || 'Unassigned');
+      const assignedAgentName = assignedAgent ? assignedAgent.name : (str(lead.assignedAgentName) || 'Unassigned');
 
-      // Insert into MySQL enquiries table
+      // Insert into MySQL leads table
       const [insertResult] = await query(
-        `INSERT INTO enquiries 
-         (first_name, last_name, phone, email, plots_count, visit_date, followup_date, status, notes, assigned_to, assigned_agent_name, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, NOW()))`,
-        [firstName, lastName, cleanPhone, email, plotsCount, visitDate, followupDate, status, notes, assignedTo, assignedAgentName, createdTimeVal]
+        `INSERT INTO leads 
+         (first_name, last_name, phone, email, plots_count, visit_date, followup_date, status, priority, notes, assigned_to, assigned_agent_name, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, UTC_TIMESTAMP()))`,
+        [firstName, lastName, cleanPhone, email, plotsCount, visitDate, followupDate, status, priority, notes, assignedTo, assignedAgentName, created ? created.utc : null]
       );
 
       const newId = insertResult.insertId;
 
-      // Log initial history entry
-      const performer = req.admin ? (req.admin.name || req.admin.username || 'Admin') : 'Admin';
+      history.unshift(['Import', '', `Imported via Google Sheet CSV & assigned to ${assignedAgentName}`]);
       await query(
-        `INSERT INTO enquiry_history (enquiry_id, field_name, old_value, new_value, modified_by, modified_date) VALUES (?, ?, ?, ?, ?, NOW())`,
-        [newId, 'Import', '', `Imported via Google Sheet CSV & assigned to ${assignedAgentName}`, performer]
+        `INSERT INTO lead_history (lead_id, field_name, old_value, new_value, modified_by, modified_date) VALUES ?`,
+        [history.map(([field, oldVal, newVal]) => [newId, field, oldVal, newVal, performer, new Date()])]
       );
 
       importedCount++;
     }
 
     // Fetch refreshed list of enquiries and history to return to frontend
-    const [allRows] = await query('SELECT * FROM enquiries ORDER BY id DESC');
+    const [allRows] = await query('SELECT * FROM leads ORDER BY id DESC');
     let historyMap = {};
     if (allRows.length > 0) {
       const placeholders = allRows.map(() => '?').join(',');
       const [allHistory] = await query(
-        `SELECT * FROM enquiry_history WHERE enquiry_id IN (${placeholders}) ORDER BY modified_date ASC`,
+        `SELECT * FROM lead_history WHERE lead_id IN (${placeholders}) ORDER BY modified_date ASC`,
         allRows.map(r => r.id)
       );
       allHistory.forEach(h => {
-        if (!historyMap[h.enquiry_id]) historyMap[h.enquiry_id] = [];
-        historyMap[h.enquiry_id].push(h);
+        if (!historyMap[h.lead_id]) historyMap[h.lead_id] = [];
+        historyMap[h.lead_id].push(h);
       });
     }
 
     const updatedEnquiries = allRows.map(r => formatEnquiryRow(r, historyMap[r.id] || []));
 
-    console.log(`📥 CSV Import Complete: ${importedCount} leads imported, ${skippedCount} skipped/duplicates.`);
+    console.log(`📥 CSV Import Complete: ${importedCount} imported, ${duplicateRows.length} duplicates, ${invalidCount} invalid.`);
 
     return res.json({
       success: true,
-      message: `Import complete: ${importedCount} leads added successfully (${skippedCount} duplicates/invalid skipped)`,
+      message: `Import complete: ${importedCount} leads added, ${duplicateRows.length} duplicates skipped, ${invalidCount} invalid phone skipped`,
       importedCount,
-      skippedCount,
+      skippedCount: duplicateRows.length + invalidCount,
+      duplicateRows,
+      invalidCount,
       data: updatedEnquiries
     });
   } catch (error) {

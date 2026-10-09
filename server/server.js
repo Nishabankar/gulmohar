@@ -17,7 +17,7 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 // Seed Default Admin User directly into MySQL
 const seedAdminUser = async () => {
   try {
-    const [rows] = await query('SELECT COUNT(*) AS count FROM admins');
+    const [rows] = await query('SELECT COUNT(*) AS count FROM users');
     const adminCount = rows[0]?.count || 0;
 
     if (adminCount === 0) {
@@ -28,7 +28,7 @@ const seedAdminUser = async () => {
       const hashedPassword = await bcrypt.hash(env.ADMIN_PASSWORD, 10);
 
       await query(
-        `INSERT INTO admins (name, username, email, password, role) VALUES (?, ?, ?, ?, ?)`,
+        `INSERT INTO users (name, username, email, password, role) VALUES (?, ?, ?, ?, ?)`,
         [
           'Super Admin',
           env.ADMIN_USERNAME.toLowerCase().trim(),

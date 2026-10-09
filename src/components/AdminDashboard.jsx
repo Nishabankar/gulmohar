@@ -1520,6 +1520,7 @@ export default function AdminDashboard({ onLogout }) {
       }
     };
     reader.readAsText(file);
+    e.target.value = ''; // allow picking the same file again via "Change file"
   };
 
   // Download the skipped duplicate rows exactly as they were in the uploaded sheet
@@ -4485,27 +4486,41 @@ export default function AdminDashboard({ onLogout }) {
                 </div>
               )}
 
-              <div class="border-2 border-dashed border-rose-300 hover:border-[#B30E2E] rounded-2xl p-6 text-center bg-rose-50/40 hover:bg-rose-50 transition cursor-pointer relative">
-                <input
-                  type="file"
-                  accept=".csv"
-                  onChange={handleFileSelect}
-                  class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                />
-                <div class="space-y-2">
-                  <div class="w-12 h-12 rounded-2xl bg-[#FFF0F2] text-[#B30E2E] border border-[#FCD6DC] flex items-center justify-center mx-auto text-xl shadow-xs">
-                    <i class="fa-solid fa-cloud-arrow-up"></i>
+              {importFile ? (
+                // File loaded: compact file row instead of the big drop zone
+                <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border border-rose-200 bg-rose-50/40">
+                  <div class="flex items-center gap-2 min-w-0">
+                    <i class="fa-solid fa-file-csv text-[#B30E2E] text-base"></i>
+                    <span class="text-xs font-bold text-slate-800 truncate" title={importFile.name}>{importFile.name}</span>
                   </div>
-                  <div>
-                    <p class="text-xs font-bold text-slate-800">
-                      {importFile ? importFile.name : 'Click or Drag CSV File Here'}
-                    </p>
-                    <p class="text-[10px] text-gray-500 mt-0.5">
-                      Supports Google Sheets export (.csv)
-                    </p>
+                  {!isImporting && (
+                    <label class="text-[11px] font-bold text-[#B30E2E] hover:underline cursor-pointer whitespace-nowrap">
+                      Change file
+                      <input type="file" accept=".csv" onChange={handleFileSelect} class="hidden" />
+                    </label>
+                  )}
+                </div>
+              ) : (
+                <div class="border-2 border-dashed border-rose-300 hover:border-[#B30E2E] rounded-2xl p-6 text-center bg-rose-50/40 hover:bg-rose-50 transition cursor-pointer relative">
+                  <input
+                    type="file"
+                    accept=".csv"
+                    onChange={handleFileSelect}
+                    class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  <div class="space-y-2">
+                    <div class="w-12 h-12 rounded-2xl bg-[#FFF0F2] text-[#B30E2E] border border-[#FCD6DC] flex items-center justify-center mx-auto text-xl shadow-xs">
+                      <i class="fa-solid fa-cloud-arrow-up"></i>
+                    </div>
+                    <div>
+                      <p class="text-xs font-bold text-slate-800">Click or Drag CSV File Here</p>
+                      <p class="text-[10px] text-gray-500 mt-0.5">
+                        Supports Google Sheets export (.csv)
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               {importDuplicates.length > 0 && (
                 <div class="p-3 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-center justify-between gap-3">

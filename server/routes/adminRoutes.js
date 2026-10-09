@@ -92,6 +92,126 @@ router.get('/verify', protectAdmin, async (req, res) => {
   return res.json({ success: true, admin: req.admin });
 });
 
+// @route   POST /api/admin/forgot-password
+// @desc    Verify username & email, then reset to new password
+// @access  Public
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { username, email, newPassword } = req.body;
+
+    if (!username || !email || !newPassword) {
+      return res.status(400).json({ success: false, message: 'Please provide username, email, and new password.' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ success: false, message: 'New password must be at least 6 characters long.' });
+    }
+
+    const cleanUsername = username.toLowerCase().trim();
+    const cleanEmail = email.toLowerCase().trim();
+
+    const [rows] = await query(
+      'SELECT id, username, email FROM admins WHERE LOWER(username) = ? AND LOWER(email) = ? LIMIT 1',
+      [cleanUsername, cleanEmail]
+    );
+
+    if (!rows || rows.length === 0) {
+      return res.status(400).json({ success: false, message: 'Invalid username or registered email address.' });
+    }
+
+    const adminUser = rows[0];
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await query('UPDATE admins SET password = ? WHERE id = ?', [hashedPassword, adminUser.id]);
+
+    return res.json({
+      success: true,
+      message: 'Password reset successfully! You can now log in with your new password.'
+    });
+  } catch (error) {
+    console.error('Error in forgot-password:', error.message);
+    return res.status(500).json({ success: false, message: 'Database Error during password reset', error: error.message });
+  }
+});
+
+// @route   PUT /api/admin/profile
+// @desc    Update logged-in admin/agent profile details and optional password change
+// @access  Protected
+router.put('/profile', protectAdmin, async (req, res) => {
+  try {
+    const adminId = req.admin.id;
+    const { name, email, phone, currentPassword, newPassword } = req.body;
+
+    const [rows] = await query('SELECT * FROM admins WHERE id = ?', [adminId]);
+    if (!rows || rows.length === 0) {
+      return res.status(444).json({ success: false, message: 'User profile not found' });
+    }
+
+    const adminUser = rows[0];
+    let updateCols = [];
+    let updateVals = [];
+
+    if (name !== undefined) { updateCols.push('name = ?'); updateVals.push(name.trim()); }
+    if (email !== undefined) { updateCols.push('email = ?'); updateVals.push(email.toLowerCase().trim()); }
+    if (phone !== undefined) { updateCols.push('phone = ?'); updateVals.push(phone.trim()); }
+
+    // If changing password
+    if (newPassword && newPassword.trim()) {
+      if (!currentPassword) {
+        return res.status(400).json({ success: false, message: 'Current password is required to change password.' });
+      }
+
+      const isMatch = await bcrypt.compare(currentPassword, adminUser.password);
+      if (!isMatch) {
+        return res.status(400).json({ success: false, message: 'Current password does not match.' });
+      }
+
+      if (newPassword.trim().length < 6) {
+        return res.status(400).json({ success: false, message: 'New password must be at least 6 characters long.' });
+      }
+
+      const hashedPassword = await bcrypt.hash(newPassword.trim(), 10);
+      updateCols.push('password = ?');
+      updateVals.push(hashedPassword);
+    }
+
+    if (updateCols.length > 0) {
+      updateVals.push(adminId);
+      await query(`UPDATE admins SET ${updateCols.join(', ')} WHERE id = ?`, updateVals);
+    }
+
+    const [updatedRows] = await query('SELECT id, name, username, email, phone, role FROM admins WHERE id = ?', [adminId]);
+    const updatedUser = updatedRows[0];
+
+    const token = jwt.sign(
+      { id: updatedUser.id, username: updatedUser.username, role: updatedUser.role },
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRES_IN }
+    );
+
+    const userObj = {
+      id: updatedUser.id.toString(),
+      _id: updatedUser.id.toString(),
+      username: updatedUser.username,
+      name: updatedUser.name || updatedUser.username,
+      email: updatedUser.email || '',
+      phone: updatedUser.phone || '',
+      role: updatedUser.role
+    };
+
+    return res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      token,
+      admin: userObj,
+      user: userObj
+    });
+  } catch (error) {
+    console.error('Error updating profile:', error.message);
+    return res.status(500).json({ success: false, message: 'Database Error updating profile', error: error.message });
+  }
+});
+
 // @route   GET /api/admin/enquiries
 // @desc    Get all leads directly from MySQL database
 // @access  Protected

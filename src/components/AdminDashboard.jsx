@@ -496,7 +496,7 @@ export default function AdminDashboard({ onLogout }) {
   // State for Profile Dropdown & Edit Profile Modal (Admin & Sales Agents)
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
-  const [profileForm, setProfileForm] = useState({ name: '', username: '', password: '', phone: '', email: '', profileImage: '' });
+  const [profileForm, setProfileForm] = useState({ name: '', username: '', currentPassword: '', newPassword: '', confirmPassword: '', phone: '', email: '', profileImage: '' });
   const [profileSaveMsg, setProfileSaveMsg] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
 
@@ -505,7 +505,9 @@ export default function AdminDashboard({ onLogout }) {
       setProfileForm({
         name: currentUser.name || '',
         username: currentUser.username || '',
-        password: currentUser.password || '',
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
         phone: currentUser.phone || '',
         email: currentUser.email || '',
         profileImage: currentUser.profileImage || ''
@@ -534,76 +536,65 @@ export default function AdminDashboard({ onLogout }) {
       setProfileSaveMsg('Please enter a valid email address.');
       return;
     }
-    setSavingProfile(true);
-    setProfileSaveMsg('');
 
-    const updatedUser = {
-      ...rawUser,
-      name: profileForm.name.trim(),
-      username: profileForm.username.trim().toLowerCase(),
-      password: profileForm.password || rawUser.password,
-      phone: profileForm.phone ? profileForm.phone.trim() : '',
-      email: profileForm.email ? profileForm.email.trim() : '',
-      profileImage: profileForm.profileImage || rawUser.profileImage || ''
-    };
-
-    localStorage.setItem('adminUser', JSON.stringify(updatedUser));
-
-    if (!isAdmin) {
-      const storedAgents = JSON.parse(localStorage.getItem('registeredAgents') || '[]');
-      const updatedAgents = storedAgents.map(a => {
-        if (
-          (a.username && a.username.toLowerCase() === (currentUser.username || '').toLowerCase()) ||
-          (a.id && a.id.toString() === (currentUser.id || currentUser._id || '').toString())
-        ) {
-          return {
-            ...a,
-            name: updatedUser.name,
-            username: updatedUser.username,
-            password: updatedUser.password,
-            phone: updatedUser.phone,
-            email: updatedUser.email,
-            profileImage: updatedUser.profileImage
-          };
-        }
-        return a;
-      });
-
-      setRegisteredAgents(updatedAgents);
-      localStorage.setItem('registeredAgents', JSON.stringify(updatedAgents));
-
-      try {
-        const token = localStorage.getItem('adminToken');
-        const agentId = currentUser.id || currentUser._id;
-        if (agentId && !agentId.toString().startsWith('agent-')) {
-          await fetch(`${API_BASE_URL}/api/admin/agents/${agentId}`, {
-            method: 'PATCH',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-              name: updatedUser.name,
-              username: updatedUser.username,
-              password: updatedUser.password,
-              phone: updatedUser.phone,
-              email: updatedUser.email,
-              profileImage: updatedUser.profileImage
-            })
-          });
-        }
-      } catch (err) {
-        console.warn('Backend agent edit note:', err);
+    // Password validation if changing password
+    if (profileForm.newPassword && profileForm.newPassword.trim()) {
+      if (!profileForm.currentPassword) {
+        setProfileSaveMsg('Please enter your current password to change password.');
+        return;
+      }
+      if (profileForm.newPassword.trim() !== profileForm.confirmPassword.trim()) {
+        setProfileSaveMsg('New password and confirm password do not match.');
+        return;
+      }
+      if (profileForm.newPassword.trim().length < 6) {
+        setProfileSaveMsg('New password must be at least 6 characters long.');
+        return;
       }
     }
 
-    setSavingProfile(false);
-    setProfileSaveMsg('Profile updated successfully!');
-    setTimeout(() => {
-      setShowEditProfileModal(false);
-      setProfileSaveMsg('');
-      window.location.reload();
-    }, 1200);
+    setSavingProfile(true);
+    setProfileSaveMsg('');
+
+    try {
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch(`${API_BASE_URL}/api/admin/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name: profileForm.name,
+          email: profileForm.email,
+          phone: profileForm.phone,
+          currentPassword: profileForm.currentPassword,
+          newPassword: profileForm.newPassword
+        })
+      });
+
+      const data = await response.json();
+      if (data.success && data.admin) {
+        const updatedUser = {
+          ...data.admin,
+          profileImage: profileForm.profileImage || rawUser.profileImage || ''
+        };
+        if (data.token) localStorage.setItem('adminToken', data.token);
+        localStorage.setItem('adminUser', JSON.stringify(updatedUser));
+        setProfileSaveMsg('Profile & Password updated successfully!');
+        setTimeout(() => {
+          setShowEditProfileModal(false);
+          setProfileSaveMsg('');
+        }, 1200);
+      } else {
+        setProfileSaveMsg(`Error: ${data.message || 'Failed to update profile'}`);
+      }
+    } catch (err) {
+      console.error('Error updating profile:', err);
+      setProfileSaveMsg('Unable to connect to server. Please try again.');
+    } finally {
+      setSavingProfile(false);
+    }
   };
 
   // Initial mock data fallback if offline
@@ -3767,46 +3758,31 @@ export default function AdminDashboard({ onLogout }) {
                 </div>
               )}
 
-              {/* 1. Full Name */}
-              <div>
-                <label class="block text-xs font-bold text-gray-700 mb-1">Full Name *</label>
-                <input 
-                  type="text" 
-                  required 
-                  value={profileForm.name}
-                  onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
-                  placeholder="Enter full name"
-                  class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
-                />
-              </div>
-
-              {/* 2. Username & 3. Password */}
+              {/* 1. Full Name & Username */}
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label class="block text-xs font-bold text-gray-700 mb-1">Username *</label>
+                  <label class="block text-xs font-bold text-gray-700 mb-1">Full Name *</label>
                   <input 
                     type="text" 
                     required 
-                    value={profileForm.username}
-                    onChange={(e) => setProfileForm({ ...profileForm, username: e.target.value })}
-                    placeholder="Enter username"
+                    value={profileForm.name}
+                    onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
+                    placeholder="Enter full name"
                     class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
                   />
                 </div>
                 <div>
-                  <label class="block text-xs font-bold text-gray-700 mb-1">Password *</label>
+                  <label class="block text-xs font-bold text-gray-700 mb-1">Username (Read-Only)</label>
                   <input 
-                    type="password" 
-                    required 
-                    value={profileForm.password}
-                    onChange={(e) => setProfileForm({ ...profileForm, password: e.target.value })}
-                    placeholder="Enter password"
-                    class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
+                    type="text" 
+                    disabled 
+                    value={profileForm.username}
+                    class="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs bg-gray-100 text-gray-500 font-semibold cursor-not-allowed"
                   />
                 </div>
               </div>
 
-              {/* 4. Mobile Number & 5. Email Address */}
+              {/* 2. Mobile Number & Email Address */}
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label class="block text-xs font-bold text-gray-700 mb-1">Mobile Number *</label>
@@ -3834,6 +3810,50 @@ export default function AdminDashboard({ onLogout }) {
                     placeholder="Enter email address"
                     class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
                   />
+                </div>
+              </div>
+
+              {/* 3. Change Password Divider & Section */}
+              <div class="pt-3 border-t border-gray-200">
+                <div class="flex items-center gap-2 mb-2 text-xs font-bold text-[#B30E2E]">
+                  <i class="fa-solid fa-key text-xs"></i>
+                  <span>Change Password (Optional)</span>
+                </div>
+                
+                <div class="space-y-2 bg-gray-50 p-3 rounded-2xl border border-gray-200">
+                  <div>
+                    <label class="block text-[11px] font-bold text-gray-700 mb-0.5">Current Password</label>
+                    <input 
+                      type="password" 
+                      value={profileForm.currentPassword}
+                      onChange={(e) => setProfileForm({ ...profileForm, currentPassword: e.target.value })}
+                      placeholder="Required only if changing password"
+                      class="w-full px-3 py-1.5 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] bg-white"
+                    />
+                  </div>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                      <label class="block text-[11px] font-bold text-gray-700 mb-0.5">New Password</label>
+                      <input 
+                        type="password" 
+                        value={profileForm.newPassword}
+                        onChange={(e) => setProfileForm({ ...profileForm, newPassword: e.target.value })}
+                        placeholder="Min 6 characters"
+                        class="w-full px-3 py-1.5 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-[11px] font-bold text-gray-700 mb-0.5">Confirm New Password</label>
+                      <input 
+                        type="password" 
+                        value={profileForm.confirmPassword}
+                        onChange={(e) => setProfileForm({ ...profileForm, confirmPassword: e.target.value })}
+                        placeholder="Re-enter new password"
+                        class="w-full px-3 py-1.5 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] bg-white"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 

@@ -512,12 +512,22 @@ router.post('/enquiries/import', protectAdmin, async (req, res) => {
       return res.status(400).json({ success: false, message: 'No leads provided for import' });
     }
 
-    // 1. Fetch active Sales Agents for Alternate Round-Robin assignment
-    const [agents] = await query("SELECT id, name, username FROM admins WHERE role = 'Agent' ORDER BY id ASC");
+    // 1. Fetch all active non-SuperAdmin Agents for Alternate Round-Robin assignment
+    const [agents] = await query("SELECT id, name, username, role FROM admins WHERE LOWER(role) != 'superadmin' ORDER BY id ASC");
     
+    // Pick starting Round-Robin index after the last assigned agent in DB for seamless continuation
+    const [lastEnquiry] = await query("SELECT assigned_to FROM enquiries WHERE assigned_to IS NOT NULL ORDER BY id DESC LIMIT 1");
+    let roundRobinIndex = 0;
+    if (lastEnquiry.length > 0 && agents.length > 0) {
+      const lastAssignedId = lastEnquiry[0].assigned_to;
+      const lastIdx = agents.findIndex(a => a.id === lastAssignedId);
+      if (lastIdx !== -1) {
+        roundRobinIndex = (lastIdx + 1) % agents.length;
+      }
+    }
+
     let importedCount = 0;
     let skippedCount = 0;
-    let roundRobinIndex = 0;
 
     for (const lead of leads) {
       const cleanPhone = (lead.phone || '').toString().replace(/\D/g, '').trim();

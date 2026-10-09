@@ -4388,7 +4388,7 @@ export default function AdminDashboard({ onLogout }) {
                     <table class="w-full text-left border-collapse whitespace-nowrap">
                       <thead class="bg-gray-100 text-gray-700 sticky top-0 font-bold z-10">
                         <tr>
-                          <th class="p-2 border-b">Name</th>
+                          <th class="p-2 border-b">Full Name</th>
                           <th class="p-2 border-b">Phone</th>
                           <th class="p-2 border-b">Email</th>
                           <th class="p-2 border-b">Status</th>

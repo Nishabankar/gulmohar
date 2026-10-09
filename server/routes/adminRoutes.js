@@ -127,10 +127,16 @@ router.post('/request-password-reset', async (req, res) => {
     // Send confirmation email
     const emailResult = await sendPasswordResetEmail(cleanEmail, adminUser.name || adminUser.username, otpCode);
 
+    let msg = `Verification OTP email sent to ${cleanEmail}. Please check your inbox.`;
+    if (!emailResult.isConfigured) {
+      msg = `Verification OTP sent to ${cleanEmail}. [Test OTP Code: ${otpCode}]`;
+    }
+
     return res.json({
       success: true,
-      message: `Verification OTP email sent to ${cleanEmail}. Please check your inbox.`,
+      message: msg,
       emailSent: emailResult.success,
+      isConfigured: Boolean(emailResult.isConfigured),
       previewUrl: emailResult.previewUrl || null
     });
   } catch (error) {

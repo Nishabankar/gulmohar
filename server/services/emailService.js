@@ -75,16 +75,23 @@ const sendPasswordResetEmail = async (toEmail, userName, otpCode) => {
       html: htmlContent
     };
 
+    const isConfigured = Boolean(env.SMTP_USER && env.SMTP_PASS);
+
     if (mailer) {
       const info = await mailer.sendMail(mailOptions);
       console.log(`✉️ Password reset email sent to ${toEmail}. Message ID: ${info.messageId}`);
       if (nodemailer.getTestMessageUrl && info) {
         console.log(`🔗 Preview Email URL: ${nodemailer.getTestMessageUrl(info)}`);
       }
-      return { success: true, messageId: info.messageId, previewUrl: nodemailer.getTestMessageUrl ? nodemailer.getTestMessageUrl(info) : null };
+      return { 
+        success: true, 
+        isConfigured, 
+        messageId: info.messageId, 
+        previewUrl: nodemailer.getTestMessageUrl && info ? nodemailer.getTestMessageUrl(info) : null 
+      };
     }
     
-    return { success: true, message: 'Email sent successfully' };
+    return { success: true, isConfigured, message: 'Email sent successfully' };
   } catch (error) {
     console.error('❌ Error sending password reset email:', error.message);
     // Don't throw error to prevent process crash

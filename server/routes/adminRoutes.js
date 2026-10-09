@@ -313,7 +313,7 @@ router.delete('/enquiries/:id', protectAdmin, async (req, res) => {
 // @access  Protected
 router.get('/agents', protectAdmin, async (req, res) => {
   try {
-    const [agents] = await query("SELECT id, name, username, email, phone, role, created_at, updated_at FROM admins WHERE role = 'Agent' ORDER BY id ASC");
+    const [agents] = await query("SELECT id, name, username, email, phone, role, created_at, updated_at FROM admins WHERE LOWER(role) != 'superadmin' ORDER BY id ASC");
     const data = agents.map(a => ({
       _id: a.id.toString(),
       id: a.id,

@@ -83,8 +83,17 @@ export default function AdminDashboard({ onLogout }) {
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
   const [agentFilter, setAgentFilter] = useState('All');
   const [visitDateFilter, setVisitDateFilter] = useState('All'); // 'All' | 'Today' | 'Tomorrow' | 'ThisWeek'
-  const [followupDateFilter, setFollowupDateFilter] = useState('All'); // 'All' | 'Today' | 'Tomorrow' | 'ThisWeek'
   const [isAgentDropdownOpen, setIsAgentDropdownOpen] = useState(false);
+
+  // Global Delete Confirmation Modal State
+  const [deleteConfirmation, setDeleteConfirmation] = useState({
+    isOpen: false,
+    type: null, // 'lead' | 'bulk_leads' | 'agent'
+    targetId: null,
+    title: '',
+    subtitle: '',
+    isDeleting: false
+  });
 
   // Column Configuration State & Persistence
   const [columnConfig, setColumnConfig] = useState(() => {
@@ -870,9 +879,22 @@ export default function AdminDashboard({ onLogout }) {
     }, 1500);
   };
 
-  // Handler: Delete / Remove Sales Agent (Admin Only) - Removes from MongoDB & LocalStorage
-  const handleDeleteAgent = async (agentIdOrUsername) => {
-    if (!window.confirm('Are you sure you want to remove this Sales Agent account?')) return;
+  // Handler: Open Delete Agent Modal
+  const openDeleteAgentConfirmation = (agent) => {
+    if (!agent) return;
+    const agentIdOrUsername = agent.id || agent.username;
+    setDeleteConfirmation({
+      isOpen: true,
+      type: 'agent',
+      targetId: agentIdOrUsername,
+      title: `Agent Account: ${agent.name || agent.username}`,
+      subtitle: `Username: @${agent.username || 'agent'} • Role: ${agent.role || 'Agent'}`,
+      isDeleting: false
+    });
+  };
+
+  // Handler: Delete / Remove Sales Agent (Admin Only) - Removes from MySQL & LocalStorage
+  const processDeleteAgent = async (agentIdOrUsername) => {
     const agentToDelete = registeredAgents.find(a => a.id === agentIdOrUsername || a.username === agentIdOrUsername);
     const updated = registeredAgents.filter(a => (a.id !== agentIdOrUsername && a.username !== agentIdOrUsername));
     setRegisteredAgents(updated);
@@ -1218,10 +1240,25 @@ export default function AdminDashboard({ onLogout }) {
     }
   };
 
-  // Delete Enquiry handler
-  const handleDeleteEnquiry = async (id) => {
+  // Open Delete Single Enquiry Modal
+  const openDeleteEnquiryConfirmation = (item) => {
+    const id = item._id || item.id || item;
+    const nameStr = typeof item === 'object' ? `${item.firstName || ''} ${item.lastName || ''}`.trim() : `ID: ${id}`;
+    const subtitleStr = typeof item === 'object' ? `Phone: ${item.phone || 'N/A'} • Plots: ${item.plotsCount || '1 Guntha'}` : '';
+
+    setDeleteConfirmation({
+      isOpen: true,
+      type: 'lead',
+      targetId: id,
+      title: nameStr || `Enquiry Record #${id}`,
+      subtitle: subtitleStr,
+      isDeleting: false
+    });
+  };
+
+  // Process Delete Single Enquiry handler
+  const processDeleteEnquiry = async (id) => {
     if (!id) return;
-    if (!window.confirm('Are you sure you want to delete this enquiry record?')) return;
     
     // Remove from UI state
     setEnquiries(prev => prev.filter(item => (item._id || item.id) !== id));
@@ -1272,10 +1309,22 @@ export default function AdminDashboard({ onLogout }) {
     }
   };
 
-  // Bulk Delete Selected Enquiries handler (Admin Only)
-  const handleBulkDeleteEnquiries = async () => {
+  // Open Bulk Delete Confirmation Modal
+  const openBulkDeleteConfirmation = () => {
     if (selectedLeadIds.length === 0) return;
-    if (!window.confirm(`Are you sure you want to delete ${selectedLeadIds.length} selected lead(s)?`)) return;
+    setDeleteConfirmation({
+      isOpen: true,
+      type: 'bulk_leads',
+      targetId: null,
+      title: `${selectedLeadIds.length} Selected Lead Records`,
+      subtitle: `All ${selectedLeadIds.length} selected lead entries will be permanently removed.`,
+      isDeleting: false
+    });
+  };
+
+  // Process Bulk Delete Selected Enquiries handler (Admin Only)
+  const processBulkDeleteEnquiries = async () => {
+    if (selectedLeadIds.length === 0) return;
 
     const idsToDelete = [...selectedLeadIds];
 
@@ -1304,6 +1353,24 @@ export default function AdminDashboard({ onLogout }) {
       );
     } catch (err) {
       console.warn('Backend bulk delete note:', err);
+    }
+  };
+
+  // Execute Confirmed Delete Dispatcher
+  const executeConfirmedDelete = async () => {
+    setDeleteConfirmation(prev => ({ ...prev, isDeleting: true }));
+    try {
+      if (deleteConfirmation.type === 'agent') {
+        await processDeleteAgent(deleteConfirmation.targetId);
+      } else if (deleteConfirmation.type === 'lead') {
+        await processDeleteEnquiry(deleteConfirmation.targetId);
+      } else if (deleteConfirmation.type === 'bulk_leads') {
+        await processBulkDeleteEnquiries();
+      }
+    } catch (e) {
+      console.error('Delete execution error:', e);
+    } finally {
+      setDeleteConfirmation({ isOpen: false, type: null, targetId: null, title: '', subtitle: '', isDeleting: false });
     }
   };
 
@@ -2339,7 +2406,7 @@ export default function AdminDashboard({ onLogout }) {
                   {/* Bulk Delete Selected Leads Icon Button (Admin Only) */}
                   {isAdmin && selectedLeadIds.length > 0 && (
                     <button 
-                      onClick={handleBulkDeleteEnquiries}
+                      onClick={openBulkDeleteConfirmation}
                       class="w-9 h-9 rounded-xl bg-rose-600 hover:bg-rose-700 text-white flex items-center justify-center transition shadow-sm border border-rose-500/40 cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95 animate-fade-in"
                       title={`Delete selected leads (${selectedLeadIds.length})`}
                     >
@@ -2673,7 +2740,7 @@ export default function AdminDashboard({ onLogout }) {
                                         </button>
                                         {isAdmin && (
                                           <button 
-                                            onClick={() => handleDeleteEnquiry(currentId)}
+                                            onClick={() => openDeleteEnquiryConfirmation(item)}
                                             class="w-6 h-6 rounded-md bg-rose-100 hover:bg-rose-200 text-rose-700 flex items-center justify-center transition cursor-pointer"
                                             title="Delete Lead"
                                           >
@@ -2885,7 +2952,7 @@ export default function AdminDashboard({ onLogout }) {
                                     <i class="fa-solid fa-pen-to-square text-xs"></i>
                                   </button>
                                   <button
-                                    onClick={() => handleDeleteAgent(agent.id || agent.username)}
+                                    onClick={() => openDeleteAgentConfirmation(agent)}
                                     class="w-7 h-7 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700 flex items-center justify-center transition cursor-pointer"
                                     title="Delete User Account"
                                   >
@@ -3932,6 +3999,74 @@ export default function AdminDashboard({ onLogout }) {
                 class="px-4 py-1.5 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B2E] text-white text-xs font-bold transition shadow-xs cursor-pointer"
               >
                 Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Global Delete Confirmation Modal */}
+      {deleteConfirmation.isOpen && (
+        <div 
+          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in"
+          onClick={() => !deleteConfirmation.isDeleting && setDeleteConfirmation(prev => ({ ...prev, isOpen: false }))}
+        >
+          <div 
+            class="bg-white rounded-2xl shadow-2xl border border-rose-100 max-w-sm w-full overflow-hidden transform transition-all scale-100"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div class="p-5 text-center">
+              <div class="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-3 text-xl shadow-xs">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+              </div>
+
+              <h3 class="text-base font-bold text-gray-900">Confirm Deletion</h3>
+              
+              <p class="text-xs text-gray-500 mt-1">
+                Are you sure you want to permanently delete this item? This action cannot be undone.
+              </p>
+
+              {deleteConfirmation.title && (
+                <div class="mt-3.5 p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-left">
+                  <p class="text-[11px] font-bold text-slate-800 truncate">
+                    <i class="fa-solid fa-trash-can text-rose-500 mr-1.5 text-[10px]"></i>
+                    {deleteConfirmation.title}
+                  </p>
+                  {deleteConfirmation.subtitle && (
+                    <p class="text-[10px] text-gray-500 mt-0.5 truncate pl-4">
+                      {deleteConfirmation.subtitle}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div class="px-5 py-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                disabled={deleteConfirmation.isDeleting}
+                onClick={() => setDeleteConfirmation(prev => ({ ...prev, isOpen: false }))}
+                class="px-3.5 py-1.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-200 text-xs font-semibold transition cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deleteConfirmation.isDeleting}
+                onClick={executeConfirmedDelete}
+                class="px-4 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                {deleteConfirmation.isDeleting ? (
+                  <>
+                    <i class="fa-solid fa-circle-notch fa-spin text-[11px]"></i>
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <i class="fa-regular fa-trash-can text-[11px]"></i>
+                    <span>Delete</span>
+                  </>
+                )}
               </button>
             </div>
           </div>

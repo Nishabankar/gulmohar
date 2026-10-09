@@ -2600,7 +2600,7 @@ export default function AdminDashboard({ onLogout }) {
                   {/* Create Lead Icon Button */}
                   <button 
                     onClick={() => setShowCreateLeadModal(true)}
-                    class="w-9 h-9 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition shadow-sm border border-emerald-500/40 cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
+                    class="w-9 h-9 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white flex items-center justify-center transition shadow-sm border border-rose-900/40 cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
                     title="New Lead"
                   >
                     <i class="fa-solid fa-user-pen text-sm"></i>
@@ -2609,7 +2609,7 @@ export default function AdminDashboard({ onLogout }) {
                   {/* Column Config Icon Button */}
                   <button 
                     onClick={() => setShowColumnConfigModal(true)}
-                    class="w-9 h-9 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition shadow-sm border border-emerald-500/40 cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
+                    class="w-9 h-9 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white flex items-center justify-center transition shadow-sm border border-rose-900/40 cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
                     title="Column Configuration"
                   >
                     <i class="fa-solid fa-sliders text-sm"></i>
@@ -2619,7 +2619,7 @@ export default function AdminDashboard({ onLogout }) {
                   {isAdmin && (
                     <button 
                       onClick={handleExportCSV}
-                      class="w-9 h-9 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition shadow-sm border border-emerald-500/40 cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
+                      class="w-9 h-9 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white flex items-center justify-center transition shadow-sm border border-rose-900/40 cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
                       title="Export"
                     >
                       <i class="fa-solid fa-file-excel text-sm"></i>
@@ -2630,7 +2630,7 @@ export default function AdminDashboard({ onLogout }) {
                   {isAdmin && (
                     <button 
                       onClick={() => setShowImportModal(true)}
-                      class="w-9 h-9 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition shadow-sm border border-emerald-500/40 cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
+                      class="w-9 h-9 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white flex items-center justify-center transition shadow-sm border border-rose-900/40 cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
                       title="Import CSV Leads"
                     >
                       <i class="fa-solid fa-file-import text-sm"></i>
@@ -3074,7 +3074,7 @@ export default function AdminDashboard({ onLogout }) {
                   <div class="flex items-center gap-2 flex-shrink-0">
                     <button 
                       onClick={() => setShowCreateAgentModal(true)}
-                      class="w-9 h-9 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-500/40 font-extrabold flex items-center justify-center transition shadow-sm cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
+                      class="w-9 h-9 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white border border-rose-900/40 font-extrabold flex items-center justify-center transition shadow-sm cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
                       title="Create User Account"
                     >
                       <i class="fa-solid fa-user-plus text-sm"></i>
@@ -4357,17 +4357,17 @@ export default function AdminDashboard({ onLogout }) {
       {/* Import CSV Leads Modal */}
       {showImportModal && (
         <div 
-          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in"
+          class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-3 sm:p-4 animate-fade-in"
           onClick={() => !isImporting && setShowImportModal(false)}
         >
           <div 
             class="bg-white rounded-3xl shadow-2xl border border-gray-100 max-w-lg w-full overflow-hidden flex flex-col relative"
             onClick={(e) => e.stopPropagation()}
           >
-            <div class="bg-gradient-to-r from-emerald-700 via-emerald-600 to-teal-700 p-4 sm:p-5 text-white flex items-center justify-between flex-shrink-0">
+            <div class="bg-gradient-to-r from-[#B30E2E] via-[#8A0B22] to-[#590414] p-4 sm:p-5 text-white flex items-center justify-between flex-shrink-0">
               <div class="flex items-center gap-2">
                 <i class="fa-solid fa-file-import text-lg"></i>
-                <h3 class="font-bold text-base">Import Leads from CSV</h3>
+                <h3 class="font-serif font-bold text-base">Import Leads from CSV</h3>
               </div>
               <button 
                 onClick={() => { setShowImportModal(false); setImportFile(null); setImportPreview([]); setImportMsg(''); }}
@@ -4387,7 +4387,7 @@ export default function AdminDashboard({ onLogout }) {
                 </div>
               )}
 
-              <div class="border-2 border-dashed border-emerald-300 hover:border-emerald-500 rounded-2xl p-6 text-center bg-emerald-50/40 hover:bg-emerald-50 transition cursor-pointer relative">
+              <div class="border-2 border-dashed border-rose-300 hover:border-[#B30E2E] rounded-2xl p-6 text-center bg-rose-50/40 hover:bg-rose-50 transition cursor-pointer relative">
                 <input
                   type="file"
                   accept=".csv"
@@ -4395,7 +4395,7 @@ export default function AdminDashboard({ onLogout }) {
                   class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 />
                 <div class="space-y-2">
-                  <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto text-xl shadow-xs">
+                  <div class="w-12 h-12 rounded-2xl bg-[#FFF0F2] text-[#B30E2E] border border-[#FCD6DC] flex items-center justify-center mx-auto text-xl shadow-xs">
                     <i class="fa-solid fa-cloud-arrow-up"></i>
                   </div>
                   <div>
@@ -4413,7 +4413,7 @@ export default function AdminDashboard({ onLogout }) {
                 <div class="space-y-2">
                   <div class="flex items-center justify-between text-xs font-bold text-slate-800 px-1">
                     <span>Preview Parsed Leads ({importPreview.length} found)</span>
-                    <span class="text-[10px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                    <span class="text-[10px] text-[#B30E2E] font-semibold bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
                       Auto Alternate Agent Assignment
                     </span>
                   </div>
@@ -4435,8 +4435,8 @@ export default function AdminDashboard({ onLogout }) {
                             <td class="p-2 font-medium text-slate-800">{lead.firstName} {lead.lastName}</td>
                             <td class="p-2 text-slate-600">{lead.phone}</td>
                             <td class="p-2 text-slate-500">{lead.email || '-'}</td>
-                            <td class="p-2"><span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">{lead.status || 'New'}</span></td>
-                            <td class="p-2 text-emerald-700 font-bold">{lead.assignedAgentName || 'Auto Round-Robin'}</td>
+                            <td class="p-2"><span class="px-1.5 py-0.5 rounded bg-rose-50 text-[#B30E2E] border border-rose-200 text-[10px] font-bold">{lead.status || 'New'}</span></td>
+                            <td class="p-2 text-[#B30E2E] font-bold">{lead.assignedAgentName || 'Auto Round-Robin'}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -4446,11 +4446,11 @@ export default function AdminDashboard({ onLogout }) {
               )}
             </div>
 
-            <div class="px-5 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+            <div class="px-5 py-3.5 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
               <button
                 type="button"
                 onClick={() => { setShowImportModal(false); setImportFile(null); setImportPreview([]); setImportMsg(''); }}
-                class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-200 text-xs font-semibold transition cursor-pointer"
+                class="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold cursor-pointer"
               >
                 Cancel
               </button>
@@ -4458,7 +4458,7 @@ export default function AdminDashboard({ onLogout }) {
                 type="button"
                 disabled={importPreview.length === 0 || isImporting}
                 onClick={handleConfirmImport}
-                class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                class="px-5 py-2 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white text-xs font-bold transition shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
               >
                 {isImporting ? (
                   <>

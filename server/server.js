@@ -11,7 +11,8 @@ const app = express();
 // CORS_ORIGIN: comma-separated list of allowed origins; empty allows all
 const allowedOrigins = env.CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean);
 app.use(cors(allowedOrigins.length ? { origin: allowedOrigins } : {}));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // Seed Default Admin User directly into MySQL
 const seedAdminUser = async () => {
@@ -47,6 +48,15 @@ const seedAdminUser = async () => {
 // Routes
 app.use('/api/enquiries', require('./routes/enquiryRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
+
+// Global JSON Error Handler
+app.use((err, req, res, next) => {
+  console.error('Unhandled Server Error:', err);
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || 'Internal Server Error'
+  });
+});
 
 // Health Check Route
 app.get(env.SERVE_FRONTEND ? '/api' : '/', (req, res) => {

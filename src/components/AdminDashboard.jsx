@@ -1529,7 +1529,14 @@ export default function AdminDashboard({ onLogout }) {
         body: JSON.stringify({ leads: importPreview })
       });
 
-      const data = await res.json();
+      const resText = await res.text();
+      let data;
+      try {
+        data = JSON.parse(resText);
+      } catch (jsonErr) {
+        throw new Error(`Server returned HTML response (${res.status} ${res.statusText}). Please restart Node.js server on Hostinger.`);
+      }
+
       if (data.success) {
         setImportMsg(data.message);
         if (Array.isArray(data.data)) {
@@ -1543,7 +1550,7 @@ export default function AdminDashboard({ onLogout }) {
           setImportMsg('');
         }, 1800);
       } else {
-        setImportMsg(`Error: ${data.message}`);
+        setImportMsg(`Error: ${data.message || 'Import failed'}`);
       }
     } catch (err) {
       setImportMsg(`Error: ${err.message}`);

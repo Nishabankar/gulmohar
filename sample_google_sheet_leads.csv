@@ -1,6 +1,6 @@
-id,created_time,full_name,phone,email,lead_status,Caller Name,Remarks
-1,2026-10-09 10:00:00,Aarav Patil,9870000001,aarav.patil@example.com,New,Rahul Patil,Interested in 2 Guntha plot near highway
-2,2026-10-09 10:15:00,Priyanka Shinde,9870000002,priyanka.s@example.com,New,Tejashree Patil,Requested location layout map on WhatsApp
-3,2026-10-09 10:30:00,Mahesh Kulkarni,9870000003,mahesh.k@example.com,New,,Looking for site visit next Sunday
-4,2026-10-09 10:45:00,Snehal Deshmukh,9870000004,snehal.d@example.com,New,Mohini Patil,Scheduled site visit with family
-5,2026-10-09 11:00:00,Vijay Pawar,9870000005,vijay.pawar@example.com,New,,Sent plot pricing brochure on email
+id,created_time,full_name,phone,email,lead_status,Caller Name
+1,2026-10-09 10:00:00,Aarav Patil,9870000001,aarav.patil@example.com,New,Rahul Patil
+2,2026-10-09 10:15:00,Priyanka Shinde,9870000002,priyanka.s@example.com,New,Tejashree Patil
+3,2026-10-09 10:30:00,Mahesh Kulkarni,9870000003,mahesh.k@example.com,New,
+4,2026-10-09 10:45:00,Snehal Deshmukh,9870000004,snehal.d@example.com,New,Mohini Patil
+5,2026-10-09 11:00:00,Vijay Pawar,9870000005,vijay.pawar@example.com,New,

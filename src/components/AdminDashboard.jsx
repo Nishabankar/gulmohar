@@ -4385,7 +4385,7 @@ export default function AdminDashboard({ onLogout }) {
                   </div>
 
                   <div class="border border-gray-200 rounded-xl overflow-x-auto overflow-y-auto max-h-48 custom-scrollbar text-[11px]">
-                    <table class="w-full min-w-[650px] text-left border-collapse whitespace-nowrap">
+                    <table class="w-full text-left border-collapse whitespace-nowrap">
                       <thead class="bg-gray-100 text-gray-700 sticky top-0 font-bold z-10">
                         <tr>
                           <th class="p-2 border-b">Name</th>
@@ -4393,7 +4393,6 @@ export default function AdminDashboard({ onLogout }) {
                           <th class="p-2 border-b">Email</th>
                           <th class="p-2 border-b">Status</th>
                           <th class="p-2 border-b">Caller/Agent</th>
-                          <th class="p-2 border-b">Remarks</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -4404,7 +4403,6 @@ export default function AdminDashboard({ onLogout }) {
                             <td class="p-2 text-slate-500">{lead.email || '-'}</td>
                             <td class="p-2"><span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">{lead.status || 'New'}</span></td>
                             <td class="p-2 text-emerald-700 font-bold">{lead.assignedAgentName || 'Auto Round-Robin'}</td>
-                            <td class="p-2 text-slate-600 max-w-[180px] truncate">{lead.notes || '-'}</td>
                           </tr>
                         ))}
                       </tbody>

@@ -4392,7 +4392,7 @@ export default function AdminDashboard({ onLogout }) {
                           <th class="p-2 border-b">Phone</th>
                           <th class="p-2 border-b">Email</th>
                           <th class="p-2 border-b">Status</th>
-                          <th class="p-2 border-b">Caller/Agent</th>
+                          <th class="p-2 border-b">Auto Assigned Agent</th>
                         </tr>
                       </thead>
                       <tbody>

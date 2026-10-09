@@ -4024,22 +4024,8 @@ export default function AdminDashboard({ onLogout }) {
               <h3 class="text-base font-bold text-gray-900">Confirm Deletion</h3>
               
               <p class="text-xs text-gray-500 mt-1">
-                Are you sure you want to permanently delete this item? This action cannot be undone.
+                Are you sure you want to delete?
               </p>
-
-              {deleteConfirmation.title && (
-                <div class="mt-3.5 p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-left">
-                  <p class="text-[11px] font-bold text-slate-800 truncate">
-                    <i class="fa-solid fa-trash-can text-rose-500 mr-1.5 text-[10px]"></i>
-                    {deleteConfirmation.title}
-                  </p>
-                  {deleteConfirmation.subtitle && (
-                    <p class="text-[10px] text-gray-500 mt-0.5 truncate pl-4">
-                      {deleteConfirmation.subtitle}
-                    </p>
-                  )}
-                </div>
-              )}
             </div>
 
             <div class="px-5 py-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2">

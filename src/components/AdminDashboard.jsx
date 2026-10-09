@@ -4390,8 +4390,10 @@ export default function AdminDashboard({ onLogout }) {
                         <tr>
                           <th class="p-2 border-b">Name</th>
                           <th class="p-2 border-b">Phone</th>
+                          <th class="p-2 border-b">Email</th>
                           <th class="p-2 border-b">Status</th>
                           <th class="p-2 border-b">Caller/Agent</th>
+                          <th class="p-2 border-b">Remarks</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -4399,8 +4401,10 @@ export default function AdminDashboard({ onLogout }) {
                           <tr key={idx} class="border-b hover:bg-slate-50">
                             <td class="p-2 font-medium">{lead.firstName} {lead.lastName}</td>
                             <td class="p-2">{lead.phone}</td>
+                            <td class="p-2 text-gray-500">{lead.email || '-'}</td>
                             <td class="p-2"><span class="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-bold">{lead.status}</span></td>
                             <td class="p-2 text-emerald-700 font-semibold">{lead.assignedAgentName || 'Auto Round-Robin'}</td>
+                            <td class="p-2 text-gray-600 truncate max-w-[120px]">{lead.notes || '-'}</td>
                           </tr>
                         ))}
                       </tbody>

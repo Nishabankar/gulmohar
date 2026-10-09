@@ -83,6 +83,7 @@ export default function AdminDashboard({ onLogout }) {
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
   const [agentFilter, setAgentFilter] = useState('All');
   const [visitDateFilter, setVisitDateFilter] = useState('All'); // 'All' | 'Today' | 'Tomorrow' | 'ThisWeek'
+  const [followupDateFilter, setFollowupDateFilter] = useState('All'); // 'All' | 'Today' | 'Tomorrow' | 'ThisWeek'
   const [isAgentDropdownOpen, setIsAgentDropdownOpen] = useState(false);
 
   // Global Delete Confirmation Modal State

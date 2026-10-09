@@ -3,12 +3,15 @@ import { API_BASE_URL } from '../config';
 
 export default function AdminLogin({ onLoginSuccess, onClose }) {
   const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [forgotStep, setForgotStep] = useState(1); // 1: Request OTP Email, 2: Enter OTP & New Password
+
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
   // Forgot password state
   const [forgotUsername, setForgotUsername] = useState('');
   const [forgotEmail, setForgotEmail] = useState('');
+  const [otpCode, setOtpCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
@@ -46,10 +49,48 @@ export default function AdminLogin({ onLoginSuccess, onClose }) {
     setLoading(false);
   };
 
-  const handleForgotPassword = async (e) => {
+  // Step 1: Request OTP Email Confirmation
+  const handleRequestOtp = async (e) => {
     e.preventDefault();
-    if (!forgotUsername || !forgotEmail || !newPassword) {
-      setError('Please fill in all required fields.');
+    if (!forgotUsername || !forgotEmail) {
+      setError('Please fill in both username and registered email address.');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    setSuccessMsg('');
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/request-password-reset`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: forgotUsername,
+          email: forgotEmail
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setSuccessMsg(data.message || 'Verification OTP code sent to your email.');
+        setForgotStep(2);
+      } else {
+        setError(data.message || 'No account found with this username and email address.');
+      }
+    } catch (err) {
+      console.error('Request OTP failed:', err);
+      setError('Unable to connect to server. Please try again.');
+    }
+    setLoading(false);
+  };
+
+  // Step 2: Verify OTP & Reset Password
+  const handleResetPasswordSubmit = async (e) => {
+    e.preventDefault();
+    if (!otpCode || !newPassword || !confirmPassword) {
+      setError('Please enter the verification OTP code and your new password.');
       return;
     }
 
@@ -74,6 +115,7 @@ export default function AdminLogin({ onLoginSuccess, onClose }) {
         body: JSON.stringify({
           username: forgotUsername,
           email: forgotEmail,
+          otpCode,
           newPassword
         })
       });
@@ -81,20 +123,21 @@ export default function AdminLogin({ onLoginSuccess, onClose }) {
       const data = await response.json();
 
       if (data.success) {
-        setSuccessMsg(data.message || 'Password reset successfully! You can now log in.');
+        setSuccessMsg('Password reset successfully! Confirmation email sent.');
         setTimeout(() => {
           setIsForgotPassword(false);
+          setForgotStep(1);
           setUsername(forgotUsername);
           setPassword('');
           setError('');
           setSuccessMsg('');
-        }, 2000);
+        }, 2200);
       } else {
-        setError(data.message || 'Password reset failed. Please check your username and email.');
+        setError(data.message || 'Password reset failed. Please check your verification OTP code.');
       }
     } catch (err) {
-      console.error('Forgot password request failed:', err);
-      setError('Unable to reach the server. Please try again later.');
+      console.error('Password reset failed:', err);
+      setError('Unable to reach the server. Please try again.');
     }
     setLoading(false);
   };
@@ -117,7 +160,7 @@ export default function AdminLogin({ onLoginSuccess, onClose }) {
             {isForgotPassword ? 'Forgot Password Recovery' : 'Login'}
           </h3>
           <p class="text-[11px] text-white/80 mt-1 font-sans">
-            {isForgotPassword ? 'Reset your account password via registered email' : 'Gulmohar City Management System'}
+            {isForgotPassword ? 'Email OTP Verification & Password Reset' : 'Gulmohar City Management System'}
           </p>
         </div>
 
@@ -161,7 +204,7 @@ export default function AdminLogin({ onLoginSuccess, onClose }) {
                 <label class="block text-xs font-bold text-gray-700 tracking-wider">Password *</label>
                 <button
                   type="button"
-                  onClick={() => { setIsForgotPassword(true); setError(''); setSuccessMsg(''); setForgotUsername(username); }}
+                  onClick={() => { setIsForgotPassword(true); setForgotStep(1); setError(''); setSuccessMsg(''); setForgotUsername(username); }}
                   class="text-[11px] font-bold text-[#B30E2E] hover:underline cursor-pointer"
                 >
                   Forgot Password?
@@ -199,20 +242,13 @@ export default function AdminLogin({ onLoginSuccess, onClose }) {
               </button>
             </div>
           </form>
-        ) : (
-          /* FORGOT PASSWORD FORM */
-          <form onSubmit={handleForgotPassword} class="p-6 space-y-3.5">
+        ) : forgotStep === 1 ? (
+          /* STEP 1: REQUEST OTP EMAIL */
+          <form onSubmit={handleRequestOtp} class="p-6 space-y-3.5">
             {error && (
               <div class="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold flex items-center gap-2">
                 <i class="fa-solid fa-circle-exclamation text-red-500 text-sm"></i>
                 <span>{error}</span>
-              </div>
-            )}
-
-            {successMsg && (
-              <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold flex items-center gap-2">
-                <i class="fa-solid fa-circle-check text-emerald-500 text-sm"></i>
-                <span>{successMsg}</span>
               </div>
             )}
 
@@ -229,14 +265,73 @@ export default function AdminLogin({ onLoginSuccess, onClose }) {
             </div>
 
             <div>
-              <label class="block text-xs font-bold text-gray-700 mb-1">Registered Email *</label>
+              <label class="block text-xs font-bold text-gray-700 mb-1">Registered Email Address *</label>
               <input 
                 type="email" 
                 required 
                 value={forgotEmail}
                 onChange={(e) => setForgotEmail(e.target.value)}
-                placeholder="Enter registered email address"
+                placeholder="Enter registered email"
                 class="w-full px-3.5 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] text-xs bg-gray-50 focus:bg-white font-medium"
+              />
+            </div>
+
+            <p class="text-[11px] text-gray-500 italic">
+              A 6-digit confirmation OTP code will be sent to your email inbox for verification.
+            </p>
+
+            <div class="pt-2 flex items-center justify-between gap-3">
+              <button 
+                type="button"
+                onClick={() => { setIsForgotPassword(false); setError(''); setSuccessMsg(''); }}
+                class="w-1/2 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition cursor-pointer text-xs"
+              >
+                Back to Login
+              </button>
+
+              <button 
+                type="submit" 
+                disabled={loading}
+                class="w-1/2 py-2.5 bg-[#B30E2E] hover:bg-[#8A0B22] text-white font-bold rounded-xl shadow-md transition cursor-pointer text-xs flex items-center justify-center gap-1.5"
+              >
+                {loading ? (
+                  <>
+                    <i class="fa-solid fa-spinner fa-spin text-xs"></i>
+                    <span>Sending Mail...</span>
+                  </>
+                ) : (
+                  <span>Send OTP Email</span>
+                )}
+              </button>
+            </div>
+          </form>
+        ) : (
+          /* STEP 2: ENTER OTP & NEW PASSWORD */
+          <form onSubmit={handleResetPasswordSubmit} class="p-6 space-y-3.5">
+            {error && (
+              <div class="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold flex items-center gap-2">
+                <i class="fa-solid fa-circle-exclamation text-red-500 text-sm"></i>
+                <span>{error}</span>
+              </div>
+            )}
+
+            {successMsg && (
+              <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold flex items-center gap-2">
+                <i class="fa-solid fa-circle-check text-emerald-500 text-sm"></i>
+                <span>{successMsg}</span>
+              </div>
+            )}
+
+            <div>
+              <label class="block text-xs font-bold text-gray-700 mb-1">Enter 6-Digit Email OTP *</label>
+              <input 
+                type="text" 
+                required 
+                maxLength={6}
+                value={otpCode}
+                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="6-Digit OTP Code"
+                class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] text-center font-bold tracking-widest text-base bg-amber-50 focus:bg-white text-slate-800"
               />
             </div>
 
@@ -267,10 +362,10 @@ export default function AdminLogin({ onLoginSuccess, onClose }) {
             <div class="pt-2 flex items-center justify-between gap-3">
               <button 
                 type="button"
-                onClick={() => { setIsForgotPassword(false); setError(''); setSuccessMsg(''); }}
+                onClick={() => { setForgotStep(1); setError(''); setSuccessMsg(''); }}
                 class="w-1/2 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition cursor-pointer text-xs"
               >
-                Back to Login
+                Back to Step 1
               </button>
 
               <button 

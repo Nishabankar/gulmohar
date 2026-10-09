@@ -26,5 +26,10 @@ module.exports = {
   DB_PORT: parseInt(process.env.DB_PORT || '3306', 10),
   DB_USER: process.env.DB_USER || 'u660519083_gulmohar',
   DB_PASSWORD: process.env.DB_PASSWORD || 'Housedeal@123',
-  DB_NAME: process.env.DB_NAME || 'u660519083_housedealcrm'
+  DB_NAME: process.env.DB_NAME || 'u660519083_housedealcrm',
+  SMTP_HOST: process.env.SMTP_HOST || 'smtp.hostinger.com',
+  SMTP_PORT: parseInt(process.env.SMTP_PORT || '465', 10),
+  SMTP_USER: process.env.SMTP_USER || '',
+  SMTP_PASS: process.env.SMTP_PASS || '',
+  SMTP_FROM: process.env.SMTP_FROM || 'Gulmohar City Admin <noreply@gulmoharcity.com>'
 };

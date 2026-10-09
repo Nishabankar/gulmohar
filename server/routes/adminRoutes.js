@@ -5,6 +5,10 @@ const jwt = require('jsonwebtoken');
 const { query } = require('../config/db');
 const { protectAdmin } = require('../middleware/authMiddleware');
 const { JWT_SECRET, JWT_EXPIRES_IN } = require('../config/env');
+const { sendPasswordResetEmail, sendPasswordChangedConfirmation } = require('../services/emailService');
+
+// OTP Store Map (key: username, value: { otpCode, expiresAt, email })
+const otpStore = new Map();
 
 // Helper function to format SQL enquiry row to JSON matching frontend expectations
 const formatEnquiryRow = (row, historyEntries = []) => {
@@ -92,12 +96,55 @@ router.get('/verify', protectAdmin, async (req, res) => {
   return res.json({ success: true, admin: req.admin });
 });
 
+// @route   POST /api/admin/request-password-reset
+// @desc    Verify username & email, generate 6-digit OTP, send email confirmation
+// @access  Public
+router.post('/request-password-reset', async (req, res) => {
+  try {
+    const { username, email } = req.body;
+    if (!username || !email) {
+      return res.status(400).json({ success: false, message: 'Please provide registered username and email address.' });
+    }
+
+    const cleanUsername = username.toLowerCase().trim();
+    const cleanEmail = email.toLowerCase().trim();
+
+    const [rows] = await query(
+      'SELECT id, name, username, email FROM admins WHERE LOWER(username) = ? AND LOWER(email) = ? LIMIT 1',
+      [cleanUsername, cleanEmail]
+    );
+
+    if (!rows || rows.length === 0) {
+      return res.status(400).json({ success: false, message: 'No account found with this username and email address.' });
+    }
+
+    const adminUser = rows[0];
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+    otpStore.set(cleanUsername, { otpCode, expiresAt, email: cleanEmail });
+
+    // Send confirmation email
+    const emailResult = await sendPasswordResetEmail(cleanEmail, adminUser.name || adminUser.username, otpCode);
+
+    return res.json({
+      success: true,
+      message: `Verification OTP email sent to ${cleanEmail}. Please check your inbox.`,
+      emailSent: emailResult.success,
+      previewUrl: emailResult.previewUrl || null
+    });
+  } catch (error) {
+    console.error('Error requesting password reset:', error.message);
+    return res.status(500).json({ success: false, message: 'Error processing password reset request', error: error.message });
+  }
+});
+
 // @route   POST /api/admin/forgot-password
-// @desc    Verify username & email, then reset to new password
+// @desc    Verify OTP code and reset user password
 // @access  Public
 router.post('/forgot-password', async (req, res) => {
   try {
-    const { username, email, newPassword } = req.body;
+    const { username, email, otpCode, newPassword } = req.body;
 
     if (!username || !email || !newPassword) {
       return res.status(400).json({ success: false, message: 'Please provide username, email, and new password.' });
@@ -110,8 +157,21 @@ router.post('/forgot-password', async (req, res) => {
     const cleanUsername = username.toLowerCase().trim();
     const cleanEmail = email.toLowerCase().trim();
 
+    // Verify OTP if provided
+    if (otpCode) {
+      const storedOtp = otpStore.get(cleanUsername);
+      if (!storedOtp || storedOtp.otpCode !== otpCode.trim()) {
+        return res.status(400).json({ success: false, message: 'Invalid verification OTP code. Please check your email.' });
+      }
+      if (Date.now() > storedOtp.expiresAt) {
+        otpStore.delete(cleanUsername);
+        return res.status(400).json({ success: false, message: 'Verification OTP code has expired. Please request a new code.' });
+      }
+      otpStore.delete(cleanUsername);
+    }
+
     const [rows] = await query(
-      'SELECT id, username, email FROM admins WHERE LOWER(username) = ? AND LOWER(email) = ? LIMIT 1',
+      'SELECT id, name, username, email FROM admins WHERE LOWER(username) = ? AND LOWER(email) = ? LIMIT 1',
       [cleanUsername, cleanEmail]
     );
 
@@ -124,9 +184,12 @@ router.post('/forgot-password', async (req, res) => {
 
     await query('UPDATE admins SET password = ? WHERE id = ?', [hashedPassword, adminUser.id]);
 
+    // Send password changed confirmation email
+    sendPasswordChangedConfirmation(cleanEmail, adminUser.name || adminUser.username);
+
     return res.json({
       success: true,
-      message: 'Password reset successfully! You can now log in with your new password.'
+      message: 'Password reset successfully! Confirmation notification sent to your email.'
     });
   } catch (error) {
     console.error('Error in forgot-password:', error.message);

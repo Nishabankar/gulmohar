@@ -2674,75 +2674,18 @@ export default function AdminDashboard({ onLogout }) {
                                     </td>
                                   );
                                 }
-                                case 'followupDate': {
-                                  const isFollowupOpen = activeDropdown?.rowId === currentId && activeDropdown?.field === 'followupDate';
-                                  const formattedVal = formatToInputDate(item.followupDate);
-                                  const displayVal = formatDateShortMonth(item.followupDate) || 'Set Date';
-
+                                case 'followupDate':
                                   return (
-                                    <td key="followupDate" class="py-2.5 px-2.5 whitespace-nowrap min-w-[125px] relative custom-dropdown-container">
-                                      <button
-                                        type="button"
-                                        onClick={() => setActiveDropdown(isFollowupOpen ? null : { rowId: currentId, field: 'followupDate' })}
-                                        class="px-2 py-0.5 rounded-md border border-amber-300 text-[10px] font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 outline-none cursor-pointer transition shadow-2xs flex items-center justify-between gap-1 w-full"
-                                        title="Click to edit Followup Date"
-                                      >
-                                        <span class="flex items-center gap-1 truncate">
-                                          <i class="fa-regular fa-calendar text-[9px] text-amber-700"></i>
-                                          <span>{displayVal}</span>
-                                        </span>
-                                        <i class={`fa-solid fa-chevron-down text-[8px] text-amber-700 transition-transform ${isFollowupOpen ? 'rotate-180' : ''}`}></i>
-                                      </button>
-
-                                      {isFollowupOpen && (
-                                        <div class="absolute top-full left-0 mt-1 z-40 min-w-[165px] bg-white rounded-xl shadow-xl border border-gray-200 p-2.5 text-xs animate-fade-in space-y-2">
-                                          <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">Followup Date</label>
-                                          <input
-                                            type="date"
-                                            value={formattedVal}
-                                            onChange={(e) => {
-                                              handleInlineFieldChange(currentId, 'followupDate', e.target.value);
-                                              setActiveDropdown(null);
-                                            }}
-                                            class="w-full px-2 py-1 rounded-lg border border-gray-300 text-xs font-medium text-gray-800 focus:outline-none focus:border-[#B30E2E]"
-                                          />
-                                          <div class="flex items-center justify-between pt-1.5 border-t border-gray-100 text-[10px]">
-                                            <button
-                                              type="button"
-                                              onClick={() => {
-                                                handleInlineFieldChange(currentId, 'followupDate', getTodayString());
-                                                setActiveDropdown(null);
-                                              }}
-                                              class="px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 hover:bg-amber-200 font-semibold cursor-pointer"
-                                            >
-                                              Today
-                                            </button>
-                                            <button
-                                              type="button"
-                                              onClick={() => {
-                                                handleInlineFieldChange(currentId, 'followupDate', getTomorrowString());
-                                                setActiveDropdown(null);
-                                              }}
-                                              class="px-1.5 py-0.5 rounded bg-blue-100 text-blue-900 hover:bg-blue-200 font-semibold cursor-pointer"
-                                            >
-                                              Tomorrow
-                                            </button>
-                                            <button
-                                              type="button"
-                                              onClick={() => {
-                                                handleInlineFieldChange(currentId, 'followupDate', '');
-                                                setActiveDropdown(null);
-                                              }}
-                                              class="px-1.5 py-0.5 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 font-semibold cursor-pointer"
-                                            >
-                                              Clear
-                                            </button>
-                                          </div>
-                                        </div>
-                                      )}
+                                    <td key="followupDate" class="py-2.5 px-2.5 whitespace-nowrap min-w-[115px]">
+                                      <input
+                                        type="date"
+                                        value={formatToInputDate(item.followupDate)}
+                                        onChange={(e) => handleInlineFieldChange(currentId, 'followupDate', e.target.value)}
+                                        class="px-1.5 py-0.5 rounded-md border border-amber-300 text-[10px] font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 outline-none cursor-pointer transition shadow-2xs"
+                                        title="Click to edit Followup Date inline"
+                                      />
                                     </td>
                                   );
-                                }
                                 case 'plotsCount': {
                                   const isPlotsOpen = activeDropdown?.rowId === currentId && activeDropdown?.field === 'plotsCount';
                                   const currentGuntha = item.plotsCount || '1 Guntha';

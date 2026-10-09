@@ -502,4 +502,115 @@ router.put('/column-preferences', protectAdmin, async (req, res) => {
   }
 });
 
+// @route   POST /api/admin/enquiries/import
+// @desc    Bulk import leads from CSV/Google Sheet with auto alternate agent assignment (Round-Robin)
+// @access  Protected (Admin only)
+router.post('/enquiries/import', protectAdmin, async (req, res) => {
+  try {
+    const { leads } = req.body;
+    if (!Array.isArray(leads) || leads.length === 0) {
+      return res.status(400).json({ success: false, message: 'No leads provided for import' });
+    }
+
+    // 1. Fetch active Sales Agents for Alternate Round-Robin assignment
+    const [agents] = await query("SELECT id, name, username FROM admins WHERE role = 'Agent' ORDER BY id ASC");
+    
+    let importedCount = 0;
+    let skippedCount = 0;
+    let roundRobinIndex = 0;
+
+    for (const lead of leads) {
+      const cleanPhone = (lead.phone || '').toString().replace(/\D/g, '').trim();
+      if (!cleanPhone || cleanPhone.length < 10) {
+        skippedCount++;
+        continue;
+      }
+
+      // Check if phone number already exists in MySQL database
+      const [existing] = await query('SELECT id FROM enquiries WHERE phone = ? LIMIT 1', [cleanPhone]);
+      if (existing.length > 0) {
+        skippedCount++;
+        continue;
+      }
+
+      const firstName = (lead.firstName || 'Customer').trim();
+      const lastName = (lead.lastName || '').trim();
+      const email = (lead.email || '').toLowerCase().trim();
+      const plotsCount = (lead.plotsCount || '1 Guntha').trim();
+      const status = (lead.status || 'New').trim();
+      const notes = (lead.notes || '').trim();
+      const visitDate = (lead.visitDate || '').trim();
+      const followupDate = (lead.followupDate || '').trim();
+
+      // Determine Assigned Agent (if sheet provided caller name, search matching agent; else Round-Robin)
+      let assignedAgent = null;
+      if (lead.assignedAgentName && lead.assignedAgentName.trim()) {
+        const searchName = lead.assignedAgentName.trim().toLowerCase();
+        assignedAgent = agents.find(a => 
+          (a.name || '').toLowerCase() === searchName || 
+          (a.username || '').toLowerCase() === searchName
+        );
+      }
+
+      // If no agent matched or none provided, use Alternate Round-Robin
+      if (!assignedAgent && agents.length > 0) {
+        assignedAgent = agents[roundRobinIndex % agents.length];
+        roundRobinIndex++;
+      }
+
+      const assignedTo = assignedAgent ? assignedAgent.id : null;
+      const assignedAgentName = assignedAgent ? assignedAgent.name : (lead.assignedAgentName || 'Unassigned');
+
+      // Insert into MySQL enquiries table
+      const [insertResult] = await query(
+        `INSERT INTO enquiries 
+         (first_name, last_name, phone, email, plots_count, visit_date, followup_date, status, notes, assigned_to, assigned_agent_name, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+        [firstName, lastName, cleanPhone, email, plotsCount, visitDate, followupDate, status, notes, assignedTo, assignedAgentName]
+      );
+
+      const newId = insertResult.insertId;
+
+      // Log initial history entry
+      const performer = req.admin ? (req.admin.name || req.admin.username || 'Admin') : 'Admin';
+      await query(
+        `INSERT INTO enquiry_history (enquiry_id, field_name, old_value, new_value, modified_by, modified_date) VALUES (?, ?, ?, ?, ?, NOW())`,
+        [newId, 'Import', '', `Imported via Google Sheet CSV & assigned to ${assignedAgentName}`, performer]
+      );
+
+      importedCount++;
+    }
+
+    // Fetch refreshed list of enquiries and history to return to frontend
+    const [allRows] = await query('SELECT * FROM enquiries ORDER BY id DESC');
+    let historyMap = {};
+    if (allRows.length > 0) {
+      const placeholders = allRows.map(() => '?').join(',');
+      const [allHistory] = await query(
+        `SELECT * FROM enquiry_history WHERE enquiry_id IN (${placeholders}) ORDER BY modified_date ASC`,
+        allRows.map(r => r.id)
+      );
+      allHistory.forEach(h => {
+        if (!historyMap[h.enquiry_id]) historyMap[h.enquiry_id] = [];
+        historyMap[h.enquiry_id].push(h);
+      });
+    }
+
+    const updatedEnquiries = allRows.map(r => formatEnquiryRow(r, historyMap[r.id] || []));
+
+    console.log(`📥 CSV Import Complete: ${importedCount} leads imported, ${skippedCount} skipped/duplicates.`);
+
+    return res.json({
+      success: true,
+      message: `Import complete: ${importedCount} leads added successfully (${skippedCount} duplicates/invalid skipped)`,
+      importedCount,
+      skippedCount,
+      data: updatedEnquiries
+    });
+  } catch (error) {
+    console.error('Error importing leads from CSV:', error.message);
+    return res.status(500).json({ success: false, message: 'Import Database Error', error: error.message });
+  }
+});
+
 module.exports = router;

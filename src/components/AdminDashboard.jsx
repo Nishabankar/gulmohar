@@ -96,6 +96,13 @@ export default function AdminDashboard({ onLogout }) {
     isDeleting: false
   });
 
+  // CSV Import State
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importFile, setImportFile] = useState(null);
+  const [importPreview, setImportPreview] = useState([]);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importMsg, setImportMsg] = useState('');
+
   // Active Inline Dropdown Popover State: { rowId: string, field: 'status' | 'followupDate' | 'plotsCount' | 'assignedAgent' }
   const [activeDropdown, setActiveDropdown] = useState(null);
 
@@ -1392,6 +1399,146 @@ export default function AdminDashboard({ onLogout }) {
     }
   };
 
+  // CSV Parser Helper Function
+  const parseCSVText = (text) => {
+    const lines = text.split(/\r\n|\n/).filter(line => line.trim() !== '');
+    if (lines.length < 2) return [];
+
+    const parseRow = (rowStr) => {
+      const result = [];
+      let current = '';
+      let inQuotes = false;
+      for (let i = 0; i < rowStr.length; i++) {
+        const char = rowStr[i];
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          result.push(current.trim().replace(/^"|"$/g, ''));
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      result.push(current.trim().replace(/^"|"$/g, ''));
+      return result;
+    };
+
+    const headers = parseRow(lines[0]);
+    
+    const getIndex = (possibleNames) => {
+      return headers.findIndex(h => {
+        const clean = h.toLowerCase().trim().replace(/[\s_]+/g, '');
+        return possibleNames.some(name => clean.includes(name));
+      });
+    };
+
+    const nameIdx = getIndex(['fullname', 'full_name', 'customername', 'name', 'leadname']);
+    const phoneIdx = getIndex(['phone', 'phonenumber', 'mobile', 'mobileno', 'contact']);
+    const emailIdx = getIndex(['email', 'emailaddress', 'mail', 'mailid']);
+    const statusIdx = getIndex(['leadstatus', 'lead_status', 'status', 'stage']);
+    const agentIdx = getIndex(['callername', 'caller_name', 'agent', 'assignedagent']);
+    const remarksIdx = getIndex(['remarks', 'notes', 'comments', 'comment']);
+    const visitIdx = getIndex(['visitarrangeondate', 'visitdate', 'visit_date']);
+    const followupIdx = getIndex(['followup1', 'followup', 'followup_date']);
+
+    const parsedLeads = [];
+    for (let i = 1; i < lines.length; i++) {
+      const row = parseRow(lines[i]);
+      if (row.length === 0) continue;
+
+      const rawName = nameIdx !== -1 && row[nameIdx] ? row[nameIdx].trim() : '';
+      const phoneVal = phoneIdx !== -1 && row[phoneIdx] ? row[phoneIdx].trim() : '';
+      const emailVal = emailIdx !== -1 && row[emailIdx] ? row[emailIdx].trim() : '';
+      const statusVal = statusIdx !== -1 && row[statusIdx] ? row[statusIdx].trim() : 'New';
+      const agentVal = agentIdx !== -1 && row[agentIdx] ? row[agentIdx].trim() : '';
+      const remarksVal = remarksIdx !== -1 && row[remarksIdx] ? row[remarksIdx].trim() : '';
+      const visitVal = visitIdx !== -1 && row[visitIdx] ? row[visitIdx].trim() : '';
+      const followupVal = followupIdx !== -1 && row[followupIdx] ? row[followupIdx].trim() : '';
+
+      if (!phoneVal) continue;
+
+      let firstName = rawName;
+      let lastName = '';
+      if (rawName.includes(' ')) {
+        const parts = rawName.split(/\s+/);
+        firstName = parts[0];
+        lastName = parts.slice(1).join(' ');
+      }
+
+      parsedLeads.push({
+        firstName: firstName || 'Customer',
+        lastName: lastName || '',
+        phone: phoneVal,
+        email: emailVal,
+        plotsCount: '1 Guntha',
+        status: statusVal || 'New',
+        notes: remarksVal || '',
+        visitDate: visitVal || '',
+        followupDate: followupVal || '',
+        assignedAgentName: agentVal || ''
+      });
+    }
+
+    return parsedLeads;
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setImportFile(file);
+    setImportMsg('');
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const text = evt.target.result;
+      const leads = parseCSVText(text);
+      setImportPreview(leads);
+      if (leads.length === 0) {
+        setImportMsg('Error: No valid leads with phone numbers found in CSV file.');
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleConfirmImport = async () => {
+    if (importPreview.length === 0) return;
+    setIsImporting(true);
+    setImportMsg('');
+
+    const token = localStorage.getItem('adminToken');
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/enquiries/import`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ leads: importPreview })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setImportMsg(data.message);
+        if (Array.isArray(data.data)) {
+          setEnquiries(data.data);
+          localStorage.setItem('localEnquiriesCache', JSON.stringify(data.data));
+        }
+        setTimeout(() => {
+          setShowImportModal(false);
+          setImportFile(null);
+          setImportPreview([]);
+          setImportMsg('');
+        }, 1800);
+      } else {
+        setImportMsg(`Error: ${data.message}`);
+      }
+    } catch (err) {
+      setImportMsg(`Error: ${err.message}`);
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   // Helper to generate consistent Customer/User ID and Lead ID in chronological order (Oldest Created First)
   const getChronologicalLeads = (allLeads = enquiries) => {
     return [...(allLeads || [])].sort((a, b) => {
@@ -2458,6 +2605,17 @@ export default function AdminDashboard({ onLogout }) {
                       title="Export"
                     >
                       <i class="fa-solid fa-file-excel text-sm"></i>
+                    </button>
+                  )}
+
+                  {/* Import CSV Icon Button (Admin Only) */}
+                  {isAdmin && (
+                    <button 
+                      onClick={() => setShowImportModal(true)}
+                      class="w-9 h-9 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition shadow-sm border border-emerald-500/40 cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
+                      title="Import CSV Leads"
+                    >
+                      <i class="fa-solid fa-file-import text-sm"></i>
                     </button>
                   )}
                 </div>
@@ -4141,6 +4299,127 @@ export default function AdminDashboard({ onLogout }) {
                   <>
                     <i class="fa-regular fa-trash-can text-[11px]"></i>
                     <span>Delete</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Import CSV Leads Modal */}
+      {showImportModal && (
+        <div 
+          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in"
+          onClick={() => !isImporting && setShowImportModal(false)}
+        >
+          <div 
+            class="bg-white rounded-3xl shadow-2xl border border-gray-100 max-w-lg w-full overflow-hidden flex flex-col relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div class="bg-gradient-to-r from-emerald-700 via-emerald-600 to-teal-700 p-4 sm:p-5 text-white flex items-center justify-between flex-shrink-0">
+              <div class="flex items-center gap-2">
+                <i class="fa-solid fa-file-import text-lg"></i>
+                <h3 class="font-bold text-base">Import Leads from CSV</h3>
+              </div>
+              <button 
+                onClick={() => { setShowImportModal(false); setImportFile(null); setImportPreview([]); setImportMsg(''); }}
+                class="text-white/70 hover:text-white bg-white/10 hover:bg-white/20 w-8 h-8 rounded-full flex items-center justify-center transition cursor-pointer"
+              >
+                <i class="fa-solid fa-xmark text-sm"></i>
+              </button>
+            </div>
+
+            <div class="p-5 space-y-4 overflow-y-auto max-h-[75vh]">
+              {importMsg && (
+                <div class={`p-3 rounded-xl text-xs font-bold flex items-center gap-2 ${
+                  importMsg.includes('Error') ? 'bg-rose-100 border border-rose-300 text-rose-900' : 'bg-emerald-100 border border-emerald-300 text-emerald-900'
+                }`}>
+                  <i class={`fa-solid ${importMsg.includes('Error') ? 'fa-triangle-exclamation text-rose-600' : 'fa-circle-check text-emerald-600'}`}></i>
+                  <span>{importMsg}</span>
+                </div>
+              )}
+
+              <div class="border-2 border-dashed border-emerald-300 hover:border-emerald-500 rounded-2xl p-6 text-center bg-emerald-50/40 hover:bg-emerald-50 transition cursor-pointer relative">
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={handleFileSelect}
+                  class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                />
+                <div class="space-y-2">
+                  <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto text-xl shadow-xs">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                  </div>
+                  <div>
+                    <p class="text-xs font-bold text-slate-800">
+                      {importFile ? importFile.name : 'Click or Drag CSV File Here'}
+                    </p>
+                    <p class="text-[10px] text-gray-500 mt-0.5">
+                      Supports Google Sheets export (.csv)
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {importPreview.length > 0 && (
+                <div class="space-y-2">
+                  <div class="flex items-center justify-between text-xs font-bold text-slate-800 px-1">
+                    <span>Preview Parsed Leads ({importPreview.length} found)</span>
+                    <span class="text-[10px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                      Auto Alternate Agent Assignment
+                    </span>
+                  </div>
+
+                  <div class="border border-gray-200 rounded-xl overflow-hidden max-h-40 overflow-y-auto custom-scrollbar text-[11px]">
+                    <table class="w-full text-left border-collapse">
+                      <thead class="bg-gray-100 text-gray-700 sticky top-0 font-bold">
+                        <tr>
+                          <th class="p-2 border-b">Name</th>
+                          <th class="p-2 border-b">Phone</th>
+                          <th class="p-2 border-b">Status</th>
+                          <th class="p-2 border-b">Caller/Agent</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {importPreview.slice(0, 5).map((lead, idx) => (
+                          <tr key={idx} class="border-b hover:bg-slate-50">
+                            <td class="p-2 font-medium">{lead.firstName} {lead.lastName}</td>
+                            <td class="p-2">{lead.phone}</td>
+                            <td class="p-2"><span class="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-bold">{lead.status}</span></td>
+                            <td class="p-2 text-emerald-700 font-semibold">{lead.assignedAgentName || 'Auto Round-Robin'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div class="px-5 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => { setShowImportModal(false); setImportFile(null); setImportPreview([]); setImportMsg(''); }}
+                class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-200 text-xs font-semibold transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={importPreview.length === 0 || isImporting}
+                onClick={handleConfirmImport}
+                class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                {isImporting ? (
+                  <>
+                    <i class="fa-solid fa-circle-notch fa-spin text-xs"></i>
+                    <span>Importing...</span>
+                  </>
+                ) : (
+                  <>
+                    <i class="fa-solid fa-file-import text-xs"></i>
+                    <span>Import {importPreview.length} Leads</span>
                   </>
                 )}
               </button>

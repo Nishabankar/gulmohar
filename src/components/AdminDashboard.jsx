@@ -573,7 +573,14 @@ export default function AdminDashboard({ onLogout }) {
         })
       });
 
-      const data = await response.json();
+      const resText = await response.text();
+      let data;
+      try {
+        data = JSON.parse(resText);
+      } catch (jsonErr) {
+        throw new Error(`Server returned non-JSON response (${response.status}). Please restart Node.js server.`);
+      }
+
       if (data.success && data.admin) {
         const updatedUser = {
           ...data.admin,
@@ -591,7 +598,7 @@ export default function AdminDashboard({ onLogout }) {
       }
     } catch (err) {
       console.error('Error updating profile:', err);
-      setProfileSaveMsg('Unable to connect to server. Please try again.');
+      setProfileSaveMsg(`Error: ${err.message || 'Unable to connect to server.'}`);
     } finally {
       setSavingProfile(false);
     }

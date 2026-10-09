@@ -140,28 +140,33 @@ router.post('/forgot-password', async (req, res) => {
 router.put('/profile', protectAdmin, async (req, res) => {
   try {
     const adminId = req.admin.id;
+    const adminUsername = (req.admin.username || '').toLowerCase().trim();
     const { name, email, phone, currentPassword, newPassword } = req.body;
 
-    const [rows] = await query('SELECT * FROM admins WHERE id = ?', [adminId]);
+    const [rows] = await query(
+      'SELECT * FROM admins WHERE id = ? OR LOWER(username) = ? LIMIT 1',
+      [adminId, adminUsername]
+    );
     if (!rows || rows.length === 0) {
-      return res.status(444).json({ success: false, message: 'User profile not found' });
+      return res.status(404).json({ success: false, message: 'User profile not found in database' });
     }
 
     const adminUser = rows[0];
+    const targetId = adminUser.id;
     let updateCols = [];
     let updateVals = [];
 
-    if (name !== undefined) { updateCols.push('name = ?'); updateVals.push(name.trim()); }
-    if (email !== undefined) { updateCols.push('email = ?'); updateVals.push(email.toLowerCase().trim()); }
-    if (phone !== undefined) { updateCols.push('phone = ?'); updateVals.push(phone.trim()); }
+    if (name !== undefined && name.trim()) { updateCols.push('name = ?'); updateVals.push(name.trim()); }
+    if (email !== undefined && email.trim()) { updateCols.push('email = ?'); updateVals.push(email.toLowerCase().trim()); }
+    if (phone !== undefined && phone.trim()) { updateCols.push('phone = ?'); updateVals.push(phone.trim()); }
 
     // If changing password
     if (newPassword && newPassword.trim()) {
-      if (!currentPassword) {
+      if (!currentPassword || !currentPassword.trim()) {
         return res.status(400).json({ success: false, message: 'Current password is required to change password.' });
       }
 
-      const isMatch = await bcrypt.compare(currentPassword, adminUser.password);
+      const isMatch = await bcrypt.compare(currentPassword.trim(), adminUser.password);
       if (!isMatch) {
         return res.status(400).json({ success: false, message: 'Current password does not match.' });
       }
@@ -176,11 +181,11 @@ router.put('/profile', protectAdmin, async (req, res) => {
     }
 
     if (updateCols.length > 0) {
-      updateVals.push(adminId);
+      updateVals.push(targetId);
       await query(`UPDATE admins SET ${updateCols.join(', ')} WHERE id = ?`, updateVals);
     }
 
-    const [updatedRows] = await query('SELECT id, name, username, email, phone, role FROM admins WHERE id = ?', [adminId]);
+    const [updatedRows] = await query('SELECT id, name, username, email, phone, role FROM admins WHERE id = ?', [targetId]);
     const updatedUser = updatedRows[0];
 
     const token = jwt.sign(

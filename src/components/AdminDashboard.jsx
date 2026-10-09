@@ -96,6 +96,23 @@ export default function AdminDashboard({ onLogout }) {
     isDeleting: false
   });
 
+  // Active Inline Dropdown Popover State: { rowId: string, field: 'status' | 'followupDate' | 'plotsCount' | 'assignedAgent' }
+  const [activeDropdown, setActiveDropdown] = useState(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (activeDropdown && !e.target.closest('.custom-dropdown-container')) {
+        setActiveDropdown(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [activeDropdown]);
+
   // Column Configuration State & Persistence
   const [columnConfig, setColumnConfig] = useState(() => {
     try {
@@ -2616,84 +2633,212 @@ export default function AdminDashboard({ onLogout }) {
                                       </div>
                                     </td>
                                   );
-                                case 'status':
+                                case 'status': {
+                                  const isStatusOpen = activeDropdown?.rowId === currentId && activeDropdown?.field === 'status';
+                                  const currentStatus = item.status || 'New';
+                                  const STATUS_OPTIONS = [
+                                    'New', 'Contacted', 'Interested', 'Details Provided', 
+                                    'Not Interested', 'Site Visit Scheduled', 'Site Visit Done', 'Won', 'Lost'
+                                  ];
                                   return (
-                                    <td key="status" class="py-2.5 px-2.5 whitespace-nowrap min-w-[130px]">
-                                      <select
-                                        value={item.status || 'New'}
-                                        onChange={(e) => handleStatusChange(currentId, e.target.value)}
-                                        class={`px-1 py-0.5 rounded-md border text-[10px] font-bold outline-none cursor-pointer transition ${getStatusBadge(item.status || 'New')}`}
+                                    <td key="status" class="py-2.5 px-2.5 whitespace-nowrap min-w-[130px] relative custom-dropdown-container">
+                                      <button
+                                        type="button"
+                                        onClick={() => setActiveDropdown(isStatusOpen ? null : { rowId: currentId, field: 'status' })}
+                                        class={`px-2 py-0.5 rounded-md border text-[10px] font-bold outline-none cursor-pointer transition flex items-center justify-between gap-1 shadow-2xs w-full ${getStatusBadge(currentStatus)}`}
                                       >
-                                        <option value="New" class="bg-white text-gray-800 font-medium">New</option>
-                                        <option value="Contacted" class="bg-white text-gray-800 font-medium">Contacted</option>
-                                        <option value="Interested" class="bg-white text-gray-800 font-medium">Interested</option>
-                                        <option value="Details Provided" class="bg-white text-gray-800 font-medium">Details Provided</option>
-                                        <option value="Not Interested" class="bg-white text-gray-800 font-medium">Not Interested</option>
-                                        <option value="Site Visit Scheduled" class="bg-white text-gray-800 font-medium">Site Visit Scheduled</option>
-                                        <option value="Site Visit Done" class="bg-white text-gray-800 font-medium">Site Visit Done</option>
-                                        <option value="Won" class="bg-white text-gray-800 font-medium">Won</option>
-                                        <option value="Lost" class="bg-white text-gray-800 font-medium">Lost</option>
-                                      </select>
+                                        <span class="truncate">{currentStatus}</span>
+                                        <i class={`fa-solid fa-chevron-down text-[8px] transition-transform ${isStatusOpen ? 'rotate-180' : ''}`}></i>
+                                      </button>
+
+                                      {isStatusOpen && (
+                                        <div class="absolute top-full left-0 mt-1 z-40 min-w-[150px] bg-white rounded-xl shadow-xl border border-gray-200 py-1 text-xs animate-fade-in">
+                                          {STATUS_OPTIONS.map((opt) => (
+                                            <button
+                                              key={opt}
+                                              type="button"
+                                              onClick={() => {
+                                                handleStatusChange(currentId, opt);
+                                                setActiveDropdown(null);
+                                              }}
+                                              class={`w-full px-3 py-1.5 text-left text-[11px] font-medium flex items-center justify-between hover:bg-slate-100 transition ${
+                                                currentStatus === opt ? 'bg-slate-100 text-[#B30E2E] font-bold' : 'text-slate-700'
+                                              }`}
+                                            >
+                                              <span>{opt}</span>
+                                              {currentStatus === opt && <i class="fa-solid fa-check text-[10px] text-[#B30E2E]"></i>}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      )}
                                     </td>
                                   );
-                                case 'followupDate':
+                                }
+                                case 'followupDate': {
+                                  const isFollowupOpen = activeDropdown?.rowId === currentId && activeDropdown?.field === 'followupDate';
+                                  const formattedVal = formatToInputDate(item.followupDate);
+                                  const displayVal = formatDateShortMonth(item.followupDate) || 'Set Date';
+
                                   return (
-                                    <td key="followupDate" class="py-2.5 px-2.5 whitespace-nowrap min-w-[115px]">
-                                      <input
-                                        type="date"
-                                        value={formatToInputDate(item.followupDate)}
-                                        onChange={(e) => handleInlineFieldChange(currentId, 'followupDate', e.target.value)}
-                                        class="px-1.5 py-0.5 rounded-md border border-amber-300 text-[10px] font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 outline-none cursor-pointer transition shadow-2xs"
-                                        title="Click to edit Followup Date inline"
-                                      />
+                                    <td key="followupDate" class="py-2.5 px-2.5 whitespace-nowrap min-w-[125px] relative custom-dropdown-container">
+                                      <button
+                                        type="button"
+                                        onClick={() => setActiveDropdown(isFollowupOpen ? null : { rowId: currentId, field: 'followupDate' })}
+                                        class="px-2 py-0.5 rounded-md border border-amber-300 text-[10px] font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 outline-none cursor-pointer transition shadow-2xs flex items-center justify-between gap-1 w-full"
+                                        title="Click to edit Followup Date"
+                                      >
+                                        <span class="flex items-center gap-1 truncate">
+                                          <i class="fa-regular fa-calendar text-[9px] text-amber-700"></i>
+                                          <span>{displayVal}</span>
+                                        </span>
+                                        <i class={`fa-solid fa-chevron-down text-[8px] text-amber-700 transition-transform ${isFollowupOpen ? 'rotate-180' : ''}`}></i>
+                                      </button>
+
+                                      {isFollowupOpen && (
+                                        <div class="absolute top-full left-0 mt-1 z-40 min-w-[165px] bg-white rounded-xl shadow-xl border border-gray-200 p-2.5 text-xs animate-fade-in space-y-2">
+                                          <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">Followup Date</label>
+                                          <input
+                                            type="date"
+                                            value={formattedVal}
+                                            onChange={(e) => {
+                                              handleInlineFieldChange(currentId, 'followupDate', e.target.value);
+                                              setActiveDropdown(null);
+                                            }}
+                                            class="w-full px-2 py-1 rounded-lg border border-gray-300 text-xs font-medium text-gray-800 focus:outline-none focus:border-[#B30E2E]"
+                                          />
+                                          <div class="flex items-center justify-between pt-1.5 border-t border-gray-100 text-[10px]">
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                handleInlineFieldChange(currentId, 'followupDate', getTodayString());
+                                                setActiveDropdown(null);
+                                              }}
+                                              class="px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 hover:bg-amber-200 font-semibold cursor-pointer"
+                                            >
+                                              Today
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                handleInlineFieldChange(currentId, 'followupDate', getTomorrowString());
+                                                setActiveDropdown(null);
+                                              }}
+                                              class="px-1.5 py-0.5 rounded bg-blue-100 text-blue-900 hover:bg-blue-200 font-semibold cursor-pointer"
+                                            >
+                                              Tomorrow
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                handleInlineFieldChange(currentId, 'followupDate', '');
+                                                setActiveDropdown(null);
+                                              }}
+                                              class="px-1.5 py-0.5 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 font-semibold cursor-pointer"
+                                            >
+                                              Clear
+                                            </button>
+                                          </div>
+                                        </div>
+                                      )}
                                     </td>
                                   );
-                                case 'plotsCount':
+                                }
+                                case 'plotsCount': {
+                                  const isPlotsOpen = activeDropdown?.rowId === currentId && activeDropdown?.field === 'plotsCount';
+                                  const currentGuntha = item.plotsCount || '1 Guntha';
+                                  const GUNTHA_OPTIONS = [
+                                    '1 Guntha', '2 Guntha', '3 Guntha', '4 Guntha', '5 Guntha', 
+                                    '6 Guntha', '7 Guntha', '8 Guntha', '9 Guntha', '10 Guntha', 
+                                    '11+ Guntha (Bulk / Investment)'
+                                  ];
+
                                   return (
-                                    <td key="plotsCount" class="py-2.5 px-2.5 whitespace-nowrap min-w-[110px]">
+                                    <td key="plotsCount" class="py-2.5 px-2.5 whitespace-nowrap min-w-[110px] relative custom-dropdown-container">
                                       <div class="flex items-center gap-1 whitespace-nowrap">
-                                        <select
-                                          value={item.plotsCount || '1 Guntha'}
-                                          onChange={(e) => handleInlineFieldChange(currentId, 'plotsCount', e.target.value)}
-                                          class="px-1.5 py-0.5 rounded-md border border-amber-300 text-[10px] font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 outline-none cursor-pointer transition shadow-2xs"
-                                          title="Click to edit No. of Guntha inline"
+                                        <button
+                                          type="button"
+                                          onClick={() => setActiveDropdown(isPlotsOpen ? null : { rowId: currentId, field: 'plotsCount' })}
+                                          class="px-1.5 py-0.5 rounded-md border border-amber-300 text-[10px] font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 outline-none cursor-pointer transition shadow-2xs flex items-center justify-between gap-1 w-full"
+                                          title="Click to edit No. of Guntha"
                                         >
-                                          <option value="1 Guntha" class="bg-white text-gray-800 font-medium">1 Guntha</option>
-                                          <option value="2 Guntha" class="bg-white text-gray-800 font-medium">2 Guntha</option>
-                                          <option value="3 Guntha" class="bg-white text-gray-800 font-medium">3 Guntha</option>
-                                          <option value="4 Guntha" class="bg-white text-gray-800 font-medium">4 Guntha</option>
-                                          <option value="5 Guntha" class="bg-white text-gray-800 font-medium">5 Guntha</option>
-                                          <option value="6 Guntha" class="bg-white text-gray-800 font-medium">6 Guntha</option>
-                                          <option value="7 Guntha" class="bg-white text-gray-800 font-medium">7 Guntha</option>
-                                          <option value="8 Guntha" class="bg-white text-gray-800 font-medium">8 Guntha</option>
-                                          <option value="9 Guntha" class="bg-white text-gray-800 font-medium">9 Guntha</option>
-                                          <option value="10 Guntha" class="bg-white text-gray-800 font-medium">10 Guntha</option>
-                                          <option value="11+ Guntha (Bulk / Investment)" class="bg-white text-gray-800 font-medium">11+ Guntha</option>
-                                        </select>
+                                          <span class="truncate">{currentGuntha.replace(' (Bulk / Investment)', '')}</span>
+                                          <i class={`fa-solid fa-chevron-down text-[8px] text-amber-700 transition-transform ${isPlotsOpen ? 'rotate-180' : ''}`}></i>
+                                        </button>
                                         {item.plotInfo && (
                                           <span class="text-[9px] text-gray-500 font-medium whitespace-nowrap" title={item.plotInfo}>
                                             ({item.plotInfo})
                                           </span>
                                         )}
                                       </div>
+
+                                      {isPlotsOpen && (
+                                        <div class="absolute top-full left-0 mt-1 z-40 min-w-[160px] max-h-48 overflow-y-auto custom-scrollbar bg-white rounded-xl shadow-xl border border-gray-200 py-1 text-xs animate-fade-in">
+                                          {GUNTHA_OPTIONS.map((opt) => (
+                                            <button
+                                              key={opt}
+                                              type="button"
+                                              onClick={() => {
+                                                handleInlineFieldChange(currentId, 'plotsCount', opt);
+                                                setActiveDropdown(null);
+                                              }}
+                                              class={`w-full px-3 py-1.5 text-left text-[11px] font-medium flex items-center justify-between hover:bg-slate-100 transition ${
+                                                currentGuntha === opt ? 'bg-slate-100 text-[#B30E2E] font-bold' : 'text-slate-700'
+                                              }`}
+                                            >
+                                              <span>{opt}</span>
+                                              {currentGuntha === opt && <i class="fa-solid fa-check text-[10px] text-[#B30E2E]"></i>}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      )}
                                     </td>
                                   );
-                                case 'assignedAgent':
+                                }
+                                case 'assignedAgent': {
+                                  const isAgentOpen = activeDropdown?.rowId === currentId && activeDropdown?.field === 'assignedAgent';
+                                  const currentAgent = item.assignedAgentName || (allAgents[0] ? allAgents[0].name : 'Unassigned');
+
                                   return (
-                                    <td key="assignedAgent" class="py-2.5 px-2.5 whitespace-nowrap min-w-[145px]">
+                                    <td key="assignedAgent" class="py-2.5 px-2.5 whitespace-nowrap min-w-[145px] relative custom-dropdown-container">
                                       {isAdmin ? (
-                                        <select
-                                          value={item.assignedAgentName || (allAgents[0] ? allAgents[0].name : '')}
-                                          onChange={(e) => handleReassignAgent(currentId, e.target.value)}
-                                          class="px-1.5 py-0.5 rounded-lg border border-emerald-300 text-[10px] font-bold text-emerald-900 bg-emerald-50 hover:bg-emerald-100 outline-none cursor-pointer transition shadow-2xs"
-                                          title="Re-assign lead to salesperson"
-                                        >
-                                          {allAgents.map(agent => (
-                                            <option key={agent.id || agent.username} value={agent.name} class="bg-white text-gray-800 font-semibold">
-                                              👤 {agent.name}
-                                            </option>
-                                          ))}
-                                        </select>
+                                        <>
+                                          <button
+                                            type="button"
+                                            onClick={() => setActiveDropdown(isAgentOpen ? null : { rowId: currentId, field: 'assignedAgent' })}
+                                            class="px-1.5 py-0.5 rounded-lg border border-emerald-300 text-[10px] font-bold text-emerald-900 bg-emerald-50 hover:bg-emerald-100 outline-none cursor-pointer transition shadow-2xs flex items-center justify-between gap-1 w-full"
+                                            title="Re-assign lead to salesperson"
+                                          >
+                                            <span class="flex items-center gap-1 truncate">
+                                              <i class="fa-solid fa-user-check text-[8.5px] text-emerald-600"></i>
+                                              <span class="truncate">{currentAgent}</span>
+                                            </span>
+                                            <i class={`fa-solid fa-chevron-down text-[8px] text-emerald-700 transition-transform ${isAgentOpen ? 'rotate-180' : ''}`}></i>
+                                          </button>
+
+                                          {isAgentOpen && (
+                                            <div class="absolute top-full left-0 mt-1 z-40 min-w-[160px] max-h-48 overflow-y-auto custom-scrollbar bg-white rounded-xl shadow-xl border border-gray-200 py-1 text-xs animate-fade-in">
+                                              {allAgents.map((agent) => (
+                                                <button
+                                                  key={agent.id || agent.username}
+                                                  type="button"
+                                                  onClick={() => {
+                                                    handleReassignAgent(currentId, agent.name);
+                                                    setActiveDropdown(null);
+                                                  }}
+                                                  class={`w-full px-3 py-1.5 text-left text-[11px] font-medium flex items-center justify-between hover:bg-slate-100 transition ${
+                                                    currentAgent === agent.name ? 'bg-slate-100 text-emerald-700 font-bold' : 'text-slate-700'
+                                                  }`}
+                                                >
+                                                  <span class="flex items-center gap-1.5">
+                                                    <i class="fa-solid fa-user text-[9px] text-emerald-600"></i>
+                                                    <span>{agent.name}</span>
+                                                  </span>
+                                                  {currentAgent === agent.name && <i class="fa-solid fa-check text-[10px] text-emerald-600"></i>}
+                                                </button>
+                                              ))}
+                                            </div>
+                                          )}
+                                        </>
                                       ) : (
                                         <span class="px-1.5 py-0.5 rounded-lg border border-emerald-300 text-[10px] font-bold text-emerald-900 bg-emerald-50 inline-flex items-center gap-1 shadow-2xs">
                                           <i class="fa-solid fa-user-check text-[8.5px] text-emerald-600"></i>
@@ -2702,6 +2847,7 @@ export default function AdminDashboard({ onLogout }) {
                                       )}
                                     </td>
                                   );
+                                }
                                 case 'notes':
                                   return (
                                     <td key="notes" class="py-2.5 px-2 text-center whitespace-nowrap w-12">

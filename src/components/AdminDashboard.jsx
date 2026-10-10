@@ -3429,8 +3429,12 @@ export default function AdminDashboard({ onLogout }) {
               </button>
             </div>
 
-            <form onSubmit={handleCreateAgentSubmit} class="p-4 sm:p-5 space-y-3.5 overflow-y-auto max-h-[calc(90vh-70px)]">
+            <form onSubmit={handleCreateAgentSubmit} autoComplete="off" class="p-4 sm:p-5 space-y-3.5 overflow-y-auto max-h-[calc(90vh-70px)]">
               
+              {/* Prevent browser saved credentials autofill */}
+              <input type="text" name="prevent_autofill_username" style={{ display: 'none' }} tabIndex={-1} aria-hidden="true" autoComplete="off" />
+              <input type="password" name="prevent_autofill_password" style={{ display: 'none' }} tabIndex={-1} aria-hidden="true" autoComplete="new-password" />
+
               {agentCreateMsg && (() => {
                 const isSuccess = (agentCreateMsg.toLowerCase().includes('success') || agentCreateMsg.toLowerCase().includes('created')) && !agentCreateMsg.toLowerCase().includes('error') && !agentCreateMsg.toLowerCase().includes('please');
                 return (
@@ -3449,6 +3453,7 @@ export default function AdminDashboard({ onLogout }) {
                 <input 
                   type="text" 
                   required 
+                  autoComplete="off"
                   value={newAgentData.name}
                   onChange={(e) => setNewAgentData({ ...newAgentData, name: e.target.value })}
                   placeholder="Enter full name"
@@ -3463,6 +3468,7 @@ export default function AdminDashboard({ onLogout }) {
                   <input 
                     type="text" 
                     required 
+                    autoComplete="off"
                     value={newAgentData.username}
                     onChange={(e) => setNewAgentData({ ...newAgentData, username: e.target.value })}
                     placeholder="Enter username"
@@ -3474,6 +3480,7 @@ export default function AdminDashboard({ onLogout }) {
                   <input 
                     type="password" 
                     required 
+                    autoComplete="new-password"
                     value={newAgentData.password}
                     onChange={(e) => setNewAgentData({ ...newAgentData, password: e.target.value })}
                     placeholder="Enter password"
@@ -3554,8 +3561,12 @@ export default function AdminDashboard({ onLogout }) {
             </div>
 
             {/* Form */}
-            <form onSubmit={handleSaveUserEdit} class="p-5 space-y-3.5">
+            <form onSubmit={handleSaveUserEdit} autoComplete="off" class="p-5 space-y-3.5">
               
+              {/* Prevent browser saved credentials autofill */}
+              <input type="text" name="prevent_autofill_username" style={{ display: 'none' }} tabIndex={-1} aria-hidden="true" autoComplete="off" />
+              <input type="password" name="prevent_autofill_password" style={{ display: 'none' }} tabIndex={-1} aria-hidden="true" autoComplete="new-password" />
+
               {userEditSuccessMsg && (() => {
                 const isSuccess = (userEditSuccessMsg.toLowerCase().includes('success') || userEditSuccessMsg.toLowerCase().includes('updated')) && !userEditSuccessMsg.toLowerCase().includes('error') && !userEditSuccessMsg.toLowerCase().includes('please');
                 return (
@@ -3574,6 +3585,7 @@ export default function AdminDashboard({ onLogout }) {
                 <input 
                   type="text" 
                   required 
+                  autoComplete="off"
                   value={editingUser.name || ''}
                   onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
                   placeholder="Enter full name"
@@ -3588,6 +3600,7 @@ export default function AdminDashboard({ onLogout }) {
                   <input 
                     type="text" 
                     required 
+                    autoComplete="off"
                     value={editingUser.username || ''}
                     onChange={(e) => setEditingUser({ ...editingUser, username: e.target.value })}
                     placeholder="Enter username"
@@ -3598,6 +3611,7 @@ export default function AdminDashboard({ onLogout }) {
                   <label class="block text-xs font-bold text-gray-700 mb-1">New Password (Optional)</label>
                   <input 
                     type="password" 
+                    autoComplete="new-password"
                     value={editingUser.password || ''}
                     onChange={(e) => setEditingUser({ ...editingUser, password: e.target.value })}
                     placeholder="Enter new password"
@@ -3906,8 +3920,12 @@ export default function AdminDashboard({ onLogout }) {
             </div>
 
             {/* Form */}
-            <form onSubmit={handleSaveProfileSubmit} class="p-4 sm:p-5 space-y-3.5 overflow-y-auto max-h-[calc(90vh-70px)]">
+            <form onSubmit={handleSaveProfileSubmit} autoComplete="off" class="p-4 sm:p-5 space-y-3.5 overflow-y-auto max-h-[calc(90vh-70px)]">
               
+              {/* Prevent browser saved credentials autofill */}
+              <input type="text" name="prevent_autofill_username" style={{ display: 'none' }} tabIndex={-1} aria-hidden="true" autoComplete="off" />
+              <input type="password" name="prevent_autofill_password" style={{ display: 'none' }} tabIndex={-1} aria-hidden="true" autoComplete="new-password" />
+
               {profileSaveMsg && (() => {
                 const isSuccess = (profileSaveMsg.toLowerCase().includes('success') || profileSaveMsg.toLowerCase().includes('updated')) && !profileSaveMsg.toLowerCase().includes('error') && !profileSaveMsg.toLowerCase().includes('please');
                 return (

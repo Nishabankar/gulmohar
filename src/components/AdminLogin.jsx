@@ -143,7 +143,10 @@ export default function AdminLogin({ onLoginSuccess, onClose }) {
       const data = await response.json();
 
       if (data.success) {
-        setSuccessMsg('Password reset successfully! Confirmation email sent.');
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('adminUser');
+        localStorage.removeItem('adminView');
+        setSuccessMsg('Password reset successfully! Please log in with your new password.');
         setTimeout(() => {
           setIsForgotPassword(false);
           setForgotStep(1);

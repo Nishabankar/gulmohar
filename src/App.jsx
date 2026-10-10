@@ -26,12 +26,26 @@ export default function App() {
     return !!localStorage.getItem('adminToken');
   });
   const [currentView, setCurrentView] = useState(() => {
+    const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    if (params && (params.get('resetPassword') === 'true' || params.get('otp'))) {
+      return 'website';
+    }
     const token = localStorage.getItem('adminToken');
     const savedView = localStorage.getItem('adminView');
     return token && savedView === 'dashboard' ? 'dashboard' : 'website';
   });
 
   useEffect(() => {
+    // Auto-open reset password modal if link opened from email
+    const params = new URLSearchParams(window.location.search);
+    const isResetLink = params.get('resetPassword') === 'true' || !!params.get('otp');
+
+    if (isResetLink) {
+      setCurrentView('website');
+      setShowAdminLoginModal(true);
+      return;
+    }
+
     // Check saved login token and view on render
     const token = localStorage.getItem('adminToken');
     const savedView = localStorage.getItem('adminView');
@@ -40,12 +54,6 @@ export default function App() {
       if (savedView === 'dashboard') {
         setCurrentView('dashboard');
       }
-    }
-
-    // Auto-open reset password modal if link opened from email
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('resetPassword') === 'true' || params.get('otp')) {
-      setShowAdminLoginModal(true);
     }
   }, []);
 

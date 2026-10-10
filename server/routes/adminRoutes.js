@@ -125,14 +125,16 @@ router.post('/request-password-reset', async (req, res) => {
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
 
-    otpStore.set(cleanUsername, { otpCode, expiresAt, email: cleanEmail });
+    const origin = req.headers.origin || req.headers.referer || 'http://localhost:5173';
+    const baseUrl = origin.replace(/\/+$/, '');
+    const resetLink = `${baseUrl}/?resetPassword=true&username=${encodeURIComponent(cleanUsername)}&otp=${otpCode}`;
 
-    // Send confirmation email
-    const emailResult = await sendPasswordResetEmail(cleanEmail, adminUser.name || adminUser.username, otpCode);
+    // Send confirmation email with Username, OTP code, and direct Reset Link
+    const emailResult = await sendPasswordResetEmail(cleanEmail, adminUser.name || adminUser.username, otpCode, resetLink, adminUser.username);
 
-    let msg = `Verification OTP email sent to ${cleanEmail}. Please check your inbox.`;
+    let msg = `Verification link & OTP code email sent to ${cleanEmail}. Please check your inbox and click the link to reset your password.`;
     if (!emailResult.isConfigured) {
-      msg = `Verification OTP sent to ${cleanEmail}. [Test OTP Code: ${otpCode}]`;
+      msg = `Verification email sent to ${cleanEmail}. [Test OTP Code: ${otpCode}]`;
     }
 
     return res.json({
@@ -140,7 +142,8 @@ router.post('/request-password-reset', async (req, res) => {
       message: msg,
       emailSent: emailResult.success,
       isConfigured: Boolean(emailResult.isConfigured),
-      previewUrl: emailResult.previewUrl || null
+      previewUrl: emailResult.previewUrl || null,
+      resetLink
     });
   } catch (error) {
     console.error('Error requesting password reset:', error.message);

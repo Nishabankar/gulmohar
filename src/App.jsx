@@ -41,6 +41,12 @@ export default function App() {
         setCurrentView('dashboard');
       }
     }
+
+    // Auto-open reset password modal if link opened from email
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('resetPassword') === 'true' || params.get('otp')) {
+      setShowAdminLoginModal(true);
+    }
   }, []);
 
   const handleOpenLightbox = (imageSrc, caption, type = 'image') => {

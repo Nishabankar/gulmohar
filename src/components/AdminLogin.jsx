@@ -19,6 +19,26 @@ export default function AdminLogin({ onLoginSuccess, onClose }) {
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
+  // Auto-detect reset link parameters from URL query string
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const resetParam = params.get('resetPassword');
+    const paramUsername = params.get('username');
+    const paramOtp = params.get('otp');
+
+    if (resetParam === 'true' || paramOtp) {
+      setIsForgotPassword(true);
+      setForgotStep(2);
+      if (paramUsername) setForgotUsername(paramUsername);
+      if (paramOtp) setOtpCode(paramOtp);
+      setSuccessMsg('Email link verified! Please enter your new password to reset.');
+
+      // Clean query string from browser URL without page reload
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+    }
+  }, []);
+
   const handleLogin = async (e) => {
     e.preventDefault();
     if (!username || !password) return;
@@ -74,8 +94,8 @@ export default function AdminLogin({ onLoginSuccess, onClose }) {
       const data = await response.json();
 
       if (data.success) {
-        setSuccessMsg(data.message || 'Verification OTP code sent to your email.');
-        setForgotStep(2);
+        setSuccessMsg(data.message || 'Verification link & OTP code sent to your email. Please check your inbox.');
+        // Stay on step 1 with option to go to step 2 or click reset link in email
       } else {
         setError(data.message || 'No account found with this username and email address.');
       }
@@ -249,6 +269,24 @@ export default function AdminLogin({ onLoginSuccess, onClose }) {
               <div class="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold flex items-center gap-2">
                 <i class="fa-solid fa-circle-exclamation text-red-500 text-sm"></i>
                 <span>{error}</span>
+              </div>
+            )}
+
+            {successMsg && (
+              <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold space-y-2">
+                <div class="flex items-center gap-2">
+                  <i class="fa-solid fa-circle-check text-emerald-600 text-sm"></i>
+                  <span>{successMsg}</span>
+                </div>
+                <div class="pt-1 text-center">
+                  <button 
+                    type="button" 
+                    onClick={() => { setForgotStep(2); setError(''); }}
+                    class="text-[11.5px] font-bold text-[#B30E2E] hover:underline cursor-pointer"
+                  >
+                    Already have OTP / Clicked Link? Go to Step 2 &rarr;
+                  </button>
+                </div>
               </div>
             )}
 

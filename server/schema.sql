@@ -40,8 +40,8 @@ CREATE TABLE `leads` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `first_name` VARCHAR(255) NOT NULL,
   `last_name` VARCHAR(255) NOT NULL DEFAULT '',
-  `phone` VARCHAR(50) NOT NULL,
-  `email` VARCHAR(255) NOT NULL DEFAULT '',
+  `phone` VARCHAR(50) NOT NULL UNIQUE,
+  `email` VARCHAR(255) DEFAULT NULL UNIQUE,
   `plot_info` TEXT DEFAULT NULL,
   `plots_count` VARCHAR(100) NOT NULL DEFAULT '1 Plot',
   `visit_date` VARCHAR(100) NOT NULL DEFAULT '',
@@ -54,6 +54,7 @@ CREATE TABLE `leads` (
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX `idx_phone` (`phone`),
+  INDEX `idx_email` (`email`),
   INDEX `idx_status` (`status`),
   INDEX `idx_assigned_to` (`assigned_to`),
   CONSTRAINT `fk_enquiries_assigned_to` 

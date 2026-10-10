@@ -428,6 +428,24 @@ router.patch('/enquiries/:id', protectAdmin, async (req, res) => {
     const performer = updatedBy || (req.admin ? (req.admin.name || req.admin.username || 'Admin') : 'Admin');
     const targetId = existing.id;
 
+    // Check for duplicate phone among other leads
+    if (phone !== undefined && phone.trim()) {
+      const cleanPhone = phone.trim();
+      const [taken] = await query('SELECT id FROM leads WHERE phone = ? AND id != ?', [cleanPhone, targetId]);
+      if (taken.length > 0) {
+        return res.status(400).json({ success: false, message: `Another lead already has mobile number '${cleanPhone}'.` });
+      }
+    }
+
+    // Check for duplicate email among other leads
+    if (email !== undefined && email.trim()) {
+      const cleanEmail = email.toLowerCase().trim();
+      const [taken] = await query('SELECT id FROM leads WHERE LOWER(email) = ? AND id != ?', [cleanEmail, targetId]);
+      if (taken.length > 0) {
+        return res.status(400).json({ success: false, message: `Another lead already has email address '${cleanEmail}'.` });
+      }
+    }
+
     // Leads can only be assigned to Agents. Resolve by id, or by name when only a name is sent (edit modal)
     // Empty name or the lead's current name with no id = no change (edit modal resends the name every save)
     let resolvedAssignedTo;
@@ -514,6 +532,15 @@ router.patch('/enquiries/:id', protectAdmin, async (req, res) => {
     return res.json({ success: true, message: 'Enquiry updated in MySQL', data: updatedEnquiry });
   } catch (error) {
     console.error('Error updating enquiry in MySQL:', error.message);
+    if (error.code === 'ER_DUP_ENTRY' || error.errno === 1062) {
+      if (error.message.includes('phone')) {
+        return res.status(400).json({ success: false, message: 'Another lead already has this mobile number.' });
+      }
+      if (error.message.includes('email')) {
+        return res.status(400).json({ success: false, message: 'Another lead already has this email address.' });
+      }
+      return res.status(400).json({ success: false, message: 'Another lead already has this mobile number or email.' });
+    }
     return res.status(500).json({ success: false, message: 'Database Error', error: error.message });
   }
 });

@@ -261,8 +261,8 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
 
                   {/* Form Status Alert */}
                   {statusMsg && (
-                    <div class="text-center p-2.5 rounded-xl text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300 leading-snug shadow-sm animate-fade-in">
-                      <i class="fa-solid fa-circle-check text-emerald-600 text-sm mr-1"></i>
+                    <div class={`text-center p-2.5 rounded-xl text-xs font-semibold leading-snug shadow-sm animate-fade-in ${statusMsg.type === 'error' ? 'bg-red-100 text-red-800 border border-red-300' : 'bg-emerald-100 text-emerald-800 border border-emerald-300'}`}>
+                      <i class={`fa-solid ${statusMsg.type === 'error' ? 'fa-circle-exclamation text-red-600' : 'fa-circle-check text-emerald-600'} text-sm mr-1`}></i>
                       {statusMsg.text}
                     </div>
                   )}

@@ -28,6 +28,29 @@ router.post('/', async (req, res) => {
       });
     }
 
+    const cleanPhone = phone.trim();
+    const cleanEmail = (email && email.trim()) ? email.toLowerCase().trim() : null;
+
+    // Check for duplicate phone number
+    const [existingPhone] = await query('SELECT id FROM leads WHERE phone = ?', [cleanPhone]);
+    if (existingPhone && existingPhone.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `A lead with mobile number '${cleanPhone}' already exists.`
+      });
+    }
+
+    // Check for duplicate email address if provided
+    if (cleanEmail) {
+      const [existingEmail] = await query('SELECT id FROM leads WHERE LOWER(email) = ?', [cleanEmail]);
+      if (existingEmail && existingEmail.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: `A lead with email address '${cleanEmail}' already exists.`
+        });
+      }
+    }
+
     // Only a real Agent (never an admin) can be assigned; a name alone is not trusted
     let finalAssignedAgentName = '';
     let finalAssignedTo = assignedTo ? parseInt(assignedTo, 10) : null;
@@ -67,8 +90,8 @@ router.post('/', async (req, res) => {
       [
         firstName.trim(),
         (lastName || '').trim(),
-        phone.trim(),
-        (email || '').trim(),
+        cleanPhone,
+        cleanEmail,
         (plotInfo || '').trim(),
         plotsCount || '1 Guntha',
         visitDate || '',
@@ -104,8 +127,8 @@ router.post('/', async (req, res) => {
       id: newEnquiryId,
       firstName,
       lastName: lastName || '',
-      phone,
-      email: email || '',
+      phone: cleanPhone,
+      email: cleanEmail || '',
       plotInfo: plotInfo || '',
       plotsCount: plotsCount || '1 Guntha',
       visitDate: visitDate || '',
@@ -127,6 +150,15 @@ router.post('/', async (req, res) => {
     });
   } catch (error) {
     console.error('MySQL Insert Error:', error.message);
+    if (error.code === 'ER_DUP_ENTRY' || error.errno === 1062) {
+      if (error.message.includes('phone')) {
+        return res.status(400).json({ success: false, message: 'A lead with this mobile number already exists.' });
+      }
+      if (error.message.includes('email')) {
+        return res.status(400).json({ success: false, message: 'A lead with this email address already exists.' });
+      }
+      return res.status(400).json({ success: false, message: 'A lead with this mobile number or email already exists.' });
+    }
     return res.status(500).json({
       success: false,
       message: 'Database Error: Could not save enquiry to MySQL',

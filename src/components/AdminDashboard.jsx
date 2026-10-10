@@ -759,13 +759,22 @@ export default function AdminDashboard({ onLogout }) {
       return;
     }
 
-    // Duplicate Lead Prevention Check
-    const existingDuplicate = enquiries.find(item => item.phone && item.phone.trim() === newLeadFormData.phone.trim());
-    if (existingDuplicate) {
-      const confirmCreate = window.confirm(
-        `A lead with mobile number "${newLeadFormData.phone.trim()}" already exists for ${existingDuplicate.firstName} ${existingDuplicate.lastName || ''} (Assigned to: ${existingDuplicate.assignedAgentName || 'Agent'}).\n\nDo you still want to create another lead record for this mobile number?`
-      );
-      if (!confirmCreate) return;
+    // Strict Unique Lead Prevention Check (Phone & Email)
+    const cleanPhone = newLeadFormData.phone.trim();
+    const cleanEmail = newLeadFormData.email ? newLeadFormData.email.trim().toLowerCase() : '';
+
+    const existingPhoneLead = enquiries.find(item => item.phone && item.phone.trim() === cleanPhone);
+    if (existingPhoneLead) {
+      setCreateLeadMsg(`Error: A lead with mobile number "${cleanPhone}" already exists for ${existingPhoneLead.firstName} ${existingPhoneLead.lastName || ''}.`);
+      return;
+    }
+
+    if (cleanEmail) {
+      const existingEmailLead = enquiries.find(item => item.email && item.email.trim().toLowerCase() === cleanEmail);
+      if (existingEmailLead) {
+        setCreateLeadMsg(`Error: A lead with email address "${cleanEmail}" already exists for ${existingEmailLead.firstName} ${existingEmailLead.lastName || ''}.`);
+        return;
+      }
     }
 
     setSubmittingLead(true);
@@ -818,24 +827,9 @@ export default function AdminDashboard({ onLogout }) {
         const cached = JSON.parse(localStorage.getItem('localEnquiriesCache') || '[]');
         localStorage.setItem('localEnquiriesCache', JSON.stringify(deduplicateLeads([data.data, ...cached])));
       } else {
-        const initialNotesStr = payload.notes;
-        const localLead = {
-          _id: `lead-${Date.now()}`,
-          id: `lead-${Date.now()}`,
-          ...payload,
-          history: initialNotesStr ? [{
-            _id: `note-hist-${Date.now()}`,
-            fieldName: 'Notes',
-            oldValue: '—',
-            newValue: initialNotesStr,
-            modifiedBy: creatorName,
-            modifiedDate: new Date().toISOString()
-          }] : [],
-          createdAt: new Date().toISOString()
-        };
-        setEnquiries(prev => [localLead, ...prev]);
-        const cached = JSON.parse(localStorage.getItem('localEnquiriesCache') || '[]');
-        localStorage.setItem('localEnquiriesCache', JSON.stringify([localLead, ...cached]));
+        setSubmittingLead(false);
+        setCreateLeadMsg(`Error: ${data.message || 'Could not save lead'}`);
+        return;
       }
     } catch (err) {
       console.warn('Backend server connecting... saving locally:', err);
@@ -1250,14 +1244,33 @@ export default function AdminDashboard({ onLogout }) {
       return;
     }
 
-    setSavingEdit(true);
-    setEditModalSuccessMsg('');
-    const token = localStorage.getItem('adminToken');
-
-    // Instant local UI state update with Multi-Field History Logging
     const leadKey = editingEnquiry._id || editingEnquiry.id;
     const existingLead = enquiries.find(item => (item._id || item.id) === leadKey);
     const updatedLead = { ...editingEnquiry };
+
+    // Pre-check duplicate phone and email among other leads
+    const cleanEditPhone = updatedLead.phone ? updatedLead.phone.trim() : '';
+    const cleanEditEmail = updatedLead.email ? updatedLead.email.trim().toLowerCase() : '';
+
+    if (cleanEditPhone) {
+      const dupPhone = enquiries.find(item => (item._id || item.id) !== leadKey && item.phone && item.phone.trim() === cleanEditPhone);
+      if (dupPhone) {
+        setEditModalSuccessMsg(`Error: Another lead already has mobile number '${cleanEditPhone}' (${dupPhone.firstName} ${dupPhone.lastName || ''}).`);
+        return;
+      }
+    }
+
+    if (cleanEditEmail) {
+      const dupEmail = enquiries.find(item => (item._id || item.id) !== leadKey && item.email && item.email.trim().toLowerCase() === cleanEditEmail);
+      if (dupEmail) {
+        setEditModalSuccessMsg(`Error: Another lead already has email address '${cleanEditEmail}' (${dupEmail.firstName} ${dupEmail.lastName || ''}).`);
+        return;
+      }
+    }
+
+    setSavingEdit(true);
+    setEditModalSuccessMsg('');
+    const token = localStorage.getItem('adminToken');
 
 
     try {
@@ -2690,7 +2703,10 @@ export default function AdminDashboard({ onLogout }) {
                     class="w-9 h-9 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white flex items-center justify-center transition shadow-sm border border-rose-900/40 cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
                     title="New Lead"
                   >
-                    <i class="fa-solid fa-user-pen text-sm"></i>
+                    <div class="relative inline-flex items-center justify-center">
+                      <i class="fa-solid fa-address-book text-sm"></i>
+                      <span class="absolute -top-1.5 -right-2 bg-white text-[#B30E2E] font-black text-[9px] w-3.5 h-3.5 rounded-full flex items-center justify-center border border-[#8A0B22] leading-none shadow-sm">+</span>
+                    </div>
                   </button>
 
                   {/* Column Config Icon Button */}
@@ -3415,12 +3431,17 @@ export default function AdminDashboard({ onLogout }) {
 
             <form onSubmit={handleCreateAgentSubmit} class="p-4 sm:p-5 space-y-3.5 overflow-y-auto max-h-[calc(90vh-70px)]">
               
-              {agentCreateMsg && (
-                <div class={`p-2.5 rounded-xl text-xs font-bold flex items-center gap-2 ${agentCreateMsg.includes('Successfully') ? 'bg-emerald-100 border border-emerald-300 text-emerald-900' : 'bg-rose-100 border border-rose-300 text-rose-900'}`}>
-                  <i class={`fa-solid ${agentCreateMsg.includes('Successfully') ? 'fa-check text-emerald-600' : 'fa-triangle-exclamation text-rose-600'}`}></i>
-                  <span>{agentCreateMsg}</span>
-                </div>
-              )}
+              {agentCreateMsg && (() => {
+                const isSuccess = (agentCreateMsg.toLowerCase().includes('success') || agentCreateMsg.toLowerCase().includes('created')) && !agentCreateMsg.toLowerCase().includes('error') && !agentCreateMsg.toLowerCase().includes('please');
+                return (
+                  <div class={`p-2.5 rounded-xl text-xs font-bold flex items-center gap-2 ${
+                    isSuccess ? 'bg-emerald-100 border border-emerald-300 text-emerald-900' : 'bg-rose-100 border border-rose-300 text-rose-900'
+                  }`}>
+                    <i class={`fa-solid ${isSuccess ? 'fa-circle-check text-emerald-600' : 'fa-triangle-exclamation text-rose-600'}`}></i>
+                    <span>{agentCreateMsg}</span>
+                  </div>
+                );
+              })()}
 
               {/* 1. Full Name */}
               <div>
@@ -3535,12 +3556,17 @@ export default function AdminDashboard({ onLogout }) {
             {/* Form */}
             <form onSubmit={handleSaveUserEdit} class="p-5 space-y-3.5">
               
-              {userEditSuccessMsg && (
-                <div class={`p-2.5 rounded-xl text-xs font-bold flex items-center gap-2 ${userEditSuccessMsg.includes('Successfully') ? 'bg-emerald-100 border border-emerald-300 text-emerald-900' : 'bg-rose-100 border border-rose-300 text-rose-900'}`}>
-                  <i class={`fa-solid ${userEditSuccessMsg.includes('Successfully') ? 'fa-check text-emerald-600' : 'fa-triangle-exclamation text-rose-600'}`}></i>
-                  <span>{userEditSuccessMsg}</span>
-                </div>
-              )}
+              {userEditSuccessMsg && (() => {
+                const isSuccess = (userEditSuccessMsg.toLowerCase().includes('success') || userEditSuccessMsg.toLowerCase().includes('updated')) && !userEditSuccessMsg.toLowerCase().includes('error') && !userEditSuccessMsg.toLowerCase().includes('please');
+                return (
+                  <div class={`p-2.5 rounded-xl text-xs font-bold flex items-center gap-2 ${
+                    isSuccess ? 'bg-emerald-100 border border-emerald-300 text-emerald-900' : 'bg-rose-100 border border-rose-300 text-rose-900'
+                  }`}>
+                    <i class={`fa-solid ${isSuccess ? 'fa-circle-check text-emerald-600' : 'fa-triangle-exclamation text-rose-600'}`}></i>
+                    <span>{userEditSuccessMsg}</span>
+                  </div>
+                );
+              })()}
 
               {/* 1. Full Name */}
               <div>
@@ -3662,16 +3688,23 @@ export default function AdminDashboard({ onLogout }) {
               {/* Scrollable Middle Content */}
               <div class="p-4 sm:p-5 space-y-3.5 overflow-y-auto flex-1 custom-scrollbar">
                 {/* Success Alert inside Modal */}
-                {editModalSuccessMsg && (
-                  <div class="bg-emerald-100 border border-emerald-300 text-emerald-950 px-4 py-2.5 rounded-2xl flex items-center justify-between text-xs font-bold shadow-sm animate-fade-in">
-                    <div class="flex items-center gap-2.5">
-                      <div class="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs flex-shrink-0">
-                        <i class="fa-solid fa-check"></i>
+                {editModalSuccessMsg && (() => {
+                  const isSuccess = (editModalSuccessMsg.toLowerCase().includes('success') || editModalSuccessMsg.toLowerCase().includes('updated')) && !editModalSuccessMsg.toLowerCase().includes('error') && !editModalSuccessMsg.toLowerCase().includes('please');
+                  return (
+                    <div class={`px-4 py-2.5 rounded-2xl flex items-center justify-between text-xs font-bold shadow-sm animate-fade-in ${
+                      isSuccess ? 'bg-emerald-100 border border-emerald-300 text-emerald-950' : 'bg-rose-100 border border-rose-300 text-rose-950'
+                    }`}>
+                      <div class="flex items-center gap-2.5">
+                        <div class={`w-6 h-6 rounded-full flex items-center justify-center text-xs flex-shrink-0 ${
+                          isSuccess ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'
+                        }`}>
+                          <i class={`fa-solid ${isSuccess ? 'fa-check' : 'fa-triangle-exclamation'}`}></i>
+                        </div>
+                        <span class={`text-xs font-bold ${isSuccess ? 'text-emerald-900' : 'text-rose-900'}`}>{editModalSuccessMsg}</span>
                       </div>
-                      <span class="text-xs font-bold text-emerald-900">{editModalSuccessMsg}</span>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
@@ -3875,12 +3908,17 @@ export default function AdminDashboard({ onLogout }) {
             {/* Form */}
             <form onSubmit={handleSaveProfileSubmit} class="p-4 sm:p-5 space-y-3.5 overflow-y-auto max-h-[calc(90vh-70px)]">
               
-              {profileSaveMsg && (
-                <div class="p-2.5 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-900 text-xs font-bold flex items-center gap-2">
-                  <i class="fa-solid fa-check text-emerald-600"></i>
-                  <span>{profileSaveMsg}</span>
-                </div>
-              )}
+              {profileSaveMsg && (() => {
+                const isSuccess = (profileSaveMsg.toLowerCase().includes('success') || profileSaveMsg.toLowerCase().includes('updated')) && !profileSaveMsg.toLowerCase().includes('error') && !profileSaveMsg.toLowerCase().includes('please');
+                return (
+                  <div class={`p-2.5 rounded-xl text-xs font-bold flex items-center gap-2 ${
+                    isSuccess ? 'bg-emerald-100 border border-emerald-300 text-emerald-900' : 'bg-rose-100 border border-rose-300 text-rose-900'
+                  }`}>
+                    <i class={`fa-solid ${isSuccess ? 'fa-circle-check text-emerald-600' : 'fa-triangle-exclamation text-rose-600'}`}></i>
+                    <span>{profileSaveMsg}</span>
+                  </div>
+                );
+              })()}
 
               {/* Agent Profile Picture Upload (Sales Agents Only) */}
               {!isAdmin && (
@@ -4056,12 +4094,17 @@ export default function AdminDashboard({ onLogout }) {
               
               {/* Middle Scrollable Content */}
               <div class="p-4 sm:p-5 space-y-3.5 overflow-y-auto flex-1 custom-scrollbar">
-                {createLeadMsg && (
-                  <div class="p-2.5 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-900 text-xs font-bold flex items-center gap-2">
-                    <i class="fa-solid fa-check text-emerald-600"></i>
-                    <span>{createLeadMsg}</span>
-                  </div>
-                )}
+                {createLeadMsg && (() => {
+                  const isSuccess = (createLeadMsg.toLowerCase().includes('success') || createLeadMsg.toLowerCase().includes('created')) && !createLeadMsg.toLowerCase().includes('error') && !createLeadMsg.toLowerCase().includes('please');
+                  return (
+                    <div class={`p-2.5 rounded-xl text-xs font-bold flex items-center gap-2 ${
+                      isSuccess ? 'bg-emerald-100 border border-emerald-300 text-emerald-900' : 'bg-rose-100 border border-rose-300 text-rose-900'
+                    }`}>
+                      <i class={`fa-solid ${isSuccess ? 'fa-circle-check text-emerald-600' : 'fa-triangle-exclamation text-rose-600'}`}></i>
+                      <span>{createLeadMsg}</span>
+                    </div>
+                  );
+                })()}
 
                 {/* 1. First Name & Last Name */}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">

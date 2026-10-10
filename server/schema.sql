@@ -18,14 +18,16 @@ CREATE TABLE `users` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `name` VARCHAR(255) NOT NULL DEFAULT '',
   `username` VARCHAR(255) NOT NULL UNIQUE,
-  `email` VARCHAR(255) NOT NULL DEFAULT '',
-  `phone` VARCHAR(50) NOT NULL DEFAULT '',
+  `email` VARCHAR(255) NOT NULL UNIQUE,
+  `phone` VARCHAR(50) NOT NULL UNIQUE,
   `password` VARCHAR(255) NOT NULL,
   `role` ENUM('SuperAdmin', 'Manager', 'Agent', 'Admin') NOT NULL DEFAULT 'Agent',
   `column_preferences` JSON DEFAULT NULL COMMENT 'Stores JSON array of custom column preferences',
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX `idx_username` (`username`),
+  INDEX `idx_email` (`email`),
+  INDEX `idx_phone` (`phone`),
   INDEX `idx_role` (`role`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

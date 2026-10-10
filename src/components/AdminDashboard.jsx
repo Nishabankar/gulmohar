@@ -878,6 +878,31 @@ export default function AdminDashboard({ onLogout }) {
       return;
     }
 
+    const cleanUsername = newAgentData.username.trim().toLowerCase();
+    const cleanPhone = newAgentData.phone.trim();
+    const cleanEmail = newAgentData.email.trim().toLowerCase();
+
+    const existingUser = registeredAgents.find(a => 
+      (a.username && a.username.toLowerCase() === cleanUsername) ||
+      (a.phone && a.phone.trim() === cleanPhone) ||
+      (a.email && a.email.toLowerCase() === cleanEmail)
+    );
+
+    if (existingUser) {
+      if (existingUser.username && existingUser.username.toLowerCase() === cleanUsername) {
+        setAgentCreateMsg(`Error: Username '${cleanUsername}' is already taken.`);
+        return;
+      }
+      if (existingUser.phone && existingUser.phone.trim() === cleanPhone) {
+        setAgentCreateMsg(`Error: Mobile number '${cleanPhone}' is already registered to ${existingUser.name || 'another user'}.`);
+        return;
+      }
+      if (existingUser.email && existingUser.email.toLowerCase() === cleanEmail) {
+        setAgentCreateMsg(`Error: Email address '${cleanEmail}' is already registered to ${existingUser.name || 'another user'}.`);
+        return;
+      }
+    }
+
     // Save to MySQL first; the agent only appears once the database has it
     try {
       const token = localStorage.getItem('adminToken');
@@ -995,12 +1020,39 @@ export default function AdminDashboard({ onLogout }) {
       email: (editingUser.email || '').trim()
     };
 
-    // Save to MySQL first; the list only changes once the database confirms
     const targetEditId = editingUser.id || editingUser._id;
     if (!targetEditId || targetEditId.toString().startsWith('agent-')) {
       setSavingUserEdit(false);
       setUserEditSuccessMsg('Error: This agent was never saved to the database. Delete it and create it again.');
       return;
+    }
+
+    const cleanUsername = cleanedEditingUser.username;
+    const cleanPhone = cleanedEditingUser.phone;
+    const cleanEmail = cleanedEditingUser.email.toLowerCase();
+
+    const existingUser = registeredAgents.find(a => 
+      ((a.id && a.id.toString() !== targetEditId.toString()) && a.username !== editingUser.username) && (
+        (a.username && a.username.toLowerCase() === cleanUsername) ||
+        (a.phone && a.phone.trim() === cleanPhone) ||
+        (a.email && a.email.toLowerCase() === cleanEmail)
+      )
+    );
+
+    if (existingUser) {
+      setSavingUserEdit(false);
+      if (existingUser.username && existingUser.username.toLowerCase() === cleanUsername) {
+        setUserEditSuccessMsg(`Error: Username '${cleanUsername}' is already taken.`);
+        return;
+      }
+      if (existingUser.phone && existingUser.phone.trim() === cleanPhone) {
+        setUserEditSuccessMsg(`Error: Mobile number '${cleanPhone}' is already registered to ${existingUser.name || 'another user'}.`);
+        return;
+      }
+      if (existingUser.email && existingUser.email.toLowerCase() === cleanEmail) {
+        setUserEditSuccessMsg(`Error: Email address '${cleanEmail}' is already registered to ${existingUser.name || 'another user'}.`);
+        return;
+      }
     }
 
     try {

@@ -229,8 +229,20 @@ router.put('/profile', protectAdmin, async (req, res) => {
     let updateVals = [];
 
     if (name !== undefined && name.trim()) { updateCols.push('name = ?'); updateVals.push(name.trim()); }
-    if (email !== undefined && email.trim()) { updateCols.push('email = ?'); updateVals.push(email.toLowerCase().trim()); }
-    if (phone !== undefined && phone.trim()) { updateCols.push('phone = ?'); updateVals.push(phone.trim()); }
+    if (email !== undefined && email.trim()) {
+      const cleanEmail = email.toLowerCase().trim();
+      const [taken] = await query('SELECT id FROM users WHERE LOWER(email) = ? AND id != ?', [cleanEmail, targetId]);
+      if (taken.length > 0) return res.status(400).json({ success: false, message: `Email address '${cleanEmail}' is already registered to another user.` });
+      updateCols.push('email = ?');
+      updateVals.push(cleanEmail);
+    }
+    if (phone !== undefined && phone.trim()) {
+      const cleanPhone = phone.trim();
+      const [taken] = await query('SELECT id FROM users WHERE phone = ? AND id != ?', [cleanPhone, targetId]);
+      if (taken.length > 0) return res.status(400).json({ success: false, message: `Mobile number '${cleanPhone}' is already registered to another user.` });
+      updateCols.push('phone = ?');
+      updateVals.push(cleanPhone);
+    }
 
     // If changing password
     if (newPassword && newPassword.trim()) {
@@ -562,17 +574,34 @@ router.post('/agents', protectAdmin, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please provide name, username, and password' });
     }
 
-    const [existing] = await query('SELECT id FROM users WHERE LOWER(username) = ?', [username.toLowerCase().trim()]);
-    if (existing && existing.length > 0) {
-      return res.status(400).json({ success: false, message: 'Agent with this username already exists' });
+    const cleanUsername = username.toLowerCase().trim();
+    const cleanPhone = phone ? phone.trim() : '';
+    const agentEmail = (email && email.trim()) ? email.toLowerCase().trim() : `${cleanUsername}@gulmoharcity.com`;
+
+    const [existingUsername] = await query('SELECT id FROM users WHERE LOWER(username) = ?', [cleanUsername]);
+    if (existingUsername && existingUsername.length > 0) {
+      return res.status(400).json({ success: false, message: `Username '${cleanUsername}' is already taken by another user.` });
+    }
+
+    if (cleanPhone) {
+      const [existingPhone] = await query('SELECT id FROM users WHERE phone = ?', [cleanPhone]);
+      if (existingPhone && existingPhone.length > 0) {
+        return res.status(400).json({ success: false, message: `Mobile number '${cleanPhone}' is already registered to another user.` });
+      }
+    }
+
+    if (agentEmail) {
+      const [existingEmail] = await query('SELECT id FROM users WHERE LOWER(email) = ?', [agentEmail]);
+      if (existingEmail && existingEmail.length > 0) {
+        return res.status(400).json({ success: false, message: `Email address '${agentEmail}' is already registered to another user.` });
+      }
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const agentEmail = (email && email.trim()) ? email.toLowerCase().trim() : `${username.toLowerCase().trim()}@gulmoharcity.com`;
 
     const [result] = await query(
       `INSERT INTO users (name, username, email, phone, password, role) VALUES (?, ?, ?, ?, ?, 'Agent')`,
-      [name.trim(), username.toLowerCase().trim(), agentEmail, phone ? phone.trim() : '', hashedPassword]
+      [name.trim(), cleanUsername, agentEmail, cleanPhone, hashedPassword]
     );
 
     const newAgentId = result.insertId;
@@ -584,14 +613,26 @@ router.post('/agents', protectAdmin, async (req, res) => {
         _id: newAgentId.toString(),
         id: newAgentId,
         name: name.trim(),
-        username: username.toLowerCase().trim(),
+        username: cleanUsername,
         email: agentEmail,
-        phone: phone ? phone.trim() : '',
+        phone: cleanPhone,
         role: 'Agent'
       }
     });
   } catch (error) {
     console.error('Error creating agent:', error.message);
+    if (error.code === 'ER_DUP_ENTRY' || error.errno === 1062) {
+      if (error.message.includes('phone')) {
+        return res.status(400).json({ success: false, message: 'Mobile number is already registered to another user.' });
+      }
+      if (error.message.includes('email')) {
+        return res.status(400).json({ success: false, message: 'Email address is already registered to another user.' });
+      }
+      if (error.message.includes('username')) {
+        return res.status(400).json({ success: false, message: 'Username is already taken by another user.' });
+      }
+      return res.status(400).json({ success: false, message: 'A user with this username, mobile number, or email already exists.' });
+    }
     return res.status(500).json({ success: false, message: 'Database Error' });
   }
 });
@@ -671,9 +712,20 @@ router.patch('/agents/:id', protectAdmin, async (req, res) => {
     if (existingRows.length === 0) {
       return res.status(404).json({ success: false, message: 'Agent not found in database' });
     }
-    if (username !== undefined) {
-      const [taken] = await query('SELECT id FROM users WHERE LOWER(username) = ? AND id != ?', [username.toLowerCase().trim(), agentId]);
-      if (taken.length > 0) return res.status(400).json({ success: false, message: 'Another user already has this username' });
+    if (username !== undefined && username.trim()) {
+      const cleanUsername = username.toLowerCase().trim();
+      const [taken] = await query('SELECT id FROM users WHERE LOWER(username) = ? AND id != ?', [cleanUsername, agentId]);
+      if (taken.length > 0) return res.status(400).json({ success: false, message: `Username '${cleanUsername}' is already taken.` });
+    }
+    if (phone !== undefined && phone.trim()) {
+      const cleanPhone = phone.trim();
+      const [taken] = await query('SELECT id FROM users WHERE phone = ? AND id != ?', [cleanPhone, agentId]);
+      if (taken.length > 0) return res.status(400).json({ success: false, message: `Mobile number '${cleanPhone}' is already registered to another user.` });
+    }
+    if (email !== undefined && email.trim()) {
+      const cleanEmail = email.toLowerCase().trim();
+      const [taken] = await query('SELECT id FROM users WHERE LOWER(email) = ? AND id != ?', [cleanEmail, agentId]);
+      if (taken.length > 0) return res.status(400).json({ success: false, message: `Email address '${cleanEmail}' is already registered to another user.` });
     }
 
     let updateCols = [];
@@ -717,6 +769,18 @@ router.patch('/agents/:id', protectAdmin, async (req, res) => {
     });
   } catch (error) {
     console.error('Error updating agent:', error.message);
+    if (error.code === 'ER_DUP_ENTRY' || error.errno === 1062) {
+      if (error.message.includes('phone')) {
+        return res.status(400).json({ success: false, message: 'Mobile number is already registered to another user.' });
+      }
+      if (error.message.includes('email')) {
+        return res.status(400).json({ success: false, message: 'Email address is already registered to another user.' });
+      }
+      if (error.message.includes('username')) {
+        return res.status(400).json({ success: false, message: 'Username is already taken by another user.' });
+      }
+      return res.status(400).json({ success: false, message: 'A user with this username, mobile number, or email already exists.' });
+    }
     return res.status(500).json({ success: false, message: 'Database Error' });
   }
 });

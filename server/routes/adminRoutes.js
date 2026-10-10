@@ -82,7 +82,8 @@ router.post('/login', async (req, res) => {
         id: admin.id.toString(),
         username: admin.username,
         name: admin.name || (admin.role === 'SuperAdmin' ? 'Admin Control Panel' : admin.username),
-        email: admin.email,
+        email: admin.email || '',
+        phone: admin.phone || '',
         role: admin.role
       }
     });
@@ -217,6 +218,41 @@ router.post('/forgot-password', async (req, res) => {
   } catch (error) {
     console.error('Error in forgot-password:', error.message);
     return res.status(500).json({ success: false, message: 'Database Error during password reset', error: error.message });
+  }
+});
+
+// @route   GET /api/admin/profile
+// @desc    Get logged-in admin/agent profile details directly from MySQL database
+// @access  Protected
+router.get('/profile', protectAdmin, async (req, res) => {
+  try {
+    const adminId = req.admin.id;
+    const adminUsername = (req.admin.username || '').toLowerCase().trim();
+
+    const [rows] = await query(
+      'SELECT id, name, username, email, phone, role FROM users WHERE id = ? OR LOWER(username) = ? LIMIT 1',
+      [adminId, adminUsername]
+    );
+
+    if (!rows || rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'User profile not found in database' });
+    }
+
+    const u = rows[0];
+    const userObj = {
+      id: u.id.toString(),
+      _id: u.id.toString(),
+      username: u.username,
+      name: u.name || (u.role === 'SuperAdmin' ? 'Admin Control Panel' : u.username),
+      email: u.email || '',
+      phone: u.phone || '',
+      role: u.role
+    };
+
+    return res.json({ success: true, admin: userObj, user: userObj });
+  } catch (error) {
+    console.error('Error fetching profile:', error.message);
+    return res.status(500).json({ success: false, message: 'Database Error fetching profile', error: error.message });
   }
 });
 

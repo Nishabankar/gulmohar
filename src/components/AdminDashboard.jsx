@@ -520,17 +520,64 @@ export default function AdminDashboard({ onLogout }) {
   const [profileSaveMsg, setProfileSaveMsg] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
 
+  const fetchProfile = async () => {
+    const token = localStorage.getItem('adminToken');
+    if (!token) return null;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/profile`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success && (data.admin || data.user)) {
+        const profileObj = data.admin || data.user;
+        const stored = (() => {
+          try { return JSON.parse(localStorage.getItem('adminUser') || '{}'); } catch (e) { return {}; }
+        })();
+        const merged = { ...stored, ...profileObj };
+        localStorage.setItem('adminUser', JSON.stringify(merged));
+        return merged;
+      }
+    } catch (e) {
+      console.warn('Could not fetch user profile:', e);
+    }
+    return null;
+  };
+
   useEffect(() => {
     if (showEditProfileModal) {
+      const freshUser = (() => {
+        try {
+          return JSON.parse(localStorage.getItem('adminUser') || '{}');
+        } catch (e) {
+          return {};
+        }
+      })();
+
+      const initialPhone = currentUser.phone || freshUser.phone || '';
+      const initialEmail = currentUser.email || freshUser.email || '';
+      const initialName = currentUser.name || freshUser.name || '';
+
       setProfileForm({
-        name: currentUser.name || '',
-        username: currentUser.username || '',
+        name: initialName,
+        username: currentUser.username || freshUser.username || '',
         currentPassword: '',
         newPassword: '',
         confirmPassword: '',
-        phone: currentUser.phone || '',
-        email: currentUser.email || '',
-        profileImage: currentUser.profileImage || ''
+        phone: initialPhone,
+        email: initialEmail,
+        profileImage: currentUser.profileImage || freshUser.profileImage || ''
+      });
+
+      // Fetch fresh profile from MySQL to ensure mobile number and email are populated
+      fetchProfile().then(updated => {
+        if (updated) {
+          setProfileForm(prev => ({
+            ...prev,
+            name: prev.name || updated.name || '',
+            phone: updated.phone || prev.phone || '',
+            email: updated.email || prev.email || ''
+          }));
+        }
       });
     }
   }, [showEditProfileModal]);
@@ -731,6 +778,7 @@ export default function AdminDashboard({ onLogout }) {
   };
 
   useEffect(() => {
+    fetchProfile();
     fetchEnquiries();
     fetchAgents();
   }, []);
@@ -3354,7 +3402,7 @@ export default function AdminDashboard({ onLogout }) {
                               <td class="py-2.5 px-3 text-center whitespace-nowrap">
                                 <div class="flex items-center justify-center gap-1.5">
                                   <button
-                                    onClick={() => { setEditingUser({ ...agent }); setUserEditSuccessMsg(''); }}
+                                    onClick={() => { setEditingUser({ ...agent, password: agent.password || '••••••••' }); setUserEditSuccessMsg(''); }}
                                     class="w-7 h-7 rounded-lg bg-indigo-100 hover:bg-indigo-200 text-indigo-700 flex items-center justify-center transition cursor-pointer"
                                     title="Edit User Details"
                                   >
@@ -3608,13 +3656,13 @@ export default function AdminDashboard({ onLogout }) {
                   />
                 </div>
                 <div>
-                  <label class="block text-xs font-bold text-gray-700 mb-1">New Password (Optional)</label>
+                  <label class="block text-xs font-bold text-gray-700 mb-1">Password</label>
                   <input 
                     type="password" 
                     autoComplete="new-password"
                     value={editingUser.password || ''}
                     onChange={(e) => setEditingUser({ ...editingUser, password: e.target.value })}
-                    placeholder="Enter new password"
+                    placeholder="Enter password"
                     class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
                   />
                 </div>
@@ -4019,7 +4067,7 @@ export default function AdminDashboard({ onLogout }) {
               <div class="pt-3 border-t border-gray-200">
                 <div class="flex items-center gap-2 mb-2 text-xs font-bold text-[#B30E2E]">
                   <i class="fa-solid fa-key text-xs"></i>
-                  <span>Change Password (Optional)</span>
+                  <span>Change Password</span>
                 </div>
                 
                 <div class="space-y-2 bg-gray-50 p-3 rounded-2xl border border-gray-200">

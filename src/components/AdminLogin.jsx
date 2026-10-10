@@ -184,9 +184,6 @@ export default function AdminLogin({ onLoginSuccess, onClose }) {
           <h3 class="text-xl font-serif font-bold tracking-wide">
             {isForgotPassword ? 'Forgot Password Recovery' : 'Login'}
           </h3>
-          <p class="text-[11px] text-white/80 mt-1 font-sans">
-            {isForgotPassword ? 'Email OTP Verification & Password Reset' : 'Gulmohar City Management System'}
-          </p>
         </div>
 
         {/* Form Body */}

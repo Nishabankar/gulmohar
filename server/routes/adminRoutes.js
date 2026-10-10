@@ -125,9 +125,12 @@ router.post('/request-password-reset', async (req, res) => {
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
 
+    // Store OTP in memory map for verification
+    otpStore.set(cleanUsername, { otpCode, expiresAt, email: cleanEmail });
+
     const origin = req.headers.origin || req.headers.referer || 'http://localhost:5173';
     const baseUrl = origin.replace(/\/+$/, '');
-    const resetLink = `${baseUrl}/?resetPassword=true&username=${encodeURIComponent(cleanUsername)}&otp=${otpCode}`;
+    const resetLink = `${baseUrl}/?resetPassword=true&username=${encodeURIComponent(cleanUsername)}&email=${encodeURIComponent(cleanEmail)}&otp=${otpCode}`;
 
     // Send confirmation email with Username, OTP code, and direct Reset Link
     const emailResult = await sendPasswordResetEmail(cleanEmail, adminUser.name || adminUser.username, otpCode, resetLink, adminUser.username);
@@ -158,8 +161,8 @@ router.post('/forgot-password', async (req, res) => {
   try {
     const { username, email, otpCode, newPassword } = req.body;
 
-    if (!username || !email || !newPassword) {
-      return res.status(400).json({ success: false, message: 'Please provide username, email, and new password.' });
+    if (!username || !newPassword) {
+      return res.status(400).json({ success: false, message: 'Please provide username and new password.' });
     }
 
     if (newPassword.length < 6) {
@@ -167,7 +170,7 @@ router.post('/forgot-password', async (req, res) => {
     }
 
     const cleanUsername = username.toLowerCase().trim();
-    const cleanEmail = email.toLowerCase().trim();
+    const cleanEmail = email ? email.toLowerCase().trim() : '';
 
     // Verify OTP if provided
     if (otpCode) {
@@ -183,21 +186,29 @@ router.post('/forgot-password', async (req, res) => {
     }
 
     const [rows] = await query(
-      'SELECT id, name, username, email FROM users WHERE LOWER(username) = ? AND LOWER(email) = ? LIMIT 1',
-      [cleanUsername, cleanEmail]
+      'SELECT id, name, username, email FROM users WHERE LOWER(username) = ? LIMIT 1',
+      [cleanUsername]
     );
 
     if (!rows || rows.length === 0) {
-      return res.status(400).json({ success: false, message: 'Invalid username or registered email address.' });
+      return res.status(400).json({ success: false, message: 'Invalid username.' });
     }
 
     const adminUser = rows[0];
+
+    if (cleanEmail && cleanEmail !== (adminUser.email || '').toLowerCase().trim()) {
+      return res.status(400).json({ success: false, message: 'Email address does not match account username.' });
+    }
+
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     await query('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, adminUser.id]);
 
     // Send password changed confirmation email
-    sendPasswordChangedConfirmation(cleanEmail, adminUser.name || adminUser.username);
+    const targetEmail = cleanEmail || adminUser.email;
+    if (targetEmail) {
+      sendPasswordChangedConfirmation(targetEmail, adminUser.name || adminUser.username);
+    }
 
     return res.json({
       success: true,

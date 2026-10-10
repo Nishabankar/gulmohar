@@ -24,12 +24,14 @@ export default function AdminLogin({ onLoginSuccess, onClose }) {
     const params = new URLSearchParams(window.location.search);
     const resetParam = params.get('resetPassword');
     const paramUsername = params.get('username');
+    const paramEmail = params.get('email');
     const paramOtp = params.get('otp');
 
     if (resetParam === 'true' || paramOtp) {
       setIsForgotPassword(true);
       setForgotStep(2);
       if (paramUsername) setForgotUsername(paramUsername);
+      if (paramEmail) setForgotEmail(paramEmail);
       if (paramOtp) setOtpCode(paramOtp);
       setSuccessMsg('Email link verified! Please enter your new password to reset.');
 
@@ -146,7 +148,7 @@ export default function AdminLogin({ onLoginSuccess, onClose }) {
         localStorage.removeItem('adminToken');
         localStorage.removeItem('adminUser');
         localStorage.removeItem('adminView');
-        setSuccessMsg('Password reset successfully! Please log in with your new password.');
+        setSuccessMsg('Password reset successfully! Redirecting to login page...');
         setTimeout(() => {
           setIsForgotPassword(false);
           setForgotStep(1);
@@ -154,7 +156,7 @@ export default function AdminLogin({ onLoginSuccess, onClose }) {
           setPassword('');
           setError('');
           setSuccessMsg('');
-        }, 2200);
+        }, 1800);
       } else {
         setError(data.message || 'Password reset failed. Please check your verification OTP code.');
       }

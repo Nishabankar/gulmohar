@@ -273,20 +273,9 @@ export default function AdminLogin({ onLoginSuccess, onClose }) {
             )}
 
             {successMsg && (
-              <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold space-y-2">
-                <div class="flex items-center gap-2">
-                  <i class="fa-solid fa-circle-check text-emerald-600 text-sm"></i>
-                  <span>{successMsg}</span>
-                </div>
-                <div class="pt-1 text-center">
-                  <button 
-                    type="button" 
-                    onClick={() => { setForgotStep(2); setError(''); }}
-                    class="text-[11.5px] font-bold text-[#B30E2E] hover:underline cursor-pointer"
-                  >
-                    Already have OTP / Clicked Link? Go to Step 2 &rarr;
-                  </button>
-                </div>
+              <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-2 animate-fade-in">
+                <i class="fa-solid fa-circle-check text-emerald-600 text-sm"></i>
+                <span>{successMsg}</span>
               </div>
             )}
 

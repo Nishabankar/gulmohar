@@ -1,13 +1,26 @@
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const { query, pool } = require('../config/db');
 const { protectAdmin } = require('../middleware/authMiddleware');
-const { JWT_SECRET, JWT_EXPIRES_IN } = require('../config/env');
-const { sendPasswordResetEmail, sendPasswordChangedConfirmation } = require('../services/emailService');
+const { JWT_SECRET, JWT_EXPIRES_IN, SITE_URL } = require('../config/env');
+const { sendPasswordResetEmail, sendPasswordChangedConfirmation, sendNewUserInviteEmail } = require('../services/emailService');
 const { parseAnyDate } = require('../utils/parseAnyDate');
 const { STATUS_OPTIONS, PRIORITY_OPTIONS, matchOption } = require('../utils/leadOptions');
+
+// Helper function to resolve public base URL for emails (always uses https://gulmoharcity.in for recipient links)
+const getPublicBaseUrl = (req) => {
+  if (SITE_URL && SITE_URL.trim()) {
+    return SITE_URL.trim().replace(/\/+$/, '');
+  }
+  const origin = (req && (req.headers.origin || req.headers.referer) || '').replace(/\/+$/, '');
+  if (!origin || origin.includes('localhost') || origin.includes('127.0.0.1')) {
+    return 'https://gulmoharcity.in';
+  }
+  return origin;
+};
 
 // OTP Store Map (key: username, value: { otpCode, expiresAt, email })
 const otpStore = new Map();
@@ -129,8 +142,7 @@ router.post('/request-password-reset', async (req, res) => {
     // Store OTP in memory map for verification
     otpStore.set(cleanUsername, { otpCode, expiresAt, email: cleanEmail });
 
-    const origin = req.headers.origin || req.headers.referer || 'http://localhost:5173';
-    const baseUrl = origin.replace(/\/+$/, '');
+    const baseUrl = getPublicBaseUrl(req);
     const resetLink = `${baseUrl}/?resetPassword=true&username=${encodeURIComponent(cleanUsername)}&email=${encodeURIComponent(cleanEmail)}&otp=${otpCode}`;
 
     // Send confirmation email with Username, OTP code, and direct Reset Link
@@ -642,18 +654,22 @@ router.get('/agents', protectAdmin, async (req, res) => {
 });
 
 // @route   POST /api/admin/agents
-// @desc    Create new sales agent in MySQL database
+// @desc    Create new sales agent in MySQL database & send password setup email
 // @access  Protected
 router.post('/agents', protectAdmin, async (req, res) => {
   try {
     const { name, username, password, phone, email } = req.body;
-    if (!name || !username || !password) {
-      return res.status(400).json({ success: false, message: 'Please provide name, username, and password' });
+    const cleanUsername = username ? username.toLowerCase().trim() : '';
+    const cleanPhone = phone ? phone.trim() : '';
+    const agentEmail = (email && email.trim()) ? email.toLowerCase().trim() : (cleanUsername ? `${cleanUsername}@gulmoharcity.com` : '');
+
+    if (!name || !cleanUsername || !cleanPhone || !agentEmail) {
+      return res.status(400).json({ success: false, message: 'Please provide full name, username, mobile number, and email address.' });
     }
 
-    const cleanUsername = username.toLowerCase().trim();
-    const cleanPhone = phone ? phone.trim() : '';
-    const agentEmail = (email && email.trim()) ? email.toLowerCase().trim() : `${cleanUsername}@gulmoharcity.com`;
+    if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
+      return res.status(400).json({ success: false, message: 'Please provide a valid 10-digit mobile number starting with 6, 7, 8, or 9.' });
+    }
 
     const [existingUsername] = await query('SELECT id FROM users WHERE LOWER(username) = ?', [cleanUsername]);
     if (existingUsername && existingUsername.length > 0) {
@@ -674,7 +690,9 @@ router.post('/agents', protectAdmin, async (req, res) => {
       }
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // If no password provided (normal flow from admin create user form), generate random secure hash
+    const rawInitialPassword = (password && password.trim()) ? password.trim() : crypto.randomBytes(24).toString('hex');
+    const hashedPassword = await bcrypt.hash(rawInitialPassword, 10);
 
     const [result] = await query(
       `INSERT INTO users (name, username, email, phone, password, role) VALUES (?, ?, ?, ?, ?, 'Agent')`,
@@ -683,9 +701,26 @@ router.post('/agents', protectAdmin, async (req, res) => {
 
     const newAgentId = result.insertId;
 
+    // Generate 6-digit OTP code and setup link (valid for 48 hours for new account setup)
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 48 * 60 * 60 * 1000;
+
+    otpStore.set(cleanUsername, { otpCode, expiresAt, email: agentEmail });
+
+    const baseUrl = getPublicBaseUrl(req);
+    const resetLink = `${baseUrl}/?resetPassword=true&username=${encodeURIComponent(cleanUsername)}&email=${encodeURIComponent(agentEmail)}&otp=${otpCode}`;
+
+    // Send invitation email with password setup link and OTP
+    const emailResult = await sendNewUserInviteEmail(agentEmail, name.trim(), otpCode, resetLink, cleanUsername);
+
+    let msg = `Sales Agent created! An invitation email with password setup link has been sent to ${agentEmail}.`;
+    if (!emailResult.isConfigured) {
+      msg = `Sales Agent created! Password setup link sent to ${agentEmail}. [Test OTP: ${otpCode}]`;
+    }
+
     return res.json({
       success: true,
-      message: 'Sales Agent created successfully in MySQL',
+      message: msg,
       data: {
         _id: newAgentId.toString(),
         id: newAgentId,
@@ -694,7 +729,11 @@ router.post('/agents', protectAdmin, async (req, res) => {
         email: agentEmail,
         phone: cleanPhone,
         role: 'Agent'
-      }
+      },
+      resetLink,
+      otpCode,
+      emailSent: emailResult.success,
+      isConfigured: Boolean(emailResult.isConfigured)
     });
   } catch (error) {
     console.error('Error creating agent:', error.message);
@@ -972,6 +1011,7 @@ router.post('/enquiries/import', protectAdmin, async (req, res) => {
       const lastName = str(lead.lastName);
       const email = str(lead.email).toLowerCase();
       const plotsCount = str(lead.plotsCount) || '1 Guntha';
+      const plotInfo = str(lead.plotInfo);
       const notes = str(lead.notes);
 
       // Status: map to our own list, unknown values fall back to New
@@ -1021,9 +1061,9 @@ router.post('/enquiries/import', protectAdmin, async (req, res) => {
       // Insert into MySQL leads table
       const [insertResult] = await query(
         `INSERT INTO leads 
-         (first_name, last_name, phone, email, plots_count, visit_date, followup_date, status, priority, notes, assigned_to, assigned_agent_name, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, UTC_TIMESTAMP()))`,
-        [firstName, lastName, cleanPhone, email, plotsCount, visitDate, followupDate, status, priority, notes, assignedTo, assignedAgentName, created ? created.utc : null]
+         (first_name, last_name, phone, email, plot_info, plots_count, visit_date, followup_date, status, priority, notes, assigned_to, assigned_agent_name, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, UTC_TIMESTAMP()))`,
+        [firstName, lastName, cleanPhone, email, plotInfo, plotsCount, visitDate, followupDate, status, priority, notes, assignedTo, assignedAgentName, created ? created.utc : null]
       );
 
       const newId = insertResult.insertId;

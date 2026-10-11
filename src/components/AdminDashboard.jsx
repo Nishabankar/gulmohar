@@ -124,6 +124,7 @@ export default function AdminDashboard({ onLogout }) {
   const [importMsg, setImportMsg] = useState('');
   const [importSheet, setImportSheet] = useState({ headers: [], rows: [] }); // raw sheet, for the duplicates CSV
   const [importDuplicates, setImportDuplicates] = useState([]); // raw rows skipped as duplicates
+  const [unmappedColumns, setUnmappedColumns] = useState([]); // columns from CSV not mapped to DB
 
   // Active Inline Dropdown Popover State: { rowId: string, field: 'status' | 'followupDate' | 'plotsCount' | 'assignedAgent' }
   const [activeDropdown, setActiveDropdown] = useState(null);
@@ -324,7 +325,7 @@ export default function AdminDashboard({ onLogout }) {
   // State for Create Agent Modal (Admin Only)
   const [showCreateAgentModal, setShowCreateAgentModal] = useState(false);
   const [showAgentsListModal, setShowAgentsListModal] = useState(false);
-  const [newAgentData, setNewAgentData] = useState({ name: '', phone: '', email: '', username: '', password: '' });
+  const [newAgentData, setNewAgentData] = useState({ name: '', phone: '', email: '', username: '' });
   const [agentCreateMsg, setAgentCreateMsg] = useState('');
 
   // State for Full Lead Edit Modal & Floating Note Popover
@@ -910,10 +911,10 @@ export default function AdminDashboard({ onLogout }) {
     }
   };
 
-  // Handler: Create New Agent (Admin Only) - Saves directly to MongoDB & LocalStorage
+  // Handler: Create New Agent (Admin Only) - Saves directly to MySQL and sends setup link
   const handleCreateAgentSubmit = async (e) => {
     e.preventDefault();
-    if (!newAgentData.name || !newAgentData.username || !newAgentData.password || !newAgentData.phone || !newAgentData.email) return;
+    if (!newAgentData.name || !newAgentData.username || !newAgentData.phone || !newAgentData.email) return;
 
     if (!/^[6-9]\d{9}$/.test(newAgentData.phone.trim())) {
       setAgentCreateMsg('Please enter a valid 10-digit mobile number starting with 6, 7, 8, or 9.');
@@ -958,8 +959,7 @@ export default function AdminDashboard({ onLogout }) {
           name: newAgentData.name.trim(),
           phone: newAgentData.phone.trim(),
           email: newAgentData.email.trim(),
-          username: newAgentData.username.trim().toLowerCase(),
-          password: newAgentData.password
+          username: newAgentData.username.trim().toLowerCase()
         })
       });
       const data = await res.json().catch(() => ({}));
@@ -979,17 +979,16 @@ export default function AdminDashboard({ onLogout }) {
       const synced = [...registeredAgents.filter(a => a.username !== dbAgent.username), dbAgent];
       setRegisteredAgents(synced);
       localStorage.setItem('registeredAgents', JSON.stringify(synced));
+      setAgentCreateMsg(data.message || 'User created! Password setup link has been sent to user email.');
+      setNewAgentData({ name: '', phone: '', email: '', username: '' });
+      setTimeout(() => {
+        setShowCreateAgentModal(false);
+        setAgentCreateMsg('');
+      }, 2500);
     } catch (err) {
       setAgentCreateMsg(`Error: Could not reach the server (${err.message})`);
       return;
     }
-
-    setAgentCreateMsg('Sales Agent Created & Saved to Database Successfully!');
-    setNewAgentData({ name: '', phone: '', email: '', username: '', password: '' });
-    setTimeout(() => {
-      setShowCreateAgentModal(false);
-      setAgentCreateMsg('');
-    }, 1500);
   };
 
   // Handler: Open Delete Agent Modal
@@ -1565,10 +1564,10 @@ export default function AdminDashboard({ onLogout }) {
   // ("Caller Name" -> "callername", "Follow up 2" -> "followup2"). Exact match wins over partial.
   const parseCSVText = (text) => {
     const allRows = parseCSVRows(text);
-    if (allRows.length < 2) return { headers: [], rows: [], leads: [] };
+    if (allRows.length < 2) return { headers: [], rows: [], leads: [], unmappedColumns: [] };
     const headers = allRows[0];
     const rows = allRows.slice(1);
-    const keys = headers.map(h => h.toLowerCase().replace(/[^a-z0-9]/g, ''));
+    const keys = headers.map(h => (h || '').toLowerCase().replace(/[^a-z0-9]/g, ''));
     const used = new Set();
     const find = (exact, partial = []) => {
       let idx = keys.findIndex((k, i) => !used.has(i) && exact.includes(k));
@@ -1578,33 +1577,51 @@ export default function AdminDashboard({ onLogout }) {
     };
 
     // Specific columns first so generic words ("name", "date", "status") can't steal them
-    const followupIdx = keys.map((k, i) => ({ i, m: k.match(/^followup(\d*)(date)?$/) })).filter(x => x.m)
-      .sort((a, b) => (Number(a.m[1]) || 1) - (Number(b.m[1]) || 1)).map(x => { used.add(x.i); return x.i; });
-    const visitIdx = find(['visitarrangeondate', 'visitdate', 'sitevisitdate', 'visit'], ['visit']);
-    const agentIdx = find(['callername', 'caller', 'agent', 'assignedagent', 'assignedto'], ['caller', 'agent']);
-    const createdIdx = find(['createdtime', 'createdat', 'created', 'timestamp', 'date', 'enquirydate', 'submitteddate'], ['created', 'timestamp']);
-    const nameIdx = find(['fullname', 'name', 'customername', 'leadname'], ['name']);
-    const phoneIdx = find(['phone', 'phonenumber', 'mobile', 'mobileno', 'mobilenumber', 'contact', 'contactnumber'], ['phone', 'mobile']);
-    const emailIdx = find(['email', 'emailaddress', 'mail', 'mailid'], ['email']);
-    const statusIdx = find(['leadstatus', 'status', 'stage'], ['status']);
-    const remarksIdx = find(['remarks', 'remark', 'notes', 'note', 'comments', 'comment'], ['remark', 'note', 'comment']);
-    const priorityIdx = find(['priority'], ['priority']);
+    const idIdx = find(['id', 'leadid', 'enquiryid', 'srno', 'sno', 'slno', 'serialno', 'serialnumber', 'row', 'no'], ['id', 'leadid']);
+    const followupIdx = keys.map((k, i) => ({ i, m: k.match(/^(next)?followup(\d*)(date)?$/) })).filter(x => x.m)
+      .sort((a, b) => (Number(a.m[2]) || 1) - (Number(b.m[2]) || 1)).map(x => { used.add(x.i); return x.i; });
+    const visitIdx = find(['visitarrangeondate', 'visitdate', 'sitevisitdate', 'visit', 'visitscheduled'], ['visit']);
+    const agentIdx = find(['callername', 'caller', 'agent', 'assignedagent', 'assignedto', 'agentname', 'telecaller'], ['caller', 'agent']);
+    const createdIdx = find(['createdtime', 'createdat', 'created', 'timestamp', 'date', 'enquirydate', 'submitteddate', 'leaddate'], ['created', 'timestamp']);
+    const firstNameIdx = find(['firstname', 'fname', 'first'], ['firstname', 'fname']);
+    const lastNameIdx = find(['lastname', 'lname', 'surname', 'last'], ['lastname', 'lname', 'surname']);
+    const nameIdx = find(['fullname', 'name', 'customername', 'leadname', 'clientname'], ['name']);
+    const phoneIdx = find(['phone', 'phonenumber', 'mobile', 'mobileno', 'mobilenumber', 'contact', 'contactnumber', 'cell', 'cellphone'], ['phone', 'mobile']);
+    const emailIdx = find(['email', 'emailaddress', 'mail', 'mailid'], ['email', 'mail']);
+    const statusIdx = find(['leadstatus', 'status', 'stage', 'leadstage'], ['status', 'stage']);
+    const remarksIdx = find(['remarks', 'remark', 'notes', 'note', 'comments', 'comment', 'description'], ['remark', 'note', 'comment']);
+    const priorityIdx = find(['priority', 'leadpriority'], ['priority']);
+    const plotsCountIdx = find(['plotscount', 'guntha', 'noofguntha', 'plots', 'plotcount', 'gunthacount'], ['guntha']);
+    const plotInfoIdx = find(['plotinfo', 'plot', 'plotno', 'plotsinfo', 'property', 'propertyinfo'], ['plotinfo', 'plotno']);
+
+    // Detect unmapped columns: non-empty headers not matched to any database field
+    const unmappedColumns = headers.filter((h, i) => h && h.trim() && !used.has(i)).map(h => h.trim());
 
     const cell = (row, idx) => (idx !== -1 && row[idx] ? row[idx].trim() : '');
     const leads = [];
     rows.forEach((row, rowIndex) => {
       const phone = cell(row, phoneIdx);
       if (!phone) return;
-      const rawName = cell(row, nameIdx);
-      const [firstName, ...rest] = rawName.split(/\s+/);
+      let firstName = '';
+      let lastName = '';
+      if (firstNameIdx !== -1) {
+        firstName = cell(row, firstNameIdx);
+        lastName = lastNameIdx !== -1 ? cell(row, lastNameIdx) : '';
+      } else {
+        const rawName = cell(row, nameIdx);
+        const [fn, ...rest] = (rawName || '').split(/\s+/);
+        firstName = fn;
+        lastName = rest.join(' ');
+      }
       leads.push({
         row: rowIndex,
         createdTime: cell(row, createdIdx),
         firstName: firstName || 'Customer',
-        lastName: rest.join(' '),
+        lastName: lastName,
         phone,
         email: cell(row, emailIdx),
-        plotsCount: '1 Guntha',
+        plotsCount: cell(row, plotsCountIdx) || '1 Guntha',
+        plotInfo: cell(row, plotInfoIdx),
         status: cell(row, statusIdx) || 'New',
         priority: cell(row, priorityIdx),
         notes: cell(row, remarksIdx),
@@ -1613,7 +1630,7 @@ export default function AdminDashboard({ onLogout }) {
         assignedAgentName: cell(row, agentIdx)
       });
     });
-    return { headers, rows, leads };
+    return { headers, rows, leads, unmappedColumns };
   };
 
   const handleFileSelect = (e) => {
@@ -1622,12 +1639,14 @@ export default function AdminDashboard({ onLogout }) {
     setImportFile(file);
     setImportMsg('');
     setImportDuplicates([]);
+    setUnmappedColumns([]);
 
     const reader = new FileReader();
     reader.onload = (evt) => {
-      const { headers, rows, leads } = parseCSVText(evt.target.result);
+      const { headers, rows, leads, unmappedColumns: unmapped } = parseCSVText(evt.target.result);
       setImportSheet({ headers, rows });
       setImportPreview(leads);
+      setUnmappedColumns(unmapped || []);
       if (leads.length === 0) {
         setImportMsg('Error: No valid leads with phone numbers found in CSV file.');
       }
@@ -1657,6 +1676,7 @@ export default function AdminDashboard({ onLogout }) {
     setImportMsg('');
     setImportSheet({ headers: [], rows: [] });
     setImportDuplicates([]);
+    setUnmappedColumns([]);
   };
 
   const handleConfirmImport = async () => {
@@ -1692,8 +1712,10 @@ export default function AdminDashboard({ onLogout }) {
         const duplicates = (data.duplicateRows || []).map(i => importSheet.rows[i]).filter(Boolean);
         setImportDuplicates(duplicates);
         setImportPreview([]);
-        // Keep the modal open when there are duplicates to download
-        if (duplicates.length === 0) setTimeout(resetImportModal, 1800);
+        // Keep the modal open when there are duplicates to download or unmapped columns to review
+        if (duplicates.length === 0 && (!unmappedColumns || unmappedColumns.length === 0)) {
+          setTimeout(resetImportModal, 1800);
+        }
       } else {
         setImportMsg(`Error: ${data.message || 'Import failed'}`);
       }
@@ -3289,7 +3311,6 @@ export default function AdminDashboard({ onLogout }) {
                           <th class="py-2.5 px-3 whitespace-nowrap">User ID</th>
                           <th class="py-2.5 px-3 whitespace-nowrap">Full Name</th>
                           <th class="py-2.5 px-3 whitespace-nowrap">Username</th>
-                          <th class="py-2.5 px-3 whitespace-nowrap">Password</th>
                           <th class="py-2.5 px-3 whitespace-nowrap">Mobile No</th>
                           <th class="py-2.5 px-3 whitespace-nowrap">Email Address</th>
                           <th class="py-2.5 px-3 whitespace-nowrap">Assigned Leads</th>
@@ -3356,13 +3377,6 @@ export default function AdminDashboard({ onLogout }) {
                               <td class="py-2.5 px-3 font-semibold text-gray-800 whitespace-nowrap">
                                 <span class="bg-gray-100 border border-gray-200 px-2 py-0.5 rounded-md text-[11px] font-mono text-gray-800">
                                   {agent.username}
-                                </span>
-                              </td>
-
-                              {/* Password */}
-                              <td class="py-2.5 px-3 font-semibold text-gray-800 whitespace-nowrap">
-                                <span class="bg-gray-100 border border-gray-200 px-2 py-0.5 rounded-md text-[11px] font-mono text-gray-500">
-                                  ••••••••
                                 </span>
                               </td>
 
@@ -3509,35 +3523,21 @@ export default function AdminDashboard({ onLogout }) {
                 />
               </div>
 
-              {/* 2. Username & 3. Password */}
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label class="block text-xs font-bold text-gray-700 mb-1">Username *</label>
-                  <input 
-                    type="text" 
-                    required 
-                    autoComplete="off"
-                    value={newAgentData.username}
-                    onChange={(e) => setNewAgentData({ ...newAgentData, username: e.target.value })}
-                    placeholder="Enter username"
-                    class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
-                  />
-                </div>
-                <div>
-                  <label class="block text-xs font-bold text-gray-700 mb-1">Password *</label>
-                  <input 
-                    type="password" 
-                    required 
-                    autoComplete="new-password"
-                    value={newAgentData.password}
-                    onChange={(e) => setNewAgentData({ ...newAgentData, password: e.target.value })}
-                    placeholder="Enter password"
-                    class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
-                  />
-                </div>
+              {/* 2. Username */}
+              <div>
+                <label class="block text-xs font-bold text-gray-700 mb-1">Username *</label>
+                <input 
+                  type="text" 
+                  required 
+                  autoComplete="off"
+                  value={newAgentData.username}
+                  onChange={(e) => setNewAgentData({ ...newAgentData, username: e.target.value })}
+                  placeholder="Enter username"
+                  class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
+                />
               </div>
 
-              {/* 4. Mobile Number & 5. Email Address */}
+              {/* 3. Mobile Number & 4. Email Address */}
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label class="block text-xs font-bold text-gray-700 mb-1">Mobile Number *</label>
@@ -4700,6 +4700,30 @@ export default function AdminDashboard({ onLogout }) {
                 </div>
               )}
 
+              {unmappedColumns.length > 0 && (
+                <div class="p-3.5 rounded-xl bg-rose-50 border border-rose-300 text-rose-900 text-xs animate-fade-in space-y-2">
+                  <div class="flex items-start gap-2.5">
+                    <i class="fa-solid fa-triangle-exclamation text-rose-600 mt-0.5 text-sm flex-shrink-0"></i>
+                    <div class="flex-1 space-y-1.5">
+                      <p class="font-bold text-rose-800 text-xs leading-relaxed">
+                        The following {unmappedColumns.length === 1 ? 'column in your CSV is' : 'columns in your CSV are'} not mapped to the database and will not be imported:
+                      </p>
+                      <div class="flex flex-wrap gap-1.5 pt-0.5">
+                        {unmappedColumns.map((col, idx) => (
+                          <span
+                            key={idx}
+                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-rose-300 text-rose-800 font-bold text-[11px] shadow-xs"
+                          >
+                            <i class="fa-solid fa-circle-xmark text-[10px] text-rose-600"></i>
+                            {col}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {importPreview.length > 0 && (
                 <div class="space-y-2">
                   <div class="flex items-center justify-between text-xs font-bold text-slate-800 px-1">
@@ -4747,26 +4771,28 @@ export default function AdminDashboard({ onLogout }) {
                 onClick={resetImportModal}
                 class="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold cursor-pointer"
               >
-                {importDuplicates.length > 0 ? 'Close' : 'Cancel'}
+                {importDuplicates.length > 0 || importMsg ? 'Close' : 'Cancel'}
               </button>
-              <button
-                type="button"
-                disabled={importPreview.length === 0 || isImporting}
-                onClick={handleConfirmImport}
-                class="px-5 py-2 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white text-xs font-bold transition shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-              >
-                {isImporting ? (
-                  <>
-                    <i class="fa-solid fa-circle-notch fa-spin text-xs"></i>
-                    <span>Importing...</span>
-                  </>
-                ) : (
-                  <>
-                    <i class="fa-solid fa-file-import text-xs"></i>
-                    <span>Import {importPreview.length} Leads</span>
-                  </>
-                )}
-              </button>
+              {(importPreview.length > 0 || isImporting) && (
+                <button
+                  type="button"
+                  disabled={importPreview.length === 0 || isImporting}
+                  onClick={handleConfirmImport}
+                  class="px-5 py-2 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white text-xs font-bold transition shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  {isImporting ? (
+                    <>
+                      <i class="fa-solid fa-circle-notch fa-spin text-xs"></i>
+                      <span>Importing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <i class="fa-solid fa-file-import text-xs"></i>
+                      <span>Import {importPreview.length} Leads</span>
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           </div>
         </div>

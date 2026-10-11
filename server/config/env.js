@@ -31,5 +31,6 @@ module.exports = {
   SMTP_PORT: parseInt(process.env.SMTP_PORT || '465', 10),
   SMTP_USER: process.env.SMTP_USER || '',
   SMTP_PASS: process.env.SMTP_PASS || '',
-  SMTP_FROM: process.env.SMTP_FROM || 'Gulmohar City Admin <noreply@gulmoharcity.com>'
+  SMTP_FROM: process.env.SMTP_FROM || 'Gulmohar City Admin <noreply@gulmoharcity.com>',
+  SITE_URL: process.env.SITE_URL || 'https://gulmoharcity.in'
 };

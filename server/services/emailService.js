@@ -153,7 +153,89 @@ const sendPasswordChangedConfirmation = async (toEmail, userName) => {
   }
 };
 
+/**
+ * Send New User Account Invitation / Password Generation Email with Direct Link & OTP
+ */
+const sendNewUserInviteEmail = async (toEmail, userName, otpCode, resetLink = '', accountUsername = '') => {
+  try {
+    const mailer = await getTransporter();
+    const displayUsername = accountUsername || userName;
+
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 12px; background-color: #ffffff;">
+        <div style="background-color: #B30E2E; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+          <h2 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: bold; letter-spacing: 0.5px;">Gulmohar City - Welcome & Account Setup</h2>
+        </div>
+        <div style="padding: 24px; background-color: #ffffff;">
+          <p style="font-size: 15px; color: #333; margin-top: 0;">Hello <strong>${userName}</strong>,</p>
+          <p style="font-size: 14px; color: #555; line-height: 1.5;">
+            An account has been created for you on the <strong>Gulmohar City Real Estate Portal</strong>.
+          </p>
+          <p style="font-size: 14px; color: #555; line-height: 1.5;">
+            To set your password and access your account, please click the button below:
+          </p>
+          
+          <div style="background-color: #f8fafc; padding: 16px; border-radius: 10px; border: 1px solid #e2e8f0; margin: 20px 0;">
+            <p style="margin: 0 0 8px 0; font-size: 13px; color: #64748b;"><strong>Username:</strong> <span style="color: #0f172a; font-size: 14px; font-weight: 600;">${displayUsername}</span></p>
+            <p style="margin: 0; font-size: 13px; color: #64748b;"><strong>Verification OTP Code:</strong></p>
+            <h1 style="margin: 8px 0 4px 0; font-size: 32px; letter-spacing: 6px; color: #B30E2E;">${otpCode}</h1>
+            <p style="margin: 0; font-size: 12px; color: #94a3b8;">Valid for 48 hours</p>
+          </div>
+
+          ${resetLink ? `
+          <div style="text-align: center; margin: 26px 0 16px 0;">
+            <a href="${resetLink}" target="_blank" style="background-color: #B30E2E; color: #ffffff; padding: 13px 30px; font-size: 14px; font-weight: bold; text-decoration: none; border-radius: 8px; display: inline-block; box-shadow: 0 4px 6px rgba(179,14,46,0.25);">
+              🔑 Set Your Account Password
+            </a>
+            <p style="font-size: 12px; color: #64748b; margin-top: 12px; word-break: break-all;">
+              Or copy this direct link into your browser:<br/>
+              <a href="${resetLink}" style="color: #B30E2E;">${resetLink}</a>
+            </p>
+          </div>
+          ` : ''}
+
+          <p style="font-size: 12px; color: #94a3b8; margin-top: 24px; border-top: 1px solid #f1f5f9; padding-top: 12px;">
+            If you did not expect this invitation, please contact your administrator.
+          </p>
+        </div>
+        <div style="background-color: #f1f5f9; padding: 12px; text-align: center; font-size: 12px; color: #64748b; border-radius: 0 0 8px 8px;">
+          &copy; ${new Date().getFullYear()} Gulmohar City Real Estate CRM System. All rights reserved.
+        </div>
+      </div>
+    `;
+
+    const mailOptions = {
+      from: env.SMTP_FROM || '"Gulmohar City Admin" <noreply@gulmoharcity.com>',
+      to: toEmail,
+      subject: `🎉 Welcome to Gulmohar City - Set Your Account Password [${otpCode}]`,
+      html: htmlContent
+    };
+
+    const isConfigured = Boolean(env.SMTP_USER && env.SMTP_PASS);
+
+    if (mailer) {
+      const info = await mailer.sendMail(mailOptions);
+      console.log(`✉️ New user invitation email sent to ${toEmail}. Message ID: ${info.messageId}`);
+      if (nodemailer.getTestMessageUrl && info) {
+        console.log(`🔗 Preview Email URL: ${nodemailer.getTestMessageUrl(info)}`);
+      }
+      return { 
+        success: true, 
+        isConfigured, 
+        messageId: info.messageId, 
+        previewUrl: nodemailer.getTestMessageUrl && info ? nodemailer.getTestMessageUrl(info) : null 
+      };
+    }
+    
+    return { success: true, isConfigured, message: 'Email sent successfully' };
+  } catch (error) {
+    console.error('❌ Error sending new user invitation email:', error.message);
+    return { success: false, error: error.message };
+  }
+};
+
 module.exports = {
   sendPasswordResetEmail,
-  sendPasswordChangedConfirmation
+  sendPasswordChangedConfirmation,
+  sendNewUserInviteEmail
 };

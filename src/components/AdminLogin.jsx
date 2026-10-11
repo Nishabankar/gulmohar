@@ -33,7 +33,7 @@ export default function AdminLogin({ onLoginSuccess, onClose }) {
       if (paramUsername) setForgotUsername(paramUsername);
       if (paramEmail) setForgotEmail(paramEmail);
       if (paramOtp) setOtpCode(paramOtp);
-      setSuccessMsg('Email link verified! Please enter your new password to reset.');
+      setSuccessMsg('Email link verified! Please set your account password below.');
 
       // Clean query string from browser URL without page reload
       const newUrl = window.location.pathname;
@@ -182,7 +182,7 @@ export default function AdminLogin({ onLoginSuccess, onClose }) {
           </button>
           
           <h3 class="text-xl font-serif font-bold tracking-wide">
-            {isForgotPassword ? 'Forgot Password Recovery' : 'Login'}
+            {isForgotPassword ? (forgotStep === 2 ? 'Set Account Password' : 'Forgot Password Recovery') : 'Login'}
           </h3>
         </div>
 
@@ -405,10 +405,10 @@ export default function AdminLogin({ onLoginSuccess, onClose }) {
                 {loading ? (
                   <>
                     <i class="fa-solid fa-spinner fa-spin text-xs"></i>
-                    <span>Resetting...</span>
+                    <span>{forgotStep === 2 ? 'Saving...' : 'Resetting...'}</span>
                   </>
                 ) : (
-                  <span>Reset Password</span>
+                  <span>{forgotStep === 2 ? 'Set Password' : 'Reset Password'}</span>
                 )}
               </button>
             </div>

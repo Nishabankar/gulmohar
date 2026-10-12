@@ -47,7 +47,7 @@ CREATE TABLE `leads` (
   `visit_date` VARCHAR(100) NOT NULL DEFAULT '',
   `followup_date` VARCHAR(100) NOT NULL DEFAULT '',
   `status` VARCHAR(50) NOT NULL DEFAULT 'New',
-  `priority` VARCHAR(20) NOT NULL DEFAULT '' COMMENT 'High | Medium | Low',
+  `priority` VARCHAR(20) NOT NULL DEFAULT 'Hot' COMMENT 'Hot | Cold',
   `notes` TEXT DEFAULT NULL,
   `assigned_agent_name` VARCHAR(255) NOT NULL DEFAULT '',
   `assigned_to` INT DEFAULT NULL COMMENT 'Foreign key to users.id',

@@ -44,7 +44,7 @@ const formatEnquiryRow = (row, historyEntries = []) => {
     notes: row.notes || '',
     assignedAgentName: row.assigned_agent_name || '',
     assignedTo: row.assigned_to ? row.assigned_to.toString() : '',
-    priority: row.priority || '',
+    priority: (row.priority === 'Cold' || row.priority === 'Low') ? 'Cold' : 'Hot',
     history: historyEntries.map(h => ({
       _id: h.id ? h.id.toString() : undefined,
       id: h.id,
@@ -581,7 +581,7 @@ router.patch('/enquiries/:id', protectAdmin, async (req, res) => {
       { col: 'status', label: 'Status', incoming: status },
       { col: 'notes', label: 'Notes', incoming: notes },
       { col: 'assigned_agent_name', label: 'Assigned Agent', incoming: resolvedAgentName },
-      { col: 'priority', label: 'Priority', incoming: priority === undefined ? undefined : (matchOption(priority, PRIORITY_OPTIONS) || '') }
+      { col: 'priority', label: 'Priority', incoming: priority === undefined ? undefined : (matchOption(priority, PRIORITY_OPTIONS) || 'Hot') }
     ];
 
     let newHistoryEntries = [];
@@ -1062,7 +1062,7 @@ router.post('/enquiries/import', protectAdmin, async (req, res) => {
       const status = matchOption(rawStatus, STATUS_OPTIONS) || 'New';
       if (rawStatus && !matchOption(rawStatus, STATUS_OPTIONS)) history.push(['Sheet Status', '—', `${rawStatus} (not recognised, set to New)`]);
 
-      const priority = matchOption(lead.priority, PRIORITY_OPTIONS) || '';
+      const priority = matchOption(lead.priority, PRIORITY_OPTIONS) || 'Hot';
 
       // Dates: any format; unparseable values are kept in history so nothing from the sheet is lost
       const created = parseAnyDate(lead.createdTime);

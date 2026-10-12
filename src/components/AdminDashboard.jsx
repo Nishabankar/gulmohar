@@ -87,11 +87,13 @@ const withNewDefaultColumns = (cols) => {
   return merged;
 };
 
-const PRIORITY_OPTIONS = ['High', 'Medium', 'Low'];
+const PRIORITY_OPTIONS = ['Hot', 'Cold'];
 const PRIORITY_BADGE = {
-  High: 'bg-rose-50 border-rose-300 text-rose-700',
+  Hot: 'bg-rose-50 border-rose-300 text-[#B30E2E]',
+  Cold: 'bg-sky-50 border-sky-300 text-sky-700',
+  High: 'bg-rose-50 border-rose-300 text-[#B30E2E]',
   Medium: 'bg-amber-50 border-amber-300 text-amber-800',
-  Low: 'bg-emerald-50 border-emerald-300 text-emerald-700'
+  Low: 'bg-sky-50 border-sky-300 text-sky-700'
 };
 
 
@@ -331,7 +333,7 @@ export default function AdminDashboard({ onLogout }) {
     plotsCount: '1 Guntha',
     visitDate: '',
     followupDate: '',
-    priority: '',
+    priority: 'Hot',
     notes: ''
   });
   const [submittingLead, setSubmittingLead] = useState(false);
@@ -869,7 +871,7 @@ export default function AdminDashboard({ onLogout }) {
       followupDate: newLeadFormData.followupDate || '',
       notes: newLeadFormData.notes ? newLeadFormData.notes.trim() : '',
       status: 'New',
-      priority: newLeadFormData.priority || '',
+      priority: newLeadFormData.priority || 'Hot',
       assignedTo: assignedAgentId,
       assignedAgentName: assignedAgentName,
       createdBy: creatorName,
@@ -920,7 +922,7 @@ export default function AdminDashboard({ onLogout }) {
       setTimeout(() => {
         setShowCreateLeadModal(false);
         setCreateLeadMsg('');
-        setNewLeadFormData({ firstName: '', lastName: '', phone: '', email: '', plotsCount: '1 Guntha', visitDate: '', followupDate: '', priority: '', notes: '' });
+        setNewLeadFormData({ firstName: '', lastName: '', phone: '', email: '', plotsCount: '1 Guntha', visitDate: '', followupDate: '', priority: 'Hot', notes: '' });
       }, 1000);
     }
   };
@@ -1637,7 +1639,7 @@ export default function AdminDashboard({ onLogout }) {
         plotsCount: cell(row, plotsCountIdx) || '1 Guntha',
         plotInfo: cell(row, plotInfoIdx),
         status: cell(row, statusIdx) || 'New',
-        priority: cell(row, priorityIdx),
+        priority: cell(row, priorityIdx) || 'Hot',
         notes: cell(row, remarksIdx),
         visitDate: cell(row, visitIdx),
         followups: followupIdx.map(i => cell(row, i)),
@@ -1809,7 +1811,7 @@ export default function AdminDashboard({ onLogout }) {
       `"${item.plotInfo || ''}"`,
       `"${new Date(item.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}"`,
       `"${item.status || 'New'}"`,
-      `"${item.priority || ''}"`,
+      `"${(item.priority === 'Cold' || item.priority === 'Low') ? 'Cold' : 'Hot'}"`,
       `"${item.assignedAgentName || 'Rahul Patil'}"`,
       `"${(item.notes || '').replace(/"/g, '""')}"`
     ]);
@@ -2050,11 +2052,13 @@ export default function AdminDashboard({ onLogout }) {
           break;
         }
         case 'priority': {
-          const priorityWeights = { high: 3, medium: 2, low: 1 };
-          const pA = priorityWeights[(a.priority || '').trim().toLowerCase()] || 0;
-          const pB = priorityWeights[(b.priority || '').trim().toLowerCase()] || 0;
-          if (pA === 0 && pB > 0) return 1;
-          if (pA > 0 && pB === 0) return -1;
+          const getWeight = (p) => {
+            const val = (p || '').trim().toLowerCase();
+            if (val === 'cold' || val === 'low') return 1;
+            return 2; // Hot default
+          };
+          const pA = getWeight(a.priority);
+          const pB = getWeight(b.priority);
           comp = (pB - pA) * sortMultiplier;
           break;
         }
@@ -3302,16 +3306,20 @@ export default function AdminDashboard({ onLogout }) {
                                 }
                                 case 'priority': {
                                   const isPriorityOpen = activeDropdown?.rowId === currentId && activeDropdown?.field === 'priority';
-                                  const currentPriority = item.priority || '';
+                                  const rawPriority = item.priority;
+                                  const currentPriority = (rawPriority === 'Cold' || rawPriority === 'Low') ? 'Cold' : 'Hot';
                                   return (
                                     <td key="priority" class="py-2.5 px-2.5 whitespace-nowrap min-w-[95px] relative custom-dropdown-container">
                                       <button
                                         type="button"
                                         onClick={() => setActiveDropdown(isPriorityOpen ? null : { rowId: currentId, field: 'priority' })}
-                                        class={`px-2 py-0.5 rounded-md border text-[10px] font-bold outline-none cursor-pointer transition flex items-center justify-between gap-1 shadow-2xs w-full ${PRIORITY_BADGE[currentPriority] || 'bg-gray-50 border-gray-200 text-gray-400'}`}
+                                        class={`px-2 py-0.5 rounded-md border text-[10px] font-bold outline-none cursor-pointer transition flex items-center justify-between gap-1 shadow-2xs w-full ${PRIORITY_BADGE[currentPriority] || 'bg-rose-50 border-rose-300 text-[#B30E2E]'}`}
                                         title="Click to set Priority"
                                       >
-                                        <span class="truncate">{currentPriority || 'Set'}</span>
+                                        <span class="truncate flex items-center gap-1">
+                                          {currentPriority === 'Hot' ? <i class="fa-solid fa-fire text-[#B30E2E] text-[9px]"></i> : <i class="fa-regular fa-snowflake text-sky-600 text-[9px]"></i>}
+                                          <span>{currentPriority}</span>
+                                        </span>
                                         <i class={`fa-solid fa-chevron-down text-[8px] transition-transform ${isPriorityOpen ? 'rotate-180' : ''}`}></i>
                                       </button>
 
@@ -3329,7 +3337,10 @@ export default function AdminDashboard({ onLogout }) {
                                                 currentPriority === opt ? 'bg-slate-100 text-[#B30E2E] font-bold' : 'text-slate-700'
                                               }`}
                                             >
-                                              <span>{opt}</span>
+                                              <span class="flex items-center gap-1.5">
+                                                {opt === 'Hot' ? <i class="fa-solid fa-fire text-[#B30E2E] text-[10px]"></i> : <i class="fa-regular fa-snowflake text-sky-600 text-[10px]"></i>}
+                                                <span>{opt}</span>
+                                              </span>
                                               {currentPriority === opt && <i class="fa-solid fa-check text-[10px] text-[#B30E2E]"></i>}
                                             </button>
                                           ))}
@@ -4173,11 +4184,10 @@ export default function AdminDashboard({ onLogout }) {
                 <div>
                   <label class="block text-xs font-bold text-gray-700 mb-1">Priority</label>
                   <select 
-                    value={editingEnquiry.priority || ''}
+                    value={(editingEnquiry.priority === 'Cold' || editingEnquiry.priority === 'Low') ? 'Cold' : 'Hot'}
                     onChange={(e) => setEditingEnquiry({ ...editingEnquiry, priority: e.target.value })}
                     class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E]"
                   >
-                    <option value="">Not set</option>
                     {PRIORITY_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                   </select>
                 </div>
@@ -4538,11 +4548,10 @@ export default function AdminDashboard({ onLogout }) {
                 <div>
                   <label class="block text-xs font-bold text-gray-700 mb-1">Priority</label>
                   <select 
-                    value={newLeadFormData.priority || ''}
+                    value={newLeadFormData.priority || 'Hot'}
                     onChange={(e) => setNewLeadFormData({ ...newLeadFormData, priority: e.target.value })}
                     class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800"
                   >
-                    <option value="">Not set</option>
                     {PRIORITY_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                   </select>
                 </div>
@@ -5028,7 +5037,7 @@ export default function AdminDashboard({ onLogout }) {
                             <td class="p-2 text-slate-600">{lead.phone}</td>
                             <td class="p-2 text-slate-500">{lead.email || '-'}</td>
                             <td class="p-2"><span class="px-1.5 py-0.5 rounded bg-rose-50 text-[#B30E2E] border border-rose-200 text-[10px] font-bold">{lead.status || 'New'}</span></td>
-                            <td class="p-2 text-slate-600">{lead.priority || '-'}</td>
+                            <td class="p-2 text-slate-600 font-semibold">{lead.priority || 'Hot'}</td>
                             <td class="p-2 text-slate-500">{lead.followups.filter(Boolean).length || '-'}</td>
                             <td class="p-2 text-[#B30E2E] font-bold">{lead.assignedAgentName || 'Auto Round-Robin'}</td>
                           </tr>

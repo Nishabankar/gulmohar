@@ -18,8 +18,8 @@ const isDashboardRequest = (req) => {
 router.post('/', async (req, res) => {
   try {
     const { firstName, lastName, phone, email, plotInfo, plotsCount, visitDate, followupDate, notes, assignedAgentName, assignedTo, createdBy, modifiedBy } = req.body;
-    // Priority is dashboard-only: ignored for public homepage submissions
-    const priority = isDashboardRequest(req) ? (matchOption(req.body.priority, PRIORITY_OPTIONS) || '') : '';
+    // Default priority for new leads is 'Hot'
+    const priority = isDashboardRequest(req) ? (matchOption(req.body.priority, PRIORITY_OPTIONS) || 'Hot') : 'Hot';
 
     if (!firstName || !phone) {
       return res.status(400).json({

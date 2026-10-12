@@ -151,7 +151,9 @@ export default function AdminDashboard({ onLogout }) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed) && parsed.length > 0) {
           const filtered = parsed.filter(c => c.id !== 'visitDate');
-          if (filtered.length > 0) return withNewDefaultColumns(filtered);
+          if (filtered.length > 0) {
+            return withNewDefaultColumns(filtered).map(c => c.id === 'actions' ? { ...c, visible: true } : c);
+          }
         }
       }
     } catch (e) {}
@@ -176,10 +178,10 @@ export default function AdminDashboard({ onLogout }) {
             return {
               id: col.id,
               label: col.label || (def ? def.label : col.id),
-              visible: col.visible !== undefined ? col.visible : true
+              visible: col.id === 'actions' ? true : (col.visible !== undefined ? col.visible : true)
             };
           });
-          const withDefaults = withNewDefaultColumns(merged);
+          const withDefaults = withNewDefaultColumns(merged).map(c => c.id === 'actions' ? { ...c, visible: true } : c);
           setColumnConfig(withDefaults);
           localStorage.setItem('leadsTableColumnConfig', JSON.stringify(withDefaults));
         }
@@ -191,8 +193,10 @@ export default function AdminDashboard({ onLogout }) {
   }, []);
 
   const handleUpdateColumnConfig = async (newConfig) => {
-    setColumnConfig(newConfig);
-    localStorage.setItem('leadsTableColumnConfig', JSON.stringify(newConfig));
+    // Ensure actions column remains visible
+    const safeConfig = newConfig.map(c => c.id === 'actions' ? { ...c, visible: true } : c);
+    setColumnConfig(safeConfig);
+    localStorage.setItem('leadsTableColumnConfig', JSON.stringify(safeConfig));
 
     const token = localStorage.getItem('adminToken');
     if (!token) return;
@@ -203,7 +207,7 @@ export default function AdminDashboard({ onLogout }) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ columnPreferences: newConfig })
+        body: JSON.stringify({ columnPreferences: safeConfig })
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
@@ -215,6 +219,7 @@ export default function AdminDashboard({ onLogout }) {
   };
 
   const toggleColumnVisibility = (colId) => {
+    if (colId === 'actions') return; // Actions column is mandatory and always visible
     const updated = columnConfig.map(col => 
       col.id === colId ? { ...col, visible: !col.visible } : col
     );
@@ -2863,9 +2868,9 @@ export default function AdminDashboard({ onLogout }) {
                             case 'assignedAgent':
                               return <th key="assignedAgent" class="py-2.5 px-2.5 whitespace-nowrap min-w-[145px]">Assigned Agent</th>;
                             case 'notes':
-                              return <th key="notes" class="py-2.5 px-2 text-center whitespace-nowrap w-12">Notes</th>;
+                              return <th key="notes" class="py-2.5 px-2 text-center whitespace-nowrap w-12 min-w-[50px]">Notes</th>;
                             case 'actions':
-                              return <th key="actions" class="py-2.5 px-2 text-center whitespace-nowrap w-16">Actions</th>;
+                              return <th key="actions" class="py-2.5 px-2 text-center whitespace-nowrap w-24 min-w-[105px]">Actions</th>;
                             default:
                               return null;
                           }
@@ -3182,7 +3187,7 @@ export default function AdminDashboard({ onLogout }) {
                                 }
                                 case 'notes':
                                   return (
-                                    <td key="notes" class="py-2.5 px-2 text-center whitespace-nowrap w-12">
+                                    <td key="notes" class="py-2.5 px-2 text-center whitespace-nowrap w-12 min-w-[50px]">
                                       <button 
                                         type="button"
                                         onClick={(e) => handleOpenNotePopover(e, item)}
@@ -3201,7 +3206,7 @@ export default function AdminDashboard({ onLogout }) {
                                   );
                                 case 'actions':
                                   return (
-                                    <td key="actions" class="py-2.5 px-2 text-center whitespace-nowrap w-24">
+                                    <td key="actions" class="py-2.5 px-2 text-center whitespace-nowrap w-24 min-w-[105px]">
                                       <div class="flex items-center justify-center gap-1">
                                         <button 
                                           onClick={() => { setEditingEnquiry({ ...item }); setEditModalSuccessMsg(''); }}
@@ -4514,14 +4519,18 @@ export default function AdminDashboard({ onLogout }) {
                     <span class="cursor-grab active:cursor-grabbing text-slate-400 hover:text-slate-600 px-1">
                       <i class="fa-solid fa-grip-vertical text-xs"></i>
                     </span>
-                    <label class="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-800 select-none">
+                    <label class={`flex items-center gap-2 text-xs font-bold text-slate-800 select-none ${col.id === 'actions' ? 'cursor-default' : 'cursor-pointer'}`}>
                       <input
                         type="checkbox"
-                        checked={col.visible}
+                        checked={col.id === 'actions' ? true : col.visible}
+                        disabled={col.id === 'actions'}
                         onChange={() => toggleColumnVisibility(col.id)}
-                        class="w-4 h-4 rounded text-[#B30E2E] focus:ring-[#B30E2E] cursor-pointer accent-[#B30E2E]"
+                        class="w-4 h-4 rounded text-[#B30E2E] focus:ring-[#B30E2E] cursor-pointer accent-[#B30E2E] disabled:cursor-not-allowed"
                       />
                       <span>{col.label}</span>
+                      {col.id === 'actions' && (
+                        <span class="text-[9px] font-semibold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded ml-1">Always Visible</span>
+                      )}
                     </label>
                   </div>
 

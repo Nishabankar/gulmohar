@@ -148,15 +148,22 @@ export default function AdminDashboard({ onLogout }) {
 
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (activeDropdown && !e.target.closest('.custom-dropdown-container')) {
+      if (activeDropdown && !e.target.closest('.custom-dropdown-container') && !e.target.closest('.custom-dropdown-menu')) {
+        setActiveDropdown(null);
+      }
+    };
+    const handleScroll = (e) => {
+      if (activeDropdown && !e.target.closest('.custom-dropdown-menu')) {
         setActiveDropdown(null);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('touchstart', handleClickOutside);
+    window.addEventListener('scroll', handleScroll, true);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('touchstart', handleClickOutside);
+      window.removeEventListener('scroll', handleScroll, true);
     };
   }, [activeDropdown]);
 
@@ -2109,34 +2116,27 @@ export default function AdminDashboard({ onLogout }) {
     return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
   });
 
-  // Helper to toggle inline table dropdowns (always opens downward following consistent Sequence 1, and auto-scrolls table if near bottom)
+  // Helper to toggle inline table dropdowns (always opens upward from the upper side, pinned above the button)
   const toggleDropdown = (e, rowId, field) => {
     if (activeDropdown?.rowId === rowId && activeDropdown?.field === field) {
       setActiveDropdown(null);
       return;
     }
 
-    setActiveDropdown({ rowId, field });
-
-    // Smoothly scroll table container if clicked near bottom edge so full downward dropdown is visible
     if (e && e.currentTarget) {
-      const targetBtn = e.currentTarget;
-      setTimeout(() => {
-        try {
-          const scrollParent = targetBtn.closest('.overflow-y-auto');
-          if (scrollParent) {
-            const btnRect = targetBtn.getBoundingClientRect();
-            const parentRect = scrollParent.getBoundingClientRect();
-            const spaceBelowInParent = parentRect.bottom - btnRect.bottom;
-            if (spaceBelowInParent < 220) {
-              const scrollNeeded = 220 - spaceBelowInParent + 16;
-              scrollParent.scrollBy({ top: scrollNeeded, behavior: 'smooth' });
-            }
-          }
-        } catch (err) {
-          // ignore
-        }
-      }, 50);
+      const rect = e.currentTarget.getBoundingClientRect();
+      const bottom = window.innerHeight - rect.top + 4;
+      const left = Math.max(8, Math.min(rect.left, window.innerWidth - 175));
+      const width = Math.max(130, rect.width);
+      const maxHeight = Math.min(192, Math.max(110, rect.top - 12));
+
+      setActiveDropdown({
+        rowId,
+        field,
+        coords: { bottom, left, width, maxHeight }
+      });
+    } else {
+      setActiveDropdown({ rowId, field });
     }
   };
 
@@ -2991,7 +2991,7 @@ export default function AdminDashboard({ onLogout }) {
                   <p class="text-xs text-gray-400">Try adjusting your search query or status filter.</p>
                 </div>
               ) : (
-                <div class="overflow-x-auto overflow-y-auto flex-1 min-h-0 custom-scrollbar w-full rounded-b-2xl pb-16">
+                <div class="overflow-x-auto overflow-y-auto flex-1 min-h-0 custom-scrollbar w-full rounded-b-2xl">
                   <table class="w-full min-w-full text-left border-collapse">
                     <thead class="sticky top-0 z-10 bg-gray-100 shadow-2xs">
                       <tr class="bg-gray-100 border-b border-gray-200 text-[10px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">
@@ -3310,7 +3310,15 @@ export default function AdminDashboard({ onLogout }) {
                                       </button>
 
                                       {isStatusOpen && (
-                                        <div class="absolute top-full left-0 mt-1 z-50 min-w-[155px] max-h-48 overflow-y-auto custom-scrollbar overscroll-contain bg-white rounded-xl shadow-xl border border-gray-200 py-1 text-xs animate-fade-in">
+                                        <div 
+                                          class="fixed z-[9999] min-w-[155px] overflow-y-auto custom-scrollbar overscroll-contain bg-white rounded-xl shadow-2xl border border-gray-200 py-1 text-xs animate-fade-in custom-dropdown-menu"
+                                          style={{
+                                            bottom: activeDropdown?.coords ? `${activeDropdown.coords.bottom}px` : undefined,
+                                            left: activeDropdown?.coords ? `${activeDropdown.coords.left}px` : undefined,
+                                            minWidth: activeDropdown?.coords ? `${Math.max(155, activeDropdown.coords.width)}px` : '155px',
+                                            maxHeight: activeDropdown?.coords?.maxHeight ? `${activeDropdown.coords.maxHeight}px` : '192px'
+                                          }}
+                                        >
                                           {STATUS_OPTIONS.map((opt) => (
                                             <button
                                               key={opt}
@@ -3349,7 +3357,15 @@ export default function AdminDashboard({ onLogout }) {
                                       </button>
 
                                       {isPriorityOpen && (
-                                        <div class="absolute top-full left-0 mt-1 z-50 min-w-[110px] bg-white rounded-xl shadow-xl border border-gray-200 py-1 text-xs animate-fade-in">
+                                        <div 
+                                          class="fixed z-[9999] min-w-[110px] overflow-y-auto custom-scrollbar bg-white rounded-xl shadow-2xl border border-gray-200 py-1 text-xs animate-fade-in custom-dropdown-menu"
+                                          style={{
+                                            bottom: activeDropdown?.coords ? `${activeDropdown.coords.bottom}px` : undefined,
+                                            left: activeDropdown?.coords ? `${activeDropdown.coords.left}px` : undefined,
+                                            minWidth: activeDropdown?.coords ? `${Math.max(110, activeDropdown.coords.width)}px` : '110px',
+                                            maxHeight: activeDropdown?.coords?.maxHeight ? `${activeDropdown.coords.maxHeight}px` : '192px'
+                                          }}
+                                        >
                                           {PRIORITY_OPTIONS.map((opt) => (
                                             <button
                                               key={opt}
@@ -3412,7 +3428,15 @@ export default function AdminDashboard({ onLogout }) {
                                       </div>
 
                                       {isPlotsOpen && (
-                                        <div class="absolute top-full left-0 mt-1 z-50 min-w-[160px] max-h-48 overflow-y-auto custom-scrollbar bg-white rounded-xl shadow-xl border border-gray-200 py-1 text-xs animate-fade-in">
+                                        <div 
+                                          class="fixed z-[9999] min-w-[160px] overflow-y-auto custom-scrollbar bg-white rounded-xl shadow-2xl border border-gray-200 py-1 text-xs animate-fade-in custom-dropdown-menu"
+                                          style={{
+                                            bottom: activeDropdown?.coords ? `${activeDropdown.coords.bottom}px` : undefined,
+                                            left: activeDropdown?.coords ? `${activeDropdown.coords.left}px` : undefined,
+                                            minWidth: activeDropdown?.coords ? `${Math.max(160, activeDropdown.coords.width)}px` : '160px',
+                                            maxHeight: activeDropdown?.coords?.maxHeight ? `${activeDropdown.coords.maxHeight}px` : '192px'
+                                          }}
+                                        >
                                           {GUNTHA_OPTIONS.map((opt) => (
                                             <button
                                               key={opt}
@@ -3456,7 +3480,15 @@ export default function AdminDashboard({ onLogout }) {
                                           </button>
 
                                           {isAgentOpen && (
-                                            <div class="absolute top-full left-0 mt-1 z-50 min-w-[160px] max-h-48 overflow-y-auto custom-scrollbar bg-white rounded-xl shadow-xl border border-gray-200 py-1 text-xs animate-fade-in">
+                                            <div 
+                                              class="fixed z-[9999] min-w-[160px] overflow-y-auto custom-scrollbar bg-white rounded-xl shadow-2xl border border-gray-200 py-1 text-xs animate-fade-in custom-dropdown-menu"
+                                              style={{
+                                                bottom: activeDropdown?.coords ? `${activeDropdown.coords.bottom}px` : undefined,
+                                                left: activeDropdown?.coords ? `${activeDropdown.coords.left}px` : undefined,
+                                                minWidth: activeDropdown?.coords ? `${Math.max(160, activeDropdown.coords.width)}px` : '160px',
+                                                maxHeight: activeDropdown?.coords?.maxHeight ? `${activeDropdown.coords.maxHeight}px` : '192px'
+                                              }}
+                                            >
                                               {allAgents.map((agent) => (
                                                 <button
                                                   key={agent.id || agent.username}
@@ -3545,12 +3577,6 @@ export default function AdminDashboard({ onLogout }) {
                           </tr>
                         );
                       })}
-                      {/* Spacer row to ensure bottom dropdowns have ample space to open downwards without clipping */}
-                      {filteredEnquiries.length > 0 && (
-                        <tr class="h-56 pointer-events-none select-none border-0">
-                          <td colSpan={100} class="p-0 border-0 bg-transparent"></td>
-                        </tr>
-                      )}
                     </tbody>
                   </table>
                 </div>

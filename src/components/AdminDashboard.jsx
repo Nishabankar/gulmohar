@@ -101,7 +101,7 @@ export default function AdminDashboard({ onLogout }) {
   const [enquiries, setEnquiries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('New');
+  const [statusFilter, setStatusFilter] = useState('All');
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
   const [agentFilter, setAgentFilter] = useState('All');
   const [visitDateFilter, setVisitDateFilter] = useState('All'); // 'All' | 'Today' | 'Tomorrow' | 'ThisWeek'
@@ -2345,7 +2345,7 @@ export default function AdminDashboard({ onLogout }) {
                     
                     {/* Card 1: New */}
                     <div 
-                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('New'); setVisitDateFilter('All'); }}
+                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('New'); setVisitDateFilter('All'); setFollowupDateFilter('All'); }}
                       class="bg-white rounded-lg sm:rounded-xl p-3.5 sm:p-4 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-amber-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view New leads"
                     >
@@ -2361,7 +2361,7 @@ export default function AdminDashboard({ onLogout }) {
 
                     {/* Card 3: Interested */}
                     <div 
-                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Interested'); setVisitDateFilter('All'); }}
+                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Interested'); setVisitDateFilter('All'); setFollowupDateFilter('All'); }}
                       class="bg-white rounded-lg sm:rounded-xl p-3.5 sm:p-4 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-purple-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view Interested leads"
                     >
@@ -2377,7 +2377,7 @@ export default function AdminDashboard({ onLogout }) {
 
                     {/* Card 4: Site Visit Done */}
                     <div 
-                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Site Visit Done'); setVisitDateFilter('All'); }}
+                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Site Visit Done'); setVisitDateFilter('All'); setFollowupDateFilter('All'); }}
                       class="bg-white rounded-lg sm:rounded-xl p-3.5 sm:p-4 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-sky-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view Completed Visits"
                     >
@@ -2393,7 +2393,7 @@ export default function AdminDashboard({ onLogout }) {
 
                     {/* Card 5: Won */}
                     <div 
-                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Won'); setVisitDateFilter('All'); }}
+                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Won'); setVisitDateFilter('All'); setFollowupDateFilter('All'); }}
                       class="bg-white rounded-lg sm:rounded-xl p-3.5 sm:p-4 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-emerald-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view Won/Booked deals"
                     >
@@ -2409,7 +2409,7 @@ export default function AdminDashboard({ onLogout }) {
 
                     {/* Card 6: Lost */}
                     <div 
-                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Lost'); setVisitDateFilter('All'); }}
+                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Lost'); setVisitDateFilter('All'); setFollowupDateFilter('All'); }}
                       class="bg-white rounded-lg sm:rounded-xl p-3.5 sm:p-4 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-rose-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view Lost leads"
                     >
@@ -2769,41 +2769,38 @@ export default function AdminDashboard({ onLogout }) {
                     )}
                   </div>
 
-                  {/* Status Filter Custom Dropdown */}
-                  <div ref={statusDropdownRef} class="w-full sm:w-44 flex-shrink-0 relative">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsStatusDropdownOpen(!isStatusDropdownOpen);
-                        setIsAgentDropdownOpen(false);
-                      }}
-                      class="w-full px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-xs bg-white hover:bg-gray-50 font-bold text-gray-700 cursor-pointer shadow-xs flex items-center justify-between"
-                    >
-                      <span>{statusFilter}</span>
-                      <i class={`fa-solid fa-chevron-down text-xs text-gray-400 transition transform ${isStatusDropdownOpen ? 'rotate-180' : ''}`}></i>
-                    </button>
+                  {/* Active Filter Badge (Replaces Status Dropdown: shows when filtered via Dashboard Cards) */}
+                  {(() => {
+                    let filterLabel = '';
+                    if (visitDateFilter !== 'All') {
+                      filterLabel = visitDateFilter === 'Today' ? 'Visit: Today' : visitDateFilter === 'Tomorrow' ? 'Visit: Tomorrow' : visitDateFilter === 'ThisWeek' ? 'Visit: This Week' : 'Visit: Scheduled';
+                    } else if (followupDateFilter !== 'All') {
+                      filterLabel = followupDateFilter === 'Today' ? 'Followup: Today' : followupDateFilter === 'Tomorrow' ? 'Followup: Tomorrow' : followupDateFilter === 'ThisWeek' ? 'Followup: This Week' : 'Followup: Scheduled';
+                    } else if (statusFilter !== 'All') {
+                      filterLabel = `Status: ${statusFilter}`;
+                    }
 
-                    {isStatusDropdownOpen && (
-                      <div class="absolute left-0 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-1 max-h-48 overflow-y-auto custom-scrollbar animate-fade-in">
-                        {['All', 'New', 'Contacted', 'Interested', 'Details Provided', 'Not Interested', 'Site Visit Scheduled', 'Site Visit Done', 'Won', 'Lost'].map((status) => (
-                          <button
-                            key={status}
-                            type="button"
-                            onClick={() => {
-                              setStatusFilter(status);
-                              setIsStatusDropdownOpen(false);
-                            }}
-                            class={`w-full text-left px-3 py-2 text-xs font-semibold hover:bg-rose-50 hover:text-[#B30E2E] transition flex items-center justify-between cursor-pointer ${
-                              statusFilter === status ? 'bg-[#FFF0F2] text-[#B30E2E] font-bold' : 'text-gray-700'
-                            }`}
-                          >
-                            <span>{status}</span>
-                            {statusFilter === status && <i class="fa-solid fa-check text-xs"></i>}
-                          </button>
-                        ))}
+                    if (!filterLabel) return null;
+
+                    return (
+                      <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 border border-rose-200 text-[#B30E2E] text-xs font-bold shadow-2xs animate-fade-in flex-shrink-0">
+                        <span class="w-2 h-2 rounded-full bg-[#B30E2E] animate-pulse"></span>
+                        <span class="whitespace-nowrap">{filterLabel}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setStatusFilter('All');
+                            setFollowupDateFilter('All');
+                            setVisitDateFilter('All');
+                          }}
+                          class="ml-1 w-4 h-4 rounded-full bg-rose-200/60 hover:bg-rose-300 text-[#B30E2E] transition flex items-center justify-center cursor-pointer"
+                          title="Clear filter & show all leads"
+                        >
+                          <i class="fa-solid fa-xmark text-[10px]"></i>
+                        </button>
                       </div>
-                    )}
-                  </div>
+                    );
+                  })()}
 
                   {/* Agent Filter Custom Dropdown (Admin Only) */}
                   {isAdmin && (
@@ -2812,7 +2809,6 @@ export default function AdminDashboard({ onLogout }) {
                         type="button"
                         onClick={() => {
                           setIsAgentDropdownOpen(!isAgentDropdownOpen);
-                          setIsStatusDropdownOpen(false);
                         }}
                         class="w-full px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-xs bg-white hover:bg-gray-50 font-bold text-gray-700 cursor-pointer shadow-xs flex items-center justify-between"
                         title="Filter leads by Agent"

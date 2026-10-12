@@ -2939,7 +2939,7 @@ export default function AdminDashboard({ onLogout }) {
                     <button 
                       onClick={() => setShowImportModal(true)}
                       class="w-9 h-9 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white flex items-center justify-center transition shadow-sm border border-rose-900/40 cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
-                      title="Import CSV Leads"
+                      title="Import"
                     >
                       <i class="fa-solid fa-file-import text-sm"></i>
                     </button>

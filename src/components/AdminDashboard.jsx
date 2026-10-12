@@ -2607,10 +2607,18 @@ export default function AdminDashboard({ onLogout }) {
               ) : (
                 <div class="space-y-3 animate-fade-in flex-1 flex flex-col min-h-0 overflow-hidden">
                   {/* Leads Title Section */}
-                  <div class="flex-shrink-0">
-                    <h2 class="text-base sm:text-lg font-serif font-bold text-gray-900 tracking-wide">
-                      Leads
-                    </h2>
+                  <div class="flex-shrink-0 flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                      <h2 class="text-base sm:text-lg font-serif font-bold text-gray-900 tracking-wide">
+                        Leads
+                      </h2>
+                      {isAdmin && selectedLeadIds.length > 0 && (
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold animate-fade-in shadow-2xs">
+                          <span class="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse"></span>
+                          <span>{selectedLeadIds.length} Selected</span>
+                        </span>
+                      )}
+                    </div>
                   </div>
 
             {/* Leads Table Container */}
@@ -2755,15 +2763,32 @@ export default function AdminDashboard({ onLogout }) {
                 {/* Right: Bulk Delete (Admin), Create Lead & Export CSV Buttons */}
                 <div class="flex items-center gap-2 flex-shrink-0 w-full sm:w-auto">
 
-                  {/* Bulk Delete Selected Leads Icon Button (Admin Only) */}
+                  {/* Bulk Delete Selected Leads Button with Count (Admin Only) */}
                   {isAdmin && selectedLeadIds.length > 0 && (
-                    <button 
-                      onClick={openBulkDeleteConfirmation}
-                      class="w-9 h-9 rounded-xl bg-rose-600 hover:bg-rose-700 text-white flex items-center justify-center transition shadow-sm border border-rose-500/40 cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95 animate-fade-in"
-                      title={`Delete selected leads (${selectedLeadIds.length})`}
-                    >
-                      <i class="fa-regular fa-trash-can text-sm"></i>
-                    </button>
+                    <div class="flex items-center gap-1.5 animate-fade-in">
+                      <div class="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold shadow-2xs">
+                        <span class="w-2 h-2 rounded-full bg-rose-600 animate-pulse"></span>
+                        <span>{selectedLeadIds.length} {selectedLeadIds.length === 1 ? 'Lead' : 'Leads'} Selected</span>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedLeadIds([])}
+                          class="ml-1 text-rose-400 hover:text-rose-700 transition cursor-pointer"
+                          title="Deselect all"
+                        >
+                          <i class="fa-solid fa-xmark text-[11px]"></i>
+                        </button>
+                      </div>
+
+                      <button 
+                        onClick={openBulkDeleteConfirmation}
+                        class="h-9 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white flex items-center justify-center gap-1.5 transition shadow-sm border border-rose-500/40 cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95 text-xs font-bold"
+                        title={`Delete ${selectedLeadIds.length} selected leads`}
+                      >
+                        <i class="fa-regular fa-trash-can text-sm"></i>
+                        <span>Delete</span>
+                        <span class="bg-white/20 text-white px-1.5 py-0.5 rounded text-[10.5px] font-black">{selectedLeadIds.length}</span>
+                      </button>
+                    </div>
                   )}
 
                   {/* Create Lead Icon Button */}

@@ -151,9 +151,7 @@ export default function AdminDashboard({ onLogout }) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed) && parsed.length > 0) {
           const filtered = parsed.filter(c => c.id !== 'visitDate');
-          if (filtered.length > 0) {
-            return withNewDefaultColumns(filtered).map(c => c.id === 'actions' ? { ...c, visible: true } : c);
-          }
+          if (filtered.length > 0) return withNewDefaultColumns(filtered);
         }
       }
     } catch (e) {}
@@ -178,10 +176,10 @@ export default function AdminDashboard({ onLogout }) {
             return {
               id: col.id,
               label: col.label || (def ? def.label : col.id),
-              visible: col.id === 'actions' ? true : (col.visible !== undefined ? col.visible : true)
+              visible: col.visible !== undefined ? col.visible : true
             };
           });
-          const withDefaults = withNewDefaultColumns(merged).map(c => c.id === 'actions' ? { ...c, visible: true } : c);
+          const withDefaults = withNewDefaultColumns(merged);
           setColumnConfig(withDefaults);
           localStorage.setItem('leadsTableColumnConfig', JSON.stringify(withDefaults));
         }
@@ -193,10 +191,8 @@ export default function AdminDashboard({ onLogout }) {
   }, []);
 
   const handleUpdateColumnConfig = async (newConfig) => {
-    // Ensure actions column remains visible
-    const safeConfig = newConfig.map(c => c.id === 'actions' ? { ...c, visible: true } : c);
-    setColumnConfig(safeConfig);
-    localStorage.setItem('leadsTableColumnConfig', JSON.stringify(safeConfig));
+    setColumnConfig(newConfig);
+    localStorage.setItem('leadsTableColumnConfig', JSON.stringify(newConfig));
 
     const token = localStorage.getItem('adminToken');
     if (!token) return;
@@ -207,7 +203,7 @@ export default function AdminDashboard({ onLogout }) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ columnPreferences: safeConfig })
+        body: JSON.stringify({ columnPreferences: newConfig })
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
@@ -219,7 +215,6 @@ export default function AdminDashboard({ onLogout }) {
   };
 
   const toggleColumnVisibility = (colId) => {
-    if (colId === 'actions') return; // Actions column is mandatory and always visible
     const updated = columnConfig.map(col => 
       col.id === colId ? { ...col, visible: !col.visible } : col
     );
@@ -4519,18 +4514,14 @@ export default function AdminDashboard({ onLogout }) {
                     <span class="cursor-grab active:cursor-grabbing text-slate-400 hover:text-slate-600 px-1">
                       <i class="fa-solid fa-grip-vertical text-xs"></i>
                     </span>
-                    <label class={`flex items-center gap-2 text-xs font-bold text-slate-800 select-none ${col.id === 'actions' ? 'cursor-default' : 'cursor-pointer'}`}>
+                    <label class="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-800 select-none">
                       <input
                         type="checkbox"
-                        checked={col.id === 'actions' ? true : col.visible}
-                        disabled={col.id === 'actions'}
+                        checked={col.visible}
                         onChange={() => toggleColumnVisibility(col.id)}
-                        class="w-4 h-4 rounded text-[#B30E2E] focus:ring-[#B30E2E] cursor-pointer accent-[#B30E2E] disabled:cursor-not-allowed"
+                        class="w-4 h-4 rounded text-[#B30E2E] focus:ring-[#B30E2E] cursor-pointer accent-[#B30E2E]"
                       />
                       <span>{col.label}</span>
-                      {col.id === 'actions' && (
-                        <span class="text-[9px] font-semibold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded ml-1">Always Visible</span>
-                      )}
                     </label>
                   </div>
 

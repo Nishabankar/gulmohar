@@ -106,6 +106,21 @@ export default function AdminDashboard({ onLogout }) {
   const [followupDateFilter, setFollowupDateFilter] = useState('All'); // 'All' | 'Today' | 'Tomorrow' | 'ThisWeek'
   const [isAgentDropdownOpen, setIsAgentDropdownOpen] = useState(false);
 
+  // Leads Table Column Sorting State & Handler
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+
+  const handleSort = (colId) => {
+    setSortConfig(prev => {
+      if (prev.key !== colId) {
+        return { key: colId, direction: 'asc' };
+      }
+      if (prev.direction === 'asc') {
+        return { key: colId, direction: 'desc' };
+      }
+      return { key: null, direction: 'asc' }; // Reset to default
+    });
+  };
+
   // Global Delete Confirmation Modal State
   const [deleteConfirmation, setDeleteConfirmation] = useState({
     isOpen: false,
@@ -1982,7 +1997,113 @@ export default function AdminDashboard({ onLogout }) {
       (assignedAgentName && targetAgentFilter && (assignedAgentName.includes(targetAgentFilter) || targetAgentFilter.includes(assignedAgentName)));
 
     return matchesSearch && matchesStatus && matchesAgent && matchesVisitDate && matchesFollowupDate;
-  }).sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+  }).sort((a, b) => {
+    if (sortConfig.key) {
+      const sortMultiplier = sortConfig.direction === 'asc' ? 1 : -1;
+      let comp = 0;
+
+      switch (sortConfig.key) {
+        case 'leadId': {
+          const idStrA = getLeadDisplayId(a, 0, enquiries);
+          const idStrB = getLeadDisplayId(b, 0, enquiries);
+          const numA = parseInt(idStrA, 10);
+          const numB = parseInt(idStrB, 10);
+          if (!isNaN(numA) && !isNaN(numB) && numA !== numB) {
+            comp = (numA - numB) * sortMultiplier;
+          } else {
+            comp = idStrA.localeCompare(idStrB) * sortMultiplier;
+          }
+          break;
+        }
+        case 'fullName': {
+          const nameA = `${a.firstName || ''} ${a.lastName || ''}`.trim().toLowerCase();
+          const nameB = `${b.firstName || ''} ${b.lastName || ''}`.trim().toLowerCase();
+          comp = nameA.localeCompare(nameB) * sortMultiplier;
+          break;
+        }
+        case 'mobile': {
+          const phoneA = (a.phone || '').replace(/\D/g, '');
+          const phoneB = (b.phone || '').replace(/\D/g, '');
+          if (!phoneA && phoneB) return 1;
+          if (phoneA && !phoneB) return -1;
+          comp = phoneA.localeCompare(phoneB) * sortMultiplier;
+          break;
+        }
+        case 'email': {
+          const emailA = (a.email || '').trim().toLowerCase();
+          const emailB = (b.email || '').trim().toLowerCase();
+          if (!emailA && emailB) return 1;
+          if (emailA && !emailB) return -1;
+          comp = emailA.localeCompare(emailB) * sortMultiplier;
+          break;
+        }
+        case 'enquiryDate': {
+          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          comp = (dateA - dateB) * sortMultiplier;
+          break;
+        }
+        case 'status': {
+          const statusA = (a.status || 'New').trim().toLowerCase();
+          const statusB = (b.status || 'New').trim().toLowerCase();
+          comp = statusA.localeCompare(statusB) * sortMultiplier;
+          break;
+        }
+        case 'priority': {
+          const priorityWeights = { high: 3, medium: 2, low: 1 };
+          const pA = priorityWeights[(a.priority || '').trim().toLowerCase()] || 0;
+          const pB = priorityWeights[(b.priority || '').trim().toLowerCase()] || 0;
+          if (pA === 0 && pB > 0) return 1;
+          if (pA > 0 && pB === 0) return -1;
+          comp = (pB - pA) * sortMultiplier;
+          break;
+        }
+        case 'followupDate': {
+          const hasDateA = !!a.followupDate && a.followupDate.trim() !== '';
+          const hasDateB = !!b.followupDate && b.followupDate.trim() !== '';
+          if (!hasDateA && hasDateB) return 1;
+          if (hasDateA && !hasDateB) return -1;
+          if (!hasDateA && !hasDateB) {
+            comp = 0;
+          } else {
+            const timeA = new Date(a.followupDate).getTime();
+            const timeB = new Date(b.followupDate).getTime();
+            comp = (timeA - timeB) * sortMultiplier;
+          }
+          break;
+        }
+        case 'plotsCount': {
+          const getGunthaNum = (item) => {
+            if (!item || !item.plotsCount) return 1;
+            const match = String(item.plotsCount).match(/\d+/);
+            return match ? parseInt(match[0], 10) : 1;
+          };
+          const gA = getGunthaNum(a);
+          const gB = getGunthaNum(b);
+          if (gA !== gB) {
+            comp = (gA - gB) * sortMultiplier;
+          } else {
+            comp = (a.plotInfo || '').localeCompare(b.plotInfo || '') * sortMultiplier;
+          }
+          break;
+        }
+        case 'assignedAgent': {
+          const agentA = (a.assignedAgentName || '').trim().toLowerCase();
+          const agentB = (b.assignedAgentName || '').trim().toLowerCase();
+          if (!agentA && agentB) return 1;
+          if (agentA && !agentB) return -1;
+          comp = agentA.localeCompare(agentB) * sortMultiplier;
+          break;
+        }
+        default:
+          break;
+      }
+
+      if (comp !== 0) return comp;
+    }
+
+    return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+  });
 
   // Filtered registered users by search query
   const filteredUsers = (registeredAgents || []).filter(agent => {
@@ -2855,27 +2976,167 @@ export default function AdminDashboard({ onLogout }) {
                           </th>
                         )}
                         {columnConfig.filter(c => c.visible).map(col => {
+                          const isSorted = sortConfig.key === col.id;
+                          const isAsc = isSorted && sortConfig.direction === 'asc';
+                          const isDesc = isSorted && sortConfig.direction === 'desc';
+
+                          const renderSortIndicator = () => {
+                            if (isAsc) {
+                              return <i class="fa-solid fa-arrow-up text-[#B30E2E] text-[9.5px]"></i>;
+                            }
+                            if (isDesc) {
+                              return <i class="fa-solid fa-arrow-down text-[#B30E2E] text-[9.5px]"></i>;
+                            }
+                            return <i class="fa-solid fa-sort text-gray-300 group-hover:text-gray-500 text-[9px] transition-colors"></i>;
+                          };
+
+                          const getSortTitle = (label) => {
+                            if (!isSorted) return `Click to sort by ${label} (A-Z / Ascending)`;
+                            if (isAsc) return `Sorted Ascending. Click for Descending (Z-A)`;
+                            return `Sorted Descending. Click to reset to default order`;
+                          };
+
                           switch (col.id) {
                             case 'leadId':
-                              return <th key="leadId" class="py-2.5 px-2.5 whitespace-nowrap w-16 min-w-[60px]">Lead ID</th>;
+                              return (
+                                <th 
+                                  key="leadId" 
+                                  onClick={() => handleSort('leadId')}
+                                  class={`py-2.5 px-2.5 whitespace-nowrap w-16 min-w-[60px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                  title={getSortTitle('Lead ID')}
+                                >
+                                  <div class="flex items-center gap-1.5">
+                                    <span>Lead ID</span>
+                                    {renderSortIndicator()}
+                                  </div>
+                                </th>
+                              );
                             case 'fullName':
-                              return <th key="fullName" class="py-2.5 px-3 whitespace-nowrap w-44 min-w-[165px]">Full Name</th>;
+                              return (
+                                <th 
+                                  key="fullName" 
+                                  onClick={() => handleSort('fullName')}
+                                  class={`py-2.5 px-3 whitespace-nowrap w-44 min-w-[165px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                  title={getSortTitle('Full Name')}
+                                >
+                                  <div class="flex items-center gap-1.5">
+                                    <span>Full Name</span>
+                                    {renderSortIndicator()}
+                                  </div>
+                                </th>
+                              );
                             case 'mobile':
-                              return <th key="mobile" class="py-2.5 px-3 whitespace-nowrap w-36 min-w-[142px]">Mobile No</th>;
+                              return (
+                                <th 
+                                  key="mobile" 
+                                  onClick={() => handleSort('mobile')}
+                                  class={`py-2.5 px-3 whitespace-nowrap w-36 min-w-[142px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                  title={getSortTitle('Mobile No')}
+                                >
+                                  <div class="flex items-center gap-1.5">
+                                    <span>Mobile No</span>
+                                    {renderSortIndicator()}
+                                  </div>
+                                </th>
+                              );
                             case 'email':
-                              return <th key="email" class="py-2.5 px-2.5 whitespace-nowrap min-w-[155px]">Email Address</th>;
+                              return (
+                                <th 
+                                  key="email" 
+                                  onClick={() => handleSort('email')}
+                                  class={`py-2.5 px-2.5 whitespace-nowrap min-w-[155px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                  title={getSortTitle('Email Address')}
+                                >
+                                  <div class="flex items-center gap-1.5">
+                                    <span>Email Address</span>
+                                    {renderSortIndicator()}
+                                  </div>
+                                </th>
+                              );
                             case 'enquiryDate':
-                              return <th key="enquiryDate" class="py-2.5 px-2.5 whitespace-nowrap min-w-[145px]">Enquiry Date</th>;
+                              return (
+                                <th 
+                                  key="enquiryDate" 
+                                  onClick={() => handleSort('enquiryDate')}
+                                  class={`py-2.5 px-2.5 whitespace-nowrap min-w-[145px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                  title={getSortTitle('Enquiry Date')}
+                                >
+                                  <div class="flex items-center gap-1.5">
+                                    <span>Enquiry Date</span>
+                                    {renderSortIndicator()}
+                                  </div>
+                                </th>
+                              );
                             case 'status':
-                              return <th key="status" class="py-2.5 px-2.5 whitespace-nowrap min-w-[130px]">Status</th>;
+                              return (
+                                <th 
+                                  key="status" 
+                                  onClick={() => handleSort('status')}
+                                  class={`py-2.5 px-2.5 whitespace-nowrap min-w-[130px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                  title={getSortTitle('Status')}
+                                >
+                                  <div class="flex items-center gap-1.5">
+                                    <span>Status</span>
+                                    {renderSortIndicator()}
+                                  </div>
+                                </th>
+                              );
                             case 'priority':
-                              return <th key="priority" class="py-2.5 px-2.5 whitespace-nowrap min-w-[95px]">Priority</th>;
+                              return (
+                                <th 
+                                  key="priority" 
+                                  onClick={() => handleSort('priority')}
+                                  class={`py-2.5 px-2.5 whitespace-nowrap min-w-[95px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                  title={getSortTitle('Priority')}
+                                >
+                                  <div class="flex items-center gap-1.5">
+                                    <span>Priority</span>
+                                    {renderSortIndicator()}
+                                  </div>
+                                </th>
+                              );
                             case 'followupDate':
-                              return <th key="followupDate" class="py-2.5 px-2.5 whitespace-nowrap min-w-[115px]">Followup Date</th>;
+                              return (
+                                <th 
+                                  key="followupDate" 
+                                  onClick={() => handleSort('followupDate')}
+                                  class={`py-2.5 px-2.5 whitespace-nowrap min-w-[115px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                  title={getSortTitle('Followup Date')}
+                                >
+                                  <div class="flex items-center gap-1.5">
+                                    <span>Followup Date</span>
+                                    {renderSortIndicator()}
+                                  </div>
+                                </th>
+                              );
                             case 'plotsCount':
-                              return <th key="plotsCount" class="py-2.5 px-2.5 whitespace-nowrap min-w-[110px]">No. of Guntha</th>;
+                              return (
+                                <th 
+                                  key="plotsCount" 
+                                  onClick={() => handleSort('plotsCount')}
+                                  class={`py-2.5 px-2.5 whitespace-nowrap min-w-[110px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                  title={getSortTitle('No. of Guntha')}
+                                >
+                                  <div class="flex items-center gap-1.5">
+                                    <span>No. of Guntha</span>
+                                    {renderSortIndicator()}
+                                  </div>
+                                </th>
+                              );
                             case 'assignedAgent':
-                              return <th key="assignedAgent" class="py-2.5 px-2.5 whitespace-nowrap min-w-[145px]">Assigned Agent</th>;
+                              return (
+                                <th 
+                                  key="assignedAgent" 
+                                  onClick={() => handleSort('assignedAgent')}
+                                  class={`py-2.5 px-2.5 whitespace-nowrap min-w-[145px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                  title={getSortTitle('Assigned Agent')}
+                                >
+                                  <div class="flex items-center gap-1.5">
+                                    <span>Assigned Agent</span>
+                                    {renderSortIndicator()}
+                                  </div>
+                                </th>
+                              );
                             case 'notes':
                               return <th key="notes" class="py-2.5 px-2 text-center whitespace-nowrap w-12 min-w-[50px]">Notes</th>;
                             case 'actions':

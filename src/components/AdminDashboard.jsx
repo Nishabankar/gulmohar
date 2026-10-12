@@ -2126,31 +2126,43 @@ export default function AdminDashboard({ onLogout }) {
     if (e && e.currentTarget) {
       const rect = e.currentTarget.getBoundingClientRect();
 
-      let estimatedHeight = 190;
+      let targetHeight = 200;
       let dropdownWidth = Math.max(130, rect.width);
       if (field === 'priority') {
-        estimatedHeight = 75;
+        targetHeight = 75;
         dropdownWidth = Math.max(110, rect.width);
       } else if (field === 'status') {
-        estimatedHeight = 220;
+        targetHeight = 210;
         dropdownWidth = Math.max(155, rect.width);
       } else if (field === 'assignedAgent') {
-        estimatedHeight = Math.min(220, ((allAgents && allAgents.length) || 3) * 36 + 10);
+        targetHeight = Math.min(210, ((allAgents && allAgents.length) || 3) * 36 + 10);
         dropdownWidth = Math.max(160, rect.width);
       } else if (field === 'plotsCount') {
-        estimatedHeight = 200;
+        targetHeight = 200;
         dropdownWidth = Math.max(160, rect.width);
       }
 
-      // Check available space below the clicked button
-      const spaceBelow = window.innerHeight - rect.bottom;
+      // Available space above and below (with safety margin for taskbar/navbar)
+      const spaceBelow = window.innerHeight - rect.bottom - 16;
+      const spaceAbove = rect.top - 16;
       let top;
-      if (spaceBelow < estimatedHeight + 8 && rect.top > estimatedHeight + 8) {
-        // Not enough space below, open right above the button
-        top = Math.max(8, rect.top - estimatedHeight - 4);
-      } else {
-        // Open right below the clicked button
+      let maxHeight = targetHeight;
+
+      if (spaceBelow >= targetHeight) {
+        // Plenty of space below: open downwards
         top = rect.bottom + 4;
+      } else if (spaceAbove >= targetHeight) {
+        // Not enough space below: open upwards from the button
+        top = Math.max(8, rect.top - targetHeight - 4);
+      } else {
+        // In tight viewport spaces: pick the side with more space and clamp maxHeight
+        if (spaceBelow >= spaceAbove) {
+          top = rect.bottom + 4;
+          maxHeight = Math.max(90, spaceBelow);
+        } else {
+          maxHeight = Math.max(90, spaceAbove);
+          top = Math.max(8, rect.top - maxHeight - 4);
+        }
       }
 
       // Horizontally align with the clicked button, keeping within viewport
@@ -2163,7 +2175,7 @@ export default function AdminDashboard({ onLogout }) {
       setActiveDropdown({
         rowId,
         field,
-        coords: { top, left, width: dropdownWidth }
+        coords: { top, left, width: dropdownWidth, maxHeight }
       });
     } else {
       setActiveDropdown({ rowId, field });
@@ -3339,13 +3351,14 @@ export default function AdminDashboard({ onLogout }) {
                                         <i class={`fa-solid fa-chevron-down text-[8px] transition-transform ${isStatusOpen ? 'rotate-180' : ''}`}></i>
                                       </button>
 
-                                      {isStatusOpen && (
+                                       {isStatusOpen && (
                                         <div 
-                                          class="fixed z-[9999] min-w-[155px] max-h-56 overflow-y-auto custom-scrollbar overscroll-contain bg-white rounded-xl shadow-2xl border border-gray-200 py-1 text-xs animate-fade-in custom-dropdown-menu"
+                                          class="fixed z-[9999] min-w-[155px] max-h-52 overflow-y-auto custom-scrollbar overscroll-contain bg-white rounded-xl shadow-2xl border border-gray-200 py-1 text-xs animate-fade-in custom-dropdown-menu"
                                           style={{
                                             top: activeDropdown?.coords ? `${activeDropdown.coords.top}px` : undefined,
                                             left: activeDropdown?.coords ? `${activeDropdown.coords.left}px` : undefined,
-                                            minWidth: activeDropdown?.coords ? `${Math.max(155, activeDropdown.coords.width)}px` : '155px'
+                                            minWidth: activeDropdown?.coords ? `${Math.max(155, activeDropdown.coords.width)}px` : '155px',
+                                            maxHeight: activeDropdown?.coords?.maxHeight ? `${activeDropdown.coords.maxHeight}px` : '200px'
                                           }}
                                         >
                                           {STATUS_OPTIONS.map((opt) => (
@@ -3387,11 +3400,12 @@ export default function AdminDashboard({ onLogout }) {
 
                                       {isPriorityOpen && (
                                         <div 
-                                          class="fixed z-[9999] min-w-[110px] overflow-y-auto custom-scrollbar bg-white rounded-xl shadow-2xl border border-gray-200 py-1 text-xs animate-fade-in custom-dropdown-menu"
+                                          class="fixed z-[9999] min-w-[110px] overflow-y-auto custom-scrollbar overscroll-contain bg-white rounded-xl shadow-2xl border border-gray-200 py-1 text-xs animate-fade-in custom-dropdown-menu"
                                           style={{
                                             top: activeDropdown?.coords ? `${activeDropdown.coords.top}px` : undefined,
                                             left: activeDropdown?.coords ? `${activeDropdown.coords.left}px` : undefined,
-                                            minWidth: activeDropdown?.coords ? `${Math.max(110, activeDropdown.coords.width)}px` : '110px'
+                                            minWidth: activeDropdown?.coords ? `${Math.max(110, activeDropdown.coords.width)}px` : '110px',
+                                            maxHeight: activeDropdown?.coords?.maxHeight ? `${activeDropdown.coords.maxHeight}px` : '75px'
                                           }}
                                         >
                                           {PRIORITY_OPTIONS.map((opt) => (
@@ -3455,13 +3469,14 @@ export default function AdminDashboard({ onLogout }) {
                                         )}
                                       </div>
 
-                                      {isPlotsOpen && (
+                                       {isPlotsOpen && (
                                         <div 
-                                          class="fixed z-[9999] min-w-[160px] overflow-y-auto custom-scrollbar bg-white rounded-xl shadow-2xl border border-gray-200 py-1 text-xs animate-fade-in custom-dropdown-menu"
+                                          class="fixed z-[9999] min-w-[160px] max-h-52 overflow-y-auto custom-scrollbar overscroll-contain bg-white rounded-xl shadow-2xl border border-gray-200 py-1 text-xs animate-fade-in custom-dropdown-menu"
                                           style={{
                                             top: activeDropdown?.coords ? `${activeDropdown.coords.top}px` : undefined,
                                             left: activeDropdown?.coords ? `${activeDropdown.coords.left}px` : undefined,
-                                            minWidth: activeDropdown?.coords ? `${Math.max(160, activeDropdown.coords.width)}px` : '160px'
+                                            minWidth: activeDropdown?.coords ? `${Math.max(160, activeDropdown.coords.width)}px` : '160px',
+                                            maxHeight: activeDropdown?.coords?.maxHeight ? `${activeDropdown.coords.maxHeight}px` : '200px'
                                           }}
                                         >
                                           {GUNTHA_OPTIONS.map((opt) => (
@@ -3508,11 +3523,12 @@ export default function AdminDashboard({ onLogout }) {
 
                                           {isAgentOpen && (
                                             <div 
-                                              class="fixed z-[9999] min-w-[160px] overflow-y-auto custom-scrollbar bg-white rounded-xl shadow-2xl border border-gray-200 py-1 text-xs animate-fade-in custom-dropdown-menu"
+                                              class="fixed z-[9999] min-w-[160px] max-h-52 overflow-y-auto custom-scrollbar overscroll-contain bg-white rounded-xl shadow-2xl border border-gray-200 py-1 text-xs animate-fade-in custom-dropdown-menu"
                                               style={{
                                                 top: activeDropdown?.coords ? `${activeDropdown.coords.top}px` : undefined,
                                                 left: activeDropdown?.coords ? `${activeDropdown.coords.left}px` : undefined,
-                                                minWidth: activeDropdown?.coords ? `${Math.max(160, activeDropdown.coords.width)}px` : '160px'
+                                                minWidth: activeDropdown?.coords ? `${Math.max(160, activeDropdown.coords.width)}px` : '160px',
+                                                maxHeight: activeDropdown?.coords?.maxHeight ? `${activeDropdown.coords.maxHeight}px` : '200px'
                                               }}
                                             >
                                               {allAgents.map((agent) => (

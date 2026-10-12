@@ -4539,16 +4539,6 @@ export default function AdminDashboard({ onLogout }) {
                   </div>
                 </div>
 
-                <div>
-                  <label class="block text-xs font-bold text-gray-700 mb-1">Priority</label>
-                  <select 
-                    value={newLeadFormData.priority || 'Hot'}
-                    onChange={(e) => setNewLeadFormData({ ...newLeadFormData, priority: e.target.value })}
-                    class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800"
-                  >
-                    {PRIORITY_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                  </select>
-                </div>
 
                 {/* 4. Notes */}
                 <div>

@@ -1937,9 +1937,15 @@ export default function AdminDashboard({ onLogout }) {
   const isFollowupStatus = (status) => ['Contacted', 'Interested', 'Details Provided'].includes(status);
   const isNewLead = (e) => {
     if (!e) return false;
+    return e.status === 'New';
+  };
+
+  const isMissedLead = (e) => {
+    if (!e) return false;
     const isCompletedOrClosed = ['Site Visit Done', 'Won', 'Closed', 'Lost', 'Not Interested'].includes(e.status);
+    const isNew = e.status === 'New';
     const hasFollowupDate = !!e.followupDate && e.followupDate.trim() !== '';
-    return !isCompletedOrClosed && !hasFollowupDate;
+    return !isNew && !isCompletedOrClosed && !hasFollowupDate;
   };
 
   // Filtered enquiries by Search, Status, Agent & Visit Date
@@ -1967,11 +1973,13 @@ export default function AdminDashboard({ onLogout }) {
       ? true 
       : (statusFilter === 'New' 
           ? isNewLead(item) 
-          : (statusFilter === 'Lost' 
-              ? (item.status === 'Lost' || item.status === 'Not Interested')
-              : (statusFilter === 'Won' 
-                  ? (item.status === 'Won' || item.status === 'Closed')
-                  : item.status === statusFilter)));
+          : (statusFilter === 'Miss'
+              ? isMissedLead(item)
+              : (statusFilter === 'Lost' 
+                  ? (item.status === 'Lost' || item.status === 'Not Interested')
+                  : (statusFilter === 'Won' 
+                      ? (item.status === 'Won' || item.status === 'Closed')
+                      : item.status === statusFilter))));
 
     // Visit Date Filter Matching (Calculated using status === 'Site Visit Scheduled' & followupDate)
     let matchesVisitDate = true;
@@ -2206,7 +2214,7 @@ export default function AdminDashboard({ onLogout }) {
   const thisWeekFollowupCount = scopedEnquiries.filter(e => isFollowupStatus(e.status) && isDateInThisWeek(e.followupDate)).length;
   const allFollowupsCount = scopedEnquiries.filter(e => isFollowupStatus(e.status) && !!e.followupDate && e.followupDate.trim() !== '').length;
 
-  const interestedLeadsCount = scopedEnquiries.filter(e => e.status === 'Interested').length;
+  const missedLeadsCount = scopedEnquiries.filter(e => isMissedLead(e)).length;
   const siteVisitDoneCount = scopedEnquiries.filter(e => e.status === 'Site Visit Done').length;
   const wonDealsCount = scopedEnquiries.filter(e => e.status === 'Won' || e.status === 'Closed').length;
   const lostDealsCount = scopedEnquiries.filter(e => e.status === 'Lost' || e.status === 'Not Interested').length;
@@ -2436,19 +2444,19 @@ export default function AdminDashboard({ onLogout }) {
                       </div>
                     </div>
 
-                    {/* Card 3: Interested */}
+                    {/* Card 2: Miss */}
                     <div 
-                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Interested'); setVisitDateFilter('All'); setFollowupDateFilter('All'); }}
+                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Miss'); setVisitDateFilter('All'); setFollowupDateFilter('All'); }}
                       class="bg-white rounded-lg sm:rounded-xl p-3.5 sm:p-4 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-purple-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
-                      title="Click to view Interested leads"
+                      title="Click to view Miss leads (Followup not scheduled)"
                     >
                       <div class="min-w-0 flex-1 pr-1 sm:pr-2">
-                        <p class="text-[9px] sm:text-[10px] font-bold text-purple-600 uppercase tracking-wider truncate">Interested</p>
-                        <h3 class="text-base sm:text-xl font-bold text-gray-900 mt-0.5">{interestedLeadsCount}</h3>
-                        <p class="hidden sm:block text-[9.5px] text-gray-500 mt-0.5 truncate">Interested prospects</p>
+                        <p class="text-[9px] sm:text-[10px] font-bold text-purple-600 uppercase tracking-wider truncate">Miss</p>
+                        <h3 class="text-base sm:text-xl font-bold text-gray-900 mt-0.5">{missedLeadsCount}</h3>
+                        <p class="hidden sm:block text-[9.5px] text-gray-500 mt-0.5 truncate">Followup not set</p>
                       </div>
                       <div class="w-7.5 h-7.5 sm:w-8.5 sm:h-8.5 rounded-md sm:rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors flex-shrink-0">
-                        <i class="fa-solid fa-thumbs-up text-xs sm:text-sm"></i>
+                        <i class="fa-solid fa-clock-rotate-left text-xs sm:text-sm"></i>
                       </div>
                     </div>
 

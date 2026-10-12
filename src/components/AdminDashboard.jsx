@@ -2854,8 +2854,47 @@ export default function AdminDashboard({ onLogout }) {
                     )}
                   </div>
 
-                  {/* Active Filter Badge (Replaces Status Dropdown: shows when filtered via Dashboard Cards) */}
-                  {(() => {
+                  {/* Status Filter for 'New' vs Read-Only Badge for other statuses */}
+                  {statusFilter === 'New' ? (
+                    <div ref={statusDropdownRef} class="w-full sm:w-44 flex-shrink-0 relative">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsStatusDropdownOpen(!isStatusDropdownOpen);
+                          setIsAgentDropdownOpen(false);
+                        }}
+                        class="w-full px-3 py-2 rounded-xl border border-rose-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-xs bg-rose-50 hover:bg-rose-100 font-bold text-[#B30E2E] cursor-pointer shadow-xs flex items-center justify-between"
+                        title="Change Status Filter"
+                      >
+                        <span class="flex items-center gap-1.5 truncate">
+                          <span class="w-2 h-2 rounded-full bg-[#B30E2E] animate-pulse"></span>
+                          <span>New</span>
+                        </span>
+                        <i class={`fa-solid fa-chevron-down text-xs text-[#B30E2E] transition transform ${isStatusDropdownOpen ? 'rotate-180' : ''}`}></i>
+                      </button>
+
+                      {isStatusDropdownOpen && (
+                        <div class="absolute left-0 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-1 max-h-52 overflow-y-auto custom-scrollbar animate-fade-in">
+                          {['All', 'New', 'Contacted', 'Interested', 'Details Provided', 'Not Interested', 'Site Visit Scheduled', 'Site Visit Done', 'Won', 'Lost'].map((status) => (
+                            <button
+                              key={status}
+                              type="button"
+                              onClick={() => {
+                                setStatusFilter(status);
+                                setIsStatusDropdownOpen(false);
+                              }}
+                              class={`w-full text-left px-3 py-2 text-xs font-semibold hover:bg-rose-50 hover:text-[#B30E2E] transition flex items-center justify-between cursor-pointer ${
+                                statusFilter === status ? 'bg-[#FFF0F2] text-[#B30E2E] font-bold' : 'text-gray-700'
+                              }`}
+                            >
+                              <span>{status}</span>
+                              {statusFilter === status && <i class="fa-solid fa-check text-xs"></i>}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (() => {
                     let filterLabel = '';
                     if (visitDateFilter !== 'All') {
                       filterLabel = visitDateFilter === 'Today' ? 'Visit: Today' : visitDateFilter === 'Tomorrow' ? 'Visit: Tomorrow' : visitDateFilter === 'ThisWeek' ? 'Visit: This Week' : 'Visit: Scheduled';
@@ -2868,21 +2907,9 @@ export default function AdminDashboard({ onLogout }) {
                     if (!filterLabel) return null;
 
                     return (
-                      <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 border border-rose-200 text-[#B30E2E] text-xs font-bold shadow-2xs animate-fade-in flex-shrink-0">
-                        <span class="w-2 h-2 rounded-full bg-[#B30E2E] animate-pulse"></span>
+                      <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 border border-rose-200 text-[#B30E2E] text-xs font-bold shadow-2xs animate-fade-in flex-shrink-0 cursor-default select-none" title="Active Filter (Read-Only)">
+                        <span class="w-2 h-2 rounded-full bg-[#B30E2E]"></span>
                         <span class="whitespace-nowrap">{filterLabel}</span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setStatusFilter('All');
-                            setFollowupDateFilter('All');
-                            setVisitDateFilter('All');
-                          }}
-                          class="ml-1 w-4 h-4 rounded-full bg-rose-200/60 hover:bg-rose-300 text-[#B30E2E] transition flex items-center justify-center cursor-pointer"
-                          title="Clear filter & show all leads"
-                        >
-                          <i class="fa-solid fa-xmark text-[10px]"></i>
-                        </button>
                       </div>
                     );
                   })()}

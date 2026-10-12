@@ -2109,41 +2109,35 @@ export default function AdminDashboard({ onLogout }) {
     return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
   });
 
-  // Helper to toggle inline table dropdowns (detects whether to open downward or upward/dropup to prevent clipping at bottom of table)
-  const toggleDropdown = (e, rowId, field, idx) => {
+  // Helper to toggle inline table dropdowns (always opens downward following consistent Sequence 1, and auto-scrolls table if near bottom)
+  const toggleDropdown = (e, rowId, field) => {
     if (activeDropdown?.rowId === rowId && activeDropdown?.field === field) {
       setActiveDropdown(null);
       return;
     }
 
-    let openUpward = false;
+    setActiveDropdown({ rowId, field });
 
-    // 1. Check if row is near bottom of current visible leads list
-    if (idx !== undefined && filteredEnquiries.length > 2 && idx >= filteredEnquiries.length - 3) {
-      openUpward = true;
-    }
-
-    // 2. Also check available bounding space below the button relative to scroll container & viewport
+    // Smoothly scroll table container if clicked near bottom edge so full downward dropdown is visible
     if (e && e.currentTarget) {
-      const btnRect = e.currentTarget.getBoundingClientRect();
-      const scrollParent = e.currentTarget.closest('.overflow-y-auto') || document.body;
-      const parentRect = scrollParent.getBoundingClientRect();
-
-      const spaceBelowInParent = parentRect.bottom - btnRect.bottom;
-      const spaceBelowInWindow = window.innerHeight - btnRect.bottom;
-      const spaceBelow = Math.min(spaceBelowInParent, spaceBelowInWindow);
-
-      const spaceAboveInParent = btnRect.top - parentRect.top;
-      const spaceAboveInWindow = btnRect.top;
-      const spaceAbove = Math.min(spaceAboveInParent, spaceAboveInWindow);
-
-      // If less than 210px available below, and there is more room above (or at least 120px)
-      if (spaceBelow < 210 && (spaceAbove > spaceBelow || spaceAbove >= 120)) {
-        openUpward = true;
-      }
+      const targetBtn = e.currentTarget;
+      setTimeout(() => {
+        try {
+          const scrollParent = targetBtn.closest('.overflow-y-auto');
+          if (scrollParent) {
+            const btnRect = targetBtn.getBoundingClientRect();
+            const parentRect = scrollParent.getBoundingClientRect();
+            const spaceBelowInParent = parentRect.bottom - btnRect.bottom;
+            if (spaceBelowInParent < 220) {
+              const scrollNeeded = 220 - spaceBelowInParent + 16;
+              scrollParent.scrollBy({ top: scrollNeeded, behavior: 'smooth' });
+            }
+          }
+        } catch (err) {
+          // ignore
+        }
+      }, 50);
     }
-
-    setActiveDropdown({ rowId, field, openUpward });
   };
 
   // Filtered registered users by search query
@@ -3299,7 +3293,6 @@ export default function AdminDashboard({ onLogout }) {
                                   );
                                 case 'status': {
                                   const isStatusOpen = activeDropdown?.rowId === currentId && activeDropdown?.field === 'status';
-                                  const openUpward = isStatusOpen && activeDropdown?.openUpward;
                                   const currentStatus = item.status || 'New';
                                   const STATUS_OPTIONS = [
                                     'New', 'Contacted', 'Interested', 'Details Provided', 
@@ -3309,7 +3302,7 @@ export default function AdminDashboard({ onLogout }) {
                                     <td key="status" class={`py-2.5 px-2.5 whitespace-nowrap min-w-[130px] relative custom-dropdown-container ${isStatusOpen ? 'z-50' : ''}`}>
                                       <button
                                         type="button"
-                                        onClick={(e) => toggleDropdown(e, currentId, 'status', idx)}
+                                        onClick={(e) => toggleDropdown(e, currentId, 'status')}
                                         class={`px-2 py-0.5 rounded-md border text-[10px] font-bold outline-none cursor-pointer transition flex items-center justify-between gap-1 shadow-2xs w-full ${getStatusBadge(currentStatus)}`}
                                       >
                                         <span class="truncate">{currentStatus}</span>
@@ -3317,7 +3310,7 @@ export default function AdminDashboard({ onLogout }) {
                                       </button>
 
                                       {isStatusOpen && (
-                                        <div class={`absolute ${openUpward ? 'bottom-full mb-1' : 'top-full mt-1'} left-0 z-50 min-w-[155px] max-h-48 overflow-y-auto custom-scrollbar overscroll-contain bg-white rounded-xl shadow-xl border border-gray-200 py-1 text-xs animate-fade-in`}>
+                                        <div class="absolute top-full left-0 mt-1 z-50 min-w-[155px] max-h-48 overflow-y-auto custom-scrollbar overscroll-contain bg-white rounded-xl shadow-xl border border-gray-200 py-1 text-xs animate-fade-in">
                                           {STATUS_OPTIONS.map((opt) => (
                                             <button
                                               key={opt}
@@ -3341,14 +3334,13 @@ export default function AdminDashboard({ onLogout }) {
                                 }
                                 case 'priority': {
                                   const isPriorityOpen = activeDropdown?.rowId === currentId && activeDropdown?.field === 'priority';
-                                  const openUpward = isPriorityOpen && activeDropdown?.openUpward;
                                   const rawPriority = item.priority;
                                   const currentPriority = (rawPriority === 'Cold' || rawPriority === 'Low') ? 'Cold' : 'Hot';
                                   return (
                                     <td key="priority" class={`py-2.5 px-2.5 whitespace-nowrap min-w-[95px] relative custom-dropdown-container ${isPriorityOpen ? 'z-50' : ''}`}>
                                       <button
                                         type="button"
-                                        onClick={(e) => toggleDropdown(e, currentId, 'priority', idx)}
+                                        onClick={(e) => toggleDropdown(e, currentId, 'priority')}
                                         class={`px-2 py-0.5 rounded-md border text-[10px] font-bold outline-none cursor-pointer transition flex items-center justify-between gap-1 shadow-2xs w-full ${PRIORITY_BADGE[currentPriority] || 'bg-rose-50 border-rose-300 text-[#B30E2E]'}`}
                                         title="Click to set Priority"
                                       >
@@ -3357,7 +3349,7 @@ export default function AdminDashboard({ onLogout }) {
                                       </button>
 
                                       {isPriorityOpen && (
-                                        <div class={`absolute ${openUpward ? 'bottom-full mb-1' : 'top-full mt-1'} left-0 z-50 min-w-[110px] bg-white rounded-xl shadow-xl border border-gray-200 py-1 text-xs animate-fade-in`}>
+                                        <div class="absolute top-full left-0 mt-1 z-50 min-w-[110px] bg-white rounded-xl shadow-xl border border-gray-200 py-1 text-xs animate-fade-in">
                                           {PRIORITY_OPTIONS.map((opt) => (
                                             <button
                                               key={opt}
@@ -3393,7 +3385,6 @@ export default function AdminDashboard({ onLogout }) {
                                   );
                                 case 'plotsCount': {
                                   const isPlotsOpen = activeDropdown?.rowId === currentId && activeDropdown?.field === 'plotsCount';
-                                  const openUpward = isPlotsOpen && activeDropdown?.openUpward;
                                   const currentGuntha = item.plotsCount || '1 Guntha';
                                   const GUNTHA_OPTIONS = [
                                     '1 Guntha', '2 Guntha', '3 Guntha', '4 Guntha', '5 Guntha', 
@@ -3406,7 +3397,7 @@ export default function AdminDashboard({ onLogout }) {
                                       <div class="flex items-center gap-1 whitespace-nowrap">
                                         <button
                                           type="button"
-                                          onClick={(e) => toggleDropdown(e, currentId, 'plotsCount', idx)}
+                                          onClick={(e) => toggleDropdown(e, currentId, 'plotsCount')}
                                           class="px-1.5 py-0.5 rounded-md border border-amber-300 text-[10px] font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 outline-none cursor-pointer transition shadow-2xs flex items-center justify-between gap-1 w-full"
                                           title="Click to edit No. of Guntha"
                                         >
@@ -3421,7 +3412,7 @@ export default function AdminDashboard({ onLogout }) {
                                       </div>
 
                                       {isPlotsOpen && (
-                                        <div class={`absolute ${openUpward ? 'bottom-full mb-1' : 'top-full mt-1'} left-0 z-50 min-w-[160px] max-h-48 overflow-y-auto custom-scrollbar bg-white rounded-xl shadow-xl border border-gray-200 py-1 text-xs animate-fade-in`}>
+                                        <div class="absolute top-full left-0 mt-1 z-50 min-w-[160px] max-h-48 overflow-y-auto custom-scrollbar bg-white rounded-xl shadow-xl border border-gray-200 py-1 text-xs animate-fade-in">
                                           {GUNTHA_OPTIONS.map((opt) => (
                                             <button
                                               key={opt}
@@ -3445,7 +3436,6 @@ export default function AdminDashboard({ onLogout }) {
                                 }
                                 case 'assignedAgent': {
                                   const isAgentOpen = activeDropdown?.rowId === currentId && activeDropdown?.field === 'assignedAgent';
-                                  const openUpward = isAgentOpen && activeDropdown?.openUpward;
                                   const currentAgent = item.assignedAgentName || (allAgents[0] ? allAgents[0].name : 'Unassigned');
 
                                   return (
@@ -3454,7 +3444,7 @@ export default function AdminDashboard({ onLogout }) {
                                         <>
                                           <button
                                             type="button"
-                                            onClick={(e) => toggleDropdown(e, currentId, 'assignedAgent', idx)}
+                                            onClick={(e) => toggleDropdown(e, currentId, 'assignedAgent')}
                                             class="px-1.5 py-0.5 rounded-lg border border-emerald-300 text-[10px] font-bold text-emerald-900 bg-emerald-50 hover:bg-emerald-100 outline-none cursor-pointer transition shadow-2xs flex items-center justify-between gap-1 w-full"
                                             title="Re-assign lead to salesperson"
                                           >
@@ -3466,7 +3456,7 @@ export default function AdminDashboard({ onLogout }) {
                                           </button>
 
                                           {isAgentOpen && (
-                                            <div class={`absolute ${openUpward ? 'bottom-full mb-1' : 'top-full mt-1'} left-0 z-50 min-w-[160px] max-h-48 overflow-y-auto custom-scrollbar bg-white rounded-xl shadow-xl border border-gray-200 py-1 text-xs animate-fade-in`}>
+                                            <div class="absolute top-full left-0 mt-1 z-50 min-w-[160px] max-h-48 overflow-y-auto custom-scrollbar bg-white rounded-xl shadow-xl border border-gray-200 py-1 text-xs animate-fade-in">
                                               {allAgents.map((agent) => (
                                                 <button
                                                   key={agent.id || agent.username}
@@ -3555,6 +3545,12 @@ export default function AdminDashboard({ onLogout }) {
                           </tr>
                         );
                       })}
+                      {/* Spacer row to ensure bottom dropdowns have ample space to open downwards without clipping */}
+                      {filteredEnquiries.length > 0 && (
+                        <tr class="h-56 pointer-events-none select-none border-0">
+                          <td colSpan={100} class="p-0 border-0 bg-transparent"></td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>

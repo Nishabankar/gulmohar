@@ -2907,7 +2907,7 @@ export default function AdminDashboard({ onLogout }) {
                     if (!filterLabel) return null;
 
                     return (
-                      <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 border border-rose-200 text-[#B30E2E] text-xs font-bold shadow-2xs animate-fade-in flex-shrink-0 cursor-default select-none" title="Active Filter (Read-Only)">
+                      <div class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-gray-300 text-gray-700 text-xs font-bold shadow-xs animate-fade-in flex-shrink-0 cursor-default select-none" title="Active Filter (Read-Only)">
                         <span class="w-2 h-2 rounded-full bg-[#B30E2E]"></span>
                         <span class="whitespace-nowrap">{filterLabel}</span>
                       </div>

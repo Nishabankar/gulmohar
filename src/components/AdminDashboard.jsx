@@ -2116,7 +2116,7 @@ export default function AdminDashboard({ onLogout }) {
     return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
   });
 
-  // Helper to toggle inline table dropdowns (always opens upward from the upper side, pinned above the button)
+  // Helper to toggle inline table dropdowns (Fixed position right below table header like Note Popover)
   const toggleDropdown = (e, rowId, field) => {
     if (activeDropdown?.rowId === rowId && activeDropdown?.field === field) {
       setActiveDropdown(null);
@@ -2125,15 +2125,18 @@ export default function AdminDashboard({ onLogout }) {
 
     if (e && e.currentTarget) {
       const rect = e.currentTarget.getBoundingClientRect();
-      const bottom = window.innerHeight - rect.top + 4;
+      const scrollParent = e.currentTarget.closest('.overflow-y-auto');
+      const parentRect = scrollParent ? scrollParent.getBoundingClientRect() : null;
+
+      // Fixed top position right below table header (like the Note popover)
+      const top = parentRect ? Math.max(120, parentRect.top + 36) : Math.max(120, rect.bottom + 4);
       const left = Math.max(8, Math.min(rect.left, window.innerWidth - 175));
       const width = Math.max(130, rect.width);
-      const maxHeight = Math.min(192, Math.max(110, rect.top - 12));
 
       setActiveDropdown({
         rowId,
         field,
-        coords: { bottom, left, width, maxHeight }
+        coords: { top, left, width }
       });
     } else {
       setActiveDropdown({ rowId, field });
@@ -3311,12 +3314,11 @@ export default function AdminDashboard({ onLogout }) {
 
                                       {isStatusOpen && (
                                         <div 
-                                          class="fixed z-[9999] min-w-[155px] overflow-y-auto custom-scrollbar overscroll-contain bg-white rounded-xl shadow-2xl border border-gray-200 py-1 text-xs animate-fade-in custom-dropdown-menu"
+                                          class="fixed z-[9999] min-w-[155px] max-h-56 overflow-y-auto custom-scrollbar overscroll-contain bg-white rounded-xl shadow-2xl border border-gray-200 py-1 text-xs animate-fade-in custom-dropdown-menu"
                                           style={{
-                                            bottom: activeDropdown?.coords ? `${activeDropdown.coords.bottom}px` : undefined,
+                                            top: activeDropdown?.coords ? `${activeDropdown.coords.top}px` : undefined,
                                             left: activeDropdown?.coords ? `${activeDropdown.coords.left}px` : undefined,
-                                            minWidth: activeDropdown?.coords ? `${Math.max(155, activeDropdown.coords.width)}px` : '155px',
-                                            maxHeight: activeDropdown?.coords?.maxHeight ? `${activeDropdown.coords.maxHeight}px` : '192px'
+                                            minWidth: activeDropdown?.coords ? `${Math.max(155, activeDropdown.coords.width)}px` : '155px'
                                           }}
                                         >
                                           {STATUS_OPTIONS.map((opt) => (
@@ -3360,10 +3362,9 @@ export default function AdminDashboard({ onLogout }) {
                                         <div 
                                           class="fixed z-[9999] min-w-[110px] overflow-y-auto custom-scrollbar bg-white rounded-xl shadow-2xl border border-gray-200 py-1 text-xs animate-fade-in custom-dropdown-menu"
                                           style={{
-                                            bottom: activeDropdown?.coords ? `${activeDropdown.coords.bottom}px` : undefined,
+                                            top: activeDropdown?.coords ? `${activeDropdown.coords.top}px` : undefined,
                                             left: activeDropdown?.coords ? `${activeDropdown.coords.left}px` : undefined,
-                                            minWidth: activeDropdown?.coords ? `${Math.max(110, activeDropdown.coords.width)}px` : '110px',
-                                            maxHeight: activeDropdown?.coords?.maxHeight ? `${activeDropdown.coords.maxHeight}px` : '192px'
+                                            minWidth: activeDropdown?.coords ? `${Math.max(110, activeDropdown.coords.width)}px` : '110px'
                                           }}
                                         >
                                           {PRIORITY_OPTIONS.map((opt) => (
@@ -3431,10 +3432,9 @@ export default function AdminDashboard({ onLogout }) {
                                         <div 
                                           class="fixed z-[9999] min-w-[160px] overflow-y-auto custom-scrollbar bg-white rounded-xl shadow-2xl border border-gray-200 py-1 text-xs animate-fade-in custom-dropdown-menu"
                                           style={{
-                                            bottom: activeDropdown?.coords ? `${activeDropdown.coords.bottom}px` : undefined,
+                                            top: activeDropdown?.coords ? `${activeDropdown.coords.top}px` : undefined,
                                             left: activeDropdown?.coords ? `${activeDropdown.coords.left}px` : undefined,
-                                            minWidth: activeDropdown?.coords ? `${Math.max(160, activeDropdown.coords.width)}px` : '160px',
-                                            maxHeight: activeDropdown?.coords?.maxHeight ? `${activeDropdown.coords.maxHeight}px` : '192px'
+                                            minWidth: activeDropdown?.coords ? `${Math.max(160, activeDropdown.coords.width)}px` : '160px'
                                           }}
                                         >
                                           {GUNTHA_OPTIONS.map((opt) => (
@@ -3483,10 +3483,9 @@ export default function AdminDashboard({ onLogout }) {
                                             <div 
                                               class="fixed z-[9999] min-w-[160px] overflow-y-auto custom-scrollbar bg-white rounded-xl shadow-2xl border border-gray-200 py-1 text-xs animate-fade-in custom-dropdown-menu"
                                               style={{
-                                                bottom: activeDropdown?.coords ? `${activeDropdown.coords.bottom}px` : undefined,
+                                                top: activeDropdown?.coords ? `${activeDropdown.coords.top}px` : undefined,
                                                 left: activeDropdown?.coords ? `${activeDropdown.coords.left}px` : undefined,
-                                                minWidth: activeDropdown?.coords ? `${Math.max(160, activeDropdown.coords.width)}px` : '160px',
-                                                maxHeight: activeDropdown?.coords?.maxHeight ? `${activeDropdown.coords.maxHeight}px` : '192px'
+                                                minWidth: activeDropdown?.coords ? `${Math.max(160, activeDropdown.coords.width)}px` : '160px'
                                               }}
                                             >
                                               {allAgents.map((agent) => (

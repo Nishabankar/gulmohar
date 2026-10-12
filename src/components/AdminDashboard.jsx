@@ -2863,14 +2863,14 @@ export default function AdminDashboard({ onLogout }) {
                           setIsStatusDropdownOpen(!isStatusDropdownOpen);
                           setIsAgentDropdownOpen(false);
                         }}
-                        class="w-full px-3 py-2 rounded-xl border border-rose-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-xs bg-rose-50 hover:bg-rose-100 font-bold text-[#B30E2E] cursor-pointer shadow-xs flex items-center justify-between"
+                        class="w-full px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-xs bg-white hover:bg-gray-50 font-bold text-gray-700 cursor-pointer shadow-xs flex items-center justify-between"
                         title="Change Status Filter"
                       >
                         <span class="flex items-center gap-1.5 truncate">
-                          <span class="w-2 h-2 rounded-full bg-[#B30E2E] animate-pulse"></span>
+                          <span class="w-2 h-2 rounded-full bg-[#B30E2E]"></span>
                           <span>New</span>
                         </span>
-                        <i class={`fa-solid fa-chevron-down text-xs text-[#B30E2E] transition transform ${isStatusDropdownOpen ? 'rotate-180' : ''}`}></i>
+                        <i class={`fa-solid fa-chevron-down text-xs text-gray-400 transition transform ${isStatusDropdownOpen ? 'rotate-180' : ''}`}></i>
                       </button>
 
                       {isStatusDropdownOpen && (

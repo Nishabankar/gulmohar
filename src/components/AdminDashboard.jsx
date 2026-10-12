@@ -480,11 +480,10 @@ export default function AdminDashboard({ onLogout }) {
         }
       }
 
+      // Fixed top position: Always keep popover fixed at the top (matching Screenshot 1) for all rows
       let top = 80;
       if (isMobile) {
-        top = Math.max(60, Math.min(rect.top - 100, window.innerHeight - 540));
-      } else if (rect.top > 250) {
-        top = Math.max(75, rect.top - 200);
+        top = Math.max(60, Math.min(80, window.innerHeight - 540));
       }
 
       setActiveNotePopover({

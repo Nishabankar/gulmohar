@@ -148,7 +148,7 @@ export default function AdminDashboard({ onLogout }) {
 
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (activeDropdown && !e.target.closest('.custom-dropdown-container') && !e.target.closest('.custom-dropdown-menu')) {
+      if (activeDropdown && !e.target.closest('.custom-dropdown-menu') && !e.target.closest('.custom-dropdown-toggle')) {
         setActiveDropdown(null);
       }
     };
@@ -2116,7 +2116,7 @@ export default function AdminDashboard({ onLogout }) {
     return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
   });
 
-  // Helper to toggle inline table dropdowns (Fixed position right below table header like Note Popover)
+  // Helper to toggle inline table dropdowns (Positioned right at the clicked row's button)
   const toggleDropdown = (e, rowId, field) => {
     if (activeDropdown?.rowId === rowId && activeDropdown?.field === field) {
       setActiveDropdown(null);
@@ -2125,18 +2125,45 @@ export default function AdminDashboard({ onLogout }) {
 
     if (e && e.currentTarget) {
       const rect = e.currentTarget.getBoundingClientRect();
-      const scrollParent = e.currentTarget.closest('.overflow-y-auto');
-      const parentRect = scrollParent ? scrollParent.getBoundingClientRect() : null;
 
-      // Fixed top position right below table header (like the Note popover)
-      const top = parentRect ? Math.max(120, parentRect.top + 36) : Math.max(120, rect.bottom + 4);
-      const left = Math.max(8, Math.min(rect.left, window.innerWidth - 175));
-      const width = Math.max(130, rect.width);
+      let estimatedHeight = 190;
+      let dropdownWidth = Math.max(130, rect.width);
+      if (field === 'priority') {
+        estimatedHeight = 75;
+        dropdownWidth = Math.max(110, rect.width);
+      } else if (field === 'status') {
+        estimatedHeight = 220;
+        dropdownWidth = Math.max(155, rect.width);
+      } else if (field === 'assignedAgent') {
+        estimatedHeight = Math.min(220, ((allAgents && allAgents.length) || 3) * 36 + 10);
+        dropdownWidth = Math.max(160, rect.width);
+      } else if (field === 'plotsCount') {
+        estimatedHeight = 200;
+        dropdownWidth = Math.max(160, rect.width);
+      }
+
+      // Check available space below the clicked button
+      const spaceBelow = window.innerHeight - rect.bottom;
+      let top;
+      if (spaceBelow < estimatedHeight + 8 && rect.top > estimatedHeight + 8) {
+        // Not enough space below, open right above the button
+        top = Math.max(8, rect.top - estimatedHeight - 4);
+      } else {
+        // Open right below the clicked button
+        top = rect.bottom + 4;
+      }
+
+      // Horizontally align with the clicked button, keeping within viewport
+      let left = rect.left;
+      if (left + dropdownWidth > window.innerWidth - 12) {
+        left = Math.max(8, window.innerWidth - dropdownWidth - 12);
+      }
+      if (left < 8) left = 8;
 
       setActiveDropdown({
         rowId,
         field,
-        coords: { top, left, width }
+        coords: { top, left, width: dropdownWidth }
       });
     } else {
       setActiveDropdown({ rowId, field });
@@ -3302,11 +3329,11 @@ export default function AdminDashboard({ onLogout }) {
                                     'Not Interested', 'Site Visit Scheduled', 'Site Visit Done', 'Won', 'Lost'
                                   ];
                                   return (
-                                    <td key="status" class={`py-2.5 px-2.5 whitespace-nowrap min-w-[130px] relative custom-dropdown-container ${isStatusOpen ? 'z-50' : ''}`}>
+                                    <td key="status" class={`py-2.5 px-2.5 whitespace-nowrap min-w-[130px] relative ${isStatusOpen ? 'z-50' : ''}`}>
                                       <button
                                         type="button"
                                         onClick={(e) => toggleDropdown(e, currentId, 'status')}
-                                        class={`px-2 py-0.5 rounded-md border text-[10px] font-bold outline-none cursor-pointer transition flex items-center justify-between gap-1 shadow-2xs w-full ${getStatusBadge(currentStatus)}`}
+                                        class={`px-2 py-0.5 rounded-md border text-[10px] font-bold outline-none cursor-pointer transition flex items-center justify-between gap-1 shadow-2xs w-full custom-dropdown-toggle ${getStatusBadge(currentStatus)}`}
                                       >
                                         <span class="truncate">{currentStatus}</span>
                                         <i class={`fa-solid fa-chevron-down text-[8px] transition-transform ${isStatusOpen ? 'rotate-180' : ''}`}></i>
@@ -3347,11 +3374,11 @@ export default function AdminDashboard({ onLogout }) {
                                   const rawPriority = item.priority;
                                   const currentPriority = (rawPriority === 'Cold' || rawPriority === 'Low') ? 'Cold' : 'Hot';
                                   return (
-                                    <td key="priority" class={`py-2.5 px-2.5 whitespace-nowrap min-w-[95px] relative custom-dropdown-container ${isPriorityOpen ? 'z-50' : ''}`}>
+                                    <td key="priority" class={`py-2.5 px-2.5 whitespace-nowrap min-w-[95px] relative ${isPriorityOpen ? 'z-50' : ''}`}>
                                       <button
                                         type="button"
                                         onClick={(e) => toggleDropdown(e, currentId, 'priority')}
-                                        class={`px-2 py-0.5 rounded-md border text-[10px] font-bold outline-none cursor-pointer transition flex items-center justify-between gap-1 shadow-2xs w-full ${PRIORITY_BADGE[currentPriority] || 'bg-rose-50 border-rose-300 text-[#B30E2E]'}`}
+                                        class={`px-2 py-0.5 rounded-md border text-[10px] font-bold outline-none cursor-pointer transition flex items-center justify-between gap-1 shadow-2xs w-full custom-dropdown-toggle ${PRIORITY_BADGE[currentPriority] || 'bg-rose-50 border-rose-300 text-[#B30E2E]'}`}
                                         title="Click to set Priority"
                                       >
                                         <span class="truncate">{currentPriority}</span>
@@ -3410,12 +3437,12 @@ export default function AdminDashboard({ onLogout }) {
                                   ];
 
                                   return (
-                                    <td key="plotsCount" class={`py-2.5 px-2.5 whitespace-nowrap min-w-[110px] relative custom-dropdown-container ${isPlotsOpen ? 'z-50' : ''}`}>
+                                    <td key="plotsCount" class={`py-2.5 px-2.5 whitespace-nowrap min-w-[110px] relative ${isPlotsOpen ? 'z-50' : ''}`}>
                                       <div class="flex items-center gap-1 whitespace-nowrap">
                                         <button
                                           type="button"
                                           onClick={(e) => toggleDropdown(e, currentId, 'plotsCount')}
-                                          class="px-1.5 py-0.5 rounded-md border border-amber-300 text-[10px] font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 outline-none cursor-pointer transition shadow-2xs flex items-center justify-between gap-1 w-full"
+                                          class="px-1.5 py-0.5 rounded-md border border-amber-300 text-[10px] font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 outline-none cursor-pointer transition shadow-2xs flex items-center justify-between gap-1 w-full custom-dropdown-toggle"
                                           title="Click to edit No. of Guntha"
                                         >
                                           <span class="truncate">{currentGuntha.replace(' (Bulk / Investment)', '')}</span>
@@ -3463,13 +3490,13 @@ export default function AdminDashboard({ onLogout }) {
                                   const currentAgent = item.assignedAgentName || (allAgents[0] ? allAgents[0].name : 'Unassigned');
 
                                   return (
-                                    <td key="assignedAgent" class={`py-2.5 px-2.5 whitespace-nowrap min-w-[145px] relative custom-dropdown-container ${isAgentOpen ? 'z-50' : ''}`}>
+                                    <td key="assignedAgent" class={`py-2.5 px-2.5 whitespace-nowrap min-w-[145px] relative ${isAgentOpen ? 'z-50' : ''}`}>
                                       {isAdmin ? (
                                         <>
                                           <button
                                             type="button"
                                             onClick={(e) => toggleDropdown(e, currentId, 'assignedAgent')}
-                                            class="px-1.5 py-0.5 rounded-lg border border-emerald-300 text-[10px] font-bold text-emerald-900 bg-emerald-50 hover:bg-emerald-100 outline-none cursor-pointer transition shadow-2xs flex items-center justify-between gap-1 w-full"
+                                            class="px-1.5 py-0.5 rounded-lg border border-emerald-300 text-[10px] font-bold text-emerald-900 bg-emerald-50 hover:bg-emerald-100 outline-none cursor-pointer transition shadow-2xs flex items-center justify-between gap-1 w-full custom-dropdown-toggle"
                                             title="Re-assign lead to salesperson"
                                           >
                                             <span class="flex items-center gap-1 truncate">
@@ -4641,6 +4668,17 @@ export default function AdminDashboard({ onLogout }) {
 
           </div>
         </div>
+      )}
+
+      {/* Invisible Full-Screen Backdrop for Active Inline Table Dropdown */}
+      {activeDropdown && (
+        <div 
+          class="fixed inset-0 z-[9990] bg-transparent cursor-default" 
+          onClick={(e) => {
+            e.stopPropagation();
+            setActiveDropdown(null);
+          }}
+        />
       )}
 
       {/* Small Floating Lead Note Popover with History Timeline & Quick Add (Gulmohar Maroon & White Theme) */}

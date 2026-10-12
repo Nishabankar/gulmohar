@@ -148,13 +148,17 @@ export default function AdminDashboard({ onLogout }) {
 
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (activeDropdown && !e.target.closest('.custom-dropdown-menu') && !e.target.closest('.custom-dropdown-toggle')) {
-        setActiveDropdown(null);
+      if (activeDropdown) {
+        if (!e.target || typeof e.target.closest !== 'function' || (!e.target.closest('.custom-dropdown-menu') && !e.target.closest('.custom-dropdown-toggle'))) {
+          setActiveDropdown(null);
+        }
       }
     };
     const handleScroll = (e) => {
-      if (activeDropdown && !e.target.closest('.custom-dropdown-menu')) {
-        setActiveDropdown(null);
+      if (activeDropdown) {
+        if (!e.target || typeof e.target.closest !== 'function' || !e.target.closest('.custom-dropdown-menu')) {
+          setActiveDropdown(null);
+        }
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -2126,19 +2130,19 @@ export default function AdminDashboard({ onLogout }) {
     if (e && e.currentTarget) {
       const rect = e.currentTarget.getBoundingClientRect();
 
-      let targetHeight = 200;
+      let targetHeight = 220;
       let dropdownWidth = Math.max(130, rect.width);
       if (field === 'priority') {
         targetHeight = 75;
         dropdownWidth = Math.max(110, rect.width);
       } else if (field === 'status') {
-        targetHeight = 210;
+        targetHeight = 230;
         dropdownWidth = Math.max(155, rect.width);
       } else if (field === 'assignedAgent') {
-        targetHeight = Math.min(210, ((allAgents && allAgents.length) || 3) * 36 + 10);
+        targetHeight = Math.min(220, ((allAgents && allAgents.length) || 3) * 36 + 10);
         dropdownWidth = Math.max(160, rect.width);
       } else if (field === 'plotsCount') {
-        targetHeight = 200;
+        targetHeight = 240;
         dropdownWidth = Math.max(160, rect.width);
       }
 
@@ -2158,9 +2162,9 @@ export default function AdminDashboard({ onLogout }) {
         // In tight viewport spaces: pick the side with more space and clamp maxHeight
         if (spaceBelow >= spaceAbove) {
           top = rect.bottom + 4;
-          maxHeight = Math.max(90, spaceBelow);
+          maxHeight = Math.max(120, spaceBelow);
         } else {
-          maxHeight = Math.max(90, spaceAbove);
+          maxHeight = Math.max(120, spaceAbove);
           top = Math.max(8, rect.top - maxHeight - 4);
         }
       }
@@ -3353,12 +3357,12 @@ export default function AdminDashboard({ onLogout }) {
 
                                        {isStatusOpen && (
                                         <div 
-                                          class="fixed z-[9999] min-w-[155px] max-h-52 overflow-y-auto custom-scrollbar overscroll-contain bg-white rounded-xl shadow-2xl border border-gray-200 py-1 text-xs animate-fade-in custom-dropdown-menu"
+                                          class="fixed z-[9999] min-w-[155px] max-h-60 overflow-y-auto custom-scrollbar overscroll-contain bg-white rounded-xl shadow-2xl border border-gray-200 py-1 text-xs animate-fade-in custom-dropdown-menu"
                                           style={{
                                             top: activeDropdown?.coords ? `${activeDropdown.coords.top}px` : undefined,
                                             left: activeDropdown?.coords ? `${activeDropdown.coords.left}px` : undefined,
                                             minWidth: activeDropdown?.coords ? `${Math.max(155, activeDropdown.coords.width)}px` : '155px',
-                                            maxHeight: activeDropdown?.coords?.maxHeight ? `${activeDropdown.coords.maxHeight}px` : '200px'
+                                            maxHeight: activeDropdown?.coords?.maxHeight ? `${activeDropdown.coords.maxHeight}px` : '230px'
                                           }}
                                         >
                                           {STATUS_OPTIONS.map((opt) => (
@@ -3471,12 +3475,12 @@ export default function AdminDashboard({ onLogout }) {
 
                                        {isPlotsOpen && (
                                         <div 
-                                          class="fixed z-[9999] min-w-[160px] max-h-52 overflow-y-auto custom-scrollbar overscroll-contain bg-white rounded-xl shadow-2xl border border-gray-200 py-1 text-xs animate-fade-in custom-dropdown-menu"
+                                          class="fixed z-[9999] min-w-[160px] max-h-60 overflow-y-auto custom-scrollbar overscroll-contain bg-white rounded-xl shadow-2xl border border-gray-200 py-1 text-xs animate-fade-in custom-dropdown-menu"
                                           style={{
                                             top: activeDropdown?.coords ? `${activeDropdown.coords.top}px` : undefined,
                                             left: activeDropdown?.coords ? `${activeDropdown.coords.left}px` : undefined,
                                             minWidth: activeDropdown?.coords ? `${Math.max(160, activeDropdown.coords.width)}px` : '160px',
-                                            maxHeight: activeDropdown?.coords?.maxHeight ? `${activeDropdown.coords.maxHeight}px` : '200px'
+                                            maxHeight: activeDropdown?.coords?.maxHeight ? `${activeDropdown.coords.maxHeight}px` : '240px'
                                           }}
                                         >
                                           {GUNTHA_OPTIONS.map((opt) => (
@@ -3521,14 +3525,14 @@ export default function AdminDashboard({ onLogout }) {
                                             <i class={`fa-solid fa-chevron-down text-[8px] text-emerald-700 transition-transform ${isAgentOpen ? 'rotate-180' : ''}`}></i>
                                           </button>
 
-                                          {isAgentOpen && (
+                                           {isAgentOpen && (
                                             <div 
-                                              class="fixed z-[9999] min-w-[160px] max-h-52 overflow-y-auto custom-scrollbar overscroll-contain bg-white rounded-xl shadow-2xl border border-gray-200 py-1 text-xs animate-fade-in custom-dropdown-menu"
+                                              class="fixed z-[9999] min-w-[160px] max-h-60 overflow-y-auto custom-scrollbar overscroll-contain bg-white rounded-xl shadow-2xl border border-gray-200 py-1 text-xs animate-fade-in custom-dropdown-menu"
                                               style={{
                                                 top: activeDropdown?.coords ? `${activeDropdown.coords.top}px` : undefined,
                                                 left: activeDropdown?.coords ? `${activeDropdown.coords.left}px` : undefined,
                                                 minWidth: activeDropdown?.coords ? `${Math.max(160, activeDropdown.coords.width)}px` : '160px',
-                                                maxHeight: activeDropdown?.coords?.maxHeight ? `${activeDropdown.coords.maxHeight}px` : '200px'
+                                                maxHeight: activeDropdown?.coords?.maxHeight ? `${activeDropdown.coords.maxHeight}px` : '220px'
                                               }}
                                             >
                                               {allAgents.map((agent) => (
@@ -4684,17 +4688,6 @@ export default function AdminDashboard({ onLogout }) {
 
           </div>
         </div>
-      )}
-
-      {/* Invisible Full-Screen Backdrop for Active Inline Table Dropdown */}
-      {activeDropdown && (
-        <div 
-          class="fixed inset-0 z-[9990] bg-transparent cursor-default" 
-          onClick={(e) => {
-            e.stopPropagation();
-            setActiveDropdown(null);
-          }}
-        />
       )}
 
       {/* Small Floating Lead Note Popover with History Timeline & Quick Add (Gulmohar Maroon & White Theme) */}

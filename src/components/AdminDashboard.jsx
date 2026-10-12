@@ -3316,10 +3316,7 @@ export default function AdminDashboard({ onLogout }) {
                                         class={`px-2 py-0.5 rounded-md border text-[10px] font-bold outline-none cursor-pointer transition flex items-center justify-between gap-1 shadow-2xs w-full ${PRIORITY_BADGE[currentPriority] || 'bg-rose-50 border-rose-300 text-[#B30E2E]'}`}
                                         title="Click to set Priority"
                                       >
-                                        <span class="truncate flex items-center gap-1">
-                                          {currentPriority === 'Hot' ? <i class="fa-solid fa-fire text-[#B30E2E] text-[9px]"></i> : <i class="fa-regular fa-snowflake text-sky-600 text-[9px]"></i>}
-                                          <span>{currentPriority}</span>
-                                        </span>
+                                        <span class="truncate">{currentPriority}</span>
                                         <i class={`fa-solid fa-chevron-down text-[8px] transition-transform ${isPriorityOpen ? 'rotate-180' : ''}`}></i>
                                       </button>
 
@@ -3337,10 +3334,7 @@ export default function AdminDashboard({ onLogout }) {
                                                 currentPriority === opt ? 'bg-slate-100 text-[#B30E2E] font-bold' : 'text-slate-700'
                                               }`}
                                             >
-                                              <span class="flex items-center gap-1.5">
-                                                {opt === 'Hot' ? <i class="fa-solid fa-fire text-[#B30E2E] text-[10px]"></i> : <i class="fa-regular fa-snowflake text-sky-600 text-[10px]"></i>}
-                                                <span>{opt}</span>
-                                              </span>
+                                              <span>{opt}</span>
                                               {currentPriority === opt && <i class="fa-solid fa-check text-[10px] text-[#B30E2E]"></i>}
                                             </button>
                                           ))}

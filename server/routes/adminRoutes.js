@@ -22,8 +22,9 @@ const getPublicBaseUrl = (req) => {
   return origin;
 };
 
-// OTP Store Map (key: username, value: { otpCode, expiresAt, email })
+// OTP & Token Store Maps in memory
 const otpStore = new Map();
+const tokenStore = new Map();
 
 // Helper function to format SQL enquiry row to JSON matching frontend expectations
 const formatEnquiryRow = (row, historyEntries = []) => {
@@ -138,17 +139,24 @@ router.post('/request-password-reset', async (req, res) => {
     const adminUser = rows[0];
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
+    const resetToken = crypto.randomBytes(32).toString('hex');
 
-    // Store OTP in memory map for verification
-    otpStore.set(cleanUsername, { otpCode, expiresAt, email: cleanEmail });
+    // Store Token & OTP in memory maps for verification
+    tokenStore.set(resetToken, {
+      username: cleanUsername,
+      email: cleanEmail,
+      otpCode,
+      expiresAt
+    });
+    otpStore.set(cleanUsername, { otpCode, expiresAt, email: cleanEmail, token: resetToken });
 
     const baseUrl = getPublicBaseUrl(req);
-    const resetLink = `${baseUrl}/?resetPassword=true&username=${encodeURIComponent(cleanUsername)}&email=${encodeURIComponent(cleanEmail)}&otp=${otpCode}`;
+    const resetLink = `${baseUrl}/?token=${resetToken}`;
 
-    // Send confirmation email with Username, OTP code, and direct Reset Link
+    // Send confirmation email with Username, OTP code, and direct clean Reset Link
     const emailResult = await sendPasswordResetEmail(cleanEmail, adminUser.name || adminUser.username, otpCode, resetLink, adminUser.username);
 
-    let msg = `Verification link & OTP code email sent to ${cleanEmail}. Please check your inbox and click the link to reset your password.`;
+    let msg = `Verification link & OTP code email sent to ${cleanEmail}. Please check your inbox and enter the 6-digit OTP code to reset your password.`;
     if (!emailResult.isConfigured) {
       msg = `Verification email sent to ${cleanEmail}. [Test OTP Code: ${otpCode}]`;
     }
@@ -158,8 +166,7 @@ router.post('/request-password-reset', async (req, res) => {
       message: msg,
       emailSent: emailResult.success,
       isConfigured: Boolean(emailResult.isConfigured),
-      previewUrl: emailResult.previewUrl || null,
-      resetLink
+      previewUrl: emailResult.previewUrl || null
     });
   } catch (error) {
     console.error('Error requesting password reset:', error.message);
@@ -168,25 +175,51 @@ router.post('/request-password-reset', async (req, res) => {
 });
 
 // @route   POST /api/admin/forgot-password
-// @desc    Verify OTP code and reset user password
+// @desc    Verify OTP code (with secure token or username) and reset user password
 // @access  Public
 router.post('/forgot-password', async (req, res) => {
   try {
-    const { username, email, otpCode, newPassword } = req.body;
+    const { token, username, email, otpCode, newPassword } = req.body;
 
-    if (!username || !newPassword) {
-      return res.status(400).json({ success: false, message: 'Please provide username and new password.' });
+    if (!newPassword) {
+      return res.status(400).json({ success: false, message: 'Please provide a new password.' });
     }
 
     if (newPassword.length < 6) {
       return res.status(400).json({ success: false, message: 'New password must be at least 6 characters long.' });
     }
 
-    const cleanUsername = username.toLowerCase().trim();
-    const cleanEmail = email ? email.toLowerCase().trim() : '';
+    if (!otpCode || !otpCode.trim()) {
+      return res.status(400).json({ success: false, message: 'Please enter the 6-digit OTP code received in your email.' });
+    }
 
-    // Verify OTP if provided
-    if (otpCode) {
+    let cleanUsername = '';
+    let cleanEmail = '';
+
+    if (token) {
+      const tokenData = tokenStore.get(token);
+      if (!tokenData) {
+        return res.status(400).json({ success: false, message: 'Invalid or expired password reset link. Please request a new one.' });
+      }
+
+      if (Date.now() > tokenData.expiresAt) {
+        tokenStore.delete(token);
+        return res.status(400).json({ success: false, message: 'Password reset link has expired. Please request a new code.' });
+      }
+
+      if (tokenData.otpCode !== otpCode.trim()) {
+        return res.status(400).json({ success: false, message: 'Invalid OTP code. Please enter the correct 6-digit code received in your email.' });
+      }
+
+      cleanUsername = tokenData.username;
+      cleanEmail = tokenData.email;
+    } else {
+      if (!username) {
+        return res.status(400).json({ success: false, message: 'Please provide username and OTP code.' });
+      }
+      cleanUsername = username.toLowerCase().trim();
+      cleanEmail = email ? email.toLowerCase().trim() : '';
+
       const storedOtp = otpStore.get(cleanUsername);
       if (!storedOtp || storedOtp.otpCode !== otpCode.trim()) {
         return res.status(400).json({ success: false, message: 'Invalid verification OTP code. Please check your email.' });
@@ -195,7 +228,6 @@ router.post('/forgot-password', async (req, res) => {
         otpStore.delete(cleanUsername);
         return res.status(400).json({ success: false, message: 'Verification OTP code has expired. Please request a new code.' });
       }
-      otpStore.delete(cleanUsername);
     }
 
     const [rows] = await query(
@@ -204,7 +236,7 @@ router.post('/forgot-password', async (req, res) => {
     );
 
     if (!rows || rows.length === 0) {
-      return res.status(400).json({ success: false, message: 'Invalid username.' });
+      return res.status(400).json({ success: false, message: 'Account not found.' });
     }
 
     const adminUser = rows[0];
@@ -216,6 +248,12 @@ router.post('/forgot-password', async (req, res) => {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     await query('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, adminUser.id]);
+
+    // Clean up consumed token and OTP
+    if (token) {
+      tokenStore.delete(token);
+    }
+    otpStore.delete(cleanUsername);
 
     // Send password changed confirmation email
     const targetEmail = cleanEmail || adminUser.email;
@@ -701,14 +739,21 @@ router.post('/agents', protectAdmin, async (req, res) => {
 
     const newAgentId = result.insertId;
 
-    // Generate 6-digit OTP code and setup link (valid for 48 hours for new account setup)
+    // Generate 6-digit OTP code and setup token (valid for 48 hours for new account setup)
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = Date.now() + 48 * 60 * 60 * 1000;
+    const resetToken = crypto.randomBytes(32).toString('hex');
 
-    otpStore.set(cleanUsername, { otpCode, expiresAt, email: agentEmail });
+    tokenStore.set(resetToken, {
+      username: cleanUsername,
+      email: agentEmail,
+      otpCode,
+      expiresAt
+    });
+    otpStore.set(cleanUsername, { otpCode, expiresAt, email: agentEmail, token: resetToken });
 
     const baseUrl = getPublicBaseUrl(req);
-    const resetLink = `${baseUrl}/?resetPassword=true&username=${encodeURIComponent(cleanUsername)}&email=${encodeURIComponent(agentEmail)}&otp=${otpCode}`;
+    const resetLink = `${baseUrl}/?token=${resetToken}`;
 
     // Send invitation email with password setup link and OTP
     const emailResult = await sendNewUserInviteEmail(agentEmail, name.trim(), otpCode, resetLink, cleanUsername);
@@ -730,8 +775,6 @@ router.post('/agents', protectAdmin, async (req, res) => {
         phone: cleanPhone,
         role: 'Agent'
       },
-      resetLink,
-      otpCode,
       emailSent: emailResult.success,
       isConfigured: Boolean(emailResult.isConfigured)
     });

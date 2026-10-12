@@ -27,7 +27,7 @@ export default function App() {
   });
   const [currentView, setCurrentView] = useState(() => {
     const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
-    if (params && (params.get('resetPassword') === 'true' || params.get('otp'))) {
+    if (params && (params.get('resetPassword') === 'true' || params.get('otp') || params.get('token'))) {
       return 'website';
     }
     const token = localStorage.getItem('adminToken');
@@ -38,7 +38,7 @@ export default function App() {
   useEffect(() => {
     // Auto-open reset password modal if link opened from email
     const params = new URLSearchParams(window.location.search);
-    const isResetLink = params.get('resetPassword') === 'true' || !!params.get('otp');
+    const isResetLink = params.get('resetPassword') === 'true' || !!params.get('otp') || !!params.get('token');
 
     if (isResetLink) {
       setCurrentView('website');

@@ -11,6 +11,7 @@ export default function AdminLogin({ onLoginSuccess, onClose }) {
   // Forgot password state
   const [forgotUsername, setForgotUsername] = useState('');
   const [forgotEmail, setForgotEmail] = useState('');
+  const [resetToken, setResetToken] = useState('');
   const [otpCode, setOtpCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -26,14 +27,21 @@ export default function AdminLogin({ onLoginSuccess, onClose }) {
     const paramUsername = params.get('username');
     const paramEmail = params.get('email');
     const paramOtp = params.get('otp');
+    const paramToken = params.get('token');
 
-    if (resetParam === 'true' || paramOtp) {
+    if (paramToken || resetParam === 'true' || paramOtp) {
       setIsForgotPassword(true);
       setForgotStep(2);
+      if (paramToken) setResetToken(paramToken);
       if (paramUsername) setForgotUsername(paramUsername);
       if (paramEmail) setForgotEmail(paramEmail);
       if (paramOtp) setOtpCode(paramOtp);
-      setSuccessMsg('Email link verified! Please set your account password below.');
+
+      setSuccessMsg(
+        paramToken
+          ? 'Please enter the 6-digit OTP received in your email and set your new password.'
+          : 'Email link verified! Please set your account password below.'
+      );
 
       // Clean query string from browser URL without page reload
       const newUrl = window.location.pathname;
@@ -97,7 +105,7 @@ export default function AdminLogin({ onLoginSuccess, onClose }) {
 
       if (data.success) {
         setSuccessMsg(data.message || 'Verification link & OTP code sent to your email. Please check your inbox.');
-        // Stay on step 1 with option to go to step 2 or click reset link in email
+        setForgotStep(2);
       } else {
         setError(data.message || 'No account found with this username and email address.');
       }
@@ -131,15 +139,21 @@ export default function AdminLogin({ onLoginSuccess, onClose }) {
     setSuccessMsg('');
 
     try {
+      const payload = {
+        otpCode: otpCode.trim(),
+        newPassword
+      };
+      if (resetToken) {
+        payload.token = resetToken;
+      } else {
+        payload.username = forgotUsername;
+        payload.email = forgotEmail;
+      }
+
       const response = await fetch(`${API_BASE_URL}/api/admin/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          username: forgotUsername,
-          email: forgotEmail,
-          otpCode,
-          newPassword
-        })
+        body: JSON.stringify(payload)
       });
 
       const data = await response.json();
@@ -152,6 +166,7 @@ export default function AdminLogin({ onLoginSuccess, onClose }) {
         setTimeout(() => {
           setIsForgotPassword(false);
           setForgotStep(1);
+          setResetToken('');
           setUsername(forgotUsername);
           setPassword('');
           setError('');

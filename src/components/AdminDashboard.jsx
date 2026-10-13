@@ -2359,7 +2359,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
 
             {/* Leads View Standalone Button */}
             <button 
-              onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('New'); setSelectedStatuses(['New']); setVisitDateFilter('All'); setFollowupDateFilter('All'); setIsStatusDropdownMode(true); }}
+              onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); }}
               class={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition shadow-md border cursor-pointer relative ${
                 activeTab === 'enquiries' && activeView === 'leads'
                   ? 'bg-amber-400 text-slate-900 border-amber-300 ring-2 ring-amber-300/50 font-extrabold scale-105'

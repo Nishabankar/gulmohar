@@ -142,6 +142,8 @@ export default function AdminDashboard({ onLogout }) {
   const [importSheet, setImportSheet] = useState({ headers: [], rows: [] }); // raw sheet, for the duplicates CSV
   const [importDuplicates, setImportDuplicates] = useState([]); // raw rows skipped as duplicates
   const [unmappedColumns, setUnmappedColumns] = useState([]); // columns from CSV not mapped to DB
+  const [mappedColumns, setMappedColumns] = useState([]); // columns from CSV mapped to DB
+  const [showColumnMappingPopover, setShowColumnMappingPopover] = useState(false);
 
   // Active Inline Dropdown Popover State: { rowId: string, field: 'status' | 'followupDate' | 'plotsCount' | 'assignedAgent' }
   const [activeDropdown, setActiveDropdown] = useState(null);
@@ -1591,7 +1593,7 @@ export default function AdminDashboard({ onLogout }) {
   // ("Caller Name" -> "callername", "Follow up 2" -> "followup2"). Exact match wins over partial.
   const parseCSVText = (text) => {
     const allRows = parseCSVRows(text);
-    if (allRows.length < 2) return { headers: [], rows: [], leads: [], unmappedColumns: [] };
+    if (allRows.length < 2) return { headers: [], rows: [], leads: [], unmappedColumns: [], mappedColumns: [] };
     const headers = allRows[0];
     const rows = allRows.slice(1);
     const keys = headers.map(h => (h || '').toLowerCase().replace(/[^a-z0-9]/g, ''));
@@ -1621,8 +1623,9 @@ export default function AdminDashboard({ onLogout }) {
     const plotsCountIdx = find(['plotscount', 'guntha', 'noofguntha', 'plots', 'plotcount', 'gunthacount'], ['guntha']);
     const plotInfoIdx = find(['plotinfo', 'plot', 'plotno', 'plotsinfo', 'property', 'propertyinfo'], ['plotinfo', 'plotno']);
 
-    // Detect unmapped columns: non-empty headers not matched to any database field
+    // Detect mapped and unmapped columns: non-empty headers matched/unmatched to any database field
     const unmappedColumns = headers.filter((h, i) => h && h.trim() && !used.has(i)).map(h => h.trim());
+    const mappedColumns = headers.filter((h, i) => h && h.trim() && used.has(i)).map(h => h.trim());
 
     const cell = (row, idx) => (idx !== -1 && row[idx] ? row[idx].trim() : '');
     const leads = [];
@@ -1657,7 +1660,7 @@ export default function AdminDashboard({ onLogout }) {
         assignedAgentName: cell(row, agentIdx)
       });
     });
-    return { headers, rows, leads, unmappedColumns };
+    return { headers, rows, leads, unmappedColumns, mappedColumns };
   };
 
   const handleFileSelect = (e) => {
@@ -1667,13 +1670,16 @@ export default function AdminDashboard({ onLogout }) {
     setImportMsg('');
     setImportDuplicates([]);
     setUnmappedColumns([]);
+    setMappedColumns([]);
+    setShowColumnMappingPopover(false);
 
     const reader = new FileReader();
     reader.onload = (evt) => {
-      const { headers, rows, leads, unmappedColumns: unmapped } = parseCSVText(evt.target.result);
+      const { headers, rows, leads, unmappedColumns: unmapped, mappedColumns: mapped } = parseCSVText(evt.target.result);
       setImportSheet({ headers, rows });
       setImportPreview(leads);
       setUnmappedColumns(unmapped || []);
+      setMappedColumns(mapped || []);
       if (leads.length === 0) {
         setImportMsg('Error: No valid leads with phone numbers found in CSV file.');
       }
@@ -1704,6 +1710,8 @@ export default function AdminDashboard({ onLogout }) {
     setImportSheet({ headers: [], rows: [] });
     setImportDuplicates([]);
     setUnmappedColumns([]);
+    setMappedColumns([]);
+    setShowColumnMappingPopover(false);
   };
 
   const handleConfirmImport = async () => {
@@ -5031,7 +5039,10 @@ export default function AdminDashboard({ onLogout }) {
         >
           <div 
             class="bg-white rounded-3xl shadow-2xl border border-gray-100 max-w-lg w-full overflow-hidden flex flex-col relative"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (showColumnMappingPopover) setShowColumnMappingPopover(false);
+            }}
           >
             <div class="bg-gradient-to-r from-[#B30E2E] via-[#8A0B22] to-[#590414] p-4 sm:p-5 text-white flex items-center justify-between flex-shrink-0">
               <div class="flex items-center gap-2">
@@ -5046,7 +5057,7 @@ export default function AdminDashboard({ onLogout }) {
               </button>
             </div>
 
-            <div class="p-5 space-y-4 overflow-y-auto max-h-[75vh]">
+            <div class={`p-5 space-y-4 overflow-y-auto max-h-[75vh] ${showColumnMappingPopover ? 'min-h-[220px]' : ''}`}>
               {importMsg && (
                 <div class={`p-3 rounded-xl text-xs font-bold flex items-center gap-2 ${
                   importMsg.includes('Error') ? 'bg-rose-100 border border-rose-300 text-rose-900' : 'bg-emerald-100 border border-emerald-300 text-emerald-900'
@@ -5057,17 +5068,123 @@ export default function AdminDashboard({ onLogout }) {
               )}
 
               {importFile ? (
-                // File loaded: compact file row instead of the big drop zone
-                <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border border-rose-200 bg-rose-50/40">
-                  <div class="flex items-center gap-2 min-w-0">
-                    <i class="fa-solid fa-file-csv text-[#B30E2E] text-base"></i>
-                    <span class="text-xs font-bold text-slate-800 truncate" title={importFile.name}>{importFile.name}</span>
+                // File loaded: compact file row with Red/Green column mapping symbol & floating popover
+                <div class="relative">
+                  <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border border-rose-200 bg-rose-50/40">
+                    <div class="flex items-center gap-2 min-w-0">
+                      <i class="fa-solid fa-file-csv text-[#B30E2E] text-base"></i>
+                      <span class="text-xs font-bold text-slate-800 truncate" title={importFile.name}>{importFile.name}</span>
+                    </div>
+                    <div class="flex items-center gap-2.5 flex-shrink-0">
+                      {importSheet.headers.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowColumnMappingPopover(prev => !prev);
+                          }}
+                          title={
+                            unmappedColumns.length > 0
+                              ? `${unmappedColumns.length} unmapped column(s) — Click to view details`
+                              : 'All CSV columns mapped — Click to view details'
+                          }
+                          class={`relative inline-flex items-center justify-center w-7 h-7 rounded-full border transition cursor-pointer shadow-xs ${
+                            unmappedColumns.length > 0
+                              ? 'bg-rose-100 hover:bg-rose-200 border-rose-300 text-rose-600 ring-2 ring-rose-200/70'
+                              : 'bg-emerald-100 hover:bg-emerald-200 border-emerald-300 text-emerald-600 ring-2 ring-emerald-200/70'
+                          }`}
+                        >
+                          <i class={`fa-solid ${unmappedColumns.length > 0 ? 'fa-triangle-exclamation' : 'fa-circle-check'} text-xs`}></i>
+                          {unmappedColumns.length > 0 && (
+                            <span class="absolute -top-1 -right-1 min-w-[15px] h-[15px] px-1 rounded-full bg-rose-600 text-white text-[9px] font-extrabold flex items-center justify-center leading-none shadow-xs">
+                              {unmappedColumns.length}
+                            </span>
+                          )}
+                        </button>
+                      )}
+                      {!isImporting && (
+                        <label class="text-[11px] font-bold text-[#B30E2E] hover:underline cursor-pointer whitespace-nowrap">
+                          Change file
+                          <input type="file" accept=".csv" onChange={handleFileSelect} class="hidden" />
+                        </label>
+                      )}
+                    </div>
                   </div>
-                  {!isImporting && (
-                    <label class="text-[11px] font-bold text-[#B30E2E] hover:underline cursor-pointer whitespace-nowrap">
-                      Change file
-                      <input type="file" accept=".csv" onChange={handleFileSelect} class="hidden" />
-                    </label>
+
+                  {/* Floating Popover Message on Symbol Click */}
+                  {showColumnMappingPopover && importSheet.headers.length > 0 && (
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      class={`absolute left-0 right-0 top-full mt-1.5 z-30 px-3 py-2.5 rounded-xl border text-xs shadow-xl animate-fade-in ${
+                        unmappedColumns.length > 0
+                          ? 'bg-rose-50 border-rose-300 text-rose-900'
+                          : 'bg-emerald-50 border-emerald-300 text-emerald-900'
+                      }`}
+                    >
+                      {unmappedColumns.length > 0 ? (
+                        <div class="flex items-start justify-between gap-2">
+                          <div class="flex items-start gap-2 flex-1">
+                            <i class="fa-solid fa-triangle-exclamation text-rose-600 mt-0.5 text-xs flex-shrink-0"></i>
+                            <div class="flex-1 space-y-1">
+                              <p class="font-bold text-rose-800 text-xs leading-snug">
+                                Following {unmappedColumns.length === 1 ? 'field' : 'fields'} cannot be imported:
+                              </p>
+                              <div class="flex flex-wrap gap-1.5 pt-0.5">
+                                {unmappedColumns.map((col, idx) => (
+                                  <span
+                                    key={idx}
+                                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white border border-rose-300 text-rose-800 font-bold text-[11px] shadow-xs"
+                                  >
+                                    <i class="fa-solid fa-circle-xmark text-[10px] text-rose-600"></i>
+                                    {col}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setShowColumnMappingPopover(false)}
+                            class="text-rose-500 hover:text-rose-800 w-5 h-5 rounded-full hover:bg-rose-100 flex items-center justify-center transition cursor-pointer flex-shrink-0"
+                            title="Close"
+                          >
+                            <i class="fa-solid fa-xmark text-xs"></i>
+                          </button>
+                        </div>
+                      ) : (
+                        <div class="flex items-start justify-between gap-2">
+                          <div class="flex items-start gap-2 flex-1">
+                            <i class="fa-solid fa-circle-check text-emerald-600 mt-0.5 text-xs flex-shrink-0"></i>
+                            <div class="flex-1 space-y-1">
+                              <p class="font-bold text-emerald-800 text-xs leading-snug">
+                                All fields will be imported:
+                              </p>
+                              {mappedColumns.length > 0 && (
+                                <div class="flex flex-wrap gap-1.5 pt-0.5">
+                                  {mappedColumns.map((col, idx) => (
+                                    <span
+                                      key={idx}
+                                      class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white border border-emerald-300 text-emerald-800 font-bold text-[11px] shadow-xs"
+                                    >
+                                      <i class="fa-solid fa-circle-check text-[10px] text-emerald-600"></i>
+                                      {col}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setShowColumnMappingPopover(false)}
+                            class="text-emerald-600 hover:text-emerald-900 w-5 h-5 rounded-full hover:bg-emerald-100 flex items-center justify-center transition cursor-pointer flex-shrink-0"
+                            title="Close"
+                          >
+                            <i class="fa-solid fa-xmark text-xs"></i>
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               ) : (
@@ -5106,30 +5223,6 @@ export default function AdminDashboard({ onLogout }) {
                     <i class="fa-solid fa-download text-[10px]"></i>
                     Download CSV
                   </button>
-                </div>
-              )}
-
-              {unmappedColumns.length > 0 && (
-                <div class="p-3.5 rounded-xl bg-rose-50 border border-rose-300 text-rose-900 text-xs animate-fade-in space-y-2">
-                  <div class="flex items-start gap-2.5">
-                    <i class="fa-solid fa-triangle-exclamation text-rose-600 mt-0.5 text-sm flex-shrink-0"></i>
-                    <div class="flex-1 space-y-1.5">
-                      <p class="font-bold text-rose-800 text-xs leading-relaxed">
-                        The following {unmappedColumns.length === 1 ? 'column in your CSV is' : 'columns in your CSV are'} not mapped to the database and will not be imported:
-                      </p>
-                      <div class="flex flex-wrap gap-1.5 pt-0.5">
-                        {unmappedColumns.map((col, idx) => (
-                          <span
-                            key={idx}
-                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-rose-300 text-rose-800 font-bold text-[11px] shadow-xs"
-                          >
-                            <i class="fa-solid fa-circle-xmark text-[10px] text-rose-600"></i>
-                            {col}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
                 </div>
               )}
 

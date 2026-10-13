@@ -2516,14 +2516,14 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                       </div>
                     </div>
 
-                    {/* Card 2: Miss */}
+                    {/* Card 2: Miss Followup */}
                     <div 
                       onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Miss'); setVisitDateFilter('All'); setFollowupDateFilter('All'); setIsStatusDropdownMode(false); }}
                       class="bg-white rounded-lg sm:rounded-xl p-3.5 sm:p-4 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-purple-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
-                      title="Click to view Miss leads (Followup not scheduled)"
+                      title="Click to view Miss Followup leads (Followup not scheduled)"
                     >
                       <div class="min-w-0 flex-1 pr-1 sm:pr-2">
-                        <p class="text-[9px] sm:text-[10px] font-bold text-purple-600 uppercase tracking-wider truncate">Miss</p>
+                        <p class="text-[9px] sm:text-[10px] font-bold text-purple-600 uppercase tracking-wider truncate">Miss Followup</p>
                         <h3 class="text-base sm:text-xl font-bold text-gray-900 mt-0.5">{missedLeadsCount}</h3>
                         <p class="hidden sm:block text-[9.5px] text-gray-500 mt-0.5 truncate">Followup not set</p>
                       </div>
@@ -2996,7 +2996,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                     } else if (followupDateFilter !== 'All') {
                       filterLabel = followupDateFilter === 'Today' ? 'Followup: Today' : followupDateFilter === 'Tomorrow' ? 'Followup: Tomorrow' : followupDateFilter === 'ThisWeek' ? 'Followup: This Week' : 'Followup: Scheduled';
                     } else if (statusFilter !== 'All') {
-                      filterLabel = `Status: ${statusFilter}`;
+                      filterLabel = `Status: ${statusFilter === 'Miss' ? 'Miss Followup' : statusFilter}`;
                     }
 
                     if (!filterLabel) return null;

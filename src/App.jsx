@@ -82,9 +82,15 @@ export default function App() {
     setCurrentView('dashboard');
   };
 
+  const handleGoToWebsite = () => {
+    localStorage.setItem('adminView', 'website');
+    setCurrentView('website');
+  };
+
   const handleAdminLoginSuccess = () => {
     setIsAdminLoggedIn(true);
     localStorage.setItem('adminView', 'dashboard');
+    localStorage.removeItem('lms_dashboard_nav_state');
     setShowAdminLoginModal(false);
     setCurrentView('dashboard');
   };
@@ -93,6 +99,7 @@ export default function App() {
     localStorage.removeItem('adminToken');
     localStorage.removeItem('adminUser');
     localStorage.removeItem('adminView');
+    localStorage.removeItem('lms_dashboard_nav_state');
     setIsAdminLoggedIn(false);
     setCurrentView('website');
   };
@@ -101,7 +108,7 @@ export default function App() {
   if (currentView === 'dashboard' && isAdminLoggedIn) {
     return (
       <div class="fixed inset-0 h-screen h-[100dvh] max-h-screen bg-gray-50 overflow-hidden w-full max-w-full flex flex-col z-0">
-        <AdminDashboard onLogout={handleAdminLogout} />
+        <AdminDashboard onLogout={handleAdminLogout} onGoHome={handleGoToWebsite} />
       </div>
     );
   }

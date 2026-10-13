@@ -97,15 +97,55 @@ const PRIORITY_BADGE = {
 };
 
 
-export default function AdminDashboard({ onLogout }) {
+const ALL_STATUS_OPTIONS = [
+  'New',
+  'Contacted',
+  'Interested',
+  'Details Provided',
+  'Not Interested',
+  'Site Visit Scheduled',
+  'Site Visit Done',
+  'Won',
+  'Lost'
+];
+
+export default function AdminDashboard({ onLogout, onGoHome }) {
+  const savedNavState = (() => {
+    try {
+      const raw = localStorage.getItem('lms_dashboard_nav_state');
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) {
+      return {};
+    }
+  })();
+
   const [enquiries, setEnquiries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All');
+  const [statusFilter, setStatusFilter] = useState(() => savedNavState.statusFilter || 'New');
+  const [selectedStatuses, setSelectedStatuses] = useState(() => Array.isArray(savedNavState.selectedStatuses) ? savedNavState.selectedStatuses : ['New']);
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
-  const [agentFilter, setAgentFilter] = useState('All');
-  const [visitDateFilter, setVisitDateFilter] = useState('All'); // 'All' | 'Today' | 'Tomorrow' | 'ThisWeek'
-  const [followupDateFilter, setFollowupDateFilter] = useState('All'); // 'All' | 'Today' | 'Tomorrow' | 'ThisWeek'
+  const [isStatusDropdownMode, setIsStatusDropdownMode] = useState(() => savedNavState.isStatusDropdownMode !== undefined ? savedNavState.isStatusDropdownMode : true);
+
+  const toggleStatusSelection = (status) => {
+    if (status === 'All') {
+      if (selectedStatuses.length === ALL_STATUS_OPTIONS.length) {
+        setSelectedStatuses([]);
+      } else {
+        setSelectedStatuses([...ALL_STATUS_OPTIONS]);
+      }
+      return;
+    }
+    setSelectedStatuses(prev => {
+      if (prev.includes(status)) {
+        return prev.filter(s => s !== status);
+      }
+      return [...prev, status];
+    });
+  };
+  const [agentFilter, setAgentFilter] = useState(() => savedNavState.agentFilter || 'All');
+  const [visitDateFilter, setVisitDateFilter] = useState(() => savedNavState.visitDateFilter || 'All'); // 'All' | 'Today' | 'Tomorrow' | 'ThisWeek'
+  const [followupDateFilter, setFollowupDateFilter] = useState(() => savedNavState.followupDateFilter || 'All'); // 'All' | 'Today' | 'Tomorrow' | 'ThisWeek'
   const [isAgentDropdownOpen, setIsAgentDropdownOpen] = useState(false);
 
   // Leads Table Column Sorting State & Handler
@@ -329,8 +369,23 @@ export default function AdminDashboard({ onLogout }) {
   const allAgents = registeredAgents.filter(a => (a.role || 'Agent') === 'Agent');
 
   // State for Navigation Tabs & Registered Users Directory
-  const [activeTab, setActiveTab] = useState('enquiries'); // 'enquiries' | 'users'
-  const [activeView, setActiveView] = useState('dashboard'); // 'dashboard' | 'leads'
+  const [activeTab, setActiveTab] = useState(() => savedNavState.activeTab || 'enquiries'); // 'enquiries' | 'users'
+  const [activeView, setActiveView] = useState(() => savedNavState.activeView || 'dashboard'); // 'dashboard' | 'leads'
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('lms_dashboard_nav_state', JSON.stringify({
+        activeTab,
+        activeView,
+        statusFilter,
+        selectedStatuses,
+        isStatusDropdownMode,
+        agentFilter,
+        visitDateFilter,
+        followupDateFilter
+      }));
+    } catch (e) {}
+  }, [activeTab, activeView, statusFilter, selectedStatuses, isStatusDropdownMode, agentFilter, visitDateFilter, followupDateFilter]);
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [editingUser, setEditingUser] = useState(null);
   const [savingUserEdit, setSavingUserEdit] = useState(false);
@@ -1407,7 +1462,11 @@ export default function AdminDashboard({ onLogout }) {
         }
         localStorage.setItem('localEnquiriesCache', JSON.stringify(updatedCache));
 
-        if (statusFilter !== 'All' && statusFilter !== finalSynced.status) {
+        if (isStatusDropdownMode) {
+          if (selectedStatuses.length > 0 && !selectedStatuses.includes(finalSynced.status)) {
+            setSelectedStatuses(prev => [...prev, finalSynced.status]);
+          }
+        } else if (statusFilter !== 'All' && statusFilter !== finalSynced.status) {
           setStatusFilter(finalSynced.status);
         }
 
@@ -1977,17 +2036,20 @@ export default function AdminDashboard({ onLogout }) {
       displayLeadId.includes(query) ||
       displayUserId.includes(query);
 
-    const matchesStatus = statusFilter === 'All' 
-      ? true 
-      : (statusFilter === 'New' 
-          ? isNewLead(item) 
-          : (statusFilter === 'Miss'
-              ? isMissedLead(item)
-              : (statusFilter === 'Lost' 
-                  ? (item.status === 'Lost' || item.status === 'Not Interested')
-                  : (statusFilter === 'Won' 
-                      ? (item.status === 'Won' || item.status === 'Closed')
-                      : item.status === statusFilter))));
+    const checkSingleStatus = (st) => {
+      if (st === 'All') return true;
+      if (st === 'New') return isNewLead(item);
+      if (st === 'Miss') return isMissedLead(item);
+      if (st === 'Lost') return item.status === 'Lost' || item.status === 'Not Interested';
+      if (st === 'Won') return item.status === 'Won' || item.status === 'Closed';
+      return item.status === st;
+    };
+
+    const matchesStatus = isStatusDropdownMode
+      ? (selectedStatuses.length === ALL_STATUS_OPTIONS.length
+          ? true
+          : selectedStatuses.some(st => checkSingleStatus(st)))
+      : checkSingleStatus(statusFilter);
 
     // Visit Date Filter Matching (Calculated using status === 'Site Visit Scheduled' & followupDate)
     let matchesVisitDate = true;
@@ -2270,7 +2332,9 @@ export default function AdminDashboard({ onLogout }) {
             <img 
               src="/assets/images/gulmohar-city-footer-logo.png" 
               alt="Gulmohar City" 
-              class="h-9 sm:h-11 w-auto object-contain flex-shrink-0 py-0.5"
+              onClick={onGoHome}
+              title="Go to Website Home Page"
+              class="h-9 sm:h-11 w-auto object-contain flex-shrink-0 py-0.5 cursor-pointer hover:opacity-90 transition"
             />
             <h1 class="hidden md:block text-base sm:text-lg font-serif font-bold text-white tracking-wide">
               Lead Management System
@@ -2295,7 +2359,7 @@ export default function AdminDashboard({ onLogout }) {
 
             {/* Leads View Standalone Button */}
             <button 
-              onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); }}
+              onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('New'); setSelectedStatuses(['New']); setVisitDateFilter('All'); setFollowupDateFilter('All'); setIsStatusDropdownMode(true); }}
               class={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition shadow-md border cursor-pointer relative ${
                 activeTab === 'enquiries' && activeView === 'leads'
                   ? 'bg-amber-400 text-slate-900 border-amber-300 ring-2 ring-amber-300/50 font-extrabold scale-105'
@@ -2438,7 +2502,7 @@ export default function AdminDashboard({ onLogout }) {
                     
                     {/* Card 1: New */}
                     <div 
-                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('New'); setVisitDateFilter('All'); setFollowupDateFilter('All'); }}
+                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('New'); setSelectedStatuses(['New']); setVisitDateFilter('All'); setFollowupDateFilter('All'); setIsStatusDropdownMode(true); }}
                       class="bg-white rounded-lg sm:rounded-xl p-3.5 sm:p-4 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-amber-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view New leads"
                     >
@@ -2454,7 +2518,7 @@ export default function AdminDashboard({ onLogout }) {
 
                     {/* Card 2: Miss */}
                     <div 
-                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Miss'); setVisitDateFilter('All'); setFollowupDateFilter('All'); }}
+                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Miss'); setVisitDateFilter('All'); setFollowupDateFilter('All'); setIsStatusDropdownMode(false); }}
                       class="bg-white rounded-lg sm:rounded-xl p-3.5 sm:p-4 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-purple-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view Miss leads (Followup not scheduled)"
                     >
@@ -2470,7 +2534,7 @@ export default function AdminDashboard({ onLogout }) {
 
                     {/* Card 4: Site Visit Done */}
                     <div 
-                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Site Visit Done'); setVisitDateFilter('All'); setFollowupDateFilter('All'); }}
+                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Site Visit Done'); setVisitDateFilter('All'); setFollowupDateFilter('All'); setIsStatusDropdownMode(false); }}
                       class="bg-white rounded-lg sm:rounded-xl p-3.5 sm:p-4 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-sky-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view Completed Visits"
                     >
@@ -2486,7 +2550,7 @@ export default function AdminDashboard({ onLogout }) {
 
                     {/* Card 5: Won */}
                     <div 
-                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Won'); setVisitDateFilter('All'); setFollowupDateFilter('All'); }}
+                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Won'); setVisitDateFilter('All'); setFollowupDateFilter('All'); setIsStatusDropdownMode(false); }}
                       class="bg-white rounded-lg sm:rounded-xl p-3.5 sm:p-4 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-emerald-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view Won/Booked deals"
                     >
@@ -2502,7 +2566,7 @@ export default function AdminDashboard({ onLogout }) {
 
                     {/* Card 6: Lost */}
                     <div 
-                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Lost'); setVisitDateFilter('All'); setFollowupDateFilter('All'); }}
+                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Lost'); setVisitDateFilter('All'); setFollowupDateFilter('All'); setIsStatusDropdownMode(false); }}
                       class="bg-white rounded-lg sm:rounded-xl p-3.5 sm:p-4 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-rose-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view Lost leads"
                     >
@@ -2532,7 +2596,7 @@ export default function AdminDashboard({ onLogout }) {
                     
                     {/* Card 1: All Followup Scheduled */}
                     <div 
-                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setVisitDateFilter('All'); setFollowupDateFilter('AllScheduled'); }}
+                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setVisitDateFilter('All'); setFollowupDateFilter('AllScheduled'); setIsStatusDropdownMode(false); }}
                       class="bg-white rounded-lg sm:rounded-xl p-3.5 sm:p-4 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-teal-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view all scheduled follow-ups"
                     >
@@ -2548,7 +2612,7 @@ export default function AdminDashboard({ onLogout }) {
 
                     {/* Card 2: Today's Followup */}
                     <div 
-                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setVisitDateFilter('All'); setFollowupDateFilter('Today'); }}
+                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setVisitDateFilter('All'); setFollowupDateFilter('Today'); setIsStatusDropdownMode(false); }}
                       class="bg-white rounded-lg sm:rounded-xl p-3.5 sm:p-4 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-blue-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view today's scheduled follow-ups"
                     >
@@ -2564,7 +2628,7 @@ export default function AdminDashboard({ onLogout }) {
 
                     {/* Card 3: Tomorrow's Followup */}
                     <div 
-                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setVisitDateFilter('All'); setFollowupDateFilter('Tomorrow'); }}
+                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setVisitDateFilter('All'); setFollowupDateFilter('Tomorrow'); setIsStatusDropdownMode(false); }}
                       class="bg-white rounded-lg sm:rounded-xl p-3.5 sm:p-4 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-cyan-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view tomorrow's scheduled follow-ups"
                     >
@@ -2580,7 +2644,7 @@ export default function AdminDashboard({ onLogout }) {
 
                     {/* Card 4: This Week's Followup */}
                     <div 
-                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setVisitDateFilter('All'); setFollowupDateFilter('ThisWeek'); }}
+                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setVisitDateFilter('All'); setFollowupDateFilter('ThisWeek'); setIsStatusDropdownMode(false); }}
                       class="bg-white rounded-lg sm:rounded-xl p-3.5 sm:p-4 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-emerald-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view this week's scheduled follow-ups"
                     >
@@ -2610,7 +2674,7 @@ export default function AdminDashboard({ onLogout }) {
                     
                     {/* Card 1: All Site Visit Scheduled */}
                     <div 
-                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Site Visit Scheduled'); setFollowupDateFilter('All'); setVisitDateFilter('AllScheduled'); }}
+                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Site Visit Scheduled'); setFollowupDateFilter('All'); setVisitDateFilter('AllScheduled'); setIsStatusDropdownMode(false); }}
                       class="bg-white rounded-lg sm:rounded-xl p-3.5 sm:p-4 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-indigo-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view all scheduled site visits"
                     >
@@ -2626,7 +2690,7 @@ export default function AdminDashboard({ onLogout }) {
 
                     {/* Card 2: Today's Visit */}
                     <div 
-                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Site Visit Scheduled'); setFollowupDateFilter('All'); setVisitDateFilter('Today'); }}
+                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Site Visit Scheduled'); setFollowupDateFilter('All'); setVisitDateFilter('Today'); setIsStatusDropdownMode(false); }}
                       class="bg-white rounded-lg sm:rounded-xl p-3.5 sm:p-4 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-purple-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view today's scheduled visits"
                     >
@@ -2642,7 +2706,7 @@ export default function AdminDashboard({ onLogout }) {
 
                     {/* Card 3: Tomorrow's Visit */}
                     <div 
-                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Site Visit Scheduled'); setFollowupDateFilter('All'); setVisitDateFilter('Tomorrow'); }}
+                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Site Visit Scheduled'); setFollowupDateFilter('All'); setVisitDateFilter('Tomorrow'); setIsStatusDropdownMode(false); }}
                       class="bg-white rounded-lg sm:rounded-xl p-3.5 sm:p-4 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-blue-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view tomorrow's scheduled visits"
                     >
@@ -2658,7 +2722,7 @@ export default function AdminDashboard({ onLogout }) {
 
                     {/* Card 4: This Week's Visit */}
                     <div 
-                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Site Visit Scheduled'); setFollowupDateFilter('All'); setVisitDateFilter('ThisWeek'); }}
+                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Site Visit Scheduled'); setFollowupDateFilter('All'); setVisitDateFilter('ThisWeek'); setIsStatusDropdownMode(false); }}
                       class="bg-white rounded-lg sm:rounded-xl p-3.5 sm:p-4 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-[#B30E2E]/30 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view this week's scheduled visits"
                     >
@@ -2862,43 +2926,66 @@ export default function AdminDashboard({ onLogout }) {
                     )}
                   </div>
 
-                  {/* Status Filter for 'New' vs Read-Only Badge for other statuses */}
-                  {statusFilter === 'New' ? (
-                    <div ref={statusDropdownRef} class="w-full sm:w-44 flex-shrink-0 relative">
+                  {/* Status Filter Dropdown (Multi-Select, Default 'New' when clicking Leads button/New card) vs Read-Only Badge for other cards */}
+                  {isStatusDropdownMode ? (
+                    <div ref={statusDropdownRef} class="w-full sm:w-48 flex-shrink-0 relative">
                       <button
                         type="button"
                         onClick={() => {
                           setIsStatusDropdownOpen(!isStatusDropdownOpen);
                           setIsAgentDropdownOpen(false);
                         }}
-                        class="w-full px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-xs bg-white hover:bg-gray-50 font-bold text-gray-700 cursor-pointer shadow-xs flex items-center justify-between"
-                        title="Change Status Filter"
+                        class="w-full px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-xs bg-white hover:bg-gray-50 font-bold text-gray-700 cursor-pointer shadow-xs flex items-center justify-between gap-1.5"
+                        title={
+                          selectedStatuses.length === ALL_STATUS_OPTIONS.length
+                            ? 'All Statuses'
+                            : selectedStatuses.length > 0
+                              ? selectedStatuses.join(', ')
+                              : 'Select Status'
+                        }
                       >
                         <span class="flex items-center gap-1.5 truncate">
-                          <span class="w-2 h-2 rounded-full bg-[#B30E2E]"></span>
-                          <span>New</span>
+                          <span class="w-2 h-2 rounded-full bg-[#B30E2E] flex-shrink-0"></span>
+                          <span class="truncate">
+                            {selectedStatuses.length === ALL_STATUS_OPTIONS.length
+                              ? 'All'
+                              : selectedStatuses.length === 0
+                                ? 'Select Status'
+                                : selectedStatuses.join(', ')}
+                          </span>
                         </span>
-                        <i class={`fa-solid fa-chevron-down text-xs text-gray-400 transition transform ${isStatusDropdownOpen ? 'rotate-180' : ''}`}></i>
+                        <i class={`fa-solid fa-chevron-down text-xs text-gray-400 transition transform flex-shrink-0 ${isStatusDropdownOpen ? 'rotate-180' : ''}`}></i>
                       </button>
 
                       {isStatusDropdownOpen && (
-                        <div class="absolute left-0 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-1 max-h-52 overflow-y-auto custom-scrollbar animate-fade-in">
-                          {['All', 'New', 'Contacted', 'Interested', 'Details Provided', 'Not Interested', 'Site Visit Scheduled', 'Site Visit Done', 'Won', 'Lost'].map((status) => (
-                            <button
-                              key={status}
-                              type="button"
-                              onClick={() => {
-                                setStatusFilter(status);
-                                setIsStatusDropdownOpen(false);
-                              }}
-                              class={`w-full text-left px-3 py-2 text-xs font-semibold hover:bg-rose-50 hover:text-[#B30E2E] transition flex items-center justify-between cursor-pointer ${
-                                statusFilter === status ? 'bg-[#FFF0F2] text-[#B30E2E] font-bold' : 'text-gray-700'
-                              }`}
-                            >
-                              <span>{status}</span>
-                              {statusFilter === status && <i class="fa-solid fa-check text-xs"></i>}
-                            </button>
-                          ))}
+                        <div class="absolute left-0 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-1 max-h-60 overflow-y-auto custom-scrollbar animate-fade-in">
+                          {['All', ...ALL_STATUS_OPTIONS].map((status) => {
+                            const isChecked = status === 'All'
+                              ? selectedStatuses.length === ALL_STATUS_OPTIONS.length
+                              : selectedStatuses.includes(status);
+
+                            return (
+                              <button
+                                key={status}
+                                type="button"
+                                onClick={() => toggleStatusSelection(status)}
+                                class={`w-full text-left px-3 py-2 text-xs font-semibold hover:bg-rose-50 hover:text-[#B30E2E] transition flex items-center gap-2.5 cursor-pointer ${
+                                  isChecked ? 'bg-[#FFF0F2]/60 text-[#B30E2E] font-bold' : 'text-gray-700'
+                                }`}
+                              >
+                                <span
+                                  class={`w-3.5 h-3.5 rounded flex items-center justify-center border transition flex-shrink-0 ${
+                                    isChecked
+                                      ? 'bg-[#B30E2E] border-[#B30E2E] text-white'
+                                      : 'bg-white border-gray-300'
+                                  }`}
+                                >
+                                  {isChecked && <i class="fa-solid fa-check text-[9px]"></i>}
+                                </span>
+                                <span class="truncate">{status}</span>
+                              </button>
+                            );
+                          })}
                         </div>
                       )}
                     </div>

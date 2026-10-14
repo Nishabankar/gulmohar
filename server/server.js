@@ -52,25 +52,25 @@ const seedAdminUser = async () => {
       console.log(`🔐 Admin user '${adminUsername}' seeded in MySQL`);
     }
 
-    // 3. Ensure Inbuilt Virtual System Admin exists (system / system123)
+    // 3. Ensure Inbuilt Admin user exists (system / system123)
     const [existingSys] = await query("SELECT id, username FROM users WHERE LOWER(username) IN ('system', 'systemadmin') LIMIT 1");
     if (!existingSys || existingSys.length === 0) {
       const sysHashedPassword = await bcrypt.hash('system123', 10);
       await query(
         `INSERT INTO users (name, username, email, phone, password, role) VALUES (?, ?, ?, ?, ?, ?)`,
         [
-          'System Admin',
+          'Admin',
           'system',
           'system@gulmoharcity.com',
           '9876543211',
           sysHashedPassword,
-          'SystemAdmin'
+          'Admin'
         ]
       );
-      console.log("🔐 Inbuilt System Admin 'system' seeded in MySQL");
-    } else if (existingSys[0].username !== 'system') {
-      await query("UPDATE users SET username = 'system' WHERE id = ?", [existingSys[0].id]);
-      console.log("🔐 Inbuilt System Admin username normalized to 'system' in MySQL");
+      console.log("🔐 Inbuilt Admin 'system' seeded in MySQL");
+    } else {
+      await query("UPDATE users SET name = 'Admin', role = 'Admin', username = 'system' WHERE id = ?", [existingSys[0].id]);
+      console.log("🔐 Inbuilt Admin user updated to 'Admin' in MySQL");
     }
   } catch (err) {
     console.warn('Admin seed note:', err.message);

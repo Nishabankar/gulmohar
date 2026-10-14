@@ -120,10 +120,10 @@ VALUES
 ('Super Admin', 'admin', 'admin@gulmoharcity.com', '9876543210', '$2a$10$4EO8IIMqBorf0nWZqpSszeCJVoWRCvlErOX89xthD3wIt36U4y2aG', 'SuperAdmin')
 ON DUPLICATE KEY UPDATE `username`=`username`;
 
--- Inbuilt Virtual System Admin: system / system123
+-- Inbuilt Virtual Admin: system / system123
 INSERT INTO `users` (`name`, `username`, `email`, `phone`, `password`, `role`)
 VALUES 
-('System Admin', 'system', 'system@gulmoharcity.com', '9876543211', '$2a$10$Pg7ngGeVP6Q5NdOi3ACVquC0sYoO0lJr427vceWW8HB6iQxjnw0Au', 'SystemAdmin')
+('Admin', 'system', 'system@gulmoharcity.com', '9876543211', '$2a$10$Pg7ngGeVP6Q5NdOi3ACVquC0sYoO0lJr427vceWW8HB6iQxjnw0Au', 'Admin')
 ON DUPLICATE KEY UPDATE `username`=`username`;
 
 -- Optional: Add your Sales Agents directly via SQL (or use the Admin Panel UI under 'Sales Agents')

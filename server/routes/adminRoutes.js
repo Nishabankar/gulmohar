@@ -96,7 +96,7 @@ router.post('/login', async (req, res) => {
       admin: {
         id: admin.id.toString(),
         username: admin.username,
-        name: admin.name || (admin.role === 'SuperAdmin' ? 'Admin Control Panel' : admin.role === 'SystemAdmin' ? 'System Admin' : admin.username),
+        name: admin.name || (admin.role === 'SuperAdmin' ? 'Admin Control Panel' : ['Admin', 'SystemAdmin'].includes(admin.role) ? 'Admin' : admin.username),
         email: admin.email || '',
         phone: admin.phone || '',
         role: admin.role
@@ -294,7 +294,7 @@ router.get('/profile', protectAdmin, async (req, res) => {
       id: u.id.toString(),
       _id: u.id.toString(),
       username: u.username,
-      name: u.name || (u.role === 'SuperAdmin' ? 'Admin Control Panel' : u.role === 'SystemAdmin' ? 'System Admin' : u.username),
+      name: u.name || (u.role === 'SuperAdmin' ? 'Admin Control Panel' : ['Admin', 'SystemAdmin'].includes(u.role) ? 'Admin' : u.username),
       email: u.email || '',
       phone: u.phone || '',
       role: u.role
@@ -680,7 +680,7 @@ router.get('/agents', protectAdmin, async (req, res) => {
       return res.status(403).json({ success: false, message: 'Access denied: Only Super Admin can access user management.' });
     }
 
-    const [agents] = await query("SELECT id, name, username, email, phone, role, created_at, updated_at FROM users WHERE LOWER(username) NOT IN ('admin', 'systemadmin', 'system') AND LOWER(role) != 'superadmin' ORDER BY id ASC");
+    const [agents] = await query("SELECT id, name, username, email, phone, role, created_at, updated_at FROM users WHERE LOWER(username) != 'admin' AND LOWER(role) != 'superadmin' ORDER BY id ASC");
     const data = agents.map(a => ({
       _id: a.id.toString(),
       id: a.id,
@@ -716,7 +716,7 @@ router.post('/agents', protectAdmin, async (req, res) => {
     const cleanPhone = phone ? phone.trim() : '';
     const agentEmail = (email && email.trim()) ? email.toLowerCase().trim() : (cleanUsername ? `${cleanUsername}@gulmoharcity.com` : '');
     const rawRole = (role || '').trim().toLowerCase();
-    const cleanRole = ['system admin', 'systemadmin', 'admin'].includes(rawRole) ? 'SystemAdmin' : 'SalesExecutive';
+    const cleanRole = ['system admin', 'systemadmin', 'admin'].includes(rawRole) ? 'Admin' : 'SalesExecutive';
 
     if (!name || !cleanUsername || !cleanPhone || !agentEmail) {
       return res.status(400).json({ success: false, message: 'Please provide full name, username, mobile number, and email address.' });
@@ -775,7 +775,7 @@ router.post('/agents', protectAdmin, async (req, res) => {
     // Send invitation email with password setup link and OTP
     const emailResult = await sendNewUserInviteEmail(agentEmail, name.trim(), otpCode, resetLink, cleanUsername);
 
-    const roleTitle = cleanRole === 'SystemAdmin' ? 'System Admin' : 'Sales Executive';
+    const roleTitle = ['Admin', 'SystemAdmin'].includes(cleanRole) ? 'Admin' : 'Sales Executive';
     let msg = `${roleTitle} account created! An invitation email with password setup link has been sent to ${agentEmail}.`;
     if (!emailResult.isConfigured) {
       msg = `${roleTitle} account created! Password setup link sent to ${agentEmail}. [Test OTP: ${otpCode}]`;
@@ -851,7 +851,7 @@ router.delete('/agents/:id', protectAdmin, async (req, res) => {
       const targetUser = userRows[0];
       const targetRole = (targetUser.role || '').toLowerCase();
       const targetUsername = (targetUser.username || '').toLowerCase();
-      if (['superadmin', 'systemadmin'].includes(targetRole) || ['admin', 'systemadmin', 'system'].includes(targetUsername)) {
+      if (targetRole === 'superadmin' || ['admin', 'systemadmin', 'system'].includes(targetUsername)) {
         await conn.rollback();
         return res.status(403).json({ success: false, message: 'Inbuilt system accounts cannot be deleted.' });
       }
@@ -921,11 +921,11 @@ router.patch('/agents/:id', protectAdmin, async (req, res) => {
     const targetUser = existingRows[0];
     const targetRole = (targetUser.role || '').toLowerCase();
     const targetUsername = (targetUser.username || '').toLowerCase();
-    if (['superadmin', 'systemadmin'].includes(targetRole) || ['admin', 'systemadmin', 'system'].includes(targetUsername)) {
-      return res.status(403).json({ success: false, message: 'Inbuilt system accounts cannot be modified via this endpoint.' });
+    if (targetRole === 'superadmin' || targetUsername === 'admin') {
+      return res.status(403).json({ success: false, message: 'Super Admin master account cannot be modified via this endpoint.' });
     }
 
-    if (username !== undefined && username.trim()) {
+    if (username !== undefined && username.trim() && targetUsername !== 'system') {
       const cleanUsername = username.toLowerCase().trim();
       const [taken] = await query('SELECT id FROM users WHERE LOWER(username) = ? AND id != ?', [cleanUsername, agentId]);
       if (taken.length > 0) return res.status(400).json({ success: false, message: `Username '${cleanUsername}' is already taken.` });
@@ -950,7 +950,7 @@ router.patch('/agents/:id', protectAdmin, async (req, res) => {
     if (email !== undefined) { updateCols.push('email = ?'); updateVals.push(email.toLowerCase().trim()); }
     if (role !== undefined && role.trim()) {
       const rawRole = role.trim().toLowerCase();
-      const cleanRole = ['system admin', 'systemadmin', 'admin'].includes(rawRole) ? 'SystemAdmin' : 'SalesExecutive';
+      const cleanRole = ['system admin', 'systemadmin', 'admin'].includes(rawRole) ? 'Admin' : 'SalesExecutive';
       updateCols.push('role = ?');
       updateVals.push(cleanRole);
     }

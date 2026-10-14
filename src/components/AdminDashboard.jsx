@@ -71,6 +71,7 @@ const DEFAULT_COLUMNS = [
   { id: 'followupDate', label: 'Followup Date', visible: true },
   { id: 'plotsCount', label: 'No. of Guntha', visible: true },
   { id: 'assignedAgent', label: 'Assigned Agent', visible: true },
+  { id: 'createdBy', label: 'Created By', visible: true },
   { id: 'notes', label: 'Notes', visible: true },
   { id: 'actions', label: 'Actions', visible: true }
 ];
@@ -148,8 +149,13 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
   const [followupDateFilter, setFollowupDateFilter] = useState(() => savedNavState.followupDateFilter || 'All'); // 'All' | 'Today' | 'Tomorrow' | 'ThisWeek'
   const [isAgentDropdownOpen, setIsAgentDropdownOpen] = useState(false);
 
-  // Leads Table Column Sorting State & Handler
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  // Leads Table Column Sorting State & Handler (Persisted across refreshes)
+  const [sortConfig, setSortConfig] = useState(() => {
+    if (savedNavState.sortConfig && typeof savedNavState.sortConfig === 'object') {
+      return savedNavState.sortConfig;
+    }
+    return { key: null, direction: 'asc' };
+  });
 
   const handleSort = (colId) => {
     setSortConfig(prev => {
@@ -348,29 +354,54 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     (a.id && (a.id === rawUser.id || a.id === rawUser._id))
   );
 
-  const isAdmin = !rawUser.role || rawUser.role === 'Admin' || rawUser.role === 'SuperAdmin' || (rawUser.username && rawUser.username.toLowerCase() === 'admin');
+  const rawRole = (rawUser.role || '').trim();
+  const isSuperAdmin = rawRole.toLowerCase() === 'superadmin' || (!rawUser.role && rawUser.username && rawUser.username.toLowerCase() === 'admin');
+  const isSystemAdmin = rawRole.toLowerCase() === 'systemadmin' || (rawUser.username && ['systemadmin', 'system'].includes(rawUser.username.toLowerCase()));
+  const isAdmin = isSuperAdmin || isSystemAdmin || rawRole.toLowerCase() === 'admin';
+  const isAgent = !isAdmin;
   
   const currentUser = {
     ...rawUser,
-    role: isAdmin ? 'Admin' : 'Agent',
-    name: isAdmin ? 'Admin' : (rawUser.name && rawUser.name !== 'Admin Control Panel' ? rawUser.name : 'Sales Executive'),
+    role: isSuperAdmin ? 'SuperAdmin' : isSystemAdmin ? 'SystemAdmin' : (rawRole.toLowerCase() === 'admin' ? 'Admin' : 'SalesExecutive'),
+    name: isSuperAdmin ? (rawUser.name || 'Super Admin') : isSystemAdmin ? (rawUser.name || 'System Admin') : (rawRole.toLowerCase() === 'admin' ? (rawUser.name || 'Admin') : (rawUser.name && rawUser.name !== 'Admin Control Panel' ? rawUser.name : 'Sales Executive')),
     phone: rawUser.phone || (matchedAgentObj ? matchedAgentObj.phone : ''),
     email: rawUser.email || (matchedAgentObj ? matchedAgentObj.email : ''),
     password: rawUser.password || (matchedAgentObj ? matchedAgentObj.password : ''),
     profileImage: !isAdmin ? (rawUser.profileImage || getAgentProfilePhoto(rawUser)) : ''
   };
 
-  // State for Agents List (Default Agents + Admin Created Agents)
+  // State for Agents List (Default Agents + Admin Created Users, excluding inbuilt accounts 'admin' & 'system')
   const [registeredAgents, setRegisteredAgents] = useState(() => {
-    return JSON.parse(localStorage.getItem('registeredAgents') || '[]');
+    const raw = JSON.parse(localStorage.getItem('registeredAgents') || '[]');
+    return raw.filter(a => {
+      const r = (a.role || '').toLowerCase();
+      const u = (a.username || '').toLowerCase();
+      return r !== 'superadmin' && !['admin', 'systemadmin', 'system'].includes(u);
+    });
   });
 
-  // Only Agents can be assigned leads (admins/managers never get leads)
-  const allAgents = registeredAgents.filter(a => (a.role || 'Agent') === 'Agent');
+  // Only Sales Executives can be assigned leads (SuperAdmin and SystemAdmin never get leads)
+  const allAgents = registeredAgents.filter(a => {
+    const r = (a.role || 'SalesExecutive').toLowerCase();
+    const u = (a.username || '').toLowerCase();
+    return !['admin', 'systemadmin', 'system'].includes(u) && !['systemadmin', 'admin', 'system admin', 'superadmin'].includes(r);
+  });
 
-  // State for Navigation Tabs & Registered Users Directory
-  const [activeTab, setActiveTab] = useState(() => savedNavState.activeTab || 'enquiries'); // 'enquiries' | 'users'
+  // State for Navigation Tabs & Registered Users Directory (Only SuperAdmin can access 'users' tab)
+  const [activeTab, setActiveTab] = useState(() => {
+    if (!isSuperAdmin && savedNavState.activeTab === 'users') {
+      return 'enquiries';
+    }
+    return savedNavState.activeTab || 'enquiries';
+  }); // 'enquiries' | 'users'
   const [activeView, setActiveView] = useState(() => savedNavState.activeView || 'dashboard'); // 'dashboard' | 'leads'
+
+  // Safety guard: prevent non-superadmin from staying in 'users' tab
+  useEffect(() => {
+    if (!isSuperAdmin && activeTab === 'users') {
+      setActiveTab('enquiries');
+    }
+  }, [isSuperAdmin, activeTab]);
 
   useEffect(() => {
     try {
@@ -382,10 +413,11 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
         isStatusDropdownMode,
         agentFilter,
         visitDateFilter,
-        followupDateFilter
+        followupDateFilter,
+        sortConfig
       }));
     } catch (e) {}
-  }, [activeTab, activeView, statusFilter, selectedStatuses, isStatusDropdownMode, agentFilter, visitDateFilter, followupDateFilter]);
+  }, [activeTab, activeView, statusFilter, selectedStatuses, isStatusDropdownMode, agentFilter, visitDateFilter, followupDateFilter, sortConfig]);
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [editingUser, setEditingUser] = useState(null);
   const [savingUserEdit, setSavingUserEdit] = useState(false);
@@ -402,16 +434,19 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     visitDate: '',
     followupDate: '',
     priority: 'Hot',
-    notes: ''
+    notes: '',
+    assignedAgentName: 'auto'
   });
   const [submittingLead, setSubmittingLead] = useState(false);
   const [createLeadMsg, setCreateLeadMsg] = useState('');
 
-  // State for Create Agent Modal (Admin Only)
+  // State for Create User Modal (SuperAdmin Only)
   const [showCreateAgentModal, setShowCreateAgentModal] = useState(false);
   const [showAgentsListModal, setShowAgentsListModal] = useState(false);
-  const [newAgentData, setNewAgentData] = useState({ name: '', phone: '', email: '', username: '' });
+  const [newAgentData, setNewAgentData] = useState({ name: '', phone: '', email: '', username: '', role: 'Sales Executive' });
   const [agentCreateMsg, setAgentCreateMsg] = useState('');
+  const [isCreateRoleOpen, setIsCreateRoleOpen] = useState(false);
+  const [isEditRoleOpen, setIsEditRoleOpen] = useState(false);
 
   // State for Full Lead Edit Modal & Floating Note Popover
   const [editingEnquiry, setEditingEnquiry] = useState(null);
@@ -842,15 +877,20 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       });
       const data = await res.json();
       if (data.success && Array.isArray(data.data)) {
-        const mongoAgents = data.data.map(a => ({
-          id: a._id || a.id,
-          name: a.name || a.username,
-          phone: a.phone || '',
-          email: a.email || '',
-          username: a.username,
-          password: a.password || '••••••••',
-          role: a.role || 'Agent'
-        }));
+        const mongoAgents = data.data
+          .filter(a => {
+            const r = (a.role || '').toLowerCase();
+            const u = (a.username || '').toLowerCase();
+            return !['admin', 'systemadmin', 'system'].includes(u) && r !== 'superadmin';
+          })
+          .map(a => ({
+            id: a._id || a.id,
+            name: a.name || a.username,
+            phone: a.phone || '',
+            email: a.email || '',
+            username: a.username,
+            role: a.role || 'SalesExecutive'
+          }));
         // MySQL is the only source of agents (no browser-only agents that the server can't assign leads to)
         const unique = Array.from(new Map(mongoAgents.map(item => [item.username, item])).values());
         setRegisteredAgents(unique);
@@ -913,21 +953,37 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     setSubmittingLead(true);
     setCreateLeadMsg('');
 
-    // Dynamic Round-Robin Agent Auto-Assignment
-    let registeredAgentsList = JSON.parse(localStorage.getItem('registeredAgents') || '[]').filter(a => (a.role || 'Agent') === 'Agent');
     let assignedAgentId = null;
     let assignedAgentName = '';
+    let creatorName = 'System';
 
-    if (registeredAgentsList.length > 0) {
-      const lastAssignedIndex = parseInt(localStorage.getItem('lastAssignedAgentIndex') || '-1', 10);
-      const nextIndex = (lastAssignedIndex + 1) % registeredAgentsList.length;
-      const assignedAgent = registeredAgentsList[nextIndex];
-      localStorage.setItem('lastAssignedAgentIndex', nextIndex.toString());
-      assignedAgentId = assignedAgent.id || assignedAgent._id;
-      assignedAgentName = assignedAgent.name;
+    if (isAgent) {
+      // 1. Sales Executive creating lead: auto-assign directly to herself!
+      assignedAgentId = currentUser.id || currentUser._id;
+      assignedAgentName = currentUser.name || currentUser.username;
+      creatorName = currentUser.name || currentUser.username;
+    } else {
+      // 2. Admin (SuperAdmin / SystemAdmin) creating lead:
+      creatorName = 'System';
+      const chosenAgentKey = (newLeadFormData.assignedAgentName || 'auto').trim();
+      if (chosenAgentKey && chosenAgentKey !== 'auto') {
+        const found = allAgents.find(a => (a.name && a.name.toLowerCase() === chosenAgentKey.toLowerCase()) || (a.username && a.username.toLowerCase() === chosenAgentKey.toLowerCase()) || (a.id && String(a.id) === chosenAgentKey));
+        if (found) {
+          assignedAgentId = found.id || found._id;
+          assignedAgentName = found.name || found.username;
+        }
+      }
+
+      // If Auto Alternate (Round-Robin) selected by Admin:
+      if (!assignedAgentName && allAgents.length > 0) {
+        const lastAssignedIndex = parseInt(localStorage.getItem('lastAssignedAgentIndex') || '-1', 10);
+        const nextIndex = (lastAssignedIndex + 1) % allAgents.length;
+        const assignedAgent = allAgents[nextIndex];
+        localStorage.setItem('lastAssignedAgentIndex', nextIndex.toString());
+        assignedAgentId = assignedAgent.id || assignedAgent._id;
+        assignedAgentName = assignedAgent.name || assignedAgent.username;
+      }
     }
-
-    const creatorName = currentUser.name || (isAdmin ? 'Admin' : 'Sales Executive');
 
     const payload = {
       firstName: newLeadFormData.firstName.trim(),
@@ -990,7 +1046,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       setTimeout(() => {
         setShowCreateLeadModal(false);
         setCreateLeadMsg('');
-        setNewLeadFormData({ firstName: '', lastName: '', phone: '', email: '', plotsCount: '1 Guntha', visitDate: '', followupDate: '', priority: 'Hot', notes: '' });
+        setNewLeadFormData({ firstName: '', lastName: '', phone: '', email: '', plotsCount: '1 Guntha', visitDate: '', followupDate: '', priority: 'Hot', notes: '', assignedAgentName: 'auto' });
       }, 1000);
     }
   };
@@ -1043,12 +1099,13 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
           name: newAgentData.name.trim(),
           phone: newAgentData.phone.trim(),
           email: newAgentData.email.trim(),
-          username: newAgentData.username.trim().toLowerCase()
+          username: newAgentData.username.trim().toLowerCase(),
+          role: ['system admin', 'systemadmin', 'admin'].includes((newAgentData.role || '').toLowerCase()) ? 'SystemAdmin' : 'SalesExecutive'
         })
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.success || !data.data) {
-        setAgentCreateMsg(`Error: ${data.message || `Could not save agent (HTTP ${res.status})`}`);
+        setAgentCreateMsg(`Error: ${data.message || `Could not save user (HTTP ${res.status})`}`);
         return;
       }
       const dbAgent = {
@@ -1057,14 +1114,14 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
         phone: data.data.phone || newAgentData.phone.trim(),
         email: data.data.email || newAgentData.email.trim(),
         username: data.data.username,
-        password: '••••••••',
-        role: 'Agent'
+        role: data.data.role || (['system admin', 'systemadmin', 'admin'].includes((newAgentData.role || '').toLowerCase()) ? 'SystemAdmin' : 'SalesExecutive')
       };
       const synced = [...registeredAgents.filter(a => a.username !== dbAgent.username), dbAgent];
       setRegisteredAgents(synced);
       localStorage.setItem('registeredAgents', JSON.stringify(synced));
-      setAgentCreateMsg(data.message || 'User created! Password setup link has been sent to user email.');
-      setNewAgentData({ name: '', phone: '', email: '', username: '' });
+      const roleDisplayName = ['system admin', 'systemadmin', 'admin'].includes((dbAgent.role || '').toLowerCase()) ? 'System Admin' : 'Sales Executive';
+      setAgentCreateMsg(data.message || `${roleDisplayName} created! Password setup link has been sent to user email.`);
+      setNewAgentData({ name: '', phone: '', email: '', username: '', role: 'Sales Executive' });
       setTimeout(() => {
         setShowCreateAgentModal(false);
         setAgentCreateMsg('');
@@ -1075,16 +1132,20 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     }
   };
 
-  // Handler: Open Delete Agent Modal
+  // Handler: Open Delete User Modal (SuperAdmin Only)
   const openDeleteAgentConfirmation = (agent) => {
     if (!agent) return;
+    if (!isSuperAdmin) {
+      alert('Only Super Admin can delete user accounts.');
+      return;
+    }
     const agentIdOrUsername = agent.id || agent.username;
     setDeleteConfirmation({
       isOpen: true,
       type: 'agent',
       targetId: agentIdOrUsername,
-      title: `Agent Account: ${agent.name || agent.username}`,
-      subtitle: `Username: @${agent.username || 'agent'} • Role: ${agent.role || 'Agent'}`,
+      title: `User Account: ${agent.name || agent.username}`,
+      subtitle: `Username: @${agent.username || 'user'} • Role: ${agent.role || 'Agent'}`,
       isDeleting: false
     });
   };
@@ -1193,7 +1254,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
           phone: cleanedEditingUser.phone,
           email: cleanedEditingUser.email,
           username: cleanedEditingUser.username,
-          password: editingUser.password
+          role: ['system admin', 'systemadmin', 'admin'].includes((editingUser.role || '').toLowerCase()) ? 'SystemAdmin' : 'SalesExecutive'
         })
       });
       const data = await res.json().catch(() => ({}));
@@ -1203,7 +1264,12 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
         return;
       }
 
-      const dbAgent = { ...cleanedEditingUser, ...data.data, id: data.data.id, password: '••••••••' };
+      const dbAgent = {
+        ...cleanedEditingUser,
+        ...data.data,
+        id: data.data.id,
+        role: data.data.role || editingUser.role || 'SalesExecutive'
+      };
       const updatedAgents = registeredAgents.map(a =>
         (a.id === targetEditId || a.username === editingUser.username) ? dbAgent : a
       );
@@ -1879,7 +1945,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       return;
     }
 
-    const headers = ['Lead ID', 'Full Name', 'Mobile No', 'Email Address', 'Number of Guntha', 'Selected Plot', 'Submitted Date', 'Status', 'Priority', 'Assigned Agent', 'Notes'];
+    const headers = ['Lead ID', 'Full Name', 'Mobile No', 'Email Address', 'Number of Guntha', 'Selected Plot', 'Submitted Date', 'Status', 'Priority', 'Assigned Agent', 'Created By', 'Notes'];
     const rows = filteredEnquiries.map((item, idx) => [
       `"${getLeadDisplayId(item, idx, enquiries)}"`,
       `"${item.firstName || ''} ${item.lastName || ''}"`,
@@ -1891,6 +1957,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       `"${item.status || 'New'}"`,
       `"${(item.priority === 'Cold' || item.priority === 'Low') ? 'Cold' : 'Hot'}"`,
       `"${item.assignedAgentName || 'Rahul Patil'}"`,
+      `"${item.createdBy || 'System'}"`,
       `"${(item.notes || '').replace(/"/g, '""')}"`
     ]);
 
@@ -2039,7 +2106,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     const checkSingleStatus = (st) => {
       if (st === 'All') return true;
       if (st === 'New') return isNewLead(item);
-      if (st === 'Miss') return isMissedLead(item);
+      if (st === 'Miss' || st === 'Missed') return isMissedLead(item);
       if (st === 'Lost') return item.status === 'Lost' || item.status === 'Not Interested';
       if (st === 'Won') return item.status === 'Won' || item.status === 'Closed';
       return item.status === st;
@@ -2188,6 +2255,12 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
           comp = agentA.localeCompare(agentB) * sortMultiplier;
           break;
         }
+        case 'createdBy': {
+          const cA = (a.createdBy || 'System').trim().toLowerCase();
+          const cB = (b.createdBy || 'System').trim().toLowerCase();
+          comp = cA.localeCompare(cB) * sortMultiplier;
+          break;
+        }
         default:
           break;
       }
@@ -2264,15 +2337,19 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     }
   };
 
-  // Filtered registered users by search query
+  // Filtered registered users by search query (exclude inbuilt accounts like SuperAdmin & SystemAdmin)
   const filteredUsers = (registeredAgents || []).filter(agent => {
     if (!agent) return false;
+    const r = (agent.role || '').toLowerCase();
+    const u = (agent.username || '').toLowerCase();
+    if (['admin', 'systemadmin', 'system'].includes(u) || r === 'superadmin') return false;
     const query = (userSearchQuery || '').toLowerCase();
     return (
       (agent.name && agent.name.toLowerCase().includes(query)) ||
       (agent.username && agent.username.toLowerCase().includes(query)) ||
       (agent.phone && agent.phone.toLowerCase().includes(query)) ||
-      (agent.email && agent.email.toLowerCase().includes(query))
+      (agent.email && agent.email.toLowerCase().includes(query)) ||
+      (agent.role && agent.role.toLowerCase().includes(query))
     );
   });
 
@@ -2379,8 +2456,8 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
               )}
             </button>
 
-            {/* Registered Users Directory Button (Admin Only) */}
-            {isAdmin && (
+            {/* Registered Users Directory Button (SuperAdmin Only) */}
+            {isSuperAdmin && (
               <button 
                 onClick={() => setActiveTab('users')}
                 class={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition shadow-md border cursor-pointer relative ${
@@ -2437,8 +2514,32 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                         )}
                       </div>
                       <div class="min-w-0 flex-1">
-                        <p class="text-xs font-bold text-gray-900 truncate">{isAdmin ? 'Admin' : currentUser.name}</p>
-                        <p class="text-[10px] text-gray-500 font-medium capitalize truncate">{isAdmin ? 'Super Admin' : 'Sales Executive'}</p>
+                        <p class="text-xs font-bold text-gray-900 truncate">
+                          {isSuperAdmin ? (currentUser.name || 'Super Admin') : isSystemAdmin ? (currentUser.name || 'System Admin') : (rawRole.toLowerCase() === 'admin' ? (currentUser.name || 'Admin') : currentUser.name)}
+                        </p>
+                        <div class="mt-0.5">
+                          {isSuperAdmin ? (
+                            <span class="inline-flex items-center gap-1 text-[9.5px] font-extrabold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                              <i class="fa-solid fa-crown text-[8px] text-amber-500"></i>
+                              Super Admin
+                            </span>
+                          ) : isSystemAdmin ? (
+                            <span class="inline-flex items-center gap-1 text-[9.5px] font-extrabold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
+                              <i class="fa-solid fa-server text-[8px] text-blue-500"></i>
+                              System Admin
+                            </span>
+                          ) : rawRole.toLowerCase() === 'admin' ? (
+                            <span class="inline-flex items-center gap-1 text-[9.5px] font-extrabold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200">
+                              <i class="fa-solid fa-shield-halved text-[8px] text-indigo-500"></i>
+                              Admin
+                            </span>
+                          ) : (
+                            <span class="inline-flex items-center gap-1 text-[9.5px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                              <i class="fa-solid fa-user text-[8px] text-emerald-500"></i>
+                              Sales Executive
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -2483,7 +2584,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       {/* Main Dashboard Container */}
       <main class="w-full px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5 flex-1 flex flex-col min-h-0 overflow-hidden space-y-2 sm:space-y-3">
         
-        {activeTab === 'enquiries' || !isAdmin ? (
+        {activeTab === 'enquiries' || !isSuperAdmin ? (
           <>
             {/* Dashboard View Tab: 3 Distinct Sections (Aligned to Red Line Level) */}
             {activeView === 'dashboard' && (
@@ -2516,14 +2617,14 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                       </div>
                     </div>
 
-                    {/* Card 2: Miss Followup */}
+                    {/* Card 2: Missed Followup */}
                     <div 
-                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Miss'); setVisitDateFilter('All'); setFollowupDateFilter('All'); setIsStatusDropdownMode(false); }}
+                      onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Missed'); setVisitDateFilter('All'); setFollowupDateFilter('All'); setIsStatusDropdownMode(false); }}
                       class="bg-white rounded-lg sm:rounded-xl p-3.5 sm:p-4 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-purple-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
-                      title="Click to view Miss Followup leads (Followup not scheduled)"
+                      title="Click to view Missed Followup leads (Followup not scheduled)"
                     >
                       <div class="min-w-0 flex-1 pr-1 sm:pr-2">
-                        <p class="text-[9px] sm:text-[10px] font-bold text-purple-600 uppercase tracking-wider truncate">Miss Followup</p>
+                        <p class="text-[9px] sm:text-[10px] font-bold text-purple-600 uppercase tracking-wider truncate">Missed Followup</p>
                         <h3 class="text-base sm:text-xl font-bold text-gray-900 mt-0.5">{missedLeadsCount}</h3>
                         <p class="hidden sm:block text-[9.5px] text-gray-500 mt-0.5 truncate">Followup not set</p>
                       </div>
@@ -2996,7 +3097,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                     } else if (followupDateFilter !== 'All') {
                       filterLabel = followupDateFilter === 'Today' ? 'Followup: Today' : followupDateFilter === 'Tomorrow' ? 'Followup: Tomorrow' : followupDateFilter === 'ThisWeek' ? 'Followup: This Week' : 'Followup: Scheduled';
                     } else if (statusFilter !== 'All') {
-                      filterLabel = `Status: ${statusFilter === 'Miss' ? 'Miss Followup' : statusFilter}`;
+                      filterLabel = `Status: ${['Miss', 'Missed'].includes(statusFilter) ? 'Missed Followup' : statusFilter}`;
                     }
 
                     if (!filterLabel) return null;
@@ -3048,7 +3149,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                           </button>
 
                           {/* Dynamic Registered Agent Options */}
-                          {registeredAgents.map((agent) => {
+                          {allAgents.map((agent) => {
                             const agentName = agent.name || agent.username;
                             const isSelected = agentFilter.toLowerCase().trim() === agentName.toLowerCase().trim();
                             return (
@@ -3340,6 +3441,20 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 >
                                   <div class="flex items-center gap-1.5">
                                     <span>Assigned Agent</span>
+                                    {renderSortIndicator()}
+                                  </div>
+                                </th>
+                              );
+                            case 'createdBy':
+                              return (
+                                <th 
+                                  key="createdBy" 
+                                  onClick={() => handleSort('createdBy')}
+                                  class={`py-2.5 px-2.5 whitespace-nowrap min-w-[130px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                  title={getSortTitle('Created By')}
+                                >
+                                  <div class="flex items-center gap-1.5">
+                                    <span>Created By</span>
                                     {renderSortIndicator()}
                                   </div>
                                 </th>
@@ -3696,6 +3811,25 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                     </td>
                                   );
                                 }
+                                case 'createdBy': {
+                                  const creator = item.createdBy || 'System';
+                                  const isSystemCreated = creator.toLowerCase() === 'system' || ['super admin', 'system admin', 'admin', 'client'].includes(creator.toLowerCase());
+                                  return (
+                                    <td key="createdBy" class="py-2.5 px-2.5 whitespace-nowrap min-w-[130px]">
+                                      {isSystemCreated ? (
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-700 border border-gray-200 shadow-2xs">
+                                          <i class="fa-solid fa-server text-[8.5px] text-gray-500"></i>
+                                          <span>System</span>
+                                        </span>
+                                      ) : (
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-2xs">
+                                          <i class="fa-solid fa-user-pen text-[8.5px] text-indigo-500"></i>
+                                          <span>{creator}</span>
+                                        </span>
+                                      )}
+                                    </td>
+                                  );
+                                }
                                 case 'notes':
                                   return (
                                     <td key="notes" class="py-2.5 px-2 text-center whitespace-nowrap w-12 min-w-[50px]">
@@ -3798,8 +3932,8 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                   )}
                 </div>
 
-                {/* Right Side: Create User Icon Button */}
-                {isAdmin && (
+                {/* Right Side: Create User Icon Button (Super Admin Only) */}
+                {isSuperAdmin && (
                   <div class="flex items-center gap-2 flex-shrink-0">
                     <button 
                       onClick={() => setShowCreateAgentModal(true)}
@@ -3821,11 +3955,12 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                 </div>
               ) : (
                 <div class="overflow-x-auto overflow-y-auto overscroll-contain flex-1 min-h-0 custom-scrollbar w-full rounded-b-2xl">
-                  <table class="w-full min-w-[700px] text-left border-collapse">
+                  <table class="w-full min-w-[750px] text-left border-collapse">
                       <thead class="sticky top-0 z-10 bg-gray-100 shadow-2xs">
                         <tr class="bg-gray-100 border-b border-gray-200 text-[10.5px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">
                           <th class="py-2.5 px-3 whitespace-nowrap">User ID</th>
                           <th class="py-2.5 px-3 whitespace-nowrap">Full Name</th>
+                          <th class="py-2.5 px-3 whitespace-nowrap">Role</th>
                           <th class="py-2.5 px-3 whitespace-nowrap">Username</th>
                           <th class="py-2.5 px-3 whitespace-nowrap">Mobile No</th>
                           <th class="py-2.5 px-3 whitespace-nowrap">Email Address</th>
@@ -3889,6 +4024,21 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 </div>
                               </td>
 
+                              {/* Role */}
+                              <td class="py-2.5 px-3 whitespace-nowrap">
+                                {['system admin', 'systemadmin', 'admin'].includes((agent.role || '').toLowerCase()) ? (
+                                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                                    <i class="fa-solid fa-server text-[9px]"></i>
+                                    System Admin
+                                  </span>
+                                ) : (
+                                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                    <i class="fa-solid fa-user-tie text-[9px]"></i>
+                                    Sales Executive
+                                  </span>
+                                )}
+                              </td>
+
                               {/* Username */}
                               <td class="py-2.5 px-3 font-semibold text-gray-800 whitespace-nowrap">
                                 <span class="bg-gray-100 border border-gray-200 px-2 py-0.5 rounded-md text-[11px] font-mono text-gray-800">
@@ -3922,19 +4072,23 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
 
                               {/* Assigned Leads */}
                               <td class="py-2.5 px-3 whitespace-nowrap">
-                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                                  <i class="fa-solid fa-list-check text-[9px]"></i>
-                                  <span>{assignedCount} Leads</span>
-                                </span>
+                                {['system admin', 'systemadmin', 'admin'].includes((agent.role || '').toLowerCase()) ? (
+                                  <span class="text-gray-400 italic text-[11px]">—</span>
+                                ) : (
+                                  <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                    <i class="fa-solid fa-list-check text-[9px]"></i>
+                                    <span>{assignedCount} Leads</span>
+                                  </span>
+                                )}
                               </td>
 
                               {/* Actions */}
                               <td class="py-2.5 px-3 text-center whitespace-nowrap">
                                 <div class="flex items-center justify-center gap-1.5">
                                   <button
-                                    onClick={() => { setEditingUser({ ...agent, password: agent.password || '••••••••' }); setUserEditSuccessMsg(''); }}
+                                    onClick={() => { setEditingUser({ ...agent }); setUserEditSuccessMsg(''); }}
                                     class="w-7 h-7 rounded-lg bg-indigo-100 hover:bg-indigo-200 text-indigo-700 flex items-center justify-center transition cursor-pointer"
-                                    title="Edit User Details"
+                                    title="Edit User"
                                   >
                                     <i class="fa-solid fa-pen-to-square text-xs"></i>
                                   </button>
@@ -3990,8 +4144,8 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
         </div>
       </footer>
 
-      {/* Create New Agent Modal (Admin Only) */}
-      {showCreateAgentModal && (
+      {/* Create New User Modal (SuperAdmin Only) */}
+      {showCreateAgentModal && isSuperAdmin && (
         <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-fade-in">
           <div class="bg-white rounded-3xl shadow-2xl border border-gray-100 max-w-md w-full max-h-[90vh] overflow-hidden flex flex-col relative">
             
@@ -4084,6 +4238,90 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                 </div>
               </div>
 
+              {/* 5. Role Selection */}
+              <div>
+                <label class="block text-xs font-bold text-gray-700 mb-1">Role *</label>
+                <div class="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsCreateRoleOpen(!isCreateRoleOpen)}
+                    class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 hover:border-[#B30E2E] bg-white flex items-center justify-between text-xs font-bold text-gray-800 shadow-xs transition cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#B30E2E]/20 focus:border-[#B30E2E]"
+                  >
+                    <div class="flex items-center gap-2.5">
+                      {['system admin', 'systemadmin', 'admin'].includes((newAgentData.role || '').toLowerCase()) ? (
+                        <>
+                          <span class="w-6 h-6 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center text-xs">
+                            <i class="fa-solid fa-server"></i>
+                          </span>
+                          <span class="text-gray-900 font-bold">System Admin</span>
+                        </>
+                      ) : (
+                        <>
+                          <span class="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs">
+                            <i class="fa-solid fa-user-tie"></i>
+                          </span>
+                          <span class="text-gray-900 font-bold">Sales Executive</span>
+                        </>
+                      )}
+                    </div>
+                    <i class={`fa-solid fa-chevron-down text-xs text-gray-400 transition-transform duration-200 ${isCreateRoleOpen ? 'rotate-180 text-[#B30E2E]' : ''}`}></i>
+                  </button>
+
+                  {isCreateRoleOpen && (
+                    <>
+                      <div class="fixed inset-0 z-10" onClick={() => setIsCreateRoleOpen(false)}></div>
+                      <div class="absolute z-20 bottom-full left-0 right-0 mb-1.5 bg-white rounded-2xl border border-gray-200 shadow-xl overflow-hidden p-1.5 space-y-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNewAgentData({ ...newAgentData, role: 'Sales Executive' });
+                            setIsCreateRoleOpen(false);
+                          }}
+                          class={`w-full px-3 py-2.5 rounded-xl text-left text-xs font-semibold flex items-center justify-between transition cursor-pointer ${
+                            !['system admin', 'systemadmin', 'admin'].includes((newAgentData.role || '').toLowerCase())
+                              ? 'bg-emerald-50 text-emerald-900 font-bold'
+                              : 'text-gray-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          <div class="flex items-center gap-2.5">
+                            <span class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs">
+                              <i class="fa-solid fa-user-tie"></i>
+                            </span>
+                            <span class="font-bold text-gray-900">Sales Executive</span>
+                          </div>
+                          {!['system admin', 'systemadmin', 'admin'].includes((newAgentData.role || '').toLowerCase()) && (
+                            <i class="fa-solid fa-circle-check text-emerald-600 text-sm"></i>
+                          )}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNewAgentData({ ...newAgentData, role: 'System Admin' });
+                            setIsCreateRoleOpen(false);
+                          }}
+                          class={`w-full px-3 py-2.5 rounded-xl text-left text-xs font-semibold flex items-center justify-between transition cursor-pointer ${
+                            ['system admin', 'systemadmin', 'admin'].includes((newAgentData.role || '').toLowerCase())
+                              ? 'bg-blue-50 text-blue-900 font-bold'
+                              : 'text-gray-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          <div class="flex items-center gap-2.5">
+                            <span class="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center text-xs">
+                              <i class="fa-solid fa-server"></i>
+                            </span>
+                            <span class="font-bold text-gray-900">System Admin</span>
+                          </div>
+                          {['system admin', 'systemadmin', 'admin'].includes((newAgentData.role || '').toLowerCase()) && (
+                            <i class="fa-solid fa-circle-check text-blue-600 text-sm"></i>
+                          )}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
               <div class="pt-2 flex items-center justify-end gap-2 border-t border-gray-100">
                 <button 
                   type="button" 
@@ -4106,15 +4344,15 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
         </div>
       )}
 
-      {/* Edit User Details Modal (Admin Only) */}
-      {editingUser && isAdmin && (
+      {/* Edit User Details Modal (SuperAdmin Only) */}
+      {editingUser && isSuperAdmin && (
         <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-fade-in">
           <div class="bg-white rounded-3xl shadow-2xl border border-gray-100 max-w-md w-full overflow-hidden relative">
             
             {/* Header */}
             <div class="bg-gradient-to-r from-[#B30E2E] via-[#8A0B22] to-[#590414] p-5 text-white flex items-center justify-between">
               <div>
-                <h3 class="font-serif font-bold text-base">Edit User Details</h3>
+                <h3 class="font-serif font-bold text-base">Edit User</h3>
               </div>
               <button 
                 onClick={() => setEditingUser(null)}
@@ -4157,34 +4395,25 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                 />
               </div>
 
-              {/* 2. Username & 3. Password */}
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label class="block text-xs font-bold text-gray-700 mb-1">Username *</label>
+              {/* 2. Username */}
+              <div>
+                <label class="block text-xs font-bold text-gray-700 mb-1">Username *</label>
+                <div class="relative">
                   <input 
                     type="text" 
-                    required 
-                    autoComplete="off"
+                    readOnly
+                    tabIndex={-1}
                     value={editingUser.username || ''}
-                    onChange={(e) => setEditingUser({ ...editingUser, username: e.target.value })}
-                    placeholder="Enter username"
-                    class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
+                    placeholder="Username"
+                    class="w-full pl-3 pr-9 py-2 rounded-xl border border-gray-200 bg-gray-100 text-gray-600 text-xs font-semibold cursor-not-allowed select-none focus:outline-none"
                   />
-                </div>
-                <div>
-                  <label class="block text-xs font-bold text-gray-700 mb-1">Password</label>
-                  <input 
-                    type="password" 
-                    autoComplete="new-password"
-                    value={editingUser.password || ''}
-                    onChange={(e) => setEditingUser({ ...editingUser, password: e.target.value })}
-                    placeholder="Enter password"
-                    class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
-                  />
+                  <div class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                    <i class="fa-solid fa-lock text-xs"></i>
+                  </div>
                 </div>
               </div>
 
-              {/* 4. Mobile Number & 5. Email Address */}
+              {/* 3. Mobile Number & 4. Email Address */}
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label class="block text-xs font-bold text-gray-700 mb-1">Mobile Number *</label>
@@ -4212,6 +4441,90 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                     placeholder="Enter email address"
                     class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
                   />
+                </div>
+              </div>
+
+              {/* 5. Role Selection */}
+              <div>
+                <label class="block text-xs font-bold text-gray-700 mb-1">Role *</label>
+                <div class="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditRoleOpen(!isEditRoleOpen)}
+                    class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 hover:border-[#B30E2E] bg-white flex items-center justify-between text-xs font-bold text-gray-800 shadow-xs transition cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#B30E2E]/20 focus:border-[#B30E2E]"
+                  >
+                    <div class="flex items-center gap-2.5">
+                      {['system admin', 'systemadmin', 'admin'].includes((editingUser.role || '').toLowerCase()) ? (
+                        <>
+                          <span class="w-6 h-6 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center text-xs">
+                            <i class="fa-solid fa-server"></i>
+                          </span>
+                          <span class="text-gray-900 font-bold">System Admin</span>
+                        </>
+                      ) : (
+                        <>
+                          <span class="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs">
+                            <i class="fa-solid fa-user-tie"></i>
+                          </span>
+                          <span class="text-gray-900 font-bold">Sales Executive</span>
+                        </>
+                      )}
+                    </div>
+                    <i class={`fa-solid fa-chevron-down text-xs text-gray-400 transition-transform duration-200 ${isEditRoleOpen ? 'rotate-180 text-[#B30E2E]' : ''}`}></i>
+                  </button>
+
+                  {isEditRoleOpen && (
+                    <>
+                      <div class="fixed inset-0 z-10" onClick={() => setIsEditRoleOpen(false)}></div>
+                      <div class="absolute z-20 bottom-full left-0 right-0 mb-1.5 bg-white rounded-2xl border border-gray-200 shadow-xl overflow-hidden p-1.5 space-y-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingUser({ ...editingUser, role: 'Sales Executive' });
+                            setIsEditRoleOpen(false);
+                          }}
+                          class={`w-full px-3 py-2.5 rounded-xl text-left text-xs font-semibold flex items-center justify-between transition cursor-pointer ${
+                            !['system admin', 'systemadmin', 'admin'].includes((editingUser.role || '').toLowerCase())
+                              ? 'bg-emerald-50 text-emerald-900 font-bold'
+                              : 'text-gray-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          <div class="flex items-center gap-2.5">
+                            <span class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs">
+                              <i class="fa-solid fa-user-tie"></i>
+                            </span>
+                            <span class="font-bold text-gray-900">Sales Executive</span>
+                          </div>
+                          {!['system admin', 'systemadmin', 'admin'].includes((editingUser.role || '').toLowerCase()) && (
+                            <i class="fa-solid fa-circle-check text-emerald-600 text-sm"></i>
+                          )}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingUser({ ...editingUser, role: 'System Admin' });
+                            setIsEditRoleOpen(false);
+                          }}
+                          class={`w-full px-3 py-2.5 rounded-xl text-left text-xs font-semibold flex items-center justify-between transition cursor-pointer ${
+                            ['system admin', 'systemadmin', 'admin'].includes((editingUser.role || '').toLowerCase())
+                              ? 'bg-blue-50 text-blue-900 font-bold'
+                              : 'text-gray-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          <div class="flex items-center gap-2.5">
+                            <span class="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center text-xs">
+                              <i class="fa-solid fa-server"></i>
+                            </span>
+                            <span class="font-bold text-gray-900">System Admin</span>
+                          </div>
+                          {['system admin', 'systemadmin', 'admin'].includes((editingUser.role || '').toLowerCase()) && (
+                            <i class="fa-solid fa-circle-check text-blue-600 text-sm"></i>
+                          )}
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -4776,7 +5089,34 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                 </div>
 
 
-                {/* 4. Notes */}
+                {/* 4. Assign Sales Executive */}
+                <div>
+                  <label class="block text-xs font-bold text-gray-700 mb-1">Assign Sales Executive</label>
+                  {isAdmin ? (
+                    <select
+                      value={newLeadFormData.assignedAgentName || 'auto'}
+                      onChange={(e) => setNewLeadFormData({ ...newLeadFormData, assignedAgentName: e.target.value })}
+                      class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800 bg-white"
+                    >
+                      <option value="auto">Auto Alternate (Round-Robin)</option>
+                      {allAgents.map((agent) => (
+                        <option key={agent.id || agent.username} value={agent.name || agent.username}>
+                          {agent.name || agent.username}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <div class="px-3 py-2 rounded-xl border border-emerald-200 bg-emerald-50 text-xs font-bold text-emerald-800 flex items-center justify-between">
+                      <span class="flex items-center gap-1.5">
+                        <i class="fa-solid fa-user-check text-emerald-600"></i>
+                        <span>{currentUser.name || 'Sales Executive'} (You)</span>
+                      </span>
+                      <span class="text-[10px] text-emerald-700 uppercase font-bold tracking-wider bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-300/60">Auto-Assigned</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* 5. Notes */}
                 <div>
                   <label class="block text-xs font-bold text-gray-700 mb-1">Notes</label>
                   <textarea 

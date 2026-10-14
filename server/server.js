@@ -14,31 +14,63 @@ app.use(cors(allowedOrigins.length ? { origin: allowedOrigins } : {}));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-// Seed Default Admin User directly into MySQL
+// Seed Default Inbuilt Admin Users directly into MySQL
 const seedAdminUser = async () => {
   try {
-    const [rows] = await query('SELECT COUNT(*) AS count FROM users');
-    const adminCount = rows[0]?.count || 0;
+    // 1. Expand role ENUM to support 'SystemAdmin' and 'SalesExecutive' if running MySQL
+    try {
+      await query("ALTER TABLE users MODIFY COLUMN role ENUM('SuperAdmin', 'SystemAdmin', 'SalesExecutive', 'Manager', 'Agent', 'Admin') NOT NULL DEFAULT 'SalesExecutive'");
+    } catch (e) {
+      // Column may already be updated
+    }
 
-    if (adminCount === 0) {
-      if (!env.ADMIN_USERNAME || !env.ADMIN_PASSWORD) {
-        console.warn('⚠️  No admin user exists. Set ADMIN_USERNAME and ADMIN_PASSWORD in .env to seed one.');
-        return;
-      }
-      const hashedPassword = await bcrypt.hash(env.ADMIN_PASSWORD, 10);
+    // Ensure created_by column exists in leads table
+    try {
+      await query("ALTER TABLE leads ADD COLUMN created_by VARCHAR(255) NOT NULL DEFAULT 'System' AFTER assigned_agent_name");
+    } catch (e) {
+      // Column may already exist
+    }
+
+    // 2. Ensure SuperAdmin exists
+    const adminUsername = (env.ADMIN_USERNAME || 'admin').toLowerCase().trim();
+    const [existingAdmin] = await query('SELECT id FROM users WHERE LOWER(username) = ? LIMIT 1', [adminUsername]);
+    if (!existingAdmin || existingAdmin.length === 0) {
+      const defaultPass = env.ADMIN_PASSWORD || 'admin123';
+      const hashedPassword = await bcrypt.hash(defaultPass, 10);
 
       await query(
-        `INSERT INTO users (name, username, email, password, role) VALUES (?, ?, ?, ?, ?)`,
+        `INSERT INTO users (name, username, email, phone, password, role) VALUES (?, ?, ?, ?, ?, ?)`,
         [
           'Super Admin',
-          env.ADMIN_USERNAME.toLowerCase().trim(),
+          adminUsername,
           env.ADMIN_EMAIL || 'admin@gulmoharcity.com',
+          '9876543210',
           hashedPassword,
           'SuperAdmin'
         ]
       );
+      console.log(`🔐 Admin user '${adminUsername}' seeded in MySQL`);
+    }
 
-      console.log(`🔐 Admin user '${env.ADMIN_USERNAME}' seeded in MySQL`);
+    // 3. Ensure Inbuilt Virtual System Admin exists (system / system123)
+    const [existingSys] = await query("SELECT id, username FROM users WHERE LOWER(username) IN ('system', 'systemadmin') LIMIT 1");
+    if (!existingSys || existingSys.length === 0) {
+      const sysHashedPassword = await bcrypt.hash('system123', 10);
+      await query(
+        `INSERT INTO users (name, username, email, phone, password, role) VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          'System Admin',
+          'system',
+          'system@gulmoharcity.com',
+          '9876543211',
+          sysHashedPassword,
+          'SystemAdmin'
+        ]
+      );
+      console.log("🔐 Inbuilt System Admin 'system' seeded in MySQL");
+    } else if (existingSys[0].username !== 'system') {
+      await query("UPDATE users SET username = 'system' WHERE id = ?", [existingSys[0].id]);
+      console.log("🔐 Inbuilt System Admin username normalized to 'system' in MySQL");
     }
   } catch (err) {
     console.warn('Admin seed note:', err.message);

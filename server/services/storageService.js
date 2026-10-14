@@ -112,15 +112,27 @@ const findAdminByUsername = async (username) => {
   if (isDbConnected()) {
     return await Admin.findOne({ username: username.toLowerCase().trim() });
   } else {
-    // In-memory fallback admin credentials
-    if (username.toLowerCase().trim() === 'admin') {
+    const cleanUser = username.toLowerCase().trim();
+    if (cleanUser === 'admin') {
       const hashedPassword = await bcrypt.hash('admin123', 10);
       return {
         _id: 'admin-mem-id',
         username: 'admin',
+        name: 'Super Admin',
         email: 'admin@gulmoharcity.com',
         password: hashedPassword,
         role: 'SuperAdmin'
+      };
+    }
+    if (cleanUser === 'systemadmin') {
+      const hashedPassword = await bcrypt.hash('system123', 10);
+      return {
+        _id: 'sysadmin-mem-id',
+        username: 'systemadmin',
+        name: 'System Admin',
+        email: 'systemadmin@gulmoharcity.com',
+        password: hashedPassword,
+        role: 'SystemAdmin'
       };
     }
     return null;

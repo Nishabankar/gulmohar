@@ -21,7 +21,7 @@ CREATE TABLE `users` (
   `email` VARCHAR(255) NOT NULL UNIQUE,
   `phone` VARCHAR(50) NOT NULL UNIQUE,
   `password` VARCHAR(255) NOT NULL,
-  `role` ENUM('SuperAdmin', 'Manager', 'Agent', 'Admin') NOT NULL DEFAULT 'Agent',
+  `role` ENUM('SuperAdmin', 'SystemAdmin', 'SalesExecutive', 'Manager', 'Agent', 'Admin') NOT NULL DEFAULT 'SalesExecutive',
   `column_preferences` JSON DEFAULT NULL COMMENT 'Stores JSON array of custom column preferences',
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -51,6 +51,7 @@ CREATE TABLE `leads` (
   `notes` TEXT DEFAULT NULL,
   `assigned_agent_name` VARCHAR(255) NOT NULL DEFAULT '',
   `assigned_to` INT DEFAULT NULL COMMENT 'Foreign key to users.id',
+  `created_by` VARCHAR(255) NOT NULL DEFAULT 'System',
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX `idx_phone` (`phone`),
@@ -117,6 +118,12 @@ SET FOREIGN_KEY_CHECKS = 1;
 INSERT INTO `users` (`name`, `username`, `email`, `phone`, `password`, `role`)
 VALUES 
 ('Super Admin', 'admin', 'admin@gulmoharcity.com', '9876543210', '$2a$10$4EO8IIMqBorf0nWZqpSszeCJVoWRCvlErOX89xthD3wIt36U4y2aG', 'SuperAdmin')
+ON DUPLICATE KEY UPDATE `username`=`username`;
+
+-- Inbuilt Virtual System Admin: system / system123
+INSERT INTO `users` (`name`, `username`, `email`, `phone`, `password`, `role`)
+VALUES 
+('System Admin', 'system', 'system@gulmoharcity.com', '9876543211', '$2a$10$Pg7ngGeVP6Q5NdOi3ACVquC0sYoO0lJr427vceWW8HB6iQxjnw0Au', 'SystemAdmin')
 ON DUPLICATE KEY UPDATE `username`=`username`;
 
 -- Optional: Add your Sales Agents directly via SQL (or use the Admin Panel UI under 'Sales Agents')

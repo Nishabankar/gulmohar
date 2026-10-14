@@ -57,7 +57,7 @@ router.post('/', async (req, res) => {
     if (isNaN(finalAssignedTo)) finalAssignedTo = null;
 
     if (finalAssignedTo) {
-      const [agentRows] = await query("SELECT id, name, username FROM users WHERE id = ? AND role = 'Agent'", [finalAssignedTo]);
+      const [agentRows] = await query("SELECT id, name, username FROM users WHERE id = ? AND role IN ('SalesExecutive', 'Agent')", [finalAssignedTo]);
       if (!agentRows || agentRows.length === 0) {
         finalAssignedTo = null;
         finalAssignedAgentName = '';
@@ -66,9 +66,9 @@ router.post('/', async (req, res) => {
       }
     }
 
-    // If agent name is missing or Unassigned, perform Round-Robin across active Sales Agents in MySQL
+    // If agent name is missing or Unassigned, perform Round-Robin across active Sales Executives in MySQL
     if (!finalAssignedAgentName) {
-      const [activeAgents] = await query("SELECT id, name, username FROM users WHERE role = 'Agent' ORDER BY id ASC");
+      const [activeAgents] = await query("SELECT id, name, username FROM users WHERE role IN ('SalesExecutive', 'Agent') ORDER BY id ASC");
       if (activeAgents && activeAgents.length > 0) {
         const [countRows] = await query("SELECT COUNT(*) AS total FROM leads");
         const total = countRows[0]?.total || 0;
@@ -79,14 +79,40 @@ router.post('/', async (req, res) => {
       }
     }
 
-    const noteAuthor = createdBy || modifiedBy || 'Client';
+    let rawCreatedBy = (createdBy || '').trim();
+    const lowerCreator = rawCreatedBy.toLowerCase();
+    let finalCreatedBy = 'System';
+    if (rawCreatedBy && !['super admin', 'superadmin', 'admin', 'system admin', 'systemadmin', 'system', 'client'].includes(lowerCreator)) {
+      finalCreatedBy = rawCreatedBy; // Sales Executive name, e.g. Nisha or Mansi
+    }
+
+    // Double-check with JWT token: if logged in as a Sales Executive, always attribute to them
+    const authToken = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+    if (authToken) {
+      try {
+        const decoded = jwt.verify(authToken, JWT_SECRET);
+        const callerRole = (decoded.role || '').toLowerCase();
+        const callerUsername = (decoded.username || '').toLowerCase();
+        const isCallerAdmin = ['superadmin', 'systemadmin', 'admin'].includes(callerRole) || ['admin', 'systemadmin', 'system'].includes(callerUsername);
+        if (!isCallerAdmin && decoded.id) {
+          const [userRows] = await query('SELECT name, username FROM users WHERE id = ?', [decoded.id]);
+          if (userRows && userRows.length > 0) {
+            finalCreatedBy = userRows[0].name || userRows[0].username;
+          }
+        }
+      } catch (e) {
+        // Token invalid or expired, preserve existing finalCreatedBy
+      }
+    }
+
+    const noteAuthor = finalCreatedBy !== 'System' ? finalCreatedBy : (createdBy || modifiedBy || 'Client');
     const initialNotes = notes ? notes.trim() : '';
 
     // Insert into leads table
     const [result] = await query(
       `INSERT INTO leads 
-        (first_name, last_name, phone, email, plot_info, plots_count, visit_date, followup_date, status, priority, notes, assigned_agent_name, assigned_to) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'New', ?, ?, ?, ?)`,
+        (first_name, last_name, phone, email, plot_info, plots_count, visit_date, followup_date, status, priority, notes, assigned_agent_name, assigned_to, created_by) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'New', ?, ?, ?, ?, ?)`,
       [
         firstName.trim(),
         (lastName || '').trim(),
@@ -99,7 +125,8 @@ router.post('/', async (req, res) => {
         priority,
         initialNotes,
         finalAssignedAgentName,
-        finalAssignedTo
+        finalAssignedTo,
+        finalCreatedBy
       ]
     );
 
@@ -138,6 +165,7 @@ router.post('/', async (req, res) => {
       notes: initialNotes,
       assignedAgentName: finalAssignedAgentName,
       assignedTo: finalAssignedTo ? finalAssignedTo.toString() : '',
+      createdBy: finalCreatedBy,
       history: historyEntries,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()

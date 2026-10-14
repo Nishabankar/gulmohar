@@ -44,6 +44,7 @@ const formatEnquiryRow = (row, historyEntries = []) => {
     notes: row.notes || '',
     assignedAgentName: row.assigned_agent_name || '',
     assignedTo: row.assigned_to ? row.assigned_to.toString() : '',
+    createdBy: row.created_by || 'System',
     priority: (row.priority === 'Cold' || row.priority === 'Low') ? 'Cold' : 'Hot',
     history: historyEntries.map(h => ({
       _id: h.id ? h.id.toString() : undefined,
@@ -95,7 +96,7 @@ router.post('/login', async (req, res) => {
       admin: {
         id: admin.id.toString(),
         username: admin.username,
-        name: admin.name || (admin.role === 'SuperAdmin' ? 'Admin Control Panel' : admin.username),
+        name: admin.name || (admin.role === 'SuperAdmin' ? 'Admin Control Panel' : admin.role === 'SystemAdmin' ? 'System Admin' : admin.username),
         email: admin.email || '',
         phone: admin.phone || '',
         role: admin.role
@@ -293,7 +294,7 @@ router.get('/profile', protectAdmin, async (req, res) => {
       id: u.id.toString(),
       _id: u.id.toString(),
       username: u.username,
-      name: u.name || (u.role === 'SuperAdmin' ? 'Admin Control Panel' : u.username),
+      name: u.name || (u.role === 'SuperAdmin' ? 'Admin Control Panel' : u.role === 'SystemAdmin' ? 'System Admin' : u.username),
       email: u.email || '',
       phone: u.phone || '',
       role: u.role
@@ -556,10 +557,10 @@ router.patch('/enquiries/:id', protectAdmin, async (req, res) => {
     if (assignedTo !== undefined || (nameKey && !nameUnchanged)) {
       if (!isNaN(parsedId) || (nameKey && nameKey !== 'unassigned')) {
         const [agentRows] = !isNaN(parsedId)
-          ? await query("SELECT id, name, username FROM users WHERE id = ? AND role = 'Agent'", [parsedId])
-          : await query("SELECT id, name, username FROM users WHERE role = 'Agent' AND (LOWER(name) = ? OR LOWER(username) = ?) ORDER BY id LIMIT 1", [nameKey, nameKey]);
+          ? await query("SELECT id, name, username FROM users WHERE id = ? AND role IN ('SalesExecutive', 'Agent')", [parsedId])
+          : await query("SELECT id, name, username FROM users WHERE role IN ('SalesExecutive', 'Agent') AND (LOWER(name) = ? OR LOWER(username) = ?) ORDER BY id LIMIT 1", [nameKey, nameKey]);
         if (agentRows.length === 0) {
-          return res.status(400).json({ success: false, message: 'Leads can only be assigned to an Agent' });
+          return res.status(400).json({ success: false, message: 'Leads can only be assigned to a Sales Executive' });
         }
         resolvedAssignedTo = agentRows[0].id;
         resolvedAgentName = agentRows[0].name || agentRows[0].username;
@@ -669,10 +670,17 @@ router.delete('/enquiries/:id', protectAdmin, async (req, res) => {
 
 // @route   GET /api/admin/agents
 // @desc    Get all created sales agents from MySQL database
-// @access  Protected
+// @access  Protected (SuperAdmin Only)
 router.get('/agents', protectAdmin, async (req, res) => {
   try {
-    const [agents] = await query("SELECT id, name, username, email, phone, role, created_at, updated_at FROM users WHERE LOWER(role) != 'superadmin' ORDER BY id ASC");
+    const callerRole = ((req.admin && req.admin.role) || '').toLowerCase();
+    const callerUsername = ((req.admin && req.admin.username) || '').toLowerCase();
+    const isSuperAdminCaller = callerRole === 'superadmin' || callerUsername === 'admin';
+    if (!isSuperAdminCaller) {
+      return res.status(403).json({ success: false, message: 'Access denied: Only Super Admin can access user management.' });
+    }
+
+    const [agents] = await query("SELECT id, name, username, email, phone, role, created_at, updated_at FROM users WHERE LOWER(username) NOT IN ('admin', 'systemadmin', 'system') AND LOWER(role) != 'superadmin' ORDER BY id ASC");
     const data = agents.map(a => ({
       _id: a.id.toString(),
       id: a.id,
@@ -692,14 +700,23 @@ router.get('/agents', protectAdmin, async (req, res) => {
 });
 
 // @route   POST /api/admin/agents
-// @desc    Create new sales agent in MySQL database & send password setup email
-// @access  Protected
+// @desc    Create new user (Admin or Sales Agent) in MySQL database & send password setup email
+// @access  Protected (SuperAdmin Only)
 router.post('/agents', protectAdmin, async (req, res) => {
   try {
-    const { name, username, password, phone, email } = req.body;
+    const callerRole = ((req.admin && req.admin.role) || '').toLowerCase();
+    const callerUsername = ((req.admin && req.admin.username) || '').toLowerCase();
+    const isSuperAdminCaller = callerRole === 'superadmin' || callerUsername === 'admin';
+    if (!isSuperAdminCaller) {
+      return res.status(403).json({ success: false, message: 'Access denied: Only Super Admin can create users.' });
+    }
+
+    const { name, username, password, phone, email, role } = req.body;
     const cleanUsername = username ? username.toLowerCase().trim() : '';
     const cleanPhone = phone ? phone.trim() : '';
     const agentEmail = (email && email.trim()) ? email.toLowerCase().trim() : (cleanUsername ? `${cleanUsername}@gulmoharcity.com` : '');
+    const rawRole = (role || '').trim().toLowerCase();
+    const cleanRole = ['system admin', 'systemadmin', 'admin'].includes(rawRole) ? 'SystemAdmin' : 'SalesExecutive';
 
     if (!name || !cleanUsername || !cleanPhone || !agentEmail) {
       return res.status(400).json({ success: false, message: 'Please provide full name, username, mobile number, and email address.' });
@@ -733,8 +750,8 @@ router.post('/agents', protectAdmin, async (req, res) => {
     const hashedPassword = await bcrypt.hash(rawInitialPassword, 10);
 
     const [result] = await query(
-      `INSERT INTO users (name, username, email, phone, password, role) VALUES (?, ?, ?, ?, ?, 'Agent')`,
-      [name.trim(), cleanUsername, agentEmail, cleanPhone, hashedPassword]
+      `INSERT INTO users (name, username, email, phone, password, role) VALUES (?, ?, ?, ?, ?, ?)`,
+      [name.trim(), cleanUsername, agentEmail, cleanPhone, hashedPassword, cleanRole]
     );
 
     const newAgentId = result.insertId;
@@ -758,9 +775,10 @@ router.post('/agents', protectAdmin, async (req, res) => {
     // Send invitation email with password setup link and OTP
     const emailResult = await sendNewUserInviteEmail(agentEmail, name.trim(), otpCode, resetLink, cleanUsername);
 
-    let msg = `Sales Agent created! An invitation email with password setup link has been sent to ${agentEmail}.`;
+    const roleTitle = cleanRole === 'SystemAdmin' ? 'System Admin' : 'Sales Executive';
+    let msg = `${roleTitle} account created! An invitation email with password setup link has been sent to ${agentEmail}.`;
     if (!emailResult.isConfigured) {
-      msg = `Sales Agent created! Password setup link sent to ${agentEmail}. [Test OTP: ${otpCode}]`;
+      msg = `${roleTitle} account created! Password setup link sent to ${agentEmail}. [Test OTP: ${otpCode}]`;
     }
 
     return res.json({
@@ -773,13 +791,13 @@ router.post('/agents', protectAdmin, async (req, res) => {
         username: cleanUsername,
         email: agentEmail,
         phone: cleanPhone,
-        role: 'Agent'
+        role: cleanRole
       },
       emailSent: emailResult.success,
       isConfigured: Boolean(emailResult.isConfigured)
     });
   } catch (error) {
-    console.error('Error creating agent:', error.message);
+    console.error('Error creating user:', error.message);
     if (error.code === 'ER_DUP_ENTRY' || error.errno === 1062) {
       if (error.message.includes('phone')) {
         return res.status(400).json({ success: false, message: 'Mobile number is already registered to another user.' });
@@ -797,51 +815,72 @@ router.post('/agents', protectAdmin, async (req, res) => {
 });
 
 // @route   DELETE /api/admin/agents/:id
-// @desc    Delete sales agent from MySQL database
-// @access  Protected
+// @desc    Delete user account (Admin or Sales Agent) from MySQL database
+// @access  Protected (SuperAdmin Only)
 router.delete('/agents/:id', protectAdmin, async (req, res) => {
   try {
-    const agentId = parseInt(req.params.id, 10);
-    if (isNaN(agentId)) {
-      return res.status(404).json({ success: false, message: 'Invalid agent ID' });
+    const callerRole = ((req.admin && req.admin.role) || '').toLowerCase();
+    const callerUsername = ((req.admin && req.admin.username) || '').toLowerCase();
+    const isSuperAdminCaller = callerRole === 'superadmin' || callerUsername === 'admin';
+    if (!isSuperAdminCaller) {
+      return res.status(403).json({ success: false, message: 'Access denied: Only Super Admin can delete users.' });
     }
 
-    const performer = req.admin ? (req.admin.name || req.admin.username || 'Admin') : 'Admin';
+    const agentId = parseInt(req.params.id, 10);
+    if (isNaN(agentId)) {
+      return res.status(404).json({ success: false, message: 'Invalid user ID' });
+    }
 
-    // Delete + hand their leads to the remaining agents (round-robin) in one transaction
+    if (req.admin && req.admin.id && parseInt(req.admin.id, 10) === agentId) {
+      return res.status(400).json({ success: false, message: 'You cannot delete your own account.' });
+    }
+
+    const performer = req.admin ? (req.admin.name || req.admin.username || 'Super Admin') : 'Super Admin';
+
+    // Delete + hand their leads to the remaining agents (round-robin) in one transaction if any
     const conn = await pool.getConnection();
     try {
       await conn.beginTransaction();
 
-      const [agentRows] = await conn.query('SELECT id, name, username FROM users WHERE id = ? AND role = "Agent" FOR UPDATE', [agentId]);
-      if (agentRows.length === 0) {
+      const [userRows] = await conn.query('SELECT id, name, username, role FROM users WHERE id = ? FOR UPDATE', [agentId]);
+      if (userRows.length === 0) {
         await conn.rollback();
-        return res.status(404).json({ success: false, message: 'Agent not found in database' });
+        return res.status(404).json({ success: false, message: 'User not found in database' });
       }
-      const deletedName = agentRows[0].name || agentRows[0].username;
 
+      const targetUser = userRows[0];
+      const targetRole = (targetUser.role || '').toLowerCase();
+      const targetUsername = (targetUser.username || '').toLowerCase();
+      if (['superadmin', 'systemadmin'].includes(targetRole) || ['admin', 'systemadmin', 'system'].includes(targetUsername)) {
+        await conn.rollback();
+        return res.status(403).json({ success: false, message: 'Inbuilt system accounts cannot be deleted.' });
+      }
+
+      const deletedName = targetUser.name || targetUser.username;
       const [leadRows] = await conn.query('SELECT id FROM leads WHERE assigned_to = ? ORDER BY id ASC', [agentId]);
       await conn.query('DELETE FROM users WHERE id = ?', [agentId]);
 
-      // Only Agents get leads (never admins)
-      const [agents] = await conn.query("SELECT id, name, username FROM users WHERE role = 'Agent' ORDER BY id ASC");
-      const now = new Date();
-      for (let i = 0; i < leadRows.length; i++) {
-        const next = agents.length > 0 ? agents[i % agents.length] : null;
-        const nextName = next ? (next.name || next.username) : 'Unassigned';
-        await conn.query('UPDATE leads SET assigned_to = ?, assigned_agent_name = ? WHERE id = ?', [next ? next.id : null, nextName, leadRows[i].id]);
-        await conn.query(
-          'INSERT INTO lead_history (lead_id, field_name, old_value, new_value, modified_by, modified_date) VALUES (?, ?, ?, ?, ?, ?)',
-          [leadRows[i].id, 'Assigned Agent', deletedName, `${nextName} (previous agent deleted)`, performer, now]
-        );
+      // Only reassign leads if the deleted user had assigned leads
+      if (leadRows.length > 0) {
+        const [agents] = await conn.query("SELECT id, name, username FROM users WHERE role IN ('SalesExecutive', 'Agent') ORDER BY id ASC");
+        const now = new Date();
+        for (let i = 0; i < leadRows.length; i++) {
+          const next = agents.length > 0 ? agents[i % agents.length] : null;
+          const nextName = next ? (next.name || next.username) : 'Unassigned';
+          await conn.query('UPDATE leads SET assigned_to = ?, assigned_agent_name = ? WHERE id = ?', [next ? next.id : null, nextName, leadRows[i].id]);
+          await conn.query(
+            'INSERT INTO lead_history (lead_id, field_name, old_value, new_value, modified_by, modified_date) VALUES (?, ?, ?, ?, ?, ?)',
+            [leadRows[i].id, 'Assigned Agent', deletedName, `${nextName} (previous agent deleted)`, performer, now]
+          );
+        }
       }
 
       await conn.commit();
       return res.json({
         success: true,
         message: leadRows.length
-          ? `Agent removed; ${leadRows.length} leads reassigned ${agents.length ? `across ${agents.length} remaining agents` : '(no agents left, marked Unassigned)'}`
-          : 'Agent removed successfully',
+          ? `User removed; ${leadRows.length} leads reassigned across remaining agents`
+          : 'User account removed successfully',
         reassignedCount: leadRows.length
       });
     } catch (txError) {
@@ -851,26 +890,41 @@ router.delete('/agents/:id', protectAdmin, async (req, res) => {
       conn.release();
     }
   } catch (error) {
-    console.error('Error deleting agent:', error.message);
+    console.error('Error deleting user:', error.message);
     return res.status(500).json({ success: false, message: 'Database Error' });
   }
 });
 
 // @route   PATCH /api/admin/agents/:id
-// @desc    Update sales agent details in MySQL database
-// @access  Protected
+// @desc    Update user details (name, username, phone, email, password, role) in MySQL database
+// @access  Protected (SuperAdmin Only)
 router.patch('/agents/:id', protectAdmin, async (req, res) => {
   try {
-    const agentId = parseInt(req.params.id, 10);
-    if (isNaN(agentId)) {
-      return res.status(404).json({ success: false, message: 'Invalid agent ID' });
+    const callerRole = ((req.admin && req.admin.role) || '').toLowerCase();
+    const callerUsername = ((req.admin && req.admin.username) || '').toLowerCase();
+    const isSuperAdminCaller = callerRole === 'superadmin' || callerUsername === 'admin';
+    if (!isSuperAdminCaller) {
+      return res.status(403).json({ success: false, message: 'Access denied: Only Super Admin can update users.' });
     }
 
-    const { name, username, password, phone, email } = req.body;
-    const [existingRows] = await query('SELECT id FROM users WHERE id = ?', [agentId]);
-    if (existingRows.length === 0) {
-      return res.status(404).json({ success: false, message: 'Agent not found in database' });
+    const agentId = parseInt(req.params.id, 10);
+    if (isNaN(agentId)) {
+      return res.status(404).json({ success: false, message: 'Invalid user ID' });
     }
+
+    const { name, username, password, phone, email, role } = req.body;
+    const [existingRows] = await query('SELECT id, role, username FROM users WHERE id = ?', [agentId]);
+    if (existingRows.length === 0) {
+      return res.status(404).json({ success: false, message: 'User not found in database' });
+    }
+
+    const targetUser = existingRows[0];
+    const targetRole = (targetUser.role || '').toLowerCase();
+    const targetUsername = (targetUser.username || '').toLowerCase();
+    if (['superadmin', 'systemadmin'].includes(targetRole) || ['admin', 'systemadmin', 'system'].includes(targetUsername)) {
+      return res.status(403).json({ success: false, message: 'Inbuilt system accounts cannot be modified via this endpoint.' });
+    }
+
     if (username !== undefined && username.trim()) {
       const cleanUsername = username.toLowerCase().trim();
       const [taken] = await query('SELECT id FROM users WHERE LOWER(username) = ? AND id != ?', [cleanUsername, agentId]);
@@ -894,6 +948,12 @@ router.patch('/agents/:id', protectAdmin, async (req, res) => {
     if (username !== undefined) { updateCols.push('username = ?'); updateVals.push(username.toLowerCase().trim()); }
     if (phone !== undefined) { updateCols.push('phone = ?'); updateVals.push(phone.trim()); }
     if (email !== undefined) { updateCols.push('email = ?'); updateVals.push(email.toLowerCase().trim()); }
+    if (role !== undefined && role.trim()) {
+      const rawRole = role.trim().toLowerCase();
+      const cleanRole = ['system admin', 'systemadmin', 'admin'].includes(rawRole) ? 'SystemAdmin' : 'SalesExecutive';
+      updateCols.push('role = ?');
+      updateVals.push(cleanRole);
+    }
     if (password && password.trim() && !password.includes('•••')) {
       const hashedPassword = await bcrypt.hash(password, 10);
       updateCols.push('password = ?');
@@ -915,7 +975,7 @@ router.patch('/agents/:id', protectAdmin, async (req, res) => {
 
     return res.json({
       success: true,
-      message: 'Agent updated successfully',
+      message: 'User updated successfully',
       data: {
         _id: agent.id.toString(),
         id: agent.id,
@@ -927,7 +987,7 @@ router.patch('/agents/:id', protectAdmin, async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error updating agent:', error.message);
+    console.error('Error updating user:', error.message);
     if (error.code === 'ER_DUP_ENTRY' || error.errno === 1062) {
       if (error.message.includes('phone')) {
         return res.status(400).json({ success: false, message: 'Mobile number is already registered to another user.' });
@@ -1011,8 +1071,8 @@ router.post('/enquiries/import', protectAdmin, async (req, res) => {
       return res.status(400).json({ success: false, message: 'No leads provided for import' });
     }
 
-    // 1. Fetch Agents for Alternate Round-Robin assignment (only Agents get leads, never admins)
-    const [agents] = await query("SELECT id, name, username, role FROM users WHERE role = 'Agent' ORDER BY id ASC");
+    // 1. Fetch Agents for Alternate Round-Robin assignment (only Sales Executives get leads, never admins)
+    const [agents] = await query("SELECT id, name, username, role FROM users WHERE role IN ('SalesExecutive', 'Agent') ORDER BY id ASC");
     
     // Pick starting Round-Robin index after the last assigned agent in DB for seamless continuation
     const [lastEnquiry] = await query("SELECT assigned_to FROM leads WHERE assigned_to IS NOT NULL ORDER BY id DESC LIMIT 1");
@@ -1104,8 +1164,8 @@ router.post('/enquiries/import', protectAdmin, async (req, res) => {
       // Insert into MySQL leads table
       const [insertResult] = await query(
         `INSERT INTO leads 
-         (first_name, last_name, phone, email, plot_info, plots_count, visit_date, followup_date, status, priority, notes, assigned_to, assigned_agent_name, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, UTC_TIMESTAMP()))`,
+         (first_name, last_name, phone, email, plot_info, plots_count, visit_date, followup_date, status, priority, notes, assigned_to, assigned_agent_name, created_by, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'System', COALESCE(?, UTC_TIMESTAMP()))`,
         [firstName, lastName, cleanPhone, email, plotInfo, plotsCount, visitDate, followupDate, status, priority, notes, assignedTo, assignedAgentName, created ? created.utc : null]
       );
 

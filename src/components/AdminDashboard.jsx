@@ -3930,7 +3930,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 <th 
                                   key="followupDate" 
                                   onClick={() => handleSort('followupDate')}
-                                  class={`py-2.5 px-2.5 whitespace-nowrap w-36 min-w-[140px] max-w-[145px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                  class={`py-2.5 px-2.5 whitespace-nowrap w-44 min-w-[165px] max-w-[172px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
                                   title={getSortTitle('Followup / Visit Date & Time')}
                                 >
                                   <div class="flex items-center gap-1.5">
@@ -4207,14 +4207,13 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   );
                                 }
                                 case 'followupDate': {
-                                  const isVisitStatus = item.status === 'Site Visit Scheduled';
                                   const isTimeOpen = activeDropdown?.rowId === currentId && activeDropdown?.field === 'visitTime';
                                   const formattedDate = formatDateShortMonth(item.followupDate);
                                   const formattedTime = item.visitTime ? formatTime12Hour(item.visitTime) : '';
                                   const hasDateOrTime = !!formattedDate || !!formattedTime;
 
                                   return (
-                                    <td key="followupDate" class={`py-2.5 px-2.5 whitespace-nowrap w-36 min-w-[140px] max-w-[145px] relative ${isTimeOpen ? 'z-50' : ''}`}>
+                                    <td key="followupDate" class={`py-2.5 px-2.5 whitespace-nowrap w-44 min-w-[165px] max-w-[172px] relative ${isTimeOpen ? 'z-50' : ''}`}>
                                       {!hasDateOrTime ? (
                                         /* Display only '-' when date and time are not added (centered) */
                                         <div class="flex items-center justify-center w-full">
@@ -4246,7 +4245,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                           </div>
                                         </div>
                                       ) : (
-                                        <div class="flex items-center gap-1.5 whitespace-nowrap text-[10px]">
+                                        <div class="flex items-center gap-2 whitespace-nowrap text-[10px]">
                                           {/* Inline Editable Date with Calendar Symbol */}
                                           <div
                                             onClick={(e) => {
@@ -4263,17 +4262,13 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                                 }
                                               }
                                             }}
-                                            class={`relative flex items-center gap-1 px-1.5 py-0.5 rounded transition cursor-pointer group ${
-                                              formattedDate 
-                                                ? (isVisitStatus ? 'text-indigo-950 hover:bg-indigo-50/80 hover:text-indigo-700' : 'text-gray-800 hover:bg-rose-50/80 hover:text-[#B30E2E]')
-                                                : 'text-gray-400 hover:bg-gray-100 italic'
-                                            }`}
+                                            class="relative inline-flex items-center gap-1 cursor-pointer group hover:text-[#B30E2E] transition-colors"
                                             title="Click calendar icon to change date"
                                           >
-                                            <span class={formattedDate ? 'font-semibold' : 'font-normal'}>
+                                            <span class={`font-semibold ${formattedDate ? 'text-gray-800 group-hover:text-[#B30E2E]' : 'text-gray-400 italic font-normal'}`}>
                                               {formattedDate || '-'}
                                             </span>
-                                            <i class="fa-regular fa-calendar-days text-[9.5px] text-gray-400 group-hover:text-[#B30E2E] transition-colors"></i>
+                                            <i class="fa-regular fa-calendar-days text-[9px] text-gray-400 group-hover:text-[#B30E2E] transition-colors"></i>
                                             <input
                                               type="date"
                                               value={formatToInputDate(item.followupDate)}
@@ -4282,23 +4277,21 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                             />
                                           </div>
 
-                                          <span class="text-gray-300 select-none">|</span>
-
                                           {/* Inline Editable Time with Clock Symbol */}
                                           <button
                                             type="button"
                                             onClick={(e) => toggleDropdown(e, currentId, 'visitTime')}
-                                            class={`flex items-center gap-1 px-1.5 py-0.5 rounded transition cursor-pointer custom-dropdown-toggle group ${
+                                            class={`inline-flex items-center gap-1 cursor-pointer custom-dropdown-toggle group transition-colors ${
                                               isTimeOpen
-                                                ? 'ring-1 ring-[#B30E2E]/40 bg-rose-50 text-[#B30E2E] font-bold'
+                                                ? 'text-[#B30E2E] font-bold'
                                                 : formattedTime
-                                                ? (isVisitStatus ? 'text-purple-900 hover:bg-purple-50/80 hover:text-[#B30E2E] font-semibold' : 'text-gray-800 hover:bg-rose-50/80 hover:text-[#B30E2E] font-semibold')
-                                                : 'text-gray-400 hover:bg-gray-100 italic font-normal'
+                                                ? 'text-gray-500 hover:text-[#B30E2E] font-normal'
+                                                : 'text-gray-400 hover:text-[#B30E2E] italic font-normal'
                                             }`}
                                             title={formattedTime ? "Click clock icon to change time" : "Click to set time"}
                                           >
-                                            <span>{formattedTime || '--:--'}</span>
-                                            <i class={`fa-regular fa-clock text-[9.5px] ${isTimeOpen ? 'text-[#B30E2E]' : 'text-gray-400 group-hover:text-[#B30E2E]'}`}></i>
+                                            <span class="text-[9.5px]">{formattedTime || '--:--'}</span>
+                                            <i class={`fa-regular fa-clock text-[9px] ${isTimeOpen ? 'text-[#B30E2E]' : 'text-gray-400 group-hover:text-[#B30E2E]'}`}></i>
                                           </button>
                                         </div>
                                       )}

@@ -3732,7 +3732,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 <th 
                                   key="followupDate" 
                                   onClick={() => handleSort('followupDate')}
-                                  class={`py-2.5 px-2.5 whitespace-nowrap w-48 min-w-[175px] max-w-[190px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                  class={`py-2.5 px-2.5 whitespace-nowrap w-56 min-w-[215px] max-w-[230px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
                                   title={getSortTitle('Followup / Visit Date & Time')}
                                 >
                                   <div class="flex items-center gap-1.5">
@@ -4011,7 +4011,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 case 'followupDate': {
                                   const isVisitStatus = item.status === 'Site Visit Scheduled';
                                   return (
-                                    <td key="followupDate" class="py-2.5 px-2.5 whitespace-nowrap w-48 min-w-[175px] max-w-[190px]">
+                                    <td key="followupDate" class="py-2.5 px-2.5 whitespace-nowrap w-56 min-w-[215px] max-w-[230px]">
                                       <div class="flex items-center gap-1.5">
                                         <input
                                           type="date"
@@ -4029,7 +4029,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                           value={item.visitTime || ''}
                                           onChange={(e) => handleInlineFieldChange(currentId, 'visitTime', e.target.value)}
                                           onBlur={(e) => handleInlineFieldChange(currentId, 'visitTime', e.target.value)}
-                                          class={`px-1 py-0.5 rounded-md border text-[10px] font-bold outline-none cursor-pointer transition shadow-2xs w-[70px] ${
+                                          class={`px-1.5 py-0.5 rounded-md border text-[10.5px] font-bold outline-none cursor-pointer transition shadow-2xs w-[104px] ${
                                             isVisitStatus
                                               ? 'border-purple-300 text-purple-900 bg-purple-50 hover:bg-purple-100'
                                               : 'border-gray-300 text-gray-700 bg-gray-50 hover:bg-gray-100'

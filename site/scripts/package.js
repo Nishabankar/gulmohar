@@ -1,8 +1,8 @@
 // Builds the static site with site/.env.production and zips dist/ into gulmohar-site.zip (repo root).
 // Upload the zip to Hostinger File Manager and extract it inside public_html.
-// Works on Windows (PowerShell Compress-Archive) and Linux/macOS (zip).
+// Works on Windows (built-in tar.exe, Windows 10+) and Linux/macOS (zip).
 import { execSync } from 'node:child_process';
-import { existsSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -21,8 +21,10 @@ execSync('npx vite build --mode production', { cwd: siteDir, stdio: 'inherit' })
 rmSync(zipPath, { force: true });
 const dist = join(siteDir, 'dist');
 if (process.platform === 'win32') {
-  // dist\* (not dist) so files land at the zip root; PowerShell's * also matches .htaccess
-  execSync(`powershell -NoProfile -Command "Compress-Archive -Path '${dist}\\*' -DestinationPath '${zipPath}'"`, { stdio: 'inherit' });
+  // Not PowerShell Compress-Archive: it writes "assets\\images\\x.jpg" paths that Linux extracts as flat files.
+  // Windows' bsdtar writes proper "/" paths; list top-level entries so the zip has no "./" prefix.
+  const entries = readdirSync(dist).map(n => `"${n}"`).join(' ');
+  execSync(`tar.exe -a -c -f "${zipPath}" -C "${dist}" ${entries}`, { stdio: 'inherit' });
 } else {
   execSync(`zip -qr "${zipPath}" .`, { cwd: dist, stdio: 'inherit' });
 }

@@ -4898,11 +4898,8 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
 
                               {/* Role */}
                               <td class="py-2.5 px-3 whitespace-nowrap">
-                                {['system admin', 'systemadmin', 'admin'].includes((agent.role || '').toLowerCase()) ? (
-                                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
-                                    <i class="fa-solid fa-shield-halved text-[9px]"></i>
-                                    Admin
-                                  </span>
+                                {['admin', 'systemadmin', 'system'].includes((agent.username || '').toLowerCase()) || ['system admin', 'systemadmin', 'admin'].includes((agent.role || '').toLowerCase()) ? (
+                                  <span class="text-gray-400 italic text-[11px]">—</span>
                                 ) : (
                                   <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
                                     <i class="fa-solid fa-user-tie text-[9px]"></i>

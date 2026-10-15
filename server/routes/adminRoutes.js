@@ -47,15 +47,17 @@ const formatEnquiryRow = (row, historyEntries = []) => {
     assignedTo: row.assigned_to ? row.assigned_to.toString() : '',
     createdBy: row.created_by || 'System',
     priority: (row.priority === 'Cold' || row.priority === 'Low') ? 'Cold' : 'Hot',
-    history: historyEntries.map(h => ({
-      _id: h.id ? h.id.toString() : undefined,
-      id: h.id,
-      fieldName: h.field_name,
-      oldValue: h.old_value || '—',
-      newValue: h.new_value || '—',
-      modifiedBy: h.modified_by || 'Admin',
-      modifiedDate: h.modified_date ? new Date(h.modified_date).toISOString() : new Date().toISOString()
-    })),
+    history: historyEntries
+      .filter(h => h.field_name !== 'Import' && h.field_name !== 'Sheet Status')
+      .map(h => ({
+        _id: h.id ? h.id.toString() : undefined,
+        id: h.id,
+        fieldName: h.field_name,
+        oldValue: h.old_value || '—',
+        newValue: h.new_value || '—',
+        modifiedBy: h.modified_by || 'Admin',
+        modifiedDate: h.modified_date ? new Date(h.modified_date).toISOString() : new Date().toISOString()
+      })),
     createdAt: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString(),
     updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : new Date().toISOString()
   };
@@ -1122,7 +1124,6 @@ router.post('/enquiries/import', protectAdmin, async (req, res) => {
       // Status: map to our own list, unknown values fall back to New
       const rawStatus = str(lead.status);
       const status = matchOption(rawStatus, STATUS_OPTIONS) || 'New';
-      if (rawStatus && !matchOption(rawStatus, STATUS_OPTIONS)) history.push(['Sheet Status', '—', `${rawStatus} (not recognised, set to New)`]);
 
       const priority = matchOption(lead.priority, PRIORITY_OPTIONS) || 'Hot';
 
@@ -1173,11 +1174,12 @@ router.post('/enquiries/import', protectAdmin, async (req, res) => {
 
       const newId = insertResult.insertId;
 
-      history.unshift(['Import', '', `Imported via Google Sheet CSV & assigned to ${assignedAgentName}`]);
-      await query(
-        `INSERT INTO lead_history (lead_id, field_name, old_value, new_value, modified_by, modified_date) VALUES ?`,
-        [history.map(([field, oldVal, newVal]) => [newId, field, oldVal, newVal, performer, new Date()])]
-      );
+      if (history.length > 0) {
+        await query(
+          `INSERT INTO lead_history (lead_id, field_name, old_value, new_value, modified_by, modified_date) VALUES ?`,
+          [history.map(([field, oldVal, newVal]) => [newId, field, oldVal, newVal, performer, new Date()])]
+        );
+      }
 
       importedCount++;
     }

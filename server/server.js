@@ -31,6 +31,13 @@ const seedAdminUser = async () => {
       // Column may already exist
     }
 
+    // Clean up unwanted internal import history entries (Import & Sheet Status)
+    try {
+      await query("DELETE FROM lead_history WHERE field_name IN ('Import', 'Sheet Status')");
+    } catch (e) {
+      // Table may not exist yet or empty
+    }
+
     // 2. Ensure SuperAdmin exists
     const adminUsername = (env.ADMIN_USERNAME || 'admin').toLowerCase().trim();
     const [existingAdmin] = await query('SELECT id FROM users WHERE LOWER(username) = ? LIMIT 1', [adminUsername]);

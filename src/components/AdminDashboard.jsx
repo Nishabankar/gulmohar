@@ -3146,7 +3146,9 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                     <div class="overflow-x-auto overflow-y-auto custom-scrollbar flex-1">
                       {(() => {
                         if (!selectedHistoryLead) return null;
-                        const mongoHistory = selectedHistoryLead.history || [];
+                        const mongoHistory = (selectedHistoryLead.history || []).filter(
+                          item => item.fieldName !== 'Import' && item.fieldName !== 'Sheet Status'
+                        );
 
                         if (mongoHistory.length === 0) {
                           return (
@@ -3154,9 +3156,9 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                               <div class="w-12 h-12 rounded-full bg-purple-50 border border-purple-100 flex items-center justify-center mx-auto text-purple-500">
                                 <i class="fa-solid fa-clock-rotate-left text-xl"></i>
                               </div>
-                              <h4 class="text-sm font-bold text-slate-700">No Edit History Recorded Yet in MongoDB Database</h4>
+                              <h4 class="text-sm font-bold text-slate-700">No Activity History Recorded Yet</h4>
                               <p class="text-xs text-slate-400 max-w-sm mx-auto">
-                                Edits saved via the edit form or status changes for this lead will appear here directly from MongoDB Atlas schema as Old Value ➔ New Value history entries.
+                                Activity logs, field updates, note additions, or status changes for this lead will appear here.
                               </p>
                             </div>
                           );

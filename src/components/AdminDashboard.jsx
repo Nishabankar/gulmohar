@@ -2167,15 +2167,16 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
 
     const containerStyle = {
       top: coords ? `${coords.top}px` : undefined,
-      left: coords ? `${coords.left}px` : undefined
+      left: coords ? `${coords.left}px` : undefined,
+      maxHeight: coords?.maxHeight ? `${coords.maxHeight}px` : undefined
     };
 
-    const containerClass = "fixed z-[9999] w-[230px] bg-white rounded-2xl shadow-2xl border border-gray-200 p-2.5 text-xs animate-fade-in custom-dropdown-menu select-none";
+    const containerClass = "fixed z-[9999] w-[220px] bg-white rounded-2xl shadow-2xl border border-gray-200 p-2 text-xs animate-fade-in custom-dropdown-menu select-none";
 
     return (
       <div class={containerClass} style={containerStyle}>
         {/* Header */}
-        <div class="flex items-center justify-between pb-1.5 mb-2 border-b border-gray-100">
+        <div class="flex items-center justify-between pb-1 mb-1.5 border-b border-gray-100">
           <div class="flex items-center gap-1.5 font-bold text-gray-800 text-[11px]">
             <i class="fa-solid fa-clock text-[#B30E2E]"></i>
             <span>Select Time</span>
@@ -2191,11 +2192,11 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
         </div>
 
         {/* 3 Columns: Hour | Minute | Period */}
-        <div class="grid grid-cols-3 gap-1.5 pb-1">
+        <div class="grid grid-cols-3 gap-1 pb-1">
           {/* Hours Column */}
           <div class="flex flex-col">
             <span class="text-[9px] font-bold text-gray-400 uppercase text-center mb-1">Hour</span>
-            <div class="max-h-40 overflow-y-auto custom-scrollbar flex flex-col gap-0.5 pr-0.5">
+            <div class="max-h-32 overflow-y-auto custom-scrollbar flex flex-col gap-0.5 pr-0.5">
               {['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'].map((hr) => {
                 const isSelected = parsedTime.hour === hr;
                 return (
@@ -2206,7 +2207,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                       const newTime = composeTime24(hr, parsedTime.minute, parsedTime.ampm);
                       onChange(newTime);
                     }}
-                    class={`py-1 px-1 rounded-md text-[10.5px] font-bold transition text-center cursor-pointer ${
+                    class={`py-0.5 px-1 rounded-md text-[10.5px] font-bold transition text-center cursor-pointer ${
                       isSelected
                         ? 'bg-[#B30E2E] text-white shadow-xs'
                         : 'text-gray-700 hover:bg-rose-50 hover:text-[#B30E2E]'
@@ -2222,7 +2223,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
           {/* Minutes Column */}
           <div class="flex flex-col">
             <span class="text-[9px] font-bold text-gray-400 uppercase text-center mb-1">Min</span>
-            <div class="max-h-40 overflow-y-auto custom-scrollbar flex flex-col gap-0.5 pr-0.5">
+            <div class="max-h-32 overflow-y-auto custom-scrollbar flex flex-col gap-0.5 pr-0.5">
               {['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'].map((mn) => {
                 const isSelected = parsedTime.minute === mn;
                 return (
@@ -2233,7 +2234,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                       const newTime = composeTime24(parsedTime.hour, mn, parsedTime.ampm);
                       onChange(newTime);
                     }}
-                    class={`py-1 px-1 rounded-md text-[10.5px] font-bold transition text-center cursor-pointer ${
+                    class={`py-0.5 px-1 rounded-md text-[10.5px] font-bold transition text-center cursor-pointer ${
                       isSelected
                         ? 'bg-[#B30E2E] text-white shadow-xs'
                         : 'text-gray-700 hover:bg-rose-50 hover:text-[#B30E2E]'
@@ -2249,7 +2250,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
           {/* AM/PM Period Column */}
           <div class="flex flex-col">
             <span class="text-[9px] font-bold text-gray-400 uppercase text-center mb-1">Period</span>
-            <div class="flex flex-col gap-1.5 pt-1">
+            <div class="flex flex-col gap-1.5 pt-0.5">
               {['AM', 'PM'].map((p) => {
                 const isSelected = parsedTime.ampm === p;
                 return (
@@ -2260,7 +2261,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                       const newTime = composeTime24(parsedTime.hour, parsedTime.minute, p);
                       onChange(newTime);
                     }}
-                    class={`py-2.5 px-1 rounded-xl text-[11px] font-extrabold transition text-center border cursor-pointer ${
+                    class={`py-2 px-1 rounded-xl text-[11px] font-extrabold transition text-center border cursor-pointer ${
                       isSelected
                         ? 'bg-amber-400 border-amber-300 text-slate-900 shadow-xs'
                         : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
@@ -2275,7 +2276,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
         </div>
 
         {/* Footer: Clear on left, small OK on right */}
-        <div class="flex items-center justify-between pt-1.5 mt-1 border-t border-gray-100">
+        <div class="flex items-center justify-between pt-1 mt-0.5 border-t border-gray-100">
           {value ? (
             <button
               type="button"
@@ -2293,7 +2294,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
           <button
             type="button"
             onClick={onClose}
-            class="px-3.5 py-1 rounded-lg bg-[#B30E2E] hover:bg-[#8A0B22] text-white font-bold text-[11px] shadow-2xs transition cursor-pointer"
+            class="px-3 py-0.5 rounded-lg bg-[#B30E2E] hover:bg-[#8A0B22] text-white font-bold text-[11px] shadow-2xs transition cursor-pointer"
           >
             OK
           </button>
@@ -2547,8 +2548,8 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
         targetHeight = 240;
         dropdownWidth = Math.max(160, rect.width);
       } else if (field === 'visitTime') {
-        targetHeight = 220;
-        dropdownWidth = 230;
+        targetHeight = 210;
+        dropdownWidth = 220;
       }
 
       // Available space above and below (with safety margin for taskbar/navbar)
@@ -2557,7 +2558,11 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       let top;
       let maxHeight = targetHeight;
 
-      if (spaceBelow >= targetHeight) {
+      // In modals (Edit Lead / New Lead), open upwards if there is room above to avoid bottom taskbar clipping
+      const isModal = rowId === 'edit-modal' || rowId === 'new-lead-modal';
+      if (isModal && spaceAbove >= targetHeight) {
+        top = Math.max(8, rect.top - targetHeight - 4);
+      } else if (spaceBelow >= targetHeight) {
         // Plenty of space below: open downwards
         top = rect.bottom + 4;
       } else if (spaceAbove >= targetHeight) {
@@ -2573,6 +2578,12 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
           top = Math.max(8, rect.top - maxHeight - 4);
         }
       }
+
+      // GUARANTEE: Never let top + targetHeight overflow the bottom of the viewport!
+      if (top + targetHeight > window.innerHeight - 12) {
+        top = Math.max(8, window.innerHeight - targetHeight - 12);
+      }
+      if (top < 8) top = 8;
 
       // Horizontally align with the clicked button, keeping within viewport
       let left = rect.left;

@@ -2120,6 +2120,48 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     return `${formattedHours}:${minutes} ${ampm}`;
   };
 
+  const parseTimeParts = (timeStr) => {
+    if (!timeStr) return { hour: '11', minute: '00', ampm: 'AM' };
+    const clean = timeStr.trim();
+    const parts = clean.split(':');
+    if (parts.length >= 2) {
+      let h = parseInt(parts[0], 10);
+      let m = parts[1].replace(/[^0-9]/g, '').slice(0, 2);
+      if (isNaN(h)) h = 11;
+      if (!m) m = '00';
+      const ampm = /pm/i.test(clean) || h >= 12 ? 'PM' : 'AM';
+      let h12 = h % 12;
+      if (h12 === 0) h12 = 12;
+      return {
+        hour: String(h12).padStart(2, '0'),
+        minute: m.padStart(2, '0'),
+        ampm
+      };
+    }
+    return { hour: '11', minute: '00', ampm: 'AM' };
+  };
+
+  const composeTime24 = (hour12Str, minuteStr, ampm) => {
+    let h = parseInt(hour12Str, 10);
+    if (isNaN(h)) h = 12;
+    if (ampm === 'PM' && h < 12) h += 12;
+    if (ampm === 'AM' && h === 12) h = 0;
+    const h24 = String(h).padStart(2, '0');
+    const m = String(minuteStr || '00').padStart(2, '0');
+    return `${h24}:${m}`;
+  };
+
+  const convert12To24 = (time12) => {
+    if (!time12) return '';
+    const match = time12.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (!match) return time12;
+    let [_, h, m, p] = match;
+    let hour = parseInt(h, 10);
+    if (p.toUpperCase() === 'PM' && hour < 12) hour += 12;
+    if (p.toUpperCase() === 'AM' && hour === 12) hour = 0;
+    return `${String(hour).padStart(2, '0')}:${m}`;
+  };
+
   // Helpers for Status filtering
   const isPendingVisitStatus = (status) => status === 'Site Visit Scheduled';
   const isFollowupStatus = (status) => ['Contacted', 'Interested', 'Details Provided'].includes(status);
@@ -2364,6 +2406,9 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       } else if (field === 'plotsCount') {
         targetHeight = 240;
         dropdownWidth = Math.max(160, rect.width);
+      } else if (field === 'visitTime') {
+        targetHeight = 310;
+        dropdownWidth = 240;
       }
 
       // Available space above and below (with safety margin for taskbar/navbar)
@@ -3732,7 +3777,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 <th 
                                   key="followupDate" 
                                   onClick={() => handleSort('followupDate')}
-                                  class={`py-2.5 px-2.5 whitespace-nowrap w-56 min-w-[215px] max-w-[230px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                  class={`py-2.5 px-2.5 whitespace-nowrap w-52 min-w-[195px] max-w-[210px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
                                   title={getSortTitle('Followup / Visit Date & Time')}
                                 >
                                   <div class="flex items-center gap-1.5">
@@ -4010,8 +4055,10 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 }
                                 case 'followupDate': {
                                   const isVisitStatus = item.status === 'Site Visit Scheduled';
+                                  const isTimeOpen = activeDropdown?.rowId === currentId && activeDropdown?.field === 'visitTime';
+                                  const parsedTime = parseTimeParts(item.visitTime);
                                   return (
-                                    <td key="followupDate" class="py-2.5 px-2.5 whitespace-nowrap w-56 min-w-[215px] max-w-[230px]">
+                                    <td key="followupDate" class={`py-2.5 px-2.5 whitespace-nowrap w-52 min-w-[195px] max-w-[210px] relative ${isTimeOpen ? 'z-50' : ''}`}>
                                       <div class="flex items-center gap-1.5">
                                         <input
                                           type="date"
@@ -4024,19 +4071,193 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                           }`}
                                           title={isVisitStatus ? "Click to edit Visit Date" : "Click to edit Followup Date"}
                                         />
-                                        <input
-                                          type="time"
-                                          value={item.visitTime || ''}
-                                          onChange={(e) => handleInlineFieldChange(currentId, 'visitTime', e.target.value)}
-                                          onBlur={(e) => handleInlineFieldChange(currentId, 'visitTime', e.target.value)}
-                                          class={`px-1.5 py-0.5 rounded-md border text-[10.5px] font-bold outline-none cursor-pointer transition shadow-2xs w-[104px] ${
-                                            isVisitStatus
+
+                                        {/* Custom Styled Time Selector Button */}
+                                        <button
+                                          type="button"
+                                          onClick={(e) => toggleDropdown(e, currentId, 'visitTime')}
+                                          class={`px-2 py-0.5 rounded-md border text-[10px] font-bold outline-none cursor-pointer transition shadow-2xs flex items-center justify-between gap-1 w-[88px] custom-dropdown-toggle ${
+                                            isTimeOpen
+                                              ? 'ring-2 ring-[#B30E2E]/40 border-[#B30E2E] bg-rose-50 text-[#B30E2E]'
+                                              : isVisitStatus
                                               ? 'border-purple-300 text-purple-900 bg-purple-50 hover:bg-purple-100'
                                               : 'border-gray-300 text-gray-700 bg-gray-50 hover:bg-gray-100'
                                           }`}
-                                          title={item.visitTime ? `Visit Time: ${formatTime12Hour(item.visitTime)}` : "Set Visit / Followup Time"}
-                                        />
+                                          title={item.visitTime ? `Visit Time: ${formatTime12Hour(item.visitTime)}` : "Click to select Time"}
+                                        >
+                                          <span class="truncate">{item.visitTime ? formatTime12Hour(item.visitTime) : '--:--'}</span>
+                                          <i class={`fa-regular fa-clock text-[9px] ${isTimeOpen ? 'text-[#B30E2E]' : 'opacity-60'}`}></i>
+                                        </button>
                                       </div>
+
+                                      {/* Custom Time Dropdown Picker */}
+                                      {isTimeOpen && (
+                                        <div 
+                                          class="fixed z-[9999] w-[240px] bg-white rounded-2xl shadow-2xl border border-gray-200 p-2.5 text-xs animate-fade-in custom-dropdown-menu select-none"
+                                          style={{
+                                            top: activeDropdown?.coords ? `${activeDropdown.coords.top}px` : undefined,
+                                            left: activeDropdown?.coords ? `${activeDropdown.coords.left}px` : undefined
+                                          }}
+                                        >
+                                          {/* Header */}
+                                          <div class="flex items-center justify-between pb-1.5 mb-2 border-b border-gray-100">
+                                            <div class="flex items-center gap-1.5 font-bold text-gray-800 text-[11px]">
+                                              <i class="fa-solid fa-clock text-[#B30E2E]"></i>
+                                              <span>Select Time</span>
+                                            </div>
+                                            <div class="flex items-center gap-2">
+                                              {item.visitTime && (
+                                                <button
+                                                  type="button"
+                                                  onClick={() => {
+                                                    handleInlineFieldChange(currentId, 'visitTime', '');
+                                                    setActiveDropdown(null);
+                                                  }}
+                                                  class="text-[10px] text-rose-600 hover:text-rose-800 font-bold hover:underline cursor-pointer"
+                                                >
+                                                  Clear
+                                                </button>
+                                              )}
+                                              <button
+                                                type="button"
+                                                onClick={() => setActiveDropdown(null)}
+                                                class="w-5 h-5 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-700 text-xs cursor-pointer"
+                                              >
+                                                <i class="fa-solid fa-xmark"></i>
+                                              </button>
+                                            </div>
+                                          </div>
+
+                                          {/* Active Time Banner */}
+                                          <div class="bg-gradient-to-r from-rose-50 via-amber-50 to-rose-50 rounded-xl py-1 px-2 mb-2 flex items-center justify-center gap-1.5 border border-rose-100 shadow-2xs">
+                                            <i class="fa-regular fa-clock text-[10px] text-[#B30E2E]"></i>
+                                            <span class="text-xs font-black text-[#B30E2E] tracking-wider">
+                                              {item.visitTime ? formatTime12Hour(item.visitTime) : 'Select hour & min'}
+                                            </span>
+                                          </div>
+
+                                          {/* 3 Columns: Hour | Minute | Period */}
+                                          <div class="grid grid-cols-3 gap-1.5 pb-2 border-b border-gray-100">
+                                            {/* Hours Column */}
+                                            <div class="flex flex-col">
+                                              <span class="text-[9px] font-bold text-gray-400 uppercase text-center mb-1">Hour</span>
+                                              <div class="max-h-36 overflow-y-auto custom-scrollbar flex flex-col gap-0.5 pr-0.5">
+                                                {['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'].map((hr) => {
+                                                  const isSelected = parsedTime.hour === hr;
+                                                  return (
+                                                    <button
+                                                      key={hr}
+                                                      type="button"
+                                                      onClick={() => {
+                                                        const newTime = composeTime24(hr, parsedTime.minute, parsedTime.ampm);
+                                                        handleInlineFieldChange(currentId, 'visitTime', newTime);
+                                                      }}
+                                                      class={`py-1 px-1 rounded-md text-[10.5px] font-bold transition text-center cursor-pointer ${
+                                                        isSelected
+                                                          ? 'bg-[#B30E2E] text-white shadow-xs'
+                                                          : 'text-gray-700 hover:bg-rose-50 hover:text-[#B30E2E]'
+                                                      }`}
+                                                    >
+                                                      {hr}
+                                                    </button>
+                                                  );
+                                                })}
+                                              </div>
+                                            </div>
+
+                                            {/* Minutes Column */}
+                                            <div class="flex flex-col">
+                                              <span class="text-[9px] font-bold text-gray-400 uppercase text-center mb-1">Min</span>
+                                              <div class="max-h-36 overflow-y-auto custom-scrollbar flex flex-col gap-0.5 pr-0.5">
+                                                {['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'].map((mn) => {
+                                                  const isSelected = parsedTime.minute === mn;
+                                                  return (
+                                                    <button
+                                                      key={mn}
+                                                      type="button"
+                                                      onClick={() => {
+                                                        const newTime = composeTime24(parsedTime.hour, mn, parsedTime.ampm);
+                                                        handleInlineFieldChange(currentId, 'visitTime', newTime);
+                                                      }}
+                                                      class={`py-1 px-1 rounded-md text-[10.5px] font-bold transition text-center cursor-pointer ${
+                                                        isSelected
+                                                          ? 'bg-[#B30E2E] text-white shadow-xs'
+                                                          : 'text-gray-700 hover:bg-rose-50 hover:text-[#B30E2E]'
+                                                      }`}
+                                                    >
+                                                      {mn}
+                                                    </button>
+                                                  );
+                                                })}
+                                              </div>
+                                            </div>
+
+                                            {/* AM/PM Period Column */}
+                                            <div class="flex flex-col">
+                                              <span class="text-[9px] font-bold text-gray-400 uppercase text-center mb-1">Period</span>
+                                              <div class="flex flex-col gap-1.5 pt-1">
+                                                {['AM', 'PM'].map((p) => {
+                                                  const isSelected = parsedTime.ampm === p;
+                                                  return (
+                                                    <button
+                                                      key={p}
+                                                      type="button"
+                                                      onClick={() => {
+                                                        const newTime = composeTime24(parsedTime.hour, parsedTime.minute, p);
+                                                        handleInlineFieldChange(currentId, 'visitTime', newTime);
+                                                      }}
+                                                      class={`py-2 px-1 rounded-xl text-[11px] font-extrabold transition text-center border cursor-pointer ${
+                                                        isSelected
+                                                          ? 'bg-amber-400 border-amber-300 text-slate-900 shadow-xs'
+                                                          : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
+                                                      }`}
+                                                    >
+                                                      {p}
+                                                    </button>
+                                                  );
+                                                })}
+                                              </div>
+                                            </div>
+                                          </div>
+
+                                          {/* Quick Preset Slots */}
+                                          <div class="pt-2">
+                                            <span class="block text-[9px] font-bold text-gray-400 uppercase mb-1">Quick Slots</span>
+                                            <div class="grid grid-cols-3 gap-1">
+                                              {['10:00 AM', '11:30 AM', '02:30 PM', '04:30 PM', '05:30 PM', '06:00 PM'].map((slot) => {
+                                                const slot24 = convert12To24(slot);
+                                                const isActive = item.visitTime === slot24;
+                                                return (
+                                                  <button
+                                                    key={slot}
+                                                    type="button"
+                                                    onClick={() => {
+                                                      handleInlineFieldChange(currentId, 'visitTime', slot24);
+                                                      setActiveDropdown(null);
+                                                    }}
+                                                    class={`py-1 px-1 rounded-md text-[9.5px] font-bold transition text-center truncate cursor-pointer ${
+                                                      isActive
+                                                        ? 'bg-[#B30E2E] text-white shadow-xs'
+                                                        : 'bg-gray-50 hover:bg-rose-50 text-gray-700 hover:text-[#B30E2E] border border-gray-200/70'
+                                                    }`}
+                                                  >
+                                                    {slot}
+                                                  </button>
+                                                );
+                                              })}
+                                            </div>
+                                          </div>
+
+                                          {/* Done Button */}
+                                          <button
+                                            type="button"
+                                            onClick={() => setActiveDropdown(null)}
+                                            class="mt-2 w-full py-1.5 rounded-xl bg-gradient-to-r from-[#B30E2E] to-[#8A0B22] text-white font-bold text-[11px] hover:opacity-95 shadow-xs transition cursor-pointer"
+                                          >
+                                            Done
+                                          </button>
+                                        </div>
+                                      )}
                                     </td>
                                   );
                                 }

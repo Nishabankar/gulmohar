@@ -929,7 +929,7 @@ router.patch('/agents/:id', protectAdmin, async (req, res) => {
       return res.status(403).json({ success: false, message: 'Super Admin master account cannot be modified via this endpoint.' });
     }
 
-    if (username !== undefined && username.trim() && targetUsername !== 'system') {
+    if (username !== undefined && username.trim()) {
       const cleanUsername = username.toLowerCase().trim();
       const [taken] = await query('SELECT id FROM users WHERE LOWER(username) = ? AND id != ?', [cleanUsername, agentId]);
       if (taken.length > 0) return res.status(400).json({ success: false, message: `Username '${cleanUsername}' is already taken.` });

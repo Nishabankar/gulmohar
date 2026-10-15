@@ -435,6 +435,12 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
   const [showEditPassword, setShowEditPassword] = useState(false);
   const [savingUserEdit, setSavingUserEdit] = useState(false);
   const [userEditSuccessMsg, setUserEditSuccessMsg] = useState('');
+  const isEditingAdmin = Boolean(
+    editingUser && (
+      ['admin', 'systemadmin', 'system'].includes((editingUser.username || '').toLowerCase()) ||
+      ['system admin', 'systemadmin', 'admin'].includes((editingUser.role || '').toLowerCase())
+    )
+  );
 
   // State for Create Lead Modal (Homepage 6 Fields)
   const [showCreateLeadModal, setShowCreateLeadModal] = useState(false);
@@ -1209,7 +1215,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     e.preventDefault();
     if (!editingUser) return;
 
-    if (editingUser.phone && !/^[6-9]\d{9}$/.test(editingUser.phone.trim())) {
+    if (!isEditingAdmin && editingUser.phone && !/^[6-9]\d{9}$/.test(editingUser.phone.trim())) {
       setUserEditSuccessMsg('Please enter a valid 10-digit mobile number starting with 6, 7, 8, or 9.');
       return;
     }
@@ -1225,6 +1231,30 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       email: (editingUser.email || '').trim()
     };
 
+    if (!cleanedEditingUser.name) {
+      setSavingUserEdit(false);
+      setUserEditSuccessMsg('Error: Please enter a full name.');
+      return;
+    }
+
+    if (!cleanedEditingUser.username) {
+      setSavingUserEdit(false);
+      setUserEditSuccessMsg('Error: Please enter a username.');
+      return;
+    }
+
+    if (cleanedEditingUser.username === 'admin') {
+      setSavingUserEdit(false);
+      setUserEditSuccessMsg("Error: Username 'admin' is reserved for Super Admin.");
+      return;
+    }
+
+    if (editUserPassword && editUserPassword.trim() && editUserPassword.trim().length < 4) {
+      setSavingUserEdit(false);
+      setUserEditSuccessMsg('Error: Password must be at least 4 characters long.');
+      return;
+    }
+
     const targetEditId = editingUser.id || editingUser._id;
     if (!targetEditId || targetEditId.toString().startsWith('agent-')) {
       setSavingUserEdit(false);
@@ -1232,23 +1262,20 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       return;
     }
 
-    const isSystemUserEdit = (editingUser.username || '').toLowerCase() === 'system';
-    if (isSystemUserEdit && (!editUserPassword || !editUserPassword.trim())) {
-      setSavingUserEdit(false);
-      setUserEditSuccessMsg('Error: Please enter a new password.');
-      return;
-    }
     const cleanUsername = cleanedEditingUser.username;
-    const cleanPhone = isSystemUserEdit ? '' : cleanedEditingUser.phone;
-    const cleanEmail = isSystemUserEdit ? '' : cleanedEditingUser.email.toLowerCase();
+    const cleanPhone = isEditingAdmin ? '' : cleanedEditingUser.phone;
+    const cleanEmail = isEditingAdmin ? '' : cleanedEditingUser.email.toLowerCase();
 
-    const existingUser = !isSystemUserEdit && registeredAgents.find(a => 
-      ((a.id && a.id.toString() !== targetEditId.toString()) && a.username !== editingUser.username) && (
-        (cleanUsername && a.username && a.username.toLowerCase() === cleanUsername) ||
-        (cleanPhone && a.phone && a.phone.trim() === cleanPhone) ||
-        (cleanEmail && a.email && a.email.toLowerCase() === cleanEmail)
-      )
-    );
+    const existingUser = registeredAgents.find(a => {
+      const aId = (a.id || a._id || '').toString();
+      if (aId === targetEditId.toString() || a.username === editingUser.username) return false;
+      if (cleanUsername && a.username && a.username.toLowerCase() === cleanUsername) return true;
+      if (!isEditingAdmin) {
+        if (cleanPhone && a.phone && a.phone.trim() === cleanPhone) return true;
+        if (cleanEmail && a.email && a.email.toLowerCase() === cleanEmail) return true;
+      }
+      return false;
+    });
 
     if (existingUser) {
       setSavingUserEdit(false);
@@ -1270,8 +1297,8 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       const token = localStorage.getItem('adminToken');
       const reqBody = {
         name: cleanedEditingUser.name,
-        phone: isSystemUserEdit ? '' : cleanedEditingUser.phone,
-        email: isSystemUserEdit ? '' : cleanedEditingUser.email,
+        phone: isEditingAdmin ? '' : cleanedEditingUser.phone,
+        email: isEditingAdmin ? '' : cleanedEditingUser.email,
         username: cleanedEditingUser.username,
         role: ['system admin', 'systemadmin', 'admin'].includes((editingUser.role || '').toLowerCase()) ? 'Admin' : 'SalesExecutive'
       };
@@ -1301,7 +1328,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
         role: data.data.role || editingUser.role || 'SalesExecutive'
       };
       const updatedAgents = registeredAgents.map(a =>
-        (a.id === targetEditId || a.username === editingUser.username) ? dbAgent : a
+        ((a.id && a.id.toString() === targetEditId.toString()) || a.username === editingUser.username) ? dbAgent : a
       );
       setRegisteredAgents(updatedAgents);
       localStorage.setItem('registeredAgents', JSON.stringify(updatedAgents));
@@ -1313,7 +1340,10 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     }
 
     setSavingUserEdit(false);
-    setUserEditSuccessMsg(isSystemUserEdit ? 'Admin Password Updated Successfully!' : editUserPassword && editUserPassword.trim() ? 'User Details & Password Updated Successfully!' : 'User Details Updated Successfully!');
+    const successMsg = isEditingAdmin
+      ? (editUserPassword && editUserPassword.trim() ? 'Admin Details & Password Updated Successfully!' : 'Admin Details Updated Successfully!')
+      : (editUserPassword && editUserPassword.trim() ? 'User Details & Password Updated Successfully!' : 'User Details Updated Successfully!');
+    setUserEditSuccessMsg(successMsg);
     setTimeout(() => {
       setEditingUser(null);
       setEditUserPassword('');
@@ -4890,7 +4920,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
 
                               {/* Mobile No */}
                               <td class="py-2.5 px-3 whitespace-nowrap">
-                                {((agent.username || '').toLowerCase() === 'system' || !agent.phone) ? (
+                                {((agent.username || '').toLowerCase() === 'system' || ['system admin', 'systemadmin', 'admin'].includes((agent.role || '').toLowerCase()) || !agent.phone) ? (
                                   <span class="text-gray-400 italic text-[11px]">—</span>
                                 ) : (
                                   <a href={`tel:${agent.phone}`} class="text-[#B30E2E] font-bold hover:underline flex items-center gap-1 text-xs">
@@ -4902,7 +4932,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
 
                               {/* Email Address */}
                               <td class="py-2.5 px-3 whitespace-nowrap">
-                                {((agent.username || '').toLowerCase() === 'system' || !agent.email) ? (
+                                {((agent.username || '').toLowerCase() === 'system' || ['system admin', 'systemadmin', 'admin'].includes((agent.role || '').toLowerCase()) || !agent.email) ? (
                                   <span class="text-gray-400 italic text-[11px]">—</span>
                                 ) : (
                                   <a href={`mailto:${agent.email}`} class="text-gray-700 hover:text-[#B30E2E] flex items-center gap-1 text-[11px]">
@@ -4939,7 +4969,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   >
                                     <i class="fa-solid fa-pen-to-square text-xs"></i>
                                   </button>
-                                  {['admin', 'systemadmin', 'system'].includes((agent.username || '').toLowerCase()) ? (
+                                  {['admin', 'systemadmin', 'system'].includes((agent.username || '').toLowerCase()) || ['system admin', 'systemadmin', 'admin'].includes((agent.role || '').toLowerCase()) ? (
                                     <span
                                       class="w-7 h-7 rounded-lg bg-gray-100 text-gray-400 flex items-center justify-center cursor-not-allowed select-none opacity-60"
                                       title="Inbuilt Admin account cannot be deleted"
@@ -5209,7 +5239,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
             <div class="bg-gradient-to-r from-[#B30E2E] via-[#8A0B22] to-[#590414] p-5 text-white flex items-center justify-between">
               <div>
                 <h3 class="font-serif font-bold text-base">
-                  {(editingUser.username || '').toLowerCase() === 'system' ? 'Change Admin Password' : 'Edit User'}
+                  {isEditingAdmin ? 'Edit Admin User' : 'Edit User'}
                 </h3>
               </div>
               <button 
@@ -5239,30 +5269,60 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                 );
               })()}
 
-              {/* If editing System / Admin: ONLY show Password input */}
-              {(editingUser.username || '').toLowerCase() === 'system' ? (
-                <div>
-                  <label class="block text-xs font-bold text-gray-700 mb-1">New Password *</label>
-                  <div class="relative">
+              {/* If editing Admin: Full Name, Username, New Password */}
+              {isEditingAdmin ? (
+                <>
+                  {/* 1. Full Name */}
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Full Name *</label>
                     <input 
-                      type={showEditPassword ? 'text' : 'password'}
-                      required
-                      autoComplete="new-password"
-                      value={editUserPassword}
-                      onChange={(e) => setEditUserPassword(e.target.value)}
-                      placeholder="Enter new password"
-                      class="w-full pl-3 pr-10 py-2.5 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
+                      type="text" 
+                      required 
+                      autoComplete="off"
+                      value={editingUser.name || ''}
+                      onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
+                      placeholder="Enter full name"
+                      class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowEditPassword(!showEditPassword)}
-                      class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-700 cursor-pointer"
-                      title={showEditPassword ? 'Hide password' : 'Show password'}
-                    >
-                      <i class={`fa-solid ${showEditPassword ? 'fa-eye-slash' : 'fa-eye'} text-xs`}></i>
-                    </button>
                   </div>
-                </div>
+
+                  {/* 2. Username */}
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Username *</label>
+                    <input 
+                      type="text" 
+                      required 
+                      autoComplete="off"
+                      value={editingUser.username || ''}
+                      onChange={(e) => setEditingUser({ ...editingUser, username: e.target.value })}
+                      placeholder="Enter username"
+                      class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
+                    />
+                  </div>
+
+                  {/* 3. New Password */}
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">New Password</label>
+                    <div class="relative">
+                      <input 
+                        type={showEditPassword ? 'text' : 'password'}
+                        autoComplete="new-password"
+                        value={editUserPassword}
+                        onChange={(e) => setEditUserPassword(e.target.value)}
+                        placeholder="Enter new password (optional)"
+                        class="w-full pl-3 pr-10 py-2.5 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowEditPassword(!showEditPassword)}
+                        class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-700 cursor-pointer"
+                        title={showEditPassword ? 'Hide password' : 'Show password'}
+                      >
+                        <i class={`fa-solid ${showEditPassword ? 'fa-eye-slash' : 'fa-eye'} text-xs`}></i>
+                      </button>
+                    </div>
+                  </div>
+                </>
               ) : (
                 <>
                   {/* 1. Full Name */}

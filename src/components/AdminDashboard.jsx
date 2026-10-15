@@ -3930,7 +3930,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 <th 
                                   key="followupDate" 
                                   onClick={() => handleSort('followupDate')}
-                                  class={`py-2.5 px-2.5 whitespace-nowrap w-48 min-w-[170px] max-w-[195px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                  class={`py-2.5 px-2.5 whitespace-nowrap w-36 min-w-[140px] max-w-[145px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
                                   title={getSortTitle('Followup / Visit Date & Time')}
                                 >
                                   <div class="flex items-center gap-1.5">
@@ -4214,7 +4214,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   const hasDateOrTime = !!formattedDate || !!formattedTime;
 
                                   return (
-                                    <td key="followupDate" class={`py-2.5 px-2.5 whitespace-nowrap w-48 min-w-[170px] max-w-[195px] relative ${isTimeOpen ? 'z-50' : ''}`}>
+                                    <td key="followupDate" class={`py-2.5 px-2.5 whitespace-nowrap w-36 min-w-[140px] max-w-[145px] relative ${isTimeOpen ? 'z-50' : ''}`}>
                                       {!hasDateOrTime ? (
                                         /* Display only '-' when date and time are not added */
                                         <div

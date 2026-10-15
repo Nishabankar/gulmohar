@@ -4500,24 +4500,18 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                         <button
                                           type="button"
                                           onClick={(e) => toggleDropdown(e, currentId, 'dateTimePicker')}
-                                          class="flex items-center gap-2 whitespace-nowrap text-[10px] cursor-pointer group text-left transition"
+                                          class="flex items-center gap-1 whitespace-nowrap text-[10px] cursor-pointer group text-left transition"
                                           title="Click to edit Followup / Visit Date & Time"
                                         >
-                                          {/* Date with Calendar Symbol */}
-                                          <div class="inline-flex items-center gap-1 group-hover:text-[#B30E2E] transition-colors">
-                                            <span class={`font-semibold ${formattedDate ? 'text-gray-800 group-hover:text-[#B30E2E]' : 'text-gray-400 italic font-normal'}`}>
-                                              {formattedDate || '-'}
+                                          <span class={`font-semibold ${formattedDate ? 'text-gray-800 group-hover:text-[#B30E2E]' : 'text-gray-400 italic font-normal'}`}>
+                                            {formattedDate || '-'}
+                                          </span>
+                                          {formattedTime && (
+                                            <span class="text-[9px] text-gray-400 group-hover:text-[#B30E2E] font-normal ml-0.5">
+                                              {formattedTime}
                                             </span>
-                                            <i class={`fa-regular fa-calendar-days text-[9px] transition-colors ${isPickerOpen ? 'text-[#B30E2E]' : 'text-gray-400 group-hover:text-[#B30E2E]'}`}></i>
-                                          </div>
-
-                                          {/* Time with Clock Symbol */}
-                                          <div class="inline-flex items-center gap-1 group-hover:text-[#B30E2E] transition-colors">
-                                            <span class="text-[9.5px] text-gray-500 group-hover:text-[#B30E2E] font-normal">
-                                              {formattedTime || '--:--'}
-                                            </span>
-                                            <i class={`fa-regular fa-clock text-[9px] transition-colors ${isPickerOpen ? 'text-[#B30E2E]' : 'text-gray-400 group-hover:text-[#B30E2E]'}`}></i>
-                                          </div>
+                                          )}
+                                          <i class={`fa-regular fa-calendar-days text-[9px] transition-colors ml-0.5 ${isPickerOpen ? 'text-[#B30E2E]' : 'text-gray-400 group-hover:text-[#B30E2E]'}`}></i>
                                         </button>
                                       )}
 

@@ -193,24 +193,12 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
 
   // Active Inline Dropdown Popover State: { rowId: string, field: 'status' | 'followupDate' | 'plotsCount' | 'assignedAgent' }
   const [activeDropdown, setActiveDropdown] = useState(null);
-  const [isEditTimeOpen, setIsEditTimeOpen] = useState(false);
-  const [isNewLeadTimeOpen, setIsNewLeadTimeOpen] = useState(false);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (activeDropdown) {
         if (!e.target || typeof e.target.closest !== 'function' || (!e.target.closest('.custom-dropdown-menu') && !e.target.closest('.custom-dropdown-toggle'))) {
           setActiveDropdown(null);
-        }
-      }
-      if (isEditTimeOpen) {
-        if (!e.target || typeof e.target.closest !== 'function' || (!e.target.closest('.custom-dropdown-menu') && !e.target.closest('.custom-time-toggle-edit'))) {
-          setIsEditTimeOpen(false);
-        }
-      }
-      if (isNewLeadTimeOpen) {
-        if (!e.target || typeof e.target.closest !== 'function' || (!e.target.closest('.custom-dropdown-menu') && !e.target.closest('.custom-time-toggle-new'))) {
-          setIsNewLeadTimeOpen(false);
         }
       }
     };
@@ -2174,19 +2162,15 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     return `${String(hour).padStart(2, '0')}:${m}`;
   };
 
-  const CustomTimePickerPopup = ({ value, onChange, onClose, isAbsolute = false, coords = null }) => {
+  const CustomTimePickerPopup = ({ value, onChange, onClose, coords = null }) => {
     const parsedTime = parseTimeParts(value);
 
-    const containerStyle = isAbsolute
-      ? {}
-      : {
-          top: coords ? `${coords.top}px` : undefined,
-          left: coords ? `${coords.left}px` : undefined
-        };
+    const containerStyle = {
+      top: coords ? `${coords.top}px` : undefined,
+      left: coords ? `${coords.left}px` : undefined
+    };
 
-    const containerClass = isAbsolute
-      ? "absolute z-50 top-full mt-1.5 right-0 sm:left-0 w-[230px] bg-white rounded-2xl shadow-2xl border border-gray-200 p-2.5 text-xs animate-fade-in custom-dropdown-menu select-none"
-      : "fixed z-[9999] w-[230px] bg-white rounded-2xl shadow-2xl border border-gray-200 p-2.5 text-xs animate-fade-in custom-dropdown-menu select-none";
+    const containerClass = "fixed z-[9999] w-[230px] bg-white rounded-2xl shadow-2xl border border-gray-200 p-2.5 text-xs animate-fade-in custom-dropdown-menu select-none";
 
     return (
       <div class={containerClass} style={containerStyle}>
@@ -2568,7 +2552,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
         targetHeight = 240;
         dropdownWidth = Math.max(160, rect.width);
       } else if (field === 'visitTime') {
-        targetHeight = 240;
+        targetHeight = 280;
         dropdownWidth = 230;
       }
 
@@ -2597,7 +2581,10 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
 
       // Horizontally align with the clicked button, keeping within viewport
       let left = rect.left;
-      if (left + dropdownWidth > window.innerWidth - 12) {
+      if ((rowId === 'edit-modal' || rowId === 'new-lead-modal') && rect.right - dropdownWidth >= 8) {
+        // Inward right alignment for time dropdown in modals so it stays neatly inside
+        left = rect.right - dropdownWidth;
+      } else if (left + dropdownWidth > window.innerWidth - 12) {
         left = Math.max(8, window.innerWidth - dropdownWidth - 12);
       }
       if (left < 8) left = 8;
@@ -5320,27 +5307,27 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                         onChange={(e) => setEditingEnquiry({ ...editingEnquiry, followupDate: e.target.value })}
                         class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
                       />
-                      <div class="relative">
+                      <div>
                         <button
                           type="button"
-                          onClick={() => setIsEditTimeOpen(!isEditTimeOpen)}
-                          class={`w-full px-3 py-2 rounded-xl border text-xs flex items-center justify-between cursor-pointer transition custom-time-toggle-edit ${
-                            isEditTimeOpen ? 'border-[#B30E2E] ring-1 ring-rose-200 bg-rose-50/30' : 'border-gray-300 hover:border-gray-400 bg-white'
+                          onClick={(e) => toggleDropdown(e, 'edit-modal', 'visitTime')}
+                          class={`w-full px-3 py-2 rounded-xl border text-xs flex items-center justify-between cursor-pointer transition custom-dropdown-toggle ${
+                            activeDropdown?.rowId === 'edit-modal' && activeDropdown?.field === 'visitTime' ? 'border-[#B30E2E] ring-1 ring-rose-200 bg-rose-50/30' : 'border-gray-300 hover:border-gray-400 bg-white'
                           }`}
                           title="Click to select Time"
                         >
                           <span class={editingEnquiry.visitTime ? 'font-bold text-gray-800' : 'text-gray-400'}>
                             {editingEnquiry.visitTime ? formatTime12Hour(editingEnquiry.visitTime) : 'Select Time'}
                           </span>
-                          <i class={`fa-regular fa-clock text-xs ${isEditTimeOpen ? 'text-[#B30E2E]' : 'text-gray-500'}`}></i>
+                          <i class={`fa-regular fa-clock text-xs ${activeDropdown?.rowId === 'edit-modal' && activeDropdown?.field === 'visitTime' ? 'text-[#B30E2E]' : 'text-gray-500'}`}></i>
                         </button>
 
-                        {isEditTimeOpen && (
+                        {activeDropdown?.rowId === 'edit-modal' && activeDropdown?.field === 'visitTime' && (
                           <CustomTimePickerPopup
                             value={editingEnquiry.visitTime}
                             onChange={(newTime) => setEditingEnquiry({ ...editingEnquiry, visitTime: newTime })}
-                            onClose={() => setIsEditTimeOpen(false)}
-                            isAbsolute={true}
+                            onClose={() => setActiveDropdown(null)}
+                            coords={activeDropdown?.coords}
                           />
                         )}
                       </div>
@@ -5754,27 +5741,27 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                         onChange={(e) => setNewLeadFormData({ ...newLeadFormData, followupDate: e.target.value })}
                         class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800"
                       />
-                      <div class="relative">
+                      <div>
                         <button
                           type="button"
-                          onClick={() => setIsNewLeadTimeOpen(!isNewLeadTimeOpen)}
-                          class={`w-full px-3 py-2 rounded-xl border text-xs flex items-center justify-between cursor-pointer transition custom-time-toggle-new ${
-                            isNewLeadTimeOpen ? 'border-[#B30E2E] ring-1 ring-rose-200 bg-rose-50/30' : 'border-gray-300 hover:border-gray-400 bg-white'
+                          onClick={(e) => toggleDropdown(e, 'new-lead-modal', 'visitTime')}
+                          class={`w-full px-3 py-2 rounded-xl border text-xs flex items-center justify-between cursor-pointer transition custom-dropdown-toggle ${
+                            activeDropdown?.rowId === 'new-lead-modal' && activeDropdown?.field === 'visitTime' ? 'border-[#B30E2E] ring-1 ring-rose-200 bg-rose-50/30' : 'border-gray-300 hover:border-gray-400 bg-white'
                           }`}
                           title="Click to select Time"
                         >
                           <span class={newLeadFormData.visitTime ? 'font-bold text-gray-800' : 'text-gray-400'}>
                             {newLeadFormData.visitTime ? formatTime12Hour(newLeadFormData.visitTime) : 'Select Time'}
                           </span>
-                          <i class={`fa-regular fa-clock text-xs ${isNewLeadTimeOpen ? 'text-[#B30E2E]' : 'text-gray-500'}`}></i>
+                          <i class={`fa-regular fa-clock text-xs ${activeDropdown?.rowId === 'new-lead-modal' && activeDropdown?.field === 'visitTime' ? 'text-[#B30E2E]' : 'text-gray-500'}`}></i>
                         </button>
 
-                        {isNewLeadTimeOpen && (
+                        {activeDropdown?.rowId === 'new-lead-modal' && activeDropdown?.field === 'visitTime' && (
                           <CustomTimePickerPopup
                             value={newLeadFormData.visitTime}
                             onChange={(newTime) => setNewLeadFormData({ ...newLeadFormData, visitTime: newTime })}
-                            onClose={() => setIsNewLeadTimeOpen(false)}
-                            isAbsolute={true}
+                            onClose={() => setActiveDropdown(null)}
+                            coords={activeDropdown?.coords}
                           />
                         )}
                       </div>

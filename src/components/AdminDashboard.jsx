@@ -2180,39 +2180,18 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
             <i class="fa-solid fa-clock text-[#B30E2E]"></i>
             <span>Select Time</span>
           </div>
-          <div class="flex items-center gap-2">
-            {value && (
-              <button
-                type="button"
-                onClick={() => {
-                  onChange('');
-                  onClose();
-                }}
-                class="text-[10px] text-rose-600 hover:text-rose-800 font-bold hover:underline cursor-pointer"
-              >
-                Clear
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={onClose}
-              class="w-5 h-5 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-700 text-xs cursor-pointer"
-            >
-              <i class="fa-solid fa-xmark"></i>
-            </button>
-          </div>
-        </div>
-
-        {/* Active Time Banner */}
-        <div class="bg-gradient-to-r from-rose-50 via-amber-50 to-rose-50 rounded-xl py-1 px-2 mb-2 flex items-center justify-center gap-1.5 border border-rose-100 shadow-2xs">
-          <i class="fa-regular fa-clock text-[10px] text-[#B30E2E]"></i>
-          <span class="text-xs font-black text-[#B30E2E] tracking-wider">
-            {value ? formatTime12Hour(value) : 'Select hour & min'}
-          </span>
+          <button
+            type="button"
+            onClick={onClose}
+            class="w-5 h-5 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-700 text-xs cursor-pointer"
+            title="Close"
+          >
+            <i class="fa-solid fa-xmark"></i>
+          </button>
         </div>
 
         {/* 3 Columns: Hour | Minute | Period */}
-        <div class="grid grid-cols-3 gap-1.5 pb-2">
+        <div class="grid grid-cols-3 gap-1.5 pb-1">
           {/* Hours Column */}
           <div class="flex flex-col">
             <span class="text-[9px] font-bold text-gray-400 uppercase text-center mb-1">Hour</span>
@@ -2295,14 +2274,30 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
           </div>
         </div>
 
-        {/* Done Button */}
-        <button
-          type="button"
-          onClick={onClose}
-          class="mt-1 w-full py-1.5 rounded-xl bg-gradient-to-r from-[#B30E2E] to-[#8A0B22] text-white font-bold text-[11px] hover:opacity-95 shadow-xs transition cursor-pointer"
-        >
-          Done
-        </button>
+        {/* Footer: Clear on left, small OK on right */}
+        <div class="flex items-center justify-between pt-1.5 mt-1 border-t border-gray-100">
+          {value ? (
+            <button
+              type="button"
+              onClick={() => {
+                onChange('');
+                onClose();
+              }}
+              class="text-[10px] text-rose-600 hover:text-rose-800 font-bold hover:underline cursor-pointer"
+            >
+              Clear
+            </button>
+          ) : (
+            <span />
+          )}
+          <button
+            type="button"
+            onClick={onClose}
+            class="px-3.5 py-1 rounded-lg bg-[#B30E2E] hover:bg-[#8A0B22] text-white font-bold text-[11px] shadow-2xs transition cursor-pointer"
+          >
+            OK
+          </button>
+        </div>
       </div>
     );
   };
@@ -2552,7 +2547,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
         targetHeight = 240;
         dropdownWidth = Math.max(160, rect.width);
       } else if (field === 'visitTime') {
-        targetHeight = 280;
+        targetHeight = 220;
         dropdownWidth = 230;
       }
 

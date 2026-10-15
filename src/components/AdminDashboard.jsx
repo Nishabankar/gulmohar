@@ -2167,11 +2167,10 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
 
     const containerStyle = {
       top: coords ? `${coords.top}px` : undefined,
-      left: coords ? `${coords.left}px` : undefined,
-      maxHeight: coords?.maxHeight ? `${coords.maxHeight}px` : undefined
+      left: coords ? `${coords.left}px` : undefined
     };
 
-    const containerClass = "fixed z-[9999] w-[220px] bg-white rounded-2xl shadow-2xl border border-gray-200 p-2 text-xs animate-fade-in custom-dropdown-menu select-none";
+    const containerClass = "fixed z-[9999] w-[220px] bg-white rounded-2xl shadow-2xl border border-gray-200 p-2.5 text-xs animate-fade-in custom-dropdown-menu select-none";
 
     return (
       <div class={containerClass} style={containerStyle}>
@@ -2548,7 +2547,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
         targetHeight = 240;
         dropdownWidth = Math.max(160, rect.width);
       } else if (field === 'visitTime') {
-        targetHeight = 210;
+        targetHeight = 225;
         dropdownWidth = 220;
       }
 

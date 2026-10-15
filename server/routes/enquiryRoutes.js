@@ -17,7 +17,7 @@ const isDashboardRequest = (req) => {
 // @access  Public
 router.post('/', async (req, res) => {
   try {
-    const { firstName, lastName, phone, email, plotInfo, plotsCount, visitDate, followupDate, notes, assignedAgentName, assignedTo, createdBy, modifiedBy } = req.body;
+    const { firstName, lastName, phone, email, plotInfo, plotsCount, visitDate, visitTime, followupDate, notes, assignedAgentName, assignedTo, createdBy, modifiedBy } = req.body;
     // Default priority for new leads is 'Hot'
     const priority = isDashboardRequest(req) ? (matchOption(req.body.priority, PRIORITY_OPTIONS) || 'Hot') : 'Hot';
 
@@ -111,8 +111,8 @@ router.post('/', async (req, res) => {
     // Insert into leads table
     const [result] = await query(
       `INSERT INTO leads 
-        (first_name, last_name, phone, email, plot_info, plots_count, visit_date, followup_date, status, priority, notes, assigned_agent_name, assigned_to, created_by) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'New', ?, ?, ?, ?, ?)`,
+        (first_name, last_name, phone, email, plot_info, plots_count, visit_date, visit_time, followup_date, status, priority, notes, assigned_agent_name, assigned_to, created_by) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'New', ?, ?, ?, ?, ?)`,
       [
         firstName.trim(),
         (lastName || '').trim(),
@@ -121,6 +121,7 @@ router.post('/', async (req, res) => {
         (plotInfo || '').trim(),
         plotsCount || '1 Guntha',
         visitDate || '',
+        visitTime || '',
         followupDate || '',
         priority,
         initialNotes,
@@ -159,6 +160,7 @@ router.post('/', async (req, res) => {
       plotInfo: plotInfo || '',
       plotsCount: plotsCount || '1 Guntha',
       visitDate: visitDate || '',
+      visitTime: visitTime || '',
       followupDate: followupDate || '',
       status: 'New',
       priority,

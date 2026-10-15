@@ -39,6 +39,7 @@ const formatEnquiryRow = (row, historyEntries = []) => {
     plotInfo: row.plot_info || '',
     plotsCount: row.plots_count || '1 Plot',
     visitDate: row.visit_date || '',
+    visitTime: row.visit_time || '',
     followupDate: row.followup_date || '',
     status: row.status || 'New',
     notes: row.notes || '',
@@ -96,7 +97,7 @@ router.post('/login', async (req, res) => {
       admin: {
         id: admin.id.toString(),
         username: admin.username,
-        name: admin.name || (admin.role === 'SuperAdmin' ? 'Admin Control Panel' : ['Admin', 'SystemAdmin'].includes(admin.role) ? 'Admin' : admin.username),
+        name: admin.name || (admin.role === 'SuperAdmin' ? 'Admin Control Panel' : admin.username === 'system' ? 'System' : ['Admin', 'SystemAdmin'].includes(admin.role) ? 'Admin' : admin.username),
         email: admin.email || '',
         phone: admin.phone || '',
         role: admin.role
@@ -294,7 +295,7 @@ router.get('/profile', protectAdmin, async (req, res) => {
       id: u.id.toString(),
       _id: u.id.toString(),
       username: u.username,
-      name: u.name || (u.role === 'SuperAdmin' ? 'Admin Control Panel' : ['Admin', 'SystemAdmin'].includes(u.role) ? 'Admin' : u.username),
+      name: u.name || (u.role === 'SuperAdmin' ? 'Admin Control Panel' : u.username === 'system' ? 'System' : ['Admin', 'SystemAdmin'].includes(u.role) ? 'Admin' : u.username),
       email: u.email || '',
       phone: u.phone || '',
       role: u.role
@@ -504,7 +505,7 @@ router.get('/enquiries/:id', protectAdmin, async (req, res) => {
 // @access  Protected
 router.patch('/enquiries/:id', protectAdmin, async (req, res) => {
   try {
-    const { firstName, lastName, phone, oldPhone, email, plotsCount, plotInfo, visitDate, followupDate, status, notes, assignedAgentName, assignedTo, priority, updatedBy } = req.body;
+    const { firstName, lastName, phone, oldPhone, email, plotsCount, plotInfo, visitDate, visitTime, followupDate, status, notes, assignedAgentName, assignedTo, priority, updatedBy } = req.body;
     
     let enquiryId = parseInt(req.params.id, 10);
     let existing = null;
@@ -578,6 +579,7 @@ router.patch('/enquiries/:id', protectAdmin, async (req, res) => {
       { col: 'plots_count', label: 'No. of Guntha', incoming: plotsCount },
       { col: 'plot_info', label: 'Plot Info', incoming: plotInfo },
       { col: 'visit_date', label: 'Visit Date', incoming: visitDate },
+      { col: 'visit_time', label: 'Visit Time', incoming: visitTime },
       { col: 'followup_date', label: 'Followup Date', incoming: followupDate },
       { col: 'status', label: 'Status', incoming: status },
       { col: 'notes', label: 'Notes', incoming: notes },
@@ -1164,8 +1166,8 @@ router.post('/enquiries/import', protectAdmin, async (req, res) => {
       // Insert into MySQL leads table
       const [insertResult] = await query(
         `INSERT INTO leads 
-         (first_name, last_name, phone, email, plot_info, plots_count, visit_date, followup_date, status, priority, notes, assigned_to, assigned_agent_name, created_by, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'System', COALESCE(?, UTC_TIMESTAMP()))`,
+         (first_name, last_name, phone, email, plot_info, plots_count, visit_date, visit_time, followup_date, status, priority, notes, assigned_to, assigned_agent_name, created_by, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, 'System', COALESCE(?, UTC_TIMESTAMP()))`,
         [firstName, lastName, cleanPhone, email, plotInfo, plotsCount, visitDate, followupDate, status, priority, notes, assignedTo, assignedAgentName, created ? created.utc : null]
       );
 

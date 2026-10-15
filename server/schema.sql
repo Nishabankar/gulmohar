@@ -45,6 +45,7 @@ CREATE TABLE `leads` (
   `plot_info` TEXT DEFAULT NULL,
   `plots_count` VARCHAR(100) NOT NULL DEFAULT '1 Plot',
   `visit_date` VARCHAR(100) NOT NULL DEFAULT '',
+  `visit_time` VARCHAR(20) NOT NULL DEFAULT '',
   `followup_date` VARCHAR(100) NOT NULL DEFAULT '',
   `status` VARCHAR(50) NOT NULL DEFAULT 'New',
   `priority` VARCHAR(20) NOT NULL DEFAULT 'Hot' COMMENT 'Hot | Cold',
@@ -123,7 +124,7 @@ ON DUPLICATE KEY UPDATE `username`=`username`;
 -- Inbuilt Virtual Admin: system / system123
 INSERT INTO `users` (`name`, `username`, `email`, `phone`, `password`, `role`)
 VALUES 
-('Admin', 'system', 'system@gulmoharcity.com', '9876543211', '$2a$10$Pg7ngGeVP6Q5NdOi3ACVquC0sYoO0lJr427vceWW8HB6iQxjnw0Au', 'Admin')
+('System', 'system', '', '', '$2a$10$Pg7ngGeVP6Q5NdOi3ACVquC0sYoO0lJr427vceWW8HB6iQxjnw0Au', 'Admin')
 ON DUPLICATE KEY UPDATE `username`=`username`;
 
 -- Optional: Add your Sales Agents directly via SQL (or use the Admin Panel UI under 'Sales Agents')

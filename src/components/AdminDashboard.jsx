@@ -374,7 +374,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
   const currentUser = {
     ...rawUser,
     role: isSuperAdmin ? 'SuperAdmin' : isAdmin ? 'Admin' : 'SalesExecutive',
-    name: isSuperAdmin ? (rawUser.name || 'Super Admin') : isAdmin ? (rawUser.name || 'Admin') : (rawUser.name && rawUser.name !== 'Admin Control Panel' ? rawUser.name : 'Sales Executive'),
+    name: isSuperAdmin ? (rawUser.name || 'Super Admin') : isSystemAdmin ? (rawUser.name || 'System') : isAdmin ? (rawUser.name || 'Admin') : (rawUser.name && rawUser.name !== 'Admin Control Panel' ? rawUser.name : 'Sales Executive'),
     phone: rawUser.phone || (matchedAgentObj ? matchedAgentObj.phone : ''),
     email: rawUser.email || (matchedAgentObj ? matchedAgentObj.email : ''),
     password: rawUser.password || (matchedAgentObj ? matchedAgentObj.password : ''),
@@ -445,6 +445,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     email: '',
     plotsCount: '1 Guntha',
     visitDate: '',
+    visitTime: '',
     followupDate: '',
     priority: 'Hot',
     notes: '',
@@ -1009,6 +1010,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       email: newLeadFormData.email.trim(),
       plotsCount: newLeadFormData.plotsCount || '1 Guntha',
       visitDate: newLeadFormData.visitDate || '',
+      visitTime: newLeadFormData.visitTime || '',
       followupDate: newLeadFormData.followupDate || '',
       notes: newLeadFormData.notes ? newLeadFormData.notes.trim() : '',
       status: 'New',
@@ -1063,7 +1065,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       setTimeout(() => {
         setShowCreateLeadModal(false);
         setCreateLeadMsg('');
-        setNewLeadFormData({ firstName: '', lastName: '', phone: '', email: '', plotsCount: '1 Guntha', visitDate: '', followupDate: '', priority: 'Hot', notes: '', assignedAgentName: 'auto' });
+        setNewLeadFormData({ firstName: '', lastName: '', phone: '', email: '', plotsCount: '1 Guntha', visitDate: '', visitTime: '', followupDate: '', priority: 'Hot', notes: '', assignedAgentName: 'auto' });
       }, 1000);
     }
   };
@@ -1230,15 +1232,21 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       return;
     }
 
+    const isSystemUserEdit = (editingUser.username || '').toLowerCase() === 'system';
+    if (isSystemUserEdit && (!editUserPassword || !editUserPassword.trim())) {
+      setSavingUserEdit(false);
+      setUserEditSuccessMsg('Error: Please enter a new password.');
+      return;
+    }
     const cleanUsername = cleanedEditingUser.username;
-    const cleanPhone = cleanedEditingUser.phone;
-    const cleanEmail = cleanedEditingUser.email.toLowerCase();
+    const cleanPhone = isSystemUserEdit ? '' : cleanedEditingUser.phone;
+    const cleanEmail = isSystemUserEdit ? '' : cleanedEditingUser.email.toLowerCase();
 
-    const existingUser = registeredAgents.find(a => 
+    const existingUser = !isSystemUserEdit && registeredAgents.find(a => 
       ((a.id && a.id.toString() !== targetEditId.toString()) && a.username !== editingUser.username) && (
-        (a.username && a.username.toLowerCase() === cleanUsername) ||
-        (a.phone && a.phone.trim() === cleanPhone) ||
-        (a.email && a.email.toLowerCase() === cleanEmail)
+        (cleanUsername && a.username && a.username.toLowerCase() === cleanUsername) ||
+        (cleanPhone && a.phone && a.phone.trim() === cleanPhone) ||
+        (cleanEmail && a.email && a.email.toLowerCase() === cleanEmail)
       )
     );
 
@@ -1248,11 +1256,11 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
         setUserEditSuccessMsg(`Error: Username '${cleanUsername}' is already taken.`);
         return;
       }
-      if (existingUser.phone && existingUser.phone.trim() === cleanPhone) {
+      if (cleanPhone && existingUser.phone && existingUser.phone.trim() === cleanPhone) {
         setUserEditSuccessMsg(`Error: Mobile number '${cleanPhone}' is already registered to ${existingUser.name || 'another user'}.`);
         return;
       }
-      if (existingUser.email && existingUser.email.toLowerCase() === cleanEmail) {
+      if (cleanEmail && existingUser.email && existingUser.email.toLowerCase() === cleanEmail) {
         setUserEditSuccessMsg(`Error: Email address '${cleanEmail}' is already registered to ${existingUser.name || 'another user'}.`);
         return;
       }
@@ -1262,8 +1270,8 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       const token = localStorage.getItem('adminToken');
       const reqBody = {
         name: cleanedEditingUser.name,
-        phone: cleanedEditingUser.phone,
-        email: cleanedEditingUser.email,
+        phone: isSystemUserEdit ? '' : cleanedEditingUser.phone,
+        email: isSystemUserEdit ? '' : cleanedEditingUser.email,
         username: cleanedEditingUser.username,
         role: ['system admin', 'systemadmin', 'admin'].includes((editingUser.role || '').toLowerCase()) ? 'Admin' : 'SalesExecutive'
       };
@@ -1305,7 +1313,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     }
 
     setSavingUserEdit(false);
-    setUserEditSuccessMsg(editUserPassword && editUserPassword.trim() ? 'User Details & Password Updated Successfully!' : 'User Details Updated Successfully!');
+    setUserEditSuccessMsg(isSystemUserEdit ? 'Admin Password Updated Successfully!' : editUserPassword && editUserPassword.trim() ? 'User Details & Password Updated Successfully!' : 'User Details Updated Successfully!');
     setTimeout(() => {
       setEditingUser(null);
       setEditUserPassword('');
@@ -1390,10 +1398,10 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     const token = localStorage.getItem('adminToken');
     const performer = currentUser.name || (isAdmin ? 'Admin' : 'Sales Executive');
 
-    const targetItem = enquiries.find(item => (item._id || item.id) === id);
+    const targetItem = enquiries.find(item => String(item._id || item.id) === String(id));
 
     setEnquiries(prev => prev.map(item => {
-      if (item._id === id || item.id === id) {
+      if (String(item._id || item.id) === String(id)) {
         return { ...item, [fieldName]: fieldValue };
       }
       return item;
@@ -1401,7 +1409,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
 
     const localCache = JSON.parse(localStorage.getItem('localEnquiriesCache') || '[]');
     const updatedCache = localCache.map(item => {
-      if (item._id === id || item.id === id) {
+      if (String(item._id || item.id) === String(id)) {
         return { ...item, [fieldName]: fieldValue };
       }
       return item;
@@ -1424,7 +1432,11 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       });
       const data = await res.json();
       if (data.success && data.data) {
-        setEnquiries(prev => prev.map(item => (item._id === id || item.id === id) ? data.data : item));
+        const syncedItem = { ...data.data, [fieldName]: fieldValue };
+        setEnquiries(prev => prev.map(item => (String(item._id || item.id) === String(id)) ? syncedItem : item));
+        const currentCache = JSON.parse(localStorage.getItem('localEnquiriesCache') || '[]');
+        const refreshedCache = currentCache.map(item => (String(item._id || item.id) === String(id)) ? syncedItem : item);
+        localStorage.setItem('localEnquiriesCache', JSON.stringify(refreshedCache));
       }
     } catch (err) {
       console.warn(`Backend inline ${fieldName} patch note:`, err);
@@ -1510,6 +1522,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
           plotsCount: updatedLead.plotsCount,
           plotInfo: updatedLead.plotInfo,
           visitDate: updatedLead.visitDate,
+          visitTime: updatedLead.visitTime || '',
           followupDate: updatedLead.followupDate || '',
           status: updatedLead.status,
           notes: updatedLead.notes,
@@ -1528,7 +1541,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       }
 
       if (res.ok && data.success && data.data) {
-        const finalSynced = { ...data.data, followupDate: updatedLead.followupDate || data.data.followupDate || '' };
+        const finalSynced = { ...data.data, followupDate: updatedLead.followupDate || data.data.followupDate || '', visitTime: updatedLead.visitTime || data.data.visitTime || '' };
         
         // 1. Sync React state strictly with MongoDB Atlas returned record
         setEnquiries(prev => prev.map(item => {
@@ -2092,6 +2105,21 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     return target >= startOfWeek && target <= endOfWeek;
   };
 
+  const formatTime12Hour = (timeStr) => {
+    if (!timeStr) return '';
+    if (/am|pm/i.test(timeStr)) return timeStr;
+    const parts = timeStr.split(':');
+    if (parts.length < 2) return timeStr;
+    let hours = parseInt(parts[0], 10);
+    const minutes = parts[1];
+    if (isNaN(hours)) return timeStr;
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    const formattedHours = hours < 10 ? `0${hours}` : hours;
+    return `${formattedHours}:${minutes} ${ampm}`;
+  };
+
   // Helpers for Status filtering
   const isPendingVisitStatus = (status) => status === 'Site Visit Scheduled';
   const isFollowupStatus = (status) => ['Contacted', 'Interested', 'Details Provided'].includes(status);
@@ -2254,7 +2282,11 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
           } else {
             const timeA = new Date(a.followupDate).getTime();
             const timeB = new Date(b.followupDate).getTime();
-            comp = (timeA - timeB) * sortMultiplier;
+            if (timeA !== timeB) {
+              comp = (timeA - timeB) * sortMultiplier;
+            } else {
+              comp = (a.visitTime || '').localeCompare(b.visitTime || '') * sortMultiplier;
+            }
           }
           break;
         }
@@ -2292,6 +2324,17 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       }
 
       if (comp !== 0) return comp;
+    }
+
+    if (visitDateFilter !== 'All') {
+      const dateA = a.followupDate || '';
+      const dateB = b.followupDate || '';
+      if (dateA !== dateB) return dateA.localeCompare(dateB);
+      const timeA = a.visitTime || '';
+      const timeB = b.visitTime || '';
+      if (timeA && !timeB) return -1;
+      if (!timeA && timeB) return 1;
+      if (timeA && timeB) return timeA.localeCompare(timeB);
     }
 
     return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
@@ -3554,7 +3597,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                     <thead class="sticky top-0 z-10 bg-gray-100 shadow-2xs">
                       <tr class="bg-gray-100 border-b border-gray-200 text-[10px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">
                         {isAdmin && (
-                          <th class="py-2.5 px-2 text-center whitespace-nowrap w-8">
+                          <th class="py-2.5 px-2 text-center whitespace-nowrap w-9 min-w-[36px] max-w-[36px]">
                             <input 
                               type="checkbox"
                               checked={filteredEnquiries.length > 0 && filteredEnquiries.every(item => selectedLeadIds.includes(item._id || item.id))}
@@ -3591,7 +3634,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 <th 
                                   key="leadId" 
                                   onClick={() => handleSort('leadId')}
-                                  class={`py-2.5 px-2.5 whitespace-nowrap w-16 min-w-[60px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                  class={`py-2.5 px-2.5 whitespace-nowrap w-20 min-w-[70px] max-w-[80px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
                                   title={getSortTitle('Lead ID')}
                                 >
                                   <div class="flex items-center gap-1.5">
@@ -3605,7 +3648,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 <th 
                                   key="fullName" 
                                   onClick={() => handleSort('fullName')}
-                                  class={`py-2.5 px-3 whitespace-nowrap w-44 min-w-[165px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                  class={`py-2.5 px-3 whitespace-nowrap w-44 min-w-[160px] max-w-[165px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
                                   title={getSortTitle('Full Name')}
                                 >
                                   <div class="flex items-center gap-1.5">
@@ -3619,7 +3662,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 <th 
                                   key="mobile" 
                                   onClick={() => handleSort('mobile')}
-                                  class={`py-2.5 px-3 whitespace-nowrap w-36 min-w-[142px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                  class={`py-2.5 px-3 whitespace-nowrap w-36 min-w-[140px] max-w-[142px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
                                   title={getSortTitle('Mobile No')}
                                 >
                                   <div class="flex items-center gap-1.5">
@@ -3633,10 +3676,10 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 <th 
                                   key="email" 
                                   onClick={() => handleSort('email')}
-                                  class={`py-2.5 px-2.5 whitespace-nowrap min-w-[155px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                  class={`py-2.5 px-2.5 whitespace-nowrap w-44 min-w-[150px] max-w-[165px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
                                   title={getSortTitle('Email Address')}
                                 >
-                                  <div class="flex items-center gap-1.5">
+                                  <div class="flex items-center gap-1.5 truncate">
                                     <span>Email Address</span>
                                     {renderSortIndicator()}
                                   </div>
@@ -3647,7 +3690,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 <th 
                                   key="enquiryDate" 
                                   onClick={() => handleSort('enquiryDate')}
-                                  class={`py-2.5 px-2.5 whitespace-nowrap min-w-[145px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                  class={`py-2.5 px-2.5 whitespace-nowrap w-36 min-w-[140px] max-w-[145px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
                                   title={getSortTitle('Enquiry Date')}
                                 >
                                   <div class="flex items-center gap-1.5">
@@ -3661,7 +3704,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 <th 
                                   key="status" 
                                   onClick={() => handleSort('status')}
-                                  class={`py-2.5 px-2.5 whitespace-nowrap min-w-[130px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                  class={`py-2.5 px-2.5 whitespace-nowrap w-32 min-w-[125px] max-w-[130px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
                                   title={getSortTitle('Status')}
                                 >
                                   <div class="flex items-center gap-1.5">
@@ -3675,7 +3718,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 <th 
                                   key="priority" 
                                   onClick={() => handleSort('priority')}
-                                  class={`py-2.5 px-2.5 whitespace-nowrap min-w-[95px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                  class={`py-2.5 px-2.5 whitespace-nowrap w-24 min-w-[90px] max-w-[95px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
                                   title={getSortTitle('Priority')}
                                 >
                                   <div class="flex items-center gap-1.5">
@@ -3689,11 +3732,11 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 <th 
                                   key="followupDate" 
                                   onClick={() => handleSort('followupDate')}
-                                  class={`py-2.5 px-2.5 whitespace-nowrap min-w-[115px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
-                                  title={getSortTitle('Followup Date')}
+                                  class={`py-2.5 px-2.5 whitespace-nowrap w-48 min-w-[175px] max-w-[190px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                  title={getSortTitle('Followup / Visit Date & Time')}
                                 >
                                   <div class="flex items-center gap-1.5">
-                                    <span>Followup Date</span>
+                                    <span>Followup / Visit</span>
                                     {renderSortIndicator()}
                                   </div>
                                 </th>
@@ -3703,7 +3746,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 <th 
                                   key="plotsCount" 
                                   onClick={() => handleSort('plotsCount')}
-                                  class={`py-2.5 px-2.5 whitespace-nowrap min-w-[110px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                  class={`py-2.5 px-2.5 whitespace-nowrap w-28 min-w-[110px] max-w-[115px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
                                   title={getSortTitle('No. of Guntha')}
                                 >
                                   <div class="flex items-center gap-1.5">
@@ -3717,7 +3760,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 <th 
                                   key="assignedAgent" 
                                   onClick={() => handleSort('assignedAgent')}
-                                  class={`py-2.5 px-2.5 whitespace-nowrap min-w-[145px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                  class={`py-2.5 px-2.5 whitespace-nowrap w-40 min-w-[140px] max-w-[145px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
                                   title={getSortTitle('Assigned Agent')}
                                 >
                                   <div class="flex items-center gap-1.5">
@@ -3731,7 +3774,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 <th 
                                   key="createdBy" 
                                   onClick={() => handleSort('createdBy')}
-                                  class={`py-2.5 px-2.5 whitespace-nowrap min-w-[130px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                  class={`py-2.5 px-2.5 whitespace-nowrap w-32 min-w-[120px] max-w-[125px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
                                   title={getSortTitle('Created By')}
                                 >
                                   <div class="flex items-center gap-1.5">
@@ -3741,9 +3784,9 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 </th>
                               );
                             case 'notes':
-                              return <th key="notes" class="py-2.5 px-2 text-center whitespace-nowrap w-12 min-w-[50px]">Notes</th>;
+                              return <th key="notes" class="py-2.5 px-2 text-center whitespace-nowrap w-12 min-w-[50px] max-w-[50px]">Notes</th>;
                             case 'actions':
-                              return <th key="actions" class="py-2.5 px-2 text-center whitespace-nowrap w-24 min-w-[105px]">Actions</th>;
+                              return <th key="actions" class="py-2.5 px-2 text-center whitespace-nowrap w-24 min-w-[105px] max-w-[105px]">Actions</th>;
                             default:
                               return null;
                           }
@@ -3759,7 +3802,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                         return (
                           <tr key={currentId} class={`hover:bg-rose-50/20 transition ${selectedLeadIds.includes(currentId) ? 'bg-rose-50/40' : ''} ${hasActiveDropdownInRow ? 'relative z-50' : 'relative z-0'}`}>
                             {isAdmin && (
-                              <td class="py-2.5 px-2 text-center whitespace-nowrap w-8">
+                              <td class="py-2.5 px-2 text-center whitespace-nowrap w-9 min-w-[36px] max-w-[36px]">
                                 <input 
                                   type="checkbox"
                                   checked={selectedLeadIds.includes(currentId)}
@@ -3773,7 +3816,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                               switch (col.id) {
                                 case 'leadId':
                                   return (
-                                    <td key="leadId" class="py-2.5 px-2.5 whitespace-nowrap w-16 min-w-[60px]">
+                                    <td key="leadId" class="py-2.5 px-2.5 whitespace-nowrap w-20 min-w-[70px] max-w-[80px]">
                                       <span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-rose-50 text-[#B30E2E] border border-rose-200/80 shadow-xs">
                                         {displayLeadId}
                                       </span>
@@ -3781,12 +3824,12 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   );
                                 case 'fullName':
                                   return (
-                                    <td key="fullName" class="py-2.5 px-3 font-bold text-gray-800 whitespace-nowrap w-44 min-w-[165px] max-w-[165px]">
-                                      <div class="flex items-center gap-1 truncate">
+                                    <td key="fullName" class="py-2.5 px-3 font-bold text-gray-800 whitespace-nowrap w-44 min-w-[160px] max-w-[165px]">
+                                      <div class="flex items-center gap-1.5 truncate max-w-[150px]">
                                         <div class="w-5 h-5 rounded-full bg-[#FCD6DC] text-[#B30E2E] font-bold text-[10px] flex items-center justify-center flex-shrink-0 border border-[#FCD6DC]">
                                           {(item.firstName || 'C')[0].toUpperCase()}
                                         </div>
-                                        <span class="capitalize text-[11.5px] text-gray-900 font-bold whitespace-nowrap truncate">
+                                        <span class="capitalize text-[11.5px] text-gray-900 font-bold whitespace-nowrap truncate" title={`${item.firstName || ''} ${item.lastName || ''}`}>
                                           {item.firstName || ''} {item.lastName || ''}
                                         </span>
                                       </div>
@@ -3794,7 +3837,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   );
                                 case 'mobile':
                                   return (
-                                    <td key="mobile" class="py-2.5 px-3 whitespace-nowrap w-36 min-w-[142px]">
+                                    <td key="mobile" class="py-2.5 px-3 whitespace-nowrap w-36 min-w-[140px] max-w-[142px]">
                                       {item.phone ? (
                                         <div class="flex items-center gap-1.5 whitespace-nowrap">
                                           <a 
@@ -3814,7 +3857,13 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                             };
                                             const rawName = `${item.firstName || ''} ${item.lastName || ''}`.trim() || 'Customer';
                                             const customerName = formatCapitalizedName(rawName);
-                                            const waMsg = encodeURIComponent(`Hello ${customerName}, Thank you for your enquiry at Gulmohar City!`);
+                                            let waText = `Hello ${customerName}, Thank you for your enquiry at Gulmohar City!`;
+                                            if (item.status === 'Site Visit Scheduled' && item.followupDate) {
+                                              const vDate = new Date(item.followupDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+                                              const timePart = item.visitTime ? ` at ${formatTime12Hour(item.visitTime)}` : '';
+                                              waText = `Hello ${customerName}, your site visit to Gulmohar City is scheduled for ${vDate}${timePart}. We look forward to meeting you!`;
+                                            }
+                                            const waMsg = encodeURIComponent(waText);
                                             const waUrl = `https://wa.me/${formattedPhone}?text=${waMsg}`;
                                             return (
                                               <a
@@ -3836,15 +3885,15 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   );
                                 case 'email':
                                   return (
-                                    <td key="email" class="py-2.5 px-2.5 whitespace-nowrap min-w-[155px]">
+                                    <td key="email" class="py-2.5 px-2.5 whitespace-nowrap w-44 min-w-[150px] max-w-[165px]">
                                       {item.email ? (
                                         <a 
                                           href={`mailto:${item.email}`}
-                                          class="text-gray-600 hover:text-[#B30E2E] flex items-center gap-1 text-[10.5px] whitespace-nowrap"
+                                          class="text-gray-600 hover:text-[#B30E2E] flex items-center gap-1 text-[10.5px] truncate max-w-[145px]"
                                           title={item.email}
                                         >
-                                          <i class="fa-regular fa-envelope text-[9.5px] text-gray-400"></i>
-                                          <span>{item.email}</span>
+                                          <i class="fa-regular fa-envelope text-[9.5px] text-gray-400 shrink-0"></i>
+                                          <span class="truncate">{item.email}</span>
                                         </a>
                                       ) : (
                                         <span class="text-gray-400 italic text-[10px]">Optional / None</span>
@@ -3853,7 +3902,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   );
                                 case 'enquiryDate':
                                   return (
-                                    <td key="enquiryDate" class="py-2.5 px-2.5 whitespace-nowrap min-w-[145px]">
+                                    <td key="enquiryDate" class="py-2.5 px-2.5 whitespace-nowrap w-36 min-w-[140px] max-w-[145px]">
                                       <div class="font-semibold text-gray-800 text-[10px] whitespace-nowrap">
                                         <i class="fa-regular fa-clock text-[8.5px] text-gray-400 mr-0.5"></i>
                                         {new Date(item.createdAt || Date.now()).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' })}
@@ -3871,7 +3920,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                     'Not Interested', 'Site Visit Scheduled', 'Site Visit Done', 'Won', 'Lost'
                                   ];
                                   return (
-                                    <td key="status" class={`py-2.5 px-2.5 whitespace-nowrap min-w-[130px] relative ${isStatusOpen ? 'z-50' : ''}`}>
+                                    <td key="status" class={`py-2.5 px-2.5 whitespace-nowrap w-32 min-w-[125px] max-w-[130px] relative ${isStatusOpen ? 'z-50' : ''}`}>
                                       <button
                                         type="button"
                                         onClick={(e) => toggleDropdown(e, currentId, 'status')}
@@ -3881,7 +3930,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                         <i class={`fa-solid fa-chevron-down text-[8px] transition-transform ${isStatusOpen ? 'rotate-180' : ''}`}></i>
                                       </button>
 
-                                       {isStatusOpen && (
+                                      {isStatusOpen && (
                                         <div 
                                           class="fixed z-[9999] min-w-[155px] max-h-60 overflow-y-auto custom-scrollbar overscroll-contain bg-white rounded-xl shadow-2xl border border-gray-200 py-1 text-xs animate-fade-in custom-dropdown-menu"
                                           style={{
@@ -3917,7 +3966,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   const rawPriority = item.priority;
                                   const currentPriority = (rawPriority === 'Cold' || rawPriority === 'Low') ? 'Cold' : 'Hot';
                                   return (
-                                    <td key="priority" class={`py-2.5 px-2.5 whitespace-nowrap min-w-[95px] relative ${isPriorityOpen ? 'z-50' : ''}`}>
+                                    <td key="priority" class={`py-2.5 px-2.5 whitespace-nowrap w-24 min-w-[90px] max-w-[95px] relative ${isPriorityOpen ? 'z-50' : ''}`}>
                                       <button
                                         type="button"
                                         onClick={(e) => toggleDropdown(e, currentId, 'priority')}
@@ -3959,18 +4008,38 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                     </td>
                                   );
                                 }
-                                case 'followupDate':
+                                case 'followupDate': {
+                                  const isVisitStatus = item.status === 'Site Visit Scheduled';
                                   return (
-                                    <td key="followupDate" class="py-2.5 px-2.5 whitespace-nowrap min-w-[115px]">
-                                      <input
-                                        type="date"
-                                        value={formatToInputDate(item.followupDate)}
-                                        onChange={(e) => handleInlineFieldChange(currentId, 'followupDate', e.target.value)}
-                                        class="px-1.5 py-0.5 rounded-md border border-amber-300 text-[10px] font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 outline-none cursor-pointer transition shadow-2xs"
-                                        title="Click to edit Followup Date inline"
-                                      />
+                                    <td key="followupDate" class="py-2.5 px-2.5 whitespace-nowrap w-48 min-w-[175px] max-w-[190px]">
+                                      <div class="flex items-center gap-1.5">
+                                        <input
+                                          type="date"
+                                          value={formatToInputDate(item.followupDate)}
+                                          onChange={(e) => handleInlineFieldChange(currentId, 'followupDate', e.target.value)}
+                                          class={`px-1.5 py-0.5 rounded-md border text-[10px] font-bold outline-none cursor-pointer transition shadow-2xs w-[92px] ${
+                                            isVisitStatus
+                                              ? 'border-indigo-300 text-indigo-900 bg-indigo-50 hover:bg-indigo-100'
+                                              : 'border-amber-300 text-amber-900 bg-amber-50 hover:bg-amber-100'
+                                          }`}
+                                          title={isVisitStatus ? "Click to edit Visit Date" : "Click to edit Followup Date"}
+                                        />
+                                        <input
+                                          type="time"
+                                          value={item.visitTime || ''}
+                                          onChange={(e) => handleInlineFieldChange(currentId, 'visitTime', e.target.value)}
+                                          onBlur={(e) => handleInlineFieldChange(currentId, 'visitTime', e.target.value)}
+                                          class={`px-1 py-0.5 rounded-md border text-[10px] font-bold outline-none cursor-pointer transition shadow-2xs w-[70px] ${
+                                            isVisitStatus
+                                              ? 'border-purple-300 text-purple-900 bg-purple-50 hover:bg-purple-100'
+                                              : 'border-gray-300 text-gray-700 bg-gray-50 hover:bg-gray-100'
+                                          }`}
+                                          title={item.visitTime ? `Visit Time: ${formatTime12Hour(item.visitTime)}` : "Set Visit / Followup Time"}
+                                        />
+                                      </div>
                                     </td>
                                   );
+                                }
                                 case 'plotsCount': {
                                   const isPlotsOpen = activeDropdown?.rowId === currentId && activeDropdown?.field === 'plotsCount';
                                   const currentGuntha = item.plotsCount || '1 Guntha';
@@ -3981,7 +4050,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   ];
 
                                   return (
-                                    <td key="plotsCount" class={`py-2.5 px-2.5 whitespace-nowrap min-w-[110px] relative ${isPlotsOpen ? 'z-50' : ''}`}>
+                                    <td key="plotsCount" class={`py-2.5 px-2.5 whitespace-nowrap w-28 min-w-[110px] max-w-[115px] relative ${isPlotsOpen ? 'z-50' : ''}`}>
                                       <div class="flex items-center gap-1 whitespace-nowrap">
                                         <button
                                           type="button"
@@ -3999,7 +4068,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                         )}
                                       </div>
 
-                                       {isPlotsOpen && (
+                                      {isPlotsOpen && (
                                         <div 
                                           class="fixed z-[9999] min-w-[160px] max-h-60 overflow-y-auto custom-scrollbar overscroll-contain bg-white rounded-xl shadow-2xl border border-gray-200 py-1 text-xs animate-fade-in custom-dropdown-menu"
                                           style={{
@@ -4035,7 +4104,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   const currentAgent = item.assignedAgentName || (allAgents[0] ? allAgents[0].name : 'Unassigned');
 
                                   return (
-                                    <td key="assignedAgent" class={`py-2.5 px-2.5 whitespace-nowrap min-w-[145px] relative ${isAgentOpen ? 'z-50' : ''}`}>
+                                    <td key="assignedAgent" class={`py-2.5 px-2.5 whitespace-nowrap w-40 min-w-[140px] max-w-[145px] relative ${isAgentOpen ? 'z-50' : ''}`}>
                                       {isAdmin ? (
                                         <>
                                           <button
@@ -4051,7 +4120,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                             <i class={`fa-solid fa-chevron-down text-[8px] text-emerald-700 transition-transform ${isAgentOpen ? 'rotate-180' : ''}`}></i>
                                           </button>
 
-                                           {isAgentOpen && (
+                                          {isAgentOpen && (
                                             <div 
                                               class="fixed z-[9999] min-w-[160px] max-h-60 overflow-y-auto custom-scrollbar overscroll-contain bg-white rounded-xl shadow-2xl border border-gray-200 py-1 text-xs animate-fade-in custom-dropdown-menu"
                                               style={{
@@ -4096,15 +4165,15 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   const creator = item.createdBy || 'System';
                                   const isSystemCreated = creator.toLowerCase() === 'system' || ['super admin', 'system admin', 'admin', 'client'].includes(creator.toLowerCase());
                                   return (
-                                    <td key="createdBy" class="py-2.5 px-2.5 whitespace-nowrap min-w-[130px]">
+                                    <td key="createdBy" class="py-2.5 px-2.5 whitespace-nowrap w-32 min-w-[120px] max-w-[125px]">
                                       {isSystemCreated ? (
                                         <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-700 border border-gray-200 shadow-2xs">
-                                          <i class="fa-solid fa-server text-[8.5px] text-gray-500"></i>
+                                          <i class="fa-solid fa-user text-[8.5px] text-gray-500"></i>
                                           <span>System</span>
                                         </span>
                                       ) : (
                                         <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-2xs">
-                                          <i class="fa-solid fa-user-pen text-[8.5px] text-indigo-500"></i>
+                                          <i class="fa-solid fa-user text-[8.5px] text-indigo-500"></i>
                                           <span>{creator}</span>
                                         </span>
                                       )}
@@ -4113,7 +4182,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 }
                                 case 'notes':
                                   return (
-                                    <td key="notes" class="py-2.5 px-2 text-center whitespace-nowrap w-12 min-w-[50px]">
+                                    <td key="notes" class="py-2.5 px-2 text-center whitespace-nowrap w-12 min-w-[50px] max-w-[50px]">
                                       <button 
                                         type="button"
                                         onClick={(e) => handleOpenNotePopover(e, item)}
@@ -4132,7 +4201,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   );
                                 case 'actions':
                                   return (
-                                    <td key="actions" class="py-2.5 px-2 text-center whitespace-nowrap w-24 min-w-[105px]">
+                                    <td key="actions" class="py-2.5 px-2 text-center whitespace-nowrap w-24 min-w-[105px] max-w-[105px]">
                                       <div class="flex items-center justify-center gap-1">
                                         <button 
                                           onClick={() => { setEditingEnquiry({ ...item }); setEditModalSuccessMsg(''); }}
@@ -4329,25 +4398,25 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
 
                               {/* Mobile No */}
                               <td class="py-2.5 px-3 whitespace-nowrap">
-                                {agent.phone ? (
+                                {((agent.username || '').toLowerCase() === 'system' || !agent.phone) ? (
+                                  <span class="text-gray-400 italic text-[11px]">—</span>
+                                ) : (
                                   <a href={`tel:${agent.phone}`} class="text-[#B30E2E] font-bold hover:underline flex items-center gap-1 text-xs">
                                     <i class="fa-solid fa-phone text-[9px]"></i>
                                     <span>{agent.phone}</span>
                                   </a>
-                                ) : (
-                                  <span class="text-gray-400 italic text-[11px]">N/A</span>
                                 )}
                               </td>
 
                               {/* Email Address */}
                               <td class="py-2.5 px-3 whitespace-nowrap">
-                                {agent.email ? (
+                                {((agent.username || '').toLowerCase() === 'system' || !agent.email) ? (
+                                  <span class="text-gray-400 italic text-[11px]">—</span>
+                                ) : (
                                   <a href={`mailto:${agent.email}`} class="text-gray-700 hover:text-[#B30E2E] flex items-center gap-1 text-[11px]">
                                     <i class="fa-regular fa-envelope text-[10px] text-gray-400"></i>
                                     <span>{agent.email}</span>
                                   </a>
-                                ) : (
-                                  <span class="text-gray-400 italic text-[11px]">N/A</span>
                                 )}
                               </td>
 
@@ -4647,7 +4716,9 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
             {/* Header */}
             <div class="bg-gradient-to-r from-[#B30E2E] via-[#8A0B22] to-[#590414] p-5 text-white flex items-center justify-between">
               <div>
-                <h3 class="font-serif font-bold text-base">Edit User</h3>
+                <h3 class="font-serif font-bold text-base">
+                  {(editingUser.username || '').toLowerCase() === 'system' ? 'Change Admin Password' : 'Edit User'}
+                </h3>
               </div>
               <button 
                 onClick={() => { setEditingUser(null); setEditUserPassword(''); setShowEditPassword(false); }}
@@ -4676,175 +4747,203 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                 );
               })()}
 
-              {/* 1. Full Name */}
-              <div>
-                <label class="block text-xs font-bold text-gray-700 mb-1">Full Name *</label>
-                <input 
-                  type="text" 
-                  required 
-                  autoComplete="off"
-                  value={editingUser.name || ''}
-                  onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
-                  placeholder="Enter full name"
-                  class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
-                />
-              </div>
-
-              {/* 2. Username */}
-              <div>
-                <label class="block text-xs font-bold text-gray-700 mb-1">Username *</label>
-                <div class="relative">
-                  <input 
-                    type="text" 
-                    readOnly
-                    tabIndex={-1}
-                    value={editingUser.username || ''}
-                    placeholder="Username"
-                    class="w-full pl-3 pr-9 py-2 rounded-xl border border-gray-200 bg-gray-100 text-gray-600 text-xs font-semibold cursor-not-allowed select-none focus:outline-none"
-                  />
-                  <div class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                    <i class="fa-solid fa-lock text-xs"></i>
+              {/* If editing System / Admin: ONLY show Password input */}
+              {(editingUser.username || '').toLowerCase() === 'system' ? (
+                <div>
+                  <label class="block text-xs font-bold text-gray-700 mb-1">New Password *</label>
+                  <div class="relative">
+                    <input 
+                      type={showEditPassword ? 'text' : 'password'}
+                      required
+                      autoComplete="new-password"
+                      value={editUserPassword}
+                      onChange={(e) => setEditUserPassword(e.target.value)}
+                      placeholder="Enter new password"
+                      class="w-full pl-3 pr-10 py-2.5 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowEditPassword(!showEditPassword)}
+                      class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-700 cursor-pointer"
+                      title={showEditPassword ? 'Hide password' : 'Show password'}
+                    >
+                      <i class={`fa-solid ${showEditPassword ? 'fa-eye-slash' : 'fa-eye'} text-xs`}></i>
+                    </button>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <>
+                  {/* 1. Full Name */}
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Full Name *</label>
+                    <input 
+                      type="text" 
+                      required 
+                      autoComplete="off"
+                      value={editingUser.name || ''}
+                      onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
+                      placeholder="Enter full name"
+                      class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
+                    />
+                  </div>
 
-              {/* 3. Mobile Number & 4. Email Address */}
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label class="block text-xs font-bold text-gray-700 mb-1">Mobile Number *</label>
-                  <input 
-                    type="tel" 
-                    required
-                    maxLength={10}
-                    pattern="[6-9][0-9]{9}"
-                    value={editingUser.phone || ''}
-                    onChange={(e) => {
-                      const cleaned = e.target.value.replace(/\D/g, '').slice(0, 10);
-                      setEditingUser({ ...editingUser, phone: cleaned });
-                    }}
-                    placeholder="Enter mobile number"
-                    class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
-                  />
-                </div>
-                <div>
-                  <label class="block text-xs font-bold text-gray-700 mb-1">Email Address *</label>
-                  <input 
-                    type="email" 
-                    required
-                    value={editingUser.email || ''}
-                    onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
-                    placeholder="Enter email address"
-                    class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
-                  />
-                </div>
-              </div>
+                  {/* 2. Username */}
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Username *</label>
+                    <div class="relative">
+                      <input 
+                        type="text" 
+                        readOnly
+                        tabIndex={-1}
+                        value={editingUser.username || ''}
+                        placeholder="Username"
+                        class="w-full pl-3 pr-9 py-2 rounded-xl border border-gray-200 bg-gray-100 text-gray-600 text-xs font-semibold cursor-not-allowed select-none focus:outline-none"
+                      />
+                      <div class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                        <i class="fa-solid fa-lock text-xs"></i>
+                      </div>
+                    </div>
+                  </div>
 
-              {/* 5. Role Selection */}
-              <div>
-                <label class="block text-xs font-bold text-gray-700 mb-1">Role *</label>
-                <div class="relative">
-                  <button
-                    type="button"
-                    onClick={() => setIsEditRoleOpen(!isEditRoleOpen)}
-                    class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 hover:border-[#B30E2E] bg-white flex items-center justify-between text-xs font-bold text-gray-800 shadow-xs transition cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#B30E2E]/20 focus:border-[#B30E2E]"
-                  >
-                    <div class="flex items-center gap-2.5">
-                      {['system admin', 'systemadmin', 'admin'].includes((editingUser.role || '').toLowerCase()) ? (
+                  {/* 3. Mobile Number & 4. Email Address */}
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label class="block text-xs font-bold text-gray-700 mb-1">Mobile Number *</label>
+                      <input 
+                        type="tel" 
+                        required
+                        maxLength={10}
+                        pattern="[6-9][0-9]{9}"
+                        value={editingUser.phone || ''}
+                        onChange={(e) => {
+                          const cleaned = e.target.value.replace(/\D/g, '').slice(0, 10);
+                          setEditingUser({ ...editingUser, phone: cleaned });
+                        }}
+                        placeholder="Enter mobile number"
+                        class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-xs font-bold text-gray-700 mb-1">Email Address *</label>
+                      <input 
+                        type="email" 
+                        required
+                        value={editingUser.email || ''}
+                        onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
+                        placeholder="Enter email address"
+                        class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* 5. Role Selection */}
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Role *</label>
+                    <div class="relative">
+                      <button
+                        type="button"
+                        onClick={() => setIsEditRoleOpen(!isEditRoleOpen)}
+                        class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 hover:border-[#B30E2E] bg-white flex items-center justify-between text-xs font-bold text-gray-800 shadow-xs transition cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#B30E2E]/20 focus:border-[#B30E2E]"
+                      >
+                        <div class="flex items-center gap-2.5">
+                          {['system admin', 'systemadmin', 'admin'].includes((editingUser.role || '').toLowerCase()) ? (
+                            <>
+                              <span class="w-6 h-6 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center text-xs">
+                                <i class="fa-solid fa-shield-halved"></i>
+                              </span>
+                              <span class="text-gray-900 font-bold">Admin</span>
+                            </>
+                          ) : (
+                            <>
+                              <span class="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs">
+                                <i class="fa-solid fa-user-tie"></i>
+                              </span>
+                              <span class="text-gray-900 font-bold">Sales Executive</span>
+                            </>
+                          )}
+                        </div>
+                        <i class={`fa-solid fa-chevron-down text-xs text-gray-400 transition-transform duration-200 ${isEditRoleOpen ? 'rotate-180 text-[#B30E2E]' : ''}`}></i>
+                      </button>
+
+                      {isEditRoleOpen && (
                         <>
-                          <span class="w-6 h-6 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center text-xs">
-                            <i class="fa-solid fa-shield-halved"></i>
-                          </span>
-                          <span class="text-gray-900 font-bold">Admin</span>
-                        </>
-                      ) : (
-                        <>
-                          <span class="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs">
-                            <i class="fa-solid fa-user-tie"></i>
-                          </span>
-                          <span class="text-gray-900 font-bold">Sales Executive</span>
+                          <div class="fixed inset-0 z-10" onClick={() => setIsEditRoleOpen(false)}></div>
+                          <div class="absolute z-20 bottom-full left-0 right-0 mb-1.5 bg-white rounded-2xl border border-gray-200 shadow-xl overflow-hidden p-1.5 space-y-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingUser({ ...editingUser, role: 'Sales Executive' });
+                                setIsEditRoleOpen(false);
+                              }}
+                              class={`w-full px-3 py-2.5 rounded-xl text-left text-xs font-semibold flex items-center justify-between transition cursor-pointer ${
+                                !['system admin', 'systemadmin', 'admin'].includes((editingUser.role || '').toLowerCase())
+                                  ? 'bg-emerald-50 text-emerald-900 font-bold'
+                                  : 'text-gray-700 hover:bg-gray-50'
+                              }`}
+                            >
+                              <div class="flex items-center gap-2.5">
+                                <span class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs">
+                                  <i class="fa-solid fa-user-tie"></i>
+                                </span>
+                                <span class="font-bold text-gray-900">Sales Executive</span>
+                              </div>
+                              {!['system admin', 'systemadmin', 'admin'].includes((editingUser.role || '').toLowerCase()) && (
+                                <i class="fa-solid fa-circle-check text-emerald-600 text-sm"></i>
+                              )}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingUser({ ...editingUser, role: 'Admin' });
+                                setIsEditRoleOpen(false);
+                              }}
+                              class={`w-full px-3 py-2.5 rounded-xl text-left text-xs font-semibold flex items-center justify-between transition cursor-pointer ${
+                                ['system admin', 'systemadmin', 'admin'].includes((editingUser.role || '').toLowerCase())
+                                  ? 'bg-blue-50 text-blue-900 font-bold'
+                                  : 'text-gray-700 hover:bg-gray-50'
+                              }`}
+                            >
+                              <div class="flex items-center gap-2.5">
+                                <span class="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center text-xs">
+                                  <i class="fa-solid fa-shield-halved"></i>
+                                </span>
+                                <span class="font-bold text-gray-900">Admin</span>
+                              </div>
+                              {['system admin', 'systemadmin', 'admin'].includes((editingUser.role || '').toLowerCase()) && (
+                                <i class="fa-solid fa-circle-check text-blue-600 text-sm"></i>
+                              )}
+                            </button>
+                          </div>
                         </>
                       )}
                     </div>
-                    <i class={`fa-solid fa-chevron-down text-xs text-gray-400 transition-transform duration-200 ${isEditRoleOpen ? 'rotate-180 text-[#B30E2E]' : ''}`}></i>
-                  </button>
+                  </div>
 
-                  {isEditRoleOpen && (
-                    <>
-                      <div class="fixed inset-0 z-10" onClick={() => setIsEditRoleOpen(false)}></div>
-                      <div class="absolute z-20 bottom-full left-0 right-0 mb-1.5 bg-white rounded-2xl border border-gray-200 shadow-xl overflow-hidden p-1.5 space-y-1">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingUser({ ...editingUser, role: 'Sales Executive' });
-                            setIsEditRoleOpen(false);
-                          }}
-                          class={`w-full px-3 py-2.5 rounded-xl text-left text-xs font-semibold flex items-center justify-between transition cursor-pointer ${
-                            !['system admin', 'systemadmin', 'admin'].includes((editingUser.role || '').toLowerCase())
-                              ? 'bg-emerald-50 text-emerald-900 font-bold'
-                              : 'text-gray-700 hover:bg-gray-50'
-                          }`}
-                        >
-                          <div class="flex items-center gap-2.5">
-                            <span class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs">
-                              <i class="fa-solid fa-user-tie"></i>
-                            </span>
-                            <span class="font-bold text-gray-900">Sales Executive</span>
-                          </div>
-                          {!['system admin', 'systemadmin', 'admin'].includes((editingUser.role || '').toLowerCase()) && (
-                            <i class="fa-solid fa-circle-check text-emerald-600 text-sm"></i>
-                          )}
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingUser({ ...editingUser, role: 'Admin' });
-                            setIsEditRoleOpen(false);
-                          }}
-                          class={`w-full px-3 py-2.5 rounded-xl text-left text-xs font-semibold flex items-center justify-between transition cursor-pointer ${
-                            ['system admin', 'systemadmin', 'admin'].includes((editingUser.role || '').toLowerCase())
-                              ? 'bg-blue-50 text-blue-900 font-bold'
-                              : 'text-gray-700 hover:bg-gray-50'
-                          }`}
-                        >
-                          <div class="flex items-center gap-2.5">
-                            <span class="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center text-xs">
-                              <i class="fa-solid fa-shield-halved"></i>
-                            </span>
-                            <span class="font-bold text-gray-900">Admin</span>
-                          </div>
-                          {['system admin', 'systemadmin', 'admin'].includes((editingUser.role || '').toLowerCase()) && (
-                            <i class="fa-solid fa-circle-check text-blue-600 text-sm"></i>
-                          )}
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* 6. New Password (Optional) */}
-              <div>
-                <label class="block text-xs font-bold text-gray-700 mb-1">New Password</label>
-                <div class="relative">
-                  <input 
-                    type={showEditPassword ? 'text' : 'password'}
-                    autoComplete="new-password"
-                    value={editUserPassword}
-                    onChange={(e) => setEditUserPassword(e.target.value)}
-                    placeholder="Enter new password (optional)"
-                    class="w-full pl-3 pr-10 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowEditPassword(!showEditPassword)}
-                    class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-700 cursor-pointer"
-                    title={showEditPassword ? 'Hide password' : 'Show password'}
-                  >
-                    <i class={`fa-solid ${showEditPassword ? 'fa-eye-slash' : 'fa-eye'} text-xs`}></i>
-                  </button>
-                </div>
-              </div>
+                  {/* 6. New Password (Optional) */}
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">New Password</label>
+                    <div class="relative">
+                      <input 
+                        type={showEditPassword ? 'text' : 'password'}
+                        autoComplete="new-password"
+                        value={editUserPassword}
+                        onChange={(e) => setEditUserPassword(e.target.value)}
+                        placeholder="Enter new password (optional)"
+                        class="w-full pl-3 pr-10 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowEditPassword(!showEditPassword)}
+                        class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-700 cursor-pointer"
+                        title={showEditPassword ? 'Hide password' : 'Show password'}
+                      >
+                        <i class={`fa-solid ${showEditPassword ? 'fa-eye-slash' : 'fa-eye'} text-xs`}></i>
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
 
               <div class="pt-2 flex items-center justify-end gap-2 border-t border-gray-100">
                 <button 
@@ -4988,13 +5087,24 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                     </select>
                   </div>
                   <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">Followup Date</label>
-                    <input 
-                      type="date" 
-                      value={editingEnquiry.followupDate || ''} 
-                      onChange={(e) => setEditingEnquiry({ ...editingEnquiry, followupDate: e.target.value })}
-                      class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
-                    />
+                    <label class="block text-xs font-bold text-gray-700 mb-1">
+                      {editingEnquiry.status === 'Site Visit Scheduled' ? 'Visit Date & Time' : 'Followup Date & Time'}
+                    </label>
+                    <div class="grid grid-cols-2 gap-2">
+                      <input 
+                        type="date" 
+                        value={editingEnquiry.followupDate || ''} 
+                        onChange={(e) => setEditingEnquiry({ ...editingEnquiry, followupDate: e.target.value })}
+                        class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
+                      />
+                      <input 
+                        type="time" 
+                        value={editingEnquiry.visitTime || ''} 
+                        onChange={(e) => setEditingEnquiry({ ...editingEnquiry, visitTime: e.target.value })}
+                        class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
+                        title="Visit / Followup Time"
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -5396,13 +5506,22 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                     </select>
                   </div>
                   <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">Followup Date</label>
-                    <input 
-                      type="date" 
-                      value={newLeadFormData.followupDate || ''}
-                      onChange={(e) => setNewLeadFormData({ ...newLeadFormData, followupDate: e.target.value })}
-                      class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800"
-                    />
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Followup / Visit Date & Time</label>
+                    <div class="grid grid-cols-2 gap-2">
+                      <input 
+                        type="date" 
+                        value={newLeadFormData.followupDate || ''}
+                        onChange={(e) => setNewLeadFormData({ ...newLeadFormData, followupDate: e.target.value })}
+                        class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800"
+                      />
+                      <input 
+                        type="time" 
+                        value={newLeadFormData.visitTime || ''}
+                        onChange={(e) => setNewLeadFormData({ ...newLeadFormData, visitTime: e.target.value })}
+                        class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800"
+                        title="Select Visit / Followup Time"
+                      />
+                    </div>
                   </div>
                 </div>
 

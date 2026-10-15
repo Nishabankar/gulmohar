@@ -59,18 +59,18 @@ const seedAdminUser = async () => {
       await query(
         `INSERT INTO users (name, username, email, phone, password, role) VALUES (?, ?, ?, ?, ?, ?)`,
         [
-          'Admin',
+          'System',
           'system',
-          'system@gulmoharcity.com',
-          '9876543211',
+          '',
+          '',
           sysHashedPassword,
           'Admin'
         ]
       );
       console.log("🔐 Inbuilt Admin 'system' seeded in MySQL");
     } else {
-      await query("UPDATE users SET name = 'Admin', role = 'Admin', username = 'system' WHERE id = ?", [existingSys[0].id]);
-      console.log("🔐 Inbuilt Admin user updated to 'Admin' in MySQL");
+      await query("UPDATE users SET name = 'System', role = 'Admin', username = 'system', phone = '', email = '' WHERE id = ?", [existingSys[0].id]);
+      console.log("🔐 Inbuilt Admin user updated to 'System' in MySQL");
     }
   } catch (err) {
     console.warn('Admin seed note:', err.message);

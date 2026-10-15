@@ -4116,7 +4116,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 <th 
                                   key="fullName" 
                                   onClick={() => handleSort('fullName')}
-                                  class={`py-2.5 px-3 whitespace-nowrap w-44 min-w-[160px] max-w-[165px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                  class={`py-2.5 px-2.5 whitespace-nowrap w-44 min-w-[155px] max-w-[160px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
                                   title={getSortTitle('Full Name')}
                                 >
                                   <div class="flex items-center gap-1.5">
@@ -4130,7 +4130,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 <th 
                                   key="mobile" 
                                   onClick={() => handleSort('mobile')}
-                                  class={`py-2.5 px-3 whitespace-nowrap w-36 min-w-[140px] max-w-[142px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                  class={`py-2.5 px-2.5 whitespace-nowrap w-36 min-w-[135px] max-w-[140px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
                                   title={getSortTitle('Mobile No')}
                                 >
                                   <div class="flex items-center gap-1.5">
@@ -4144,7 +4144,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 <th 
                                   key="email" 
                                   onClick={() => handleSort('email')}
-                                  class={`py-2.5 px-2.5 whitespace-nowrap w-44 min-w-[150px] max-w-[165px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                  class={`py-2.5 px-2.5 whitespace-nowrap w-40 min-w-[145px] max-w-[155px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
                                   title={getSortTitle('Email Address')}
                                 >
                                   <div class="flex items-center gap-1.5 truncate">
@@ -4158,7 +4158,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 <th 
                                   key="enquiryDate" 
                                   onClick={() => handleSort('enquiryDate')}
-                                  class={`py-2.5 px-2.5 whitespace-nowrap w-36 min-w-[140px] max-w-[145px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                  class={`py-2.5 px-2.5 whitespace-nowrap w-36 min-w-[134px] max-w-[138px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
                                   title={getSortTitle('Enquiry Date')}
                                 >
                                   <div class="flex items-center gap-1.5">
@@ -4172,7 +4172,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 <th 
                                   key="status" 
                                   onClick={() => handleSort('status')}
-                                  class={`py-2.5 px-2.5 whitespace-nowrap w-32 min-w-[125px] max-w-[130px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                  class={`py-2.5 px-2.5 whitespace-nowrap w-32 min-w-[120px] max-w-[125px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
                                   title={getSortTitle('Status')}
                                 >
                                   <div class="flex items-center gap-1.5">
@@ -4186,7 +4186,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 <th 
                                   key="priority" 
                                   onClick={() => handleSort('priority')}
-                                  class={`py-2.5 px-2.5 whitespace-nowrap w-24 min-w-[90px] max-w-[95px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                  class={`py-2.5 px-2.5 whitespace-nowrap w-24 min-w-[88px] max-w-[92px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
                                   title={getSortTitle('Priority')}
                                 >
                                   <div class="flex items-center gap-1.5">
@@ -4200,7 +4200,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 <th 
                                   key="followupDate" 
                                   onClick={() => handleSort('followupDate')}
-                                  class={`py-2.5 px-2.5 whitespace-nowrap w-44 min-w-[165px] max-w-[172px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                  class={`py-2.5 px-2.5 whitespace-nowrap w-36 min-w-[132px] max-w-[136px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
                                   title={getSortTitle('Followup / Visit Date & Time')}
                                 >
                                   <div class="flex items-center gap-1.5">
@@ -4228,7 +4228,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 <th 
                                   key="assignedAgent" 
                                   onClick={() => handleSort('assignedAgent')}
-                                  class={`py-2.5 px-2.5 whitespace-nowrap w-40 min-w-[140px] max-w-[145px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                  class={`py-2.5 px-2.5 whitespace-nowrap w-36 min-w-[136px] max-w-[140px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
                                   title={getSortTitle('Assigned Agent')}
                                 >
                                   <div class="flex items-center gap-1.5">
@@ -4242,7 +4242,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 <th 
                                   key="createdBy" 
                                   onClick={() => handleSort('createdBy')}
-                                  class={`py-2.5 px-2.5 whitespace-nowrap w-32 min-w-[120px] max-w-[125px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                  class={`py-2.5 px-2.5 whitespace-nowrap w-28 min-w-[108px] max-w-[112px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
                                   title={getSortTitle('Created By')}
                                 >
                                   <div class="flex items-center gap-1.5">
@@ -4292,7 +4292,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   );
                                 case 'fullName':
                                   return (
-                                    <td key="fullName" class="py-2.5 px-3 font-bold text-gray-800 whitespace-nowrap w-44 min-w-[160px] max-w-[165px]">
+                                    <td key="fullName" class="py-2.5 px-2.5 font-bold text-gray-800 whitespace-nowrap w-44 min-w-[155px] max-w-[160px]">
                                       <div class="flex items-center gap-1.5 truncate max-w-[150px]">
                                         <div class="w-5 h-5 rounded-full bg-[#FCD6DC] text-[#B30E2E] font-bold text-[10px] flex items-center justify-center flex-shrink-0 border border-[#FCD6DC]">
                                           {(item.firstName || 'C')[0].toUpperCase()}
@@ -4305,7 +4305,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   );
                                 case 'mobile':
                                   return (
-                                    <td key="mobile" class="py-2.5 px-3 whitespace-nowrap w-36 min-w-[140px] max-w-[142px]">
+                                    <td key="mobile" class="py-2.5 px-2.5 whitespace-nowrap w-36 min-w-[135px] max-w-[140px]">
                                       {item.phone ? (
                                         <div class="flex items-center gap-1.5 whitespace-nowrap">
                                           <a 
@@ -4353,7 +4353,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   );
                                 case 'email':
                                   return (
-                                    <td key="email" class="py-2.5 px-2.5 whitespace-nowrap w-44 min-w-[150px] max-w-[165px]">
+                                    <td key="email" class="py-2.5 px-2.5 whitespace-nowrap w-40 min-w-[145px] max-w-[155px]">
                                       {item.email ? (
                                         <a 
                                           href={`mailto:${item.email}`}
@@ -4370,7 +4370,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   );
                                 case 'enquiryDate':
                                   return (
-                                    <td key="enquiryDate" class="py-2.5 px-2.5 whitespace-nowrap w-36 min-w-[140px] max-w-[145px]">
+                                    <td key="enquiryDate" class="py-2.5 px-2.5 whitespace-nowrap w-36 min-w-[134px] max-w-[138px]">
                                       <div class="font-semibold text-gray-800 text-[10px] whitespace-nowrap">
                                         <i class="fa-regular fa-clock text-[8.5px] text-gray-400 mr-0.5"></i>
                                         {new Date(item.createdAt || Date.now()).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' })}
@@ -4388,7 +4388,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                     'Not Interested', 'Site Visit Scheduled', 'Site Visit Done', 'Won', 'Lost'
                                   ];
                                   return (
-                                    <td key="status" class={`py-2.5 px-2.5 whitespace-nowrap w-32 min-w-[125px] max-w-[130px] relative ${isStatusOpen ? 'z-50' : ''}`}>
+                                    <td key="status" class={`py-2.5 px-2.5 whitespace-nowrap w-32 min-w-[120px] max-w-[125px] relative ${isStatusOpen ? 'z-50' : ''}`}>
                                       <button
                                         type="button"
                                         onClick={(e) => toggleDropdown(e, currentId, 'status')}
@@ -4434,7 +4434,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   const rawPriority = item.priority;
                                   const currentPriority = (rawPriority === 'Cold' || rawPriority === 'Low') ? 'Cold' : 'Hot';
                                   return (
-                                    <td key="priority" class={`py-2.5 px-2.5 whitespace-nowrap w-24 min-w-[90px] max-w-[95px] relative ${isPriorityOpen ? 'z-50' : ''}`}>
+                                    <td key="priority" class={`py-2.5 px-2.5 whitespace-nowrap w-24 min-w-[88px] max-w-[92px] relative ${isPriorityOpen ? 'z-50' : ''}`}>
                                       <button
                                         type="button"
                                         onClick={(e) => toggleDropdown(e, currentId, 'priority')}
@@ -4483,7 +4483,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   const hasDateOrTime = !!formattedDate || !!formattedTime;
 
                                   return (
-                                    <td key="followupDate" class={`py-2.5 px-2.5 whitespace-nowrap w-44 min-w-[165px] max-w-[172px] relative ${isPickerOpen ? 'z-50' : ''}`}>
+                                    <td key="followupDate" class={`py-2.5 px-2.5 whitespace-nowrap w-36 min-w-[132px] max-w-[136px] relative ${isPickerOpen ? 'z-50' : ''}`}>
                                       <button
                                         type="button"
                                         onClick={(e) => toggleDropdown(e, currentId, 'dateTimePicker')}
@@ -4596,7 +4596,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   const currentAgent = item.assignedAgentName || (allAgents[0] ? allAgents[0].name : 'Unassigned');
 
                                   return (
-                                    <td key="assignedAgent" class={`py-2.5 px-2.5 whitespace-nowrap w-40 min-w-[140px] max-w-[145px] relative ${isAgentOpen ? 'z-50' : ''}`}>
+                                    <td key="assignedAgent" class={`py-2.5 px-2.5 whitespace-nowrap w-36 min-w-[136px] max-w-[140px] relative ${isAgentOpen ? 'z-50' : ''}`}>
                                       {isAdmin ? (
                                         <>
                                           <button
@@ -4657,7 +4657,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   const creator = item.createdBy || 'System';
                                   const isSystemCreated = creator.toLowerCase() === 'system' || ['super admin', 'system admin', 'admin', 'client'].includes(creator.toLowerCase());
                                   return (
-                                    <td key="createdBy" class="py-2.5 px-2.5 whitespace-nowrap w-32 min-w-[120px] max-w-[125px]">
+                                    <td key="createdBy" class="py-2.5 px-2.5 whitespace-nowrap w-28 min-w-[108px] max-w-[112px]">
                                       {isSystemCreated ? (
                                         <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-700 border border-gray-200 shadow-2xs">
                                           <i class="fa-solid fa-user text-[8.5px] text-gray-500"></i>

@@ -4217,7 +4217,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                           type="date"
                                           value={formatToInputDate(item.followupDate)}
                                           onChange={(e) => handleInlineFieldChange(currentId, 'followupDate', e.target.value)}
-                                          class={`px-1.5 py-0.5 rounded-md border text-[10px] font-bold outline-none cursor-pointer transition shadow-2xs w-[92px] ${
+                                          class={`h-[26px] pl-1.5 pr-0.5 rounded-md border text-[10px] font-bold outline-none cursor-pointer transition shadow-2xs w-[94px] box-border [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:p-0 [&::-webkit-datetime-edit]:p-0 ${
                                             isVisitStatus
                                               ? 'border-indigo-300 text-indigo-900 bg-indigo-50 hover:bg-indigo-100'
                                               : 'border-amber-300 text-amber-900 bg-amber-50 hover:bg-amber-100'
@@ -4229,7 +4229,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                         <button
                                           type="button"
                                           onClick={(e) => toggleDropdown(e, currentId, 'visitTime')}
-                                          class={`px-2 py-0.5 rounded-md border text-[10px] font-bold outline-none cursor-pointer transition shadow-2xs flex items-center justify-between gap-1 w-[88px] custom-dropdown-toggle ${
+                                          class={`h-[26px] px-1.5 rounded-md border text-[10px] font-bold outline-none cursor-pointer transition shadow-2xs flex items-center justify-between gap-1 w-[88px] custom-dropdown-toggle box-border ${
                                             isTimeOpen
                                               ? 'ring-2 ring-[#B30E2E]/40 border-[#B30E2E] bg-rose-50 text-[#B30E2E]'
                                               : isVisitStatus
@@ -5305,26 +5305,26 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                     <label class="block text-xs font-bold text-gray-700 mb-1">
                       {editingEnquiry.status === 'Site Visit Scheduled' ? 'Visit Date & Time' : 'Followup Date & Time'}
                     </label>
-                    <div class="grid grid-cols-2 gap-2">
+                    <div class="grid grid-cols-[1.18fr_1fr] gap-2 items-center">
                       <input 
                         type="date" 
                         value={editingEnquiry.followupDate || ''} 
                         onChange={(e) => setEditingEnquiry({ ...editingEnquiry, followupDate: e.target.value })}
-                        class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
+                        class="w-full h-[38px] pl-2.5 pr-1.5 py-1.5 rounded-xl border border-gray-300 text-[11.5px] font-medium tracking-tight focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800 cursor-pointer box-border [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:p-0 [&::-webkit-datetime-edit]:p-0"
                       />
-                      <div>
+                      <div class="relative w-full h-[38px] flex items-center">
                         <button
                           type="button"
                           onClick={(e) => toggleDropdown(e, 'edit-modal', 'visitTime')}
-                          class={`w-full px-3 py-2 rounded-xl border text-xs flex items-center justify-between cursor-pointer transition custom-dropdown-toggle ${
+                          class={`w-full h-[38px] px-2.5 py-1.5 rounded-xl border text-[11.5px] flex items-center justify-between cursor-pointer transition custom-dropdown-toggle box-border ${
                             activeDropdown?.rowId === 'edit-modal' && activeDropdown?.field === 'visitTime' ? 'border-[#B30E2E] ring-1 ring-rose-200 bg-rose-50/30' : 'border-gray-300 hover:border-gray-400 bg-white'
                           }`}
                           title="Click to select Time"
                         >
-                          <span class={editingEnquiry.visitTime ? 'font-bold text-gray-800' : 'text-gray-400'}>
+                          <span class={editingEnquiry.visitTime ? 'font-bold text-gray-800 truncate' : 'text-gray-400 truncate'}>
                             {editingEnquiry.visitTime ? formatTime12Hour(editingEnquiry.visitTime) : 'Select Time'}
                           </span>
-                          <i class={`fa-regular fa-clock text-xs ${activeDropdown?.rowId === 'edit-modal' && activeDropdown?.field === 'visitTime' ? 'text-[#B30E2E]' : 'text-gray-500'}`}></i>
+                          <i class={`fa-regular fa-clock text-xs flex-shrink-0 ml-1 ${activeDropdown?.rowId === 'edit-modal' && activeDropdown?.field === 'visitTime' ? 'text-[#B30E2E]' : 'text-gray-500'}`}></i>
                         </button>
 
                         {activeDropdown?.rowId === 'edit-modal' && activeDropdown?.field === 'visitTime' && (
@@ -5739,26 +5739,26 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1">Followup / Visit Date & Time</label>
-                    <div class="grid grid-cols-2 gap-2">
+                    <div class="grid grid-cols-[1.18fr_1fr] gap-2 items-center">
                       <input 
                         type="date" 
                         value={newLeadFormData.followupDate || ''}
                         onChange={(e) => setNewLeadFormData({ ...newLeadFormData, followupDate: e.target.value })}
-                        class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800"
+                        class="w-full h-[38px] pl-2.5 pr-1.5 py-1.5 rounded-xl border border-gray-300 text-[11.5px] font-medium tracking-tight focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800 cursor-pointer box-border [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:p-0 [&::-webkit-datetime-edit]:p-0"
                       />
-                      <div>
+                      <div class="relative w-full h-[38px] flex items-center">
                         <button
                           type="button"
                           onClick={(e) => toggleDropdown(e, 'new-lead-modal', 'visitTime')}
-                          class={`w-full px-3 py-2 rounded-xl border text-xs flex items-center justify-between cursor-pointer transition custom-dropdown-toggle ${
+                          class={`w-full h-[38px] px-2.5 py-1.5 rounded-xl border text-[11.5px] flex items-center justify-between cursor-pointer transition custom-dropdown-toggle box-border ${
                             activeDropdown?.rowId === 'new-lead-modal' && activeDropdown?.field === 'visitTime' ? 'border-[#B30E2E] ring-1 ring-rose-200 bg-rose-50/30' : 'border-gray-300 hover:border-gray-400 bg-white'
                           }`}
                           title="Click to select Time"
                         >
-                          <span class={newLeadFormData.visitTime ? 'font-bold text-gray-800' : 'text-gray-400'}>
+                          <span class={newLeadFormData.visitTime ? 'font-bold text-gray-800 truncate' : 'text-gray-400 truncate'}>
                             {newLeadFormData.visitTime ? formatTime12Hour(newLeadFormData.visitTime) : 'Select Time'}
                           </span>
-                          <i class={`fa-regular fa-clock text-xs ${activeDropdown?.rowId === 'new-lead-modal' && activeDropdown?.field === 'visitTime' ? 'text-[#B30E2E]' : 'text-gray-500'}`}></i>
+                          <i class={`fa-regular fa-clock text-xs flex-shrink-0 ml-1 ${activeDropdown?.rowId === 'new-lead-modal' && activeDropdown?.field === 'visitTime' ? 'text-[#B30E2E]' : 'text-gray-500'}`}></i>
                         </button>
 
                         {activeDropdown?.rowId === 'new-lead-modal' && activeDropdown?.field === 'visitTime' && (

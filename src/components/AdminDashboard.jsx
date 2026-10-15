@@ -2302,6 +2302,271 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     );
   };
 
+  const CustomDateTimePickerPopup = ({ dateValue, timeValue, onDateChange, onTimeChange, onClose, coords = null }) => {
+    // Current input date parsed
+    const initialDate = (() => {
+      if (dateValue) {
+        const parts = String(dateValue).trim().split('-');
+        if (parts.length === 3) {
+          const y = parseInt(parts[0], 10);
+          const m = parseInt(parts[1], 10) - 1;
+          const d = parseInt(parts[2], 10);
+          if (!isNaN(y) && !isNaN(m) && !isNaN(d)) return new Date(y, m, d);
+        }
+      }
+      return new Date();
+    })();
+
+    const [viewYear, setViewYear] = useState(initialDate.getFullYear());
+    const [viewMonth, setViewMonth] = useState(initialDate.getMonth()); // 0-indexed
+    const [selectedDate, setSelectedDate] = useState(dateValue || '');
+    const [selectedTime, setSelectedTime] = useState(timeValue || '');
+
+    const parsedTime = parseTimeParts(selectedTime);
+
+    const monthNames = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+
+    const prevMonth = () => {
+      if (viewMonth === 0) {
+        setViewMonth(11);
+        setViewYear(viewYear - 1);
+      } else {
+        setViewMonth(viewMonth - 1);
+      }
+    };
+
+    const nextMonth = () => {
+      if (viewMonth === 11) {
+        setViewMonth(0);
+        setViewYear(viewYear + 1);
+      } else {
+        setViewMonth(viewMonth + 1);
+      }
+    };
+
+    // Days in viewMonth
+    const firstDayIndex = new Date(viewYear, viewMonth, 1).getDay(); // 0 for Sunday
+    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+
+    const todayStr = (() => {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      const d = String(now.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    })();
+
+    const handleSelectDay = (dayNum) => {
+      const y = viewYear;
+      const m = String(viewMonth + 1).padStart(2, '0');
+      const d = String(dayNum).padStart(2, '0');
+      const dateStr = `${y}-${m}-${d}`;
+      setSelectedDate(dateStr);
+      onDateChange(dateStr);
+    };
+
+    const handleTimePartChange = (h, m, p) => {
+      const new24 = composeTime24(h, m, p);
+      setSelectedTime(new24);
+      onTimeChange(new24);
+    };
+
+    const containerStyle = {
+      top: coords ? `${coords.top}px` : undefined,
+      left: coords ? `${coords.left}px` : undefined
+    };
+
+    const containerClass = "fixed z-[9999] w-[290px] bg-white rounded-2xl shadow-2xl border border-gray-200 p-3 text-xs animate-fade-in custom-dropdown-menu select-none";
+
+    return (
+      <div class={containerClass} style={containerStyle} onClick={(e) => e.stopPropagation()}>
+        {/* Header: Month & Year navigation + close */}
+        <div class="flex items-center justify-between pb-2 mb-2 border-b border-gray-100">
+          <div class="flex items-center gap-1.5 font-bold text-gray-800 text-[12px]">
+            <i class="fa-solid fa-calendar-day text-[#B30E2E]"></i>
+            <span>{monthNames[viewMonth]} {viewYear}</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={prevMonth}
+              class="w-6 h-6 rounded-md hover:bg-gray-100 flex items-center justify-center text-gray-500 hover:text-gray-800 transition cursor-pointer"
+              title="Previous Month"
+            >
+              <i class="fa-solid fa-chevron-left text-[10px]"></i>
+            </button>
+            <button
+              type="button"
+              onClick={nextMonth}
+              class="w-6 h-6 rounded-md hover:bg-gray-100 flex items-center justify-center text-gray-500 hover:text-gray-800 transition cursor-pointer"
+              title="Next Month"
+            >
+              <i class="fa-solid fa-chevron-right text-[10px]"></i>
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              class="w-6 h-6 rounded-md hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-700 ml-1 transition cursor-pointer"
+              title="Close"
+            >
+              <i class="fa-solid fa-xmark text-xs"></i>
+            </button>
+          </div>
+        </div>
+
+        {/* Calendar Day of Week Headers */}
+        <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-gray-400 uppercase mb-1">
+          <span>Su</span>
+          <span>Mo</span>
+          <span>Tu</span>
+          <span>We</span>
+          <span>Th</span>
+          <span>Fr</span>
+          <span>Sa</span>
+        </div>
+
+        {/* Days Grid */}
+        <div class="grid grid-cols-7 gap-1 text-center mb-2">
+          {/* Empty cells before Day 1 */}
+          {Array.from({ length: firstDayIndex }).map((_, i) => (
+            <div key={`empty-${i}`} class="w-8 h-7"></div>
+          ))}
+
+          {/* Days of Month */}
+          {Array.from({ length: daysInMonth }).map((_, i) => {
+            const dayNum = i + 1;
+            const y = viewYear;
+            const m = String(viewMonth + 1).padStart(2, '0');
+            const d = String(dayNum).padStart(2, '0');
+            const dateStr = `${y}-${m}-${d}`;
+            const isSelected = selectedDate === dateStr;
+            const isToday = todayStr === dateStr;
+
+            return (
+              <button
+                key={dateStr}
+                type="button"
+                onClick={() => handleSelectDay(dayNum)}
+                class={`w-8 h-7 rounded-lg text-[11px] font-bold transition flex items-center justify-center cursor-pointer mx-auto ${
+                  isSelected
+                    ? 'bg-[#B30E2E] text-white shadow-xs'
+                    : isToday
+                    ? 'bg-rose-50 text-[#B30E2E] border border-rose-200 hover:bg-rose-100'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                {dayNum}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Time Selector Row */}
+        <div class="flex items-center justify-between px-2.5 py-1.5 bg-gray-50/90 rounded-xl border border-gray-200/80 mb-2">
+          <div class="flex items-center gap-1.5 text-[11px] font-bold text-gray-700">
+            <i class="fa-regular fa-clock text-[#B30E2E]"></i>
+            <span>Time:</span>
+          </div>
+
+          <div class="flex items-center gap-1">
+            {/* Hour Select */}
+            <select
+              value={parsedTime.hour}
+              onChange={(e) => handleTimePartChange(e.target.value, parsedTime.minute, parsedTime.ampm)}
+              class="px-1.5 py-0.5 rounded-lg border border-gray-300 text-[11px] font-bold text-gray-800 bg-white focus:outline-none focus:border-[#B30E2E] cursor-pointer"
+            >
+              {['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'].map((hr) => (
+                <option key={hr} value={hr}>{hr}</option>
+              ))}
+            </select>
+
+            <span class="font-bold text-gray-400">:</span>
+
+            {/* Minute Select */}
+            <select
+              value={parsedTime.minute}
+              onChange={(e) => handleTimePartChange(parsedTime.hour, e.target.value, parsedTime.ampm)}
+              class="px-1.5 py-0.5 rounded-lg border border-gray-300 text-[11px] font-bold text-gray-800 bg-white focus:outline-none focus:border-[#B30E2E] cursor-pointer"
+            >
+              {['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'].map((mn) => (
+                <option key={mn} value={mn}>{mn}</option>
+              ))}
+            </select>
+
+            {/* AM / PM Toggle */}
+            <div class="flex items-center bg-gray-200/80 rounded-lg p-0.5 ml-1">
+              <button
+                type="button"
+                onClick={() => handleTimePartChange(parsedTime.hour, parsedTime.minute, 'AM')}
+                class={`px-1.5 py-0.5 rounded-md text-[10px] font-extrabold transition cursor-pointer ${
+                  parsedTime.ampm === 'AM'
+                    ? 'bg-[#B30E2E] text-white shadow-xs'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                AM
+              </button>
+              <button
+                type="button"
+                onClick={() => handleTimePartChange(parsedTime.hour, parsedTime.minute, 'PM')}
+                class={`px-1.5 py-0.5 rounded-md text-[10px] font-extrabold transition cursor-pointer ${
+                  parsedTime.ampm === 'PM'
+                    ? 'bg-[#B30E2E] text-white shadow-xs'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                PM
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer: Clear, Today, OK */}
+        <div class="flex items-center justify-between pt-1.5 border-t border-gray-100 text-[11px]">
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedDate('');
+                setSelectedTime('');
+                onDateChange('');
+                onTimeChange('');
+              }}
+              class="text-rose-600 hover:text-rose-800 font-bold hover:underline cursor-pointer text-[10.5px]"
+            >
+              Clear
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedDate(todayStr);
+                onDateChange(todayStr);
+                const now = new Date();
+                setViewYear(now.getFullYear());
+                setViewMonth(now.getMonth());
+              }}
+              class="text-gray-500 hover:text-gray-800 font-medium hover:underline cursor-pointer text-[10.5px]"
+            >
+              Today
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            class="px-3 py-1 rounded-lg bg-[#B30E2E] hover:bg-[#8A0B22] text-white font-bold transition shadow-xs flex items-center gap-1 cursor-pointer"
+          >
+            <i class="fa-solid fa-check text-[10px]"></i>
+            <span>OK</span>
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   // Helpers for Status filtering
   const isPendingVisitStatus = (status) => status === 'Site Visit Scheduled';
   const isFollowupStatus = (status) => ['Contacted', 'Interested', 'Details Provided'].includes(status);
@@ -2549,6 +2814,9 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       } else if (field === 'visitTime') {
         targetHeight = 225;
         dropdownWidth = 220;
+      } else if (field === 'dateTimePicker') {
+        targetHeight = 310;
+        dropdownWidth = 290;
       }
 
       // Available space above and below (with safety margin for taskbar/navbar)
@@ -2586,7 +2854,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
 
       // Horizontally align with the clicked button, keeping within viewport
       let left = rect.left;
-      if ((rowId === 'edit-modal' || rowId === 'new-lead-modal') && rect.right - dropdownWidth >= 8) {
+      if ((rowId === 'edit-modal' || rowId === 'new-lead-modal') && field === 'visitTime' && rect.right - dropdownWidth >= 8) {
         // Inward right alignment for time dropdown in modals so it stays neatly inside
         left = rect.right - dropdownWidth;
       } else if (left + dropdownWidth > window.innerWidth - 12) {
@@ -4209,100 +4477,57 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   );
                                 }
                                 case 'followupDate': {
-                                  const isTimeOpen = activeDropdown?.rowId === currentId && activeDropdown?.field === 'visitTime';
+                                  const isPickerOpen = activeDropdown?.rowId === currentId && activeDropdown?.field === 'dateTimePicker';
                                   const formattedDate = formatDateShortMonth(item.followupDate);
                                   const formattedTime = item.visitTime ? formatTime12Hour(item.visitTime) : '';
                                   const hasDateOrTime = !!formattedDate || !!formattedTime;
 
                                   return (
-                                    <td key="followupDate" class={`py-2.5 px-2.5 whitespace-nowrap w-44 min-w-[165px] max-w-[172px] relative ${isTimeOpen ? 'z-50' : ''}`}>
+                                    <td key="followupDate" class={`py-2.5 px-2.5 whitespace-nowrap w-44 min-w-[165px] max-w-[172px] relative ${isPickerOpen ? 'z-50' : ''}`}>
                                       {!hasDateOrTime ? (
                                         /* Display only '-' when date and time are not added (centered) */
                                         <div class="flex items-center justify-center w-full">
-                                          <div
-                                            onClick={(e) => {
-                                              const input = e.currentTarget.querySelector('input[type="date"]');
-                                              if (input) {
-                                                try {
-                                                  if (typeof input.showPicker === 'function') {
-                                                    input.showPicker();
-                                                  } else {
-                                                    input.focus();
-                                                  }
-                                                } catch (err) {
-                                                  input.focus();
-                                                }
-                                              }
-                                            }}
+                                          <button
+                                            type="button"
+                                            onClick={(e) => toggleDropdown(e, currentId, 'dateTimePicker')}
                                             class="relative inline-flex items-center justify-center px-2 py-0.5 rounded text-gray-400 hover:bg-rose-50 hover:text-[#B30E2E] transition cursor-pointer group"
-                                            title="Click to set Followup / Visit Date"
+                                            title="Click to set Followup / Visit Date & Time"
                                           >
                                             <span class="font-bold text-gray-400 group-hover:text-[#B30E2E] text-xs text-center">-</span>
-                                            <input
-                                              type="date"
-                                              value=""
-                                              onChange={(e) => handleInlineFieldChange(currentId, 'followupDate', e.target.value)}
-                                              class="absolute inset-0 opacity-0 pointer-events-none w-full h-full"
-                                            />
-                                          </div>
+                                          </button>
                                         </div>
                                       ) : (
-                                        <div class="flex items-center gap-2 whitespace-nowrap text-[10px]">
-                                          {/* Inline Editable Date with Calendar Symbol */}
-                                          <div
-                                            onClick={(e) => {
-                                              const input = e.currentTarget.querySelector('input[type="date"]');
-                                              if (input) {
-                                                try {
-                                                  if (typeof input.showPicker === 'function') {
-                                                    input.showPicker();
-                                                  } else {
-                                                    input.focus();
-                                                  }
-                                                } catch (err) {
-                                                  input.focus();
-                                                }
-                                              }
-                                            }}
-                                            class="relative inline-flex items-center gap-1 cursor-pointer group hover:text-[#B30E2E] transition-colors"
-                                            title="Click calendar icon to change date"
-                                          >
+                                        <button
+                                          type="button"
+                                          onClick={(e) => toggleDropdown(e, currentId, 'dateTimePicker')}
+                                          class="flex items-center gap-2 whitespace-nowrap text-[10px] cursor-pointer group text-left transition"
+                                          title="Click to edit Followup / Visit Date & Time"
+                                        >
+                                          {/* Date with Calendar Symbol */}
+                                          <div class="inline-flex items-center gap-1 group-hover:text-[#B30E2E] transition-colors">
                                             <span class={`font-semibold ${formattedDate ? 'text-gray-800 group-hover:text-[#B30E2E]' : 'text-gray-400 italic font-normal'}`}>
                                               {formattedDate || '-'}
                                             </span>
-                                            <i class="fa-regular fa-calendar-days text-[9px] text-gray-400 group-hover:text-[#B30E2E] transition-colors"></i>
-                                            <input
-                                              type="date"
-                                              value={formatToInputDate(item.followupDate)}
-                                              onChange={(e) => handleInlineFieldChange(currentId, 'followupDate', e.target.value)}
-                                              class="absolute inset-0 opacity-0 pointer-events-none w-full h-full"
-                                            />
+                                            <i class={`fa-regular fa-calendar-days text-[9px] transition-colors ${isPickerOpen ? 'text-[#B30E2E]' : 'text-gray-400 group-hover:text-[#B30E2E]'}`}></i>
                                           </div>
 
-                                          {/* Inline Editable Time with Clock Symbol */}
-                                          <button
-                                            type="button"
-                                            onClick={(e) => toggleDropdown(e, currentId, 'visitTime')}
-                                            class={`inline-flex items-center gap-1 cursor-pointer custom-dropdown-toggle group transition-colors ${
-                                              isTimeOpen
-                                                ? 'text-[#B30E2E] font-bold'
-                                                : formattedTime
-                                                ? 'text-gray-500 hover:text-[#B30E2E] font-normal'
-                                                : 'text-gray-400 hover:text-[#B30E2E] italic font-normal'
-                                            }`}
-                                            title={formattedTime ? "Click clock icon to change time" : "Click to set time"}
-                                          >
-                                            <span class="text-[9.5px]">{formattedTime || '--:--'}</span>
-                                            <i class={`fa-regular fa-clock text-[9px] ${isTimeOpen ? 'text-[#B30E2E]' : 'text-gray-400 group-hover:text-[#B30E2E]'}`}></i>
-                                          </button>
-                                        </div>
+                                          {/* Time with Clock Symbol */}
+                                          <div class="inline-flex items-center gap-1 group-hover:text-[#B30E2E] transition-colors">
+                                            <span class="text-[9.5px] text-gray-500 group-hover:text-[#B30E2E] font-normal">
+                                              {formattedTime || '--:--'}
+                                            </span>
+                                            <i class={`fa-regular fa-clock text-[9px] transition-colors ${isPickerOpen ? 'text-[#B30E2E]' : 'text-gray-400 group-hover:text-[#B30E2E]'}`}></i>
+                                          </div>
+                                        </button>
                                       )}
 
-                                      {/* Custom Time Dropdown Picker */}
-                                      {isTimeOpen && (
-                                        <CustomTimePickerPopup
-                                          value={item.visitTime}
-                                          onChange={(newTime) => handleInlineFieldChange(currentId, 'visitTime', newTime)}
+                                      {/* Integrated Date & Time Dropdown Picker */}
+                                      {isPickerOpen && (
+                                        <CustomDateTimePickerPopup
+                                          dateValue={item.followupDate}
+                                          timeValue={item.visitTime}
+                                          onDateChange={(newDate) => handleInlineFieldChange(currentId, 'followupDate', newDate)}
+                                          onTimeChange={(newTime) => handleInlineFieldChange(currentId, 'visitTime', newTime)}
                                           onClose={() => setActiveDropdown(null)}
                                           coords={activeDropdown?.coords}
                                         />
@@ -5360,37 +5585,40 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                     <label class="block text-xs font-bold text-gray-700 mb-1">
                       {editingEnquiry.status === 'Site Visit Scheduled' ? 'Visit Date & Time' : 'Followup Date & Time'}
                     </label>
-                    <div class="grid grid-cols-[1.18fr_1fr] gap-2 items-center">
-                      <input 
-                        type="date" 
-                        value={editingEnquiry.followupDate || ''} 
-                        onChange={(e) => setEditingEnquiry({ ...editingEnquiry, followupDate: e.target.value })}
-                        class="w-full h-[38px] pl-2.5 pr-1.5 py-1.5 rounded-xl border border-gray-300 text-[11.5px] font-medium tracking-tight focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800 cursor-pointer box-border [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:p-0 [&::-webkit-datetime-edit]:p-0"
-                      />
-                      <div class="relative w-full h-[38px] flex items-center">
-                        <button
-                          type="button"
-                          onClick={(e) => toggleDropdown(e, 'edit-modal', 'visitTime')}
-                          class={`w-full h-[38px] px-2.5 py-1.5 rounded-xl border text-[11.5px] flex items-center justify-between cursor-pointer transition custom-dropdown-toggle box-border ${
-                            activeDropdown?.rowId === 'edit-modal' && activeDropdown?.field === 'visitTime' ? 'border-[#B30E2E] ring-1 ring-rose-200 bg-rose-50/30' : 'border-gray-300 hover:border-gray-400 bg-white'
-                          }`}
-                          title="Click to select Time"
-                        >
-                          <span class={editingEnquiry.visitTime ? 'font-bold text-gray-800 truncate' : 'text-gray-400 truncate'}>
-                            {editingEnquiry.visitTime ? formatTime12Hour(editingEnquiry.visitTime) : 'Select Time'}
+                    <div class="relative w-full">
+                      <button
+                        type="button"
+                        onClick={(e) => toggleDropdown(e, 'edit-modal', 'dateTimePicker')}
+                        class={`w-full h-[38px] px-3 py-1.5 rounded-xl border text-[11.5px] flex items-center justify-between cursor-pointer transition custom-dropdown-toggle box-border ${
+                          activeDropdown?.rowId === 'edit-modal' && activeDropdown?.field === 'dateTimePicker'
+                            ? 'border-[#B30E2E] ring-1 ring-rose-200 bg-rose-50/30'
+                            : 'border-gray-300 hover:border-gray-400 bg-white'
+                        }`}
+                        title="Click to set Followup / Visit Date & Time"
+                      >
+                        <div class="flex items-center gap-2 truncate">
+                          <i class="fa-regular fa-calendar-days text-[#B30E2E] text-xs shrink-0"></i>
+                          <span class={editingEnquiry.followupDate ? 'font-bold text-gray-800 truncate' : 'text-gray-400 truncate'}>
+                            {editingEnquiry.followupDate
+                              ? `${formatDateShortMonth(editingEnquiry.followupDate)}${editingEnquiry.visitTime ? ` at ${formatTime12Hour(editingEnquiry.visitTime)}` : ''}`
+                              : 'Select Date & Time'}
                           </span>
-                          <i class={`fa-regular fa-clock text-xs flex-shrink-0 ml-1 ${activeDropdown?.rowId === 'edit-modal' && activeDropdown?.field === 'visitTime' ? 'text-[#B30E2E]' : 'text-gray-500'}`}></i>
-                        </button>
+                        </div>
+                        <i class={`fa-solid fa-chevron-down text-[9px] transition-transform text-gray-400 shrink-0 ${
+                          activeDropdown?.rowId === 'edit-modal' && activeDropdown?.field === 'dateTimePicker' ? 'rotate-180 text-[#B30E2E]' : ''
+                        }`}></i>
+                      </button>
 
-                        {activeDropdown?.rowId === 'edit-modal' && activeDropdown?.field === 'visitTime' && (
-                          <CustomTimePickerPopup
-                            value={editingEnquiry.visitTime}
-                            onChange={(newTime) => setEditingEnquiry({ ...editingEnquiry, visitTime: newTime })}
-                            onClose={() => setActiveDropdown(null)}
-                            coords={activeDropdown?.coords}
-                          />
-                        )}
-                      </div>
+                      {activeDropdown?.rowId === 'edit-modal' && activeDropdown?.field === 'dateTimePicker' && (
+                        <CustomDateTimePickerPopup
+                          dateValue={editingEnquiry.followupDate}
+                          timeValue={editingEnquiry.visitTime}
+                          onDateChange={(newDate) => setEditingEnquiry(prev => ({ ...prev, followupDate: newDate }))}
+                          onTimeChange={(newTime) => setEditingEnquiry(prev => ({ ...prev, visitTime: newTime }))}
+                          onClose={() => setActiveDropdown(null)}
+                          coords={activeDropdown?.coords}
+                        />
+                      )}
                     </div>
                   </div>
                 </div>
@@ -5794,37 +6022,40 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1">Followup / Visit Date & Time</label>
-                    <div class="grid grid-cols-[1.18fr_1fr] gap-2 items-center">
-                      <input 
-                        type="date" 
-                        value={newLeadFormData.followupDate || ''}
-                        onChange={(e) => setNewLeadFormData({ ...newLeadFormData, followupDate: e.target.value })}
-                        class="w-full h-[38px] pl-2.5 pr-1.5 py-1.5 rounded-xl border border-gray-300 text-[11.5px] font-medium tracking-tight focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800 cursor-pointer box-border [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:p-0 [&::-webkit-datetime-edit]:p-0"
-                      />
-                      <div class="relative w-full h-[38px] flex items-center">
-                        <button
-                          type="button"
-                          onClick={(e) => toggleDropdown(e, 'new-lead-modal', 'visitTime')}
-                          class={`w-full h-[38px] px-2.5 py-1.5 rounded-xl border text-[11.5px] flex items-center justify-between cursor-pointer transition custom-dropdown-toggle box-border ${
-                            activeDropdown?.rowId === 'new-lead-modal' && activeDropdown?.field === 'visitTime' ? 'border-[#B30E2E] ring-1 ring-rose-200 bg-rose-50/30' : 'border-gray-300 hover:border-gray-400 bg-white'
-                          }`}
-                          title="Click to select Time"
-                        >
-                          <span class={newLeadFormData.visitTime ? 'font-bold text-gray-800 truncate' : 'text-gray-400 truncate'}>
-                            {newLeadFormData.visitTime ? formatTime12Hour(newLeadFormData.visitTime) : 'Select Time'}
+                    <div class="relative w-full">
+                      <button
+                        type="button"
+                        onClick={(e) => toggleDropdown(e, 'new-lead-modal', 'dateTimePicker')}
+                        class={`w-full h-[38px] px-3 py-1.5 rounded-xl border text-[11.5px] flex items-center justify-between cursor-pointer transition custom-dropdown-toggle box-border ${
+                          activeDropdown?.rowId === 'new-lead-modal' && activeDropdown?.field === 'dateTimePicker'
+                            ? 'border-[#B30E2E] ring-1 ring-rose-200 bg-rose-50/30'
+                            : 'border-gray-300 hover:border-gray-400 bg-white'
+                        }`}
+                        title="Click to set Followup / Visit Date & Time"
+                      >
+                        <div class="flex items-center gap-2 truncate">
+                          <i class="fa-regular fa-calendar-days text-[#B30E2E] text-xs shrink-0"></i>
+                          <span class={newLeadFormData.followupDate ? 'font-bold text-gray-800 truncate' : 'text-gray-400 truncate'}>
+                            {newLeadFormData.followupDate
+                              ? `${formatDateShortMonth(newLeadFormData.followupDate)}${newLeadFormData.visitTime ? ` at ${formatTime12Hour(newLeadFormData.visitTime)}` : ''}`
+                              : 'Select Date & Time'}
                           </span>
-                          <i class={`fa-regular fa-clock text-xs flex-shrink-0 ml-1 ${activeDropdown?.rowId === 'new-lead-modal' && activeDropdown?.field === 'visitTime' ? 'text-[#B30E2E]' : 'text-gray-500'}`}></i>
-                        </button>
+                        </div>
+                        <i class={`fa-solid fa-chevron-down text-[9px] transition-transform text-gray-400 shrink-0 ${
+                          activeDropdown?.rowId === 'new-lead-modal' && activeDropdown?.field === 'dateTimePicker' ? 'rotate-180 text-[#B30E2E]' : ''
+                        }`}></i>
+                      </button>
 
-                        {activeDropdown?.rowId === 'new-lead-modal' && activeDropdown?.field === 'visitTime' && (
-                          <CustomTimePickerPopup
-                            value={newLeadFormData.visitTime}
-                            onChange={(newTime) => setNewLeadFormData({ ...newLeadFormData, visitTime: newTime })}
-                            onClose={() => setActiveDropdown(null)}
-                            coords={activeDropdown?.coords}
-                          />
-                        )}
-                      </div>
+                      {activeDropdown?.rowId === 'new-lead-modal' && activeDropdown?.field === 'dateTimePicker' && (
+                        <CustomDateTimePickerPopup
+                          dateValue={newLeadFormData.followupDate}
+                          timeValue={newLeadFormData.visitTime}
+                          onDateChange={(newDate) => setNewLeadFormData(prev => ({ ...prev, followupDate: newDate }))}
+                          onTimeChange={(newTime) => setNewLeadFormData(prev => ({ ...prev, visitTime: newTime }))}
+                          onClose={() => setActiveDropdown(null)}
+                          coords={activeDropdown?.coords}
+                        />
+                      )}
                     </div>
                   </div>
                 </div>

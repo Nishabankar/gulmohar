@@ -3930,7 +3930,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 <th 
                                   key="followupDate" 
                                   onClick={() => handleSort('followupDate')}
-                                  class={`py-2.5 px-2.5 whitespace-nowrap w-52 min-w-[195px] max-w-[210px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                  class={`py-2.5 px-2.5 whitespace-nowrap w-48 min-w-[170px] max-w-[195px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
                                   title={getSortTitle('Followup / Visit Date & Time')}
                                 >
                                   <div class="flex items-center gap-1.5">
@@ -4209,49 +4209,76 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 case 'followupDate': {
                                   const isVisitStatus = item.status === 'Site Visit Scheduled';
                                   const isTimeOpen = activeDropdown?.rowId === currentId && activeDropdown?.field === 'visitTime';
-                                  const parsedTime = parseTimeParts(item.visitTime);
-                                  return (
-                                    <td key="followupDate" class={`py-2.5 px-2.5 whitespace-nowrap w-52 min-w-[195px] max-w-[210px] relative ${isTimeOpen ? 'z-50' : ''}`}>
-                                      <div class="flex items-center gap-1.5">
-                                        <input
-                                          type="date"
-                                          value={formatToInputDate(item.followupDate)}
-                                          onChange={(e) => handleInlineFieldChange(currentId, 'followupDate', e.target.value)}
-                                          class={`h-[26px] pl-1.5 pr-0.5 rounded-md border text-[10px] font-bold outline-none cursor-pointer transition shadow-2xs w-[94px] box-border [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:p-0 [&::-webkit-datetime-edit]:p-0 ${
-                                            isVisitStatus
-                                              ? 'border-indigo-300 text-indigo-900 bg-indigo-50 hover:bg-indigo-100'
-                                              : 'border-amber-300 text-amber-900 bg-amber-50 hover:bg-amber-100'
-                                          }`}
-                                          title={isVisitStatus ? "Click to edit Visit Date" : "Click to edit Followup Date"}
-                                        />
+                                  const formattedDate = formatDateShortMonth(item.followupDate);
+                                  const formattedTime = item.visitTime ? formatTime12Hour(item.visitTime) : '';
 
-                                        {/* Custom Styled Time Selector Button */}
+                                  return (
+                                    <td key="followupDate" class={`py-2.5 px-2.5 whitespace-nowrap w-48 min-w-[170px] max-w-[195px] relative ${isTimeOpen ? 'z-50' : ''}`}>
+                                      <div class="flex items-center gap-1.5 whitespace-nowrap text-[10px]">
+                                        {/* Inline Editable Date with Calendar Symbol */}
+                                        <div
+                                          onClick={(e) => {
+                                            const input = e.currentTarget.querySelector('input[type="date"]');
+                                            if (input) {
+                                              try {
+                                                if (typeof input.showPicker === 'function') {
+                                                  input.showPicker();
+                                                } else {
+                                                  input.focus();
+                                                }
+                                              } catch (err) {
+                                                input.focus();
+                                              }
+                                            }
+                                          }}
+                                          class={`relative flex items-center gap-1 px-1.5 py-0.5 rounded transition cursor-pointer group ${
+                                            formattedDate 
+                                              ? (isVisitStatus ? 'text-indigo-950 hover:bg-indigo-50/80 hover:text-indigo-700' : 'text-gray-800 hover:bg-rose-50/80 hover:text-[#B30E2E]')
+                                              : 'text-gray-400 hover:bg-gray-100 italic'
+                                          }`}
+                                          title="Click calendar icon to change date"
+                                        >
+                                          <span class={formattedDate ? 'font-semibold' : 'font-normal'}>
+                                            {formattedDate || 'Set Date'}
+                                          </span>
+                                          <i class="fa-regular fa-calendar-days text-[9.5px] text-gray-400 group-hover:text-[#B30E2E] transition-colors"></i>
+                                          <input
+                                            type="date"
+                                            value={formatToInputDate(item.followupDate)}
+                                            onChange={(e) => handleInlineFieldChange(currentId, 'followupDate', e.target.value)}
+                                            class="absolute inset-0 opacity-0 pointer-events-none w-full h-full"
+                                          />
+                                        </div>
+
+                                        <span class="text-gray-300 select-none">|</span>
+
+                                        {/* Inline Editable Time with Clock Symbol */}
                                         <button
                                           type="button"
                                           onClick={(e) => toggleDropdown(e, currentId, 'visitTime')}
-                                          class={`h-[26px] px-1.5 rounded-md border text-[10px] font-bold outline-none cursor-pointer transition shadow-2xs flex items-center justify-between gap-1 w-[88px] custom-dropdown-toggle box-border ${
+                                          class={`flex items-center gap-1 px-1.5 py-0.5 rounded transition cursor-pointer custom-dropdown-toggle group ${
                                             isTimeOpen
-                                              ? 'ring-2 ring-[#B30E2E]/40 border-[#B30E2E] bg-rose-50 text-[#B30E2E]'
-                                              : isVisitStatus
-                                              ? 'border-purple-300 text-purple-900 bg-purple-50 hover:bg-purple-100'
-                                              : 'border-gray-300 text-gray-700 bg-gray-50 hover:bg-gray-100'
+                                              ? 'ring-1 ring-[#B30E2E]/40 bg-rose-50 text-[#B30E2E] font-bold'
+                                              : formattedTime
+                                              ? (isVisitStatus ? 'text-purple-900 hover:bg-purple-50/80 hover:text-[#B30E2E] font-semibold' : 'text-gray-800 hover:bg-rose-50/80 hover:text-[#B30E2E] font-semibold')
+                                              : 'text-gray-400 hover:bg-gray-100 italic font-normal'
                                           }`}
-                                          title={item.visitTime ? `Visit Time: ${formatTime12Hour(item.visitTime)}` : "Click to select Time"}
+                                          title="Click clock icon to change time"
                                         >
-                                          <span class="truncate">{item.visitTime ? formatTime12Hour(item.visitTime) : '--:--'}</span>
-                                          <i class={`fa-regular fa-clock text-[9px] ${isTimeOpen ? 'text-[#B30E2E]' : 'opacity-60'}`}></i>
+                                          <span>{formattedTime || '--:--'}</span>
+                                          <i class={`fa-regular fa-clock text-[9.5px] ${isTimeOpen ? 'text-[#B30E2E]' : 'text-gray-400 group-hover:text-[#B30E2E]'}`}></i>
                                         </button>
                                       </div>
 
                                       {/* Custom Time Dropdown Picker */}
-                                       {isTimeOpen && (
-                                         <CustomTimePickerPopup
-                                           value={item.visitTime}
-                                           onChange={(newTime) => handleInlineFieldChange(currentId, 'visitTime', newTime)}
-                                           onClose={() => setActiveDropdown(null)}
-                                           coords={activeDropdown?.coords}
-                                         />
-                                       )}
+                                      {isTimeOpen && (
+                                        <CustomTimePickerPopup
+                                          value={item.visitTime}
+                                          onChange={(newTime) => handleInlineFieldChange(currentId, 'visitTime', newTime)}
+                                          onClose={() => setActiveDropdown(null)}
+                                          coords={activeDropdown?.coords}
+                                        />
+                                      )}
                                     </td>
                                   );
                                 }

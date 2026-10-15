@@ -6018,7 +6018,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                     </select>
                   </div>
                   <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">Followup / Visit Date & Time</label>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Followup Date & Time</label>
                     <div class="relative w-full">
                       <button
                         type="button"
@@ -6028,7 +6028,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                             ? 'border-[#B30E2E] ring-1 ring-rose-200 bg-rose-50/30'
                             : 'border-gray-300 hover:border-gray-400 bg-white'
                         }`}
-                        title="Click to set Followup / Visit Date & Time"
+                        title="Click to set Followup Date & Time"
                       >
                         <div class="flex items-center gap-2 truncate">
                           <i class="fa-regular fa-calendar-days text-[#B30E2E] text-xs shrink-0"></i>

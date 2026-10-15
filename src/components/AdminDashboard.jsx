@@ -4484,36 +4484,30 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
 
                                   return (
                                     <td key="followupDate" class={`py-2.5 px-2.5 whitespace-nowrap w-44 min-w-[165px] max-w-[172px] relative ${isPickerOpen ? 'z-50' : ''}`}>
-                                      {!hasDateOrTime ? (
-                                        /* Display only '-' when date and time are not added (centered) */
-                                        <div class="flex items-center justify-center w-full">
-                                          <button
-                                            type="button"
-                                            onClick={(e) => toggleDropdown(e, currentId, 'dateTimePicker')}
-                                            class="relative inline-flex items-center justify-center px-2 py-0.5 rounded text-gray-400 hover:bg-rose-50 hover:text-[#B30E2E] transition cursor-pointer group"
-                                            title="Click to set Followup / Visit Date & Time"
-                                          >
-                                            <span class="font-bold text-gray-400 group-hover:text-[#B30E2E] text-xs text-center">-</span>
-                                          </button>
-                                        </div>
-                                      ) : (
-                                        <button
-                                          type="button"
-                                          onClick={(e) => toggleDropdown(e, currentId, 'dateTimePicker')}
-                                          class="flex items-center gap-1 whitespace-nowrap text-[10px] cursor-pointer group text-left transition"
-                                          title="Click to edit Followup / Visit Date & Time"
-                                        >
-                                          <span class={`font-semibold ${formattedDate ? 'text-gray-800 group-hover:text-[#B30E2E]' : 'text-gray-400 italic font-normal'}`}>
-                                            {formattedDate || '-'}
-                                          </span>
-                                          {formattedTime && (
-                                            <span class="text-[9px] text-gray-400 group-hover:text-[#B30E2E] font-normal ml-0.5">
-                                              {formattedTime}
+                                      <button
+                                        type="button"
+                                        onClick={(e) => toggleDropdown(e, currentId, 'dateTimePicker')}
+                                        class="flex items-center gap-1 whitespace-nowrap text-[10px] cursor-pointer group text-left transition"
+                                        title={formattedDate ? "Click to edit Followup / Visit Date & Time" : "Click to set Followup / Visit Date & Time"}
+                                      >
+                                        {formattedDate ? (
+                                          <>
+                                            <span class="font-semibold text-gray-800 group-hover:text-[#B30E2E]">
+                                              {formattedDate}
                                             </span>
-                                          )}
-                                          <i class={`fa-regular fa-calendar-days text-[9px] transition-colors ml-0.5 ${isPickerOpen ? 'text-[#B30E2E]' : 'text-gray-400 group-hover:text-[#B30E2E]'}`}></i>
-                                        </button>
-                                      )}
+                                            {formattedTime && (
+                                              <span class="text-[9px] text-gray-400 group-hover:text-[#B30E2E] font-normal ml-0.5">
+                                                {formattedTime}
+                                              </span>
+                                            )}
+                                          </>
+                                        ) : (
+                                          <span class="text-gray-400 group-hover:text-[#B30E2E] font-normal tracking-tight">
+                                            dd-mm-yyyy
+                                          </span>
+                                        )}
+                                        <i class={`fa-regular fa-calendar-days text-[9px] transition-colors ml-0.5 ${isPickerOpen ? 'text-[#B30E2E]' : 'text-gray-400 group-hover:text-[#B30E2E]'}`}></i>
+                                      </button>
 
                                       {/* Integrated Date & Time Dropdown Picker */}
                                       {isPickerOpen && (
@@ -5595,7 +5589,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                           <span class={editingEnquiry.followupDate ? 'font-bold text-gray-800 truncate' : 'text-gray-400 truncate'}>
                             {editingEnquiry.followupDate
                               ? `${formatDateShortMonth(editingEnquiry.followupDate)}${editingEnquiry.visitTime ? ` at ${formatTime12Hour(editingEnquiry.visitTime)}` : ''}`
-                              : 'Select Date & Time'}
+                              : 'dd-mm-yyyy'}
                           </span>
                         </div>
                         <i class={`fa-solid fa-chevron-down text-[9px] transition-transform text-gray-400 shrink-0 ${
@@ -6032,7 +6026,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                           <span class={newLeadFormData.followupDate ? 'font-bold text-gray-800 truncate' : 'text-gray-400 truncate'}>
                             {newLeadFormData.followupDate
                               ? `${formatDateShortMonth(newLeadFormData.followupDate)}${newLeadFormData.visitTime ? ` at ${formatTime12Hour(newLeadFormData.visitTime)}` : ''}`
-                              : 'Select Date & Time'}
+                              : 'dd-mm-yyyy'}
                           </span>
                         </div>
                         <i class={`fa-solid fa-chevron-down text-[9px] transition-transform text-gray-400 shrink-0 ${

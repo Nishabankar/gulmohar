@@ -1,0 +1,2 @@
+# Keep SQL schema files in Git but out of the CRM deploy zip (git archive HEAD:crm reads this file)
+*.sql export-ignore

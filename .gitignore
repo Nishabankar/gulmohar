@@ -16,12 +16,10 @@ out/
 .env.development.local
 .env.test.local
 .env.production.local
-server/.env
 *.env
-!hostinger.env
-!server/hostinger.env
-!.env.hostinger
-!server/.env.hostinger
+# Real Hostinger env files (secrets) stay local; import them in the Hostinger panel
+.env.hostinger
+hostinger.env
 
 # Logs
 logs

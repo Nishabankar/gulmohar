@@ -1,0 +1,7 @@
+# Gulmohar City static site (Hostinger / Apache)
+Options -Indexes
+RewriteEngine On
+# Serve real files/folders as-is; everything else falls back to the single-page app
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.html [L]

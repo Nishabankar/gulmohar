@@ -4216,32 +4216,34 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   return (
                                     <td key="followupDate" class={`py-2.5 px-2.5 whitespace-nowrap w-36 min-w-[140px] max-w-[145px] relative ${isTimeOpen ? 'z-50' : ''}`}>
                                       {!hasDateOrTime ? (
-                                        /* Display only '-' when date and time are not added */
-                                        <div
-                                          onClick={(e) => {
-                                            const input = e.currentTarget.querySelector('input[type="date"]');
-                                            if (input) {
-                                              try {
-                                                if (typeof input.showPicker === 'function') {
-                                                  input.showPicker();
-                                                } else {
+                                        /* Display only '-' when date and time are not added (centered) */
+                                        <div class="flex items-center justify-center w-full">
+                                          <div
+                                            onClick={(e) => {
+                                              const input = e.currentTarget.querySelector('input[type="date"]');
+                                              if (input) {
+                                                try {
+                                                  if (typeof input.showPicker === 'function') {
+                                                    input.showPicker();
+                                                  } else {
+                                                    input.focus();
+                                                  }
+                                                } catch (err) {
                                                   input.focus();
                                                 }
-                                              } catch (err) {
-                                                input.focus();
                                               }
-                                            }
-                                          }}
-                                          class="relative inline-flex items-center px-1.5 py-0.5 rounded text-gray-400 hover:bg-rose-50 hover:text-[#B30E2E] transition cursor-pointer group"
-                                          title="Click to set Followup / Visit Date"
-                                        >
-                                          <span class="font-bold text-gray-400 group-hover:text-[#B30E2E] text-xs">-</span>
-                                          <input
-                                            type="date"
-                                            value=""
-                                            onChange={(e) => handleInlineFieldChange(currentId, 'followupDate', e.target.value)}
-                                            class="absolute inset-0 opacity-0 pointer-events-none w-full h-full"
-                                          />
+                                            }}
+                                            class="relative inline-flex items-center justify-center px-2 py-0.5 rounded text-gray-400 hover:bg-rose-50 hover:text-[#B30E2E] transition cursor-pointer group"
+                                            title="Click to set Followup / Visit Date"
+                                          >
+                                            <span class="font-bold text-gray-400 group-hover:text-[#B30E2E] text-xs text-center">-</span>
+                                            <input
+                                              type="date"
+                                              value=""
+                                              onChange={(e) => handleInlineFieldChange(currentId, 'followupDate', e.target.value)}
+                                              class="absolute inset-0 opacity-0 pointer-events-none w-full h-full"
+                                            />
+                                          </div>
                                         </div>
                                       ) : (
                                         <div class="flex items-center gap-1.5 whitespace-nowrap text-[10px]">

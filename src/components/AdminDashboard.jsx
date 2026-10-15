@@ -4501,9 +4501,18 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                               </span>
                                             )}
                                           </>
+                                        ) : formattedTime ? (
+                                          <>
+                                            <span class="text-gray-400 group-hover:text-[#B30E2E] font-normal tracking-tight">
+                                              dd-mm-yy
+                                            </span>
+                                            <span class="text-[9px] text-gray-700 font-medium ml-0.5">
+                                              {formattedTime}
+                                            </span>
+                                          </>
                                         ) : (
                                           <span class="text-gray-400 group-hover:text-[#B30E2E] font-normal tracking-tight">
-                                            dd-mm-yyyy
+                                            dd-mm-yy hh:mm
                                           </span>
                                         )}
                                         <i class={`fa-regular fa-calendar-days text-[9px] transition-colors ml-0.5 ${isPickerOpen ? 'text-[#B30E2E]' : 'text-gray-400 group-hover:text-[#B30E2E]'}`}></i>
@@ -5589,7 +5598,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                           <span class={editingEnquiry.followupDate ? 'font-bold text-gray-800 truncate' : 'text-gray-400 truncate'}>
                             {editingEnquiry.followupDate
                               ? `${formatDateShortMonth(editingEnquiry.followupDate)}${editingEnquiry.visitTime ? ` at ${formatTime12Hour(editingEnquiry.visitTime)}` : ''}`
-                              : 'dd-mm-yyyy'}
+                              : 'dd-mm-yy hh:mm'}
                           </span>
                         </div>
                         <i class={`fa-solid fa-chevron-down text-[9px] transition-transform text-gray-400 shrink-0 ${
@@ -6026,7 +6035,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                           <span class={newLeadFormData.followupDate ? 'font-bold text-gray-800 truncate' : 'text-gray-400 truncate'}>
                             {newLeadFormData.followupDate
                               ? `${formatDateShortMonth(newLeadFormData.followupDate)}${newLeadFormData.visitTime ? ` at ${formatTime12Hour(newLeadFormData.visitTime)}` : ''}`
-                              : 'dd-mm-yyyy'}
+                              : 'dd-mm-yy hh:mm'}
                           </span>
                         </div>
                         <i class={`fa-solid fa-chevron-down text-[9px] transition-transform text-gray-400 shrink-0 ${

@@ -5004,7 +5004,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
           
           {/* Copyright & Legal Links grouped together on the left side */}
           <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-[11px] sm:text-xs text-gray-600">
-            <span>© 2026 Gulmohar City. All Rights Reserved.</span>
+            <span>© 2026 HouseDeal. All Rights Reserved.</span>
             <span class="text-gray-300">|</span>
             <button 
               type="button"

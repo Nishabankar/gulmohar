@@ -3167,7 +3167,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                       title="Click to view New leads"
                     >
                       <div class="min-w-0 flex-1 pr-1 sm:pr-2">
-                        <p class="text-[9px] sm:text-[10px] font-bold text-amber-600 uppercase tracking-wider truncate">New</p>
+                        <p class="text-[9px] sm:text-[10px] font-bold text-amber-600 uppercase tracking-wider truncate">New Lead</p>
                         <h3 class="text-base sm:text-xl font-bold text-gray-900 mt-0.5">{newLeadsCount}</h3>
                         <p class="hidden sm:block text-[9.5px] text-gray-500 mt-0.5 truncate">Fresh enquiries</p>
                       </div>

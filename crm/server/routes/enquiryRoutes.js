@@ -29,7 +29,7 @@ router.post('/', async (req, res) => {
     }
 
     const cleanPhone = phone.trim();
-    const cleanEmail = (email && email.trim()) ? email.toLowerCase().trim() : null;
+    const cleanEmail = (email && email.trim()) ? email.toLowerCase().trim() : '';
 
     // Check for duplicate phone number
     const [existingPhone] = await query('SELECT id FROM leads WHERE phone = ?', [cleanPhone]);
@@ -42,7 +42,7 @@ router.post('/', async (req, res) => {
 
     // Check for duplicate email address if provided
     if (cleanEmail) {
-      const [existingEmail] = await query('SELECT id FROM leads WHERE LOWER(email) = ?', [cleanEmail]);
+      const [existingEmail] = await query('SELECT id FROM leads WHERE LOWER(email) = ? AND email != ""', [cleanEmail]);
       if (existingEmail && existingEmail.length > 0) {
         return res.status(400).json({
           success: false,

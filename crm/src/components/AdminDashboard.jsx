@@ -1040,39 +1040,21 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
         setEnquiries(prev => deduplicateLeads([data.data, ...prev]));
         const cached = JSON.parse(localStorage.getItem('localEnquiriesCache') || '[]');
         localStorage.setItem('localEnquiriesCache', JSON.stringify(deduplicateLeads([data.data, ...cached])));
+        setSubmittingLead(false);
+        setCreateLeadMsg('Lead Created Successfully!');
+        setTimeout(() => {
+          setShowCreateLeadModal(false);
+          setCreateLeadMsg('');
+          setNewLeadFormData({ firstName: '', lastName: '', phone: '', email: '', plotsCount: '1 Guntha', visitDate: '', visitTime: '', followupDate: '', priority: 'Hot', notes: '', assignedAgentName: 'auto' });
+        }, 1000);
       } else {
         setSubmittingLead(false);
         setCreateLeadMsg(`Error: ${data.message || 'Could not save lead'}`);
-        return;
       }
     } catch (err) {
-      console.warn('Backend server connecting... saving locally:', err);
-      const initialNotesStr = payload.notes;
-      const localLead = {
-        _id: `lead-${Date.now()}`,
-        id: `lead-${Date.now()}`,
-        ...payload,
-        history: initialNotesStr ? [{
-          _id: `note-hist-${Date.now()}`,
-          fieldName: 'Notes',
-          oldValue: '—',
-          newValue: initialNotesStr,
-          modifiedBy: creatorName,
-          modifiedDate: new Date().toISOString()
-        }] : [],
-        createdAt: new Date().toISOString()
-      };
-      setEnquiries(prev => [localLead, ...prev]);
-      const cached = JSON.parse(localStorage.getItem('localEnquiriesCache') || '[]');
-      localStorage.setItem('localEnquiriesCache', JSON.stringify([localLead, ...cached]));
-    } finally {
+      console.error('Error creating lead:', err);
       setSubmittingLead(false);
-      setCreateLeadMsg('Lead Created Successfully!');
-      setTimeout(() => {
-        setShowCreateLeadModal(false);
-        setCreateLeadMsg('');
-        setNewLeadFormData({ firstName: '', lastName: '', phone: '', email: '', plotsCount: '1 Guntha', visitDate: '', visitTime: '', followupDate: '', priority: 'Hot', notes: '', assignedAgentName: 'auto' });
-      }, 1000);
+      setCreateLeadMsg(`Error: ${err.message || 'Could not connect to server'}`);
     }
   };
 

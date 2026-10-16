@@ -952,7 +952,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     if (!newLeadFormData.firstName || !newLeadFormData.phone) return;
 
     if (!/^[6-9]\d{9}$/.test(newLeadFormData.phone.trim())) {
-      setCreateLeadMsg('Please enter a valid 10-digit mobile number starting with 6, 7, 8, or 9.');
+      setCreateLeadMsg('Lead not submitted: Please enter a valid 10-digit mobile number starting with 6, 7, 8, or 9.');
       return;
     }
 
@@ -962,14 +962,14 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
 
     const existingPhoneLead = enquiries.find(item => item.phone && item.phone.trim() === cleanPhone);
     if (existingPhoneLead) {
-      setCreateLeadMsg(`Error: A lead with mobile number "${cleanPhone}" already exists for ${existingPhoneLead.firstName} ${existingPhoneLead.lastName || ''}.`);
+      setCreateLeadMsg(`Lead not submitted: A lead with mobile number "${cleanPhone}" already exists for ${existingPhoneLead.firstName} ${existingPhoneLead.lastName || ''}.`);
       return;
     }
 
     if (cleanEmail) {
       const existingEmailLead = enquiries.find(item => item.email && item.email.trim().toLowerCase() === cleanEmail);
       if (existingEmailLead) {
-        setCreateLeadMsg(`Error: A lead with email address "${cleanEmail}" already exists for ${existingEmailLead.firstName} ${existingEmailLead.lastName || ''}.`);
+        setCreateLeadMsg(`Lead not submitted: A lead with email address "${cleanEmail}" already exists for ${existingEmailLead.firstName} ${existingEmailLead.lastName || ''}.`);
         return;
       }
     }
@@ -1049,12 +1049,12 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
         }, 1000);
       } else {
         setSubmittingLead(false);
-        setCreateLeadMsg(`Error: ${data.message || 'Could not save lead'}`);
+        setCreateLeadMsg(data.message && data.message !== 'Could not save lead' ? `Lead not submitted: ${data.message}` : 'Lead not submitted');
       }
     } catch (err) {
       console.error('Error creating lead:', err);
       setSubmittingLead(false);
-      setCreateLeadMsg(`Error: ${err.message || 'Could not connect to server'}`);
+      setCreateLeadMsg(err.message ? `Lead not submitted: ${err.message}` : 'Lead not submitted');
     }
   };
 
@@ -5947,7 +5947,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
               {/* Middle Scrollable Content */}
               <div class="p-4 sm:p-5 space-y-3.5 overflow-y-auto flex-1 custom-scrollbar">
                 {createLeadMsg && (() => {
-                  const isSuccess = (createLeadMsg.toLowerCase().includes('success') || createLeadMsg.toLowerCase().includes('created')) && !createLeadMsg.toLowerCase().includes('error') && !createLeadMsg.toLowerCase().includes('please');
+                  const isSuccess = createLeadMsg.toLowerCase().includes('success') && !createLeadMsg.toLowerCase().includes('not') && !createLeadMsg.toLowerCase().includes('error') && !createLeadMsg.toLowerCase().includes('please');
                   return (
                     <div class={`p-2.5 rounded-xl text-xs font-bold flex items-center gap-2 ${
                       isSuccess ? 'bg-emerald-100 border border-emerald-300 text-emerald-900' : 'bg-rose-100 border border-rose-300 text-rose-900'

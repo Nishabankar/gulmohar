@@ -2972,11 +2972,10 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
           {/* Left: Branding & System Title */}
           <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
             <img 
-              src="/assets/images/gulmohar-city-footer-logo.png" 
-              alt="Gulmohar City" 
+              src="/assets/images/house-deal-logo-removebg-preview.png?v=2" 
+              alt="HouseDeal CRM" 
               onClick={onGoHome}
-              title="Go to Website Home Page"
-              class="h-9 sm:h-11 w-auto object-contain flex-shrink-0 py-0.5 cursor-pointer hover:opacity-90 transition"
+              class="cursor-pointer"
             />
             <h1 class="hidden md:block text-base sm:text-lg font-serif font-bold text-white tracking-wide">
               Lead Management System

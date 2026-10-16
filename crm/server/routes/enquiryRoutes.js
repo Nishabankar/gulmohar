@@ -121,7 +121,7 @@ router.post('/', async (req, res) => {
         (plotInfo || '').trim(),
         plotsCount || '1 Guntha',
         visitDate || '',
-        visitTime || '',
+        (visitTime && visitTime.trim()) ? visitTime.trim() : (followupDate ? '11:00' : ''),
         followupDate || '',
         priority,
         initialNotes,

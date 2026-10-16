@@ -1016,7 +1016,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       email: newLeadFormData.email.trim(),
       plotsCount: newLeadFormData.plotsCount || '1 Guntha',
       visitDate: newLeadFormData.visitDate || '',
-      visitTime: newLeadFormData.visitTime || '',
+      visitTime: newLeadFormData.visitTime || (newLeadFormData.followupDate ? '11:00' : ''),
       followupDate: newLeadFormData.followupDate || '',
       notes: newLeadFormData.notes ? newLeadFormData.notes.trim() : '',
       status: 'New',
@@ -1534,7 +1534,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
           plotsCount: updatedLead.plotsCount,
           plotInfo: updatedLead.plotInfo,
           visitDate: updatedLead.visitDate,
-          visitTime: updatedLead.visitTime || '',
+          visitTime: updatedLead.visitTime || (updatedLead.followupDate ? '11:00' : ''),
           followupDate: updatedLead.followupDate || '',
           status: updatedLead.status,
           notes: updatedLead.notes,
@@ -2378,6 +2378,9 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       const dateStr = `${y}-${m}-${d}`;
       setSelectedDate(dateStr);
       onDateChange(dateStr);
+      const effectiveTime = selectedTime || timeValue || '11:00';
+      setSelectedTime(effectiveTime);
+      onTimeChange(effectiveTime);
     };
 
     const handleTimePartChange = (h, m, p) => {
@@ -2559,6 +2562,9 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                 const now = new Date();
                 setViewYear(now.getFullYear());
                 setViewMonth(now.getMonth());
+                const effectiveTime = selectedTime || timeValue || '11:00';
+                setSelectedTime(effectiveTime);
+                onTimeChange(effectiveTime);
               }}
               class="text-gray-500 hover:text-gray-800 font-medium hover:underline cursor-pointer text-[10.5px]"
             >
@@ -2568,7 +2574,13 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
 
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => {
+              if (selectedDate && (!selectedTime || !timeValue)) {
+                const effectiveTime = selectedTime || timeValue || '11:00';
+                onTimeChange(effectiveTime);
+              }
+              onClose();
+            }}
             class="px-3 py-1 rounded-lg bg-[#B30E2E] hover:bg-[#8A0B22] text-white font-bold transition shadow-xs flex items-center gap-1 cursor-pointer"
           >
             <i class="fa-solid fa-check text-[10px]"></i>
@@ -4534,7 +4546,12 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                         <CustomDateTimePickerPopup
                                           dateValue={item.followupDate}
                                           timeValue={item.visitTime}
-                                          onDateChange={(newDate) => handleInlineFieldChange(currentId, 'followupDate', newDate)}
+                                          onDateChange={(newDate) => {
+                                            handleInlineFieldChange(currentId, 'followupDate', newDate);
+                                            if (newDate && !item.visitTime) {
+                                              handleInlineFieldChange(currentId, 'visitTime', '11:00');
+                                            }
+                                          }}
                                           onTimeChange={(newTime) => handleInlineFieldChange(currentId, 'visitTime', newTime)}
                                           onClose={() => setActiveDropdown(null)}
                                           coords={activeDropdown?.coords}
@@ -5628,7 +5645,11 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                         <CustomDateTimePickerPopup
                           dateValue={editingEnquiry.followupDate}
                           timeValue={editingEnquiry.visitTime}
-                          onDateChange={(newDate) => setEditingEnquiry(prev => ({ ...prev, followupDate: newDate }))}
+                          onDateChange={(newDate) => setEditingEnquiry(prev => ({ 
+                            ...prev, 
+                            followupDate: newDate, 
+                            visitTime: prev.visitTime || (newDate ? '11:00' : '') 
+                          }))}
                           onTimeChange={(newTime) => setEditingEnquiry(prev => ({ ...prev, visitTime: newTime }))}
                           onClose={() => setActiveDropdown(null)}
                           coords={activeDropdown?.coords}
@@ -6065,7 +6086,11 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                         <CustomDateTimePickerPopup
                           dateValue={newLeadFormData.followupDate}
                           timeValue={newLeadFormData.visitTime}
-                          onDateChange={(newDate) => setNewLeadFormData(prev => ({ ...prev, followupDate: newDate }))}
+                          onDateChange={(newDate) => setNewLeadFormData(prev => ({ 
+                            ...prev, 
+                            followupDate: newDate, 
+                            visitTime: prev.visitTime || (newDate ? '11:00' : '') 
+                          }))}
                           onTimeChange={(newTime) => setNewLeadFormData(prev => ({ ...prev, visitTime: newTime }))}
                           onClose={() => setActiveDropdown(null)}
                           coords={activeDropdown?.coords}

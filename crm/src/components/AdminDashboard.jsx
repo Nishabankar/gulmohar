@@ -5006,21 +5006,23 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
           <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-[11px] sm:text-xs text-gray-600">
             <span>© 2026 HouseDeal. All Rights Reserved.</span>
             <span class="text-gray-300">|</span>
-            <button 
-              type="button"
-              onClick={() => setPolicyModal({ isOpen: true, type: 'privacy' })}
+            <a 
+              href="https://house-deal.com/privacy-policy/"
+              target="_blank"
+              rel="noopener noreferrer"
               class="text-[#B30E2E] hover:text-[#8A0B22] font-semibold hover:underline transition cursor-pointer"
             >
               Privacy Policy
-            </button>
+            </a>
             <span class="text-gray-300">|</span>
-            <button 
-              type="button"
-              onClick={() => setPolicyModal({ isOpen: true, type: 'disclaimer' })}
+            <a 
+              href="https://house-deal.com/disclaimer/"
+              target="_blank"
+              rel="noopener noreferrer"
               class="text-[#B30E2E] hover:text-[#8A0B22] font-semibold hover:underline transition cursor-pointer"
             >
               Disclaimer
-            </button>
+            </a>
           </div>
 
         </div>

@@ -5813,11 +5813,14 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
             </div>
 
             {/* Form */}
-            <form onSubmit={handleSaveProfileSubmit} autoComplete="off" class="p-4 sm:p-5 space-y-3.5 overflow-y-auto max-h-[calc(90vh-70px)]">
+            <form onSubmit={handleSaveProfileSubmit} autoComplete="off" class="flex-1 flex flex-col min-h-0 overflow-hidden">
               
               {/* Prevent browser saved credentials autofill */}
               <input type="text" name="prevent_autofill_username" style={{ display: 'none' }} tabIndex={-1} aria-hidden="true" autoComplete="off" />
               <input type="password" name="prevent_autofill_password" style={{ display: 'none' }} tabIndex={-1} aria-hidden="true" autoComplete="new-password" />
+
+              {/* Middle Scrollable Content */}
+              <div class="p-4 sm:p-5 space-y-3.5 overflow-y-auto flex-1 custom-scrollbar">
 
               {profileSaveMsg && (() => {
                 const isSuccess = (profileSaveMsg.toLowerCase().includes('success') || profileSaveMsg.toLowerCase().includes('updated')) && !profileSaveMsg.toLowerCase().includes('error') && !profileSaveMsg.toLowerCase().includes('please');
@@ -5953,19 +5956,21 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                   </div>
                 </div>
               </div>
+            </div>
 
-              <div class="pt-2 flex items-center justify-end gap-2 border-t border-gray-100">
+              {/* Action Buttons: Fixed Bottom Bar */}
+              <div class="px-4 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-2 flex-shrink-0">
                 <button 
                   type="button" 
                   onClick={() => setShowEditProfileModal(false)}
-                  class="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold cursor-pointer"
+                  class="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold cursor-pointer transition"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit" 
                   disabled={savingProfile}
-                  class="px-5 py-2 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white text-xs font-bold flex items-center justify-center shadow cursor-pointer"
+                  class="px-5 py-2 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow cursor-pointer transition transform active:scale-95 disabled:opacity-70"
                 >
                   {savingProfile ? (
                     <>

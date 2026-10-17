@@ -2961,10 +2961,10 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       
       {/* Admin Top Navbar */}
       <header class="bg-gradient-to-r from-[#B30E2E] via-[#8A0B22] to-[#590414] text-white flex-shrink-0 shadow-xl border-b border-rose-900/40 sticky top-0 z-40">
-        <div class="w-full px-2.5 sm:px-6 lg:px-8 flex items-center justify-between h-14 sm:h-16 gap-2 sm:gap-4">
+        <div class="w-full px-2.5 sm:px-6 lg:px-8 flex items-center justify-between h-14 sm:h-16 gap-2 sm:gap-4 relative">
           
-          {/* Left: Branding & System Title */}
-          <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+          {/* Left: Branding */}
+          <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0 z-10">
             <img 
               src="/assets/images/Housedeal-logo.png?v=3" 
               alt="HouseDeal CRM" 
@@ -2972,13 +2972,17 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
               title="HouseDeal CRM"
               class="h-8 sm:h-9 w-auto object-contain cursor-pointer hover:opacity-95 transition"
             />
-            <h1 class="hidden md:block text-base sm:text-lg font-serif font-bold text-white tracking-wide">
+          </div>
+
+          {/* Center: System Title */}
+          <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none text-center">
+            <h1 class="hidden md:block text-base sm:text-lg lg:text-xl font-serif font-bold text-white tracking-wide whitespace-nowrap">
               Lead Management System
             </h1>
           </div>
 
           {/* Right: View Navigation Tabs & Logout Button (Separate Standalone Buttons) */}
-          <div class="flex items-center gap-2.5 sm:gap-3.5 flex-shrink-0">
+          <div class="flex items-center gap-2.5 sm:gap-3.5 flex-shrink-0 z-10">
             
             {/* Dashboard View Standalone Button */}
             <button 

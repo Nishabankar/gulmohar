@@ -2966,10 +2966,11 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
           {/* Left: Branding & System Title */}
           <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
             <img 
-              src="/assets/images/house-deal-logo-removebg-preview.png?v=2" 
+              src="/assets/images/Housedeal-logo.png?v=3" 
               alt="HouseDeal CRM" 
               onClick={onGoHome}
-              class="cursor-pointer"
+              title="HouseDeal CRM"
+              class="h-8 sm:h-9 w-auto object-contain cursor-pointer hover:opacity-95 transition"
             />
             <h1 class="hidden md:block text-base sm:text-lg font-serif font-bold text-white tracking-wide">
               Lead Management System

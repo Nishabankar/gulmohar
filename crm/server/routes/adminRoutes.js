@@ -317,7 +317,7 @@ router.put('/profile', protectAdmin, async (req, res) => {
   try {
     const adminId = req.admin.id;
     const adminUsername = (req.admin.username || '').toLowerCase().trim();
-    const { name, email, phone, currentPassword, newPassword } = req.body;
+    const { name, username, email, phone, currentPassword, newPassword } = req.body;
 
     const [rows] = await query(
       'SELECT * FROM users WHERE id = ? OR LOWER(username) = ? LIMIT 1',
@@ -332,7 +332,23 @@ router.put('/profile', protectAdmin, async (req, res) => {
     let updateCols = [];
     let updateVals = [];
 
-    if (name !== undefined && name.trim()) { updateCols.push('name = ?'); updateVals.push(name.trim()); }
+    if (name !== undefined && name.trim()) {
+      updateCols.push('name = ?');
+      updateVals.push(name.trim());
+      try {
+        await query('UPDATE leads SET assigned_agent_name = ? WHERE assigned_to = ?', [name.trim(), targetId]);
+      } catch (err) {
+        console.warn('Could not update lead assigned_agent_name on name change:', err.message);
+      }
+    }
+
+    if (username !== undefined && username.trim()) {
+      const cleanUsername = username.toLowerCase().trim().replace(/\s+/g, '');
+      const [taken] = await query('SELECT id FROM users WHERE LOWER(username) = ? AND id != ?', [cleanUsername, targetId]);
+      if (taken.length > 0) return res.status(400).json({ success: false, message: `Username '${cleanUsername}' is already taken by another user.` });
+      updateCols.push('username = ?');
+      updateVals.push(cleanUsername);
+    }
     if (email !== undefined && email.trim()) {
       const cleanEmail = email.toLowerCase().trim();
       const [taken] = await query('SELECT id FROM users WHERE LOWER(email) = ? AND id != ?', [cleanEmail, targetId]);

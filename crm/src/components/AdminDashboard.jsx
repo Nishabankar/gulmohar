@@ -708,12 +708,13 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
         profileImage: currentUser.profileImage || freshUser.profileImage || ''
       });
 
-      // Fetch fresh profile from MySQL to ensure mobile number and email are populated
+      // Fetch fresh profile from MySQL to ensure mobile number, email, and username are populated
       fetchProfile().then(updated => {
         if (updated) {
           setProfileForm(prev => ({
             ...prev,
             name: prev.name || updated.name || '',
+            username: updated.username || prev.username || '',
             phone: updated.phone || prev.phone || '',
             email: updated.email || prev.email || ''
           }));
@@ -735,6 +736,10 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
 
   const handleSaveProfileSubmit = async (e) => {
     e.preventDefault();
+    if (!profileForm.username || !profileForm.username.trim()) {
+      setProfileSaveMsg('Please enter a valid username.');
+      return;
+    }
     if (!profileForm.phone || !/^[6-9]\d{9}$/.test(profileForm.phone.trim())) {
       setProfileSaveMsg('Please enter a valid 10-digit mobile number starting with 6, 7, 8, or 9.');
       return;
@@ -773,6 +778,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
         },
         body: JSON.stringify({
           name: profileForm.name,
+          username: profileForm.username.trim().toLowerCase(),
           email: profileForm.email,
           phone: profileForm.phone,
           currentPassword: profileForm.currentPassword,
@@ -795,10 +801,28 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
         };
         if (data.token) localStorage.setItem('adminToken', data.token);
         localStorage.setItem('adminUser', JSON.stringify(updatedUser));
+
+        // Sync registeredAgents in localStorage so users table reflects new username & details
+        try {
+          const agents = JSON.parse(localStorage.getItem('registeredAgents') || '[]');
+          const idx = agents.findIndex(a => 
+            (a.id && (a.id === updatedUser.id || a.id === updatedUser._id)) ||
+            (a.username && a.username.toLowerCase() === (rawUser.username || '').toLowerCase())
+          );
+          if (idx !== -1) {
+            agents[idx] = { ...agents[idx], ...updatedUser };
+            localStorage.setItem('registeredAgents', JSON.stringify(agents));
+            setRegisteredAgents(agents);
+          }
+        } catch (e) {}
+
         setProfileSaveMsg('Profile & Password updated successfully!');
         setTimeout(() => {
           setShowEditProfileModal(false);
           setProfileSaveMsg('');
+          if ((rawUser.username || '').toLowerCase() !== (updatedUser.username || '').toLowerCase()) {
+            window.location.reload();
+          }
         }, 1200);
       } else {
         setProfileSaveMsg(`Error: ${data.message || 'Failed to update profile'}`);
@@ -5843,12 +5867,14 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                   />
                 </div>
                 <div>
-                  <label class="block text-xs font-bold text-gray-700 mb-1">Username (Read-Only)</label>
+                  <label class="block text-xs font-bold text-gray-700 mb-1">Username *</label>
                   <input 
                     type="text" 
-                    disabled 
+                    required 
                     value={profileForm.username}
-                    class="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs bg-gray-100 text-gray-500 font-semibold cursor-not-allowed"
+                    onChange={(e) => setProfileForm({ ...profileForm, username: e.target.value.toLowerCase().replace(/\s+/g, '') })}
+                    placeholder="Enter username"
+                    class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
                   />
                 </div>
               </div>

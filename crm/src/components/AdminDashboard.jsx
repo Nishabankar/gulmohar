@@ -2965,12 +2965,21 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
           
           {/* Left: Branding */}
           <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0 z-10">
+            {/* Mobile View: Icon Only */}
+            <img 
+              src="/assets/images/Housedeal-icon.png?v=1" 
+              alt="HouseDeal" 
+              onClick={onGoHome}
+              title="HouseDeal CRM"
+              class="block sm:hidden h-8 w-8 object-contain cursor-pointer hover:opacity-95 transition"
+            />
+            {/* Tablet & Desktop View: Full Logo with Text */}
             <img 
               src="/assets/images/Housedeal-logo.png?v=3" 
               alt="HouseDeal CRM" 
               onClick={onGoHome}
               title="HouseDeal CRM"
-              class="h-8 sm:h-9 w-auto object-contain cursor-pointer hover:opacity-95 transition"
+              class="hidden sm:block h-8 sm:h-9 w-auto object-contain cursor-pointer hover:opacity-95 transition"
             />
           </div>
 

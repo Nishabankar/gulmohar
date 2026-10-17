@@ -49,6 +49,11 @@ CREATE TABLE `leads` (
   `followup_date` VARCHAR(100) NOT NULL DEFAULT '',
   `status` VARCHAR(50) NOT NULL DEFAULT 'New',
   `priority` VARCHAR(20) NOT NULL DEFAULT 'Hot' COMMENT 'Hot | Cold',
+  `project_name` VARCHAR(255) NOT NULL DEFAULT '',
+  `project_type` VARCHAR(100) NOT NULL DEFAULT '',
+  `typography` VARCHAR(255) NOT NULL DEFAULT '',
+  `carpet_area` VARCHAR(100) NOT NULL DEFAULT '',
+  `budget` VARCHAR(100) NOT NULL DEFAULT '',
   `notes` TEXT DEFAULT NULL,
   `assigned_agent_name` VARCHAR(255) NOT NULL DEFAULT '',
   `assigned_to` INT DEFAULT NULL COMMENT 'Foreign key to users.id',
@@ -105,7 +110,24 @@ CREATE TABLE `user_column_preferences` (
     REFERENCES `users` (`id`) 
     ON DELETE CASCADE 
     ON UPDATE CASCADE
+-- ------------------------------------------------------------
+-- Table 5: projects
+-- Stores real estate projects with developer, type, typography & address
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `projects` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `name` VARCHAR(255) NOT NULL,
+  `developer_name` VARCHAR(255) NOT NULL DEFAULT '',
+  `project_type` TEXT DEFAULT NULL COMMENT 'JSON array or comma-separated list of types',
+  `typography` TEXT DEFAULT NULL COMMENT 'JSON array or comma-separated list of typographies',
+  `rera_number` VARCHAR(100) DEFAULT NULL,
+  `address` TEXT DEFAULT NULL,
+  `created_by` VARCHAR(255) NOT NULL DEFAULT 'Admin',
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX `idx_project_name` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
 SET FOREIGN_KEY_CHECKS = 1;
 

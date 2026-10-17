@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { API_BASE_URL } from '../config';
 import PolicyModal from './PolicyModal';
+import ProjectManagement from './ProjectManagement';
 
 const getAgentProfilePhoto = (agentObj) => {
   if (!agentObj) return '';
@@ -60,6 +61,96 @@ const formatToInputDate = (dateStr) => {
   }
 };
 
+const PROJECT_TYPES = ['Apartment', 'Studio', 'Villa', 'Farm House'];
+
+const PROJECT_TYPOGRAPHY_MAP = {
+  'Apartment': [
+    'Studio Apartment', '1 RK', '1 BHK', '1.5 BHK', '2 BHK', '2.5 BHK', 
+    '3 BHK', '3.5 BHK', '4 BHK', '5 BHK', 'Penthouse / Duplex'
+  ],
+  'Studio': [
+    'Studio Apartment', '1 RK Studio', 'Executive Studio'
+  ],
+  'Villa': [
+    '2 BHK Villa', '3 BHK Villa', '4 BHK Villa', '5 BHK Villa', 'Row House', 'Duplex Villa'
+  ],
+  'Farm House': [
+    '1 Guntha', '2 Guntha', '3 Guntha', '4 Guntha', '5 Guntha', 
+    '6 Guntha', '7 Guntha', '8 Guntha', '9 Guntha', '10 Guntha',
+    '11 Guntha', '21 Guntha', 'Half Acre (20 Guntha)', '1 Acre', '2+ Acre'
+  ]
+};
+
+const getProjectTypesForProject = (projectsList, projectName) => {
+  if (!projectName) return PROJECT_TYPES;
+  const proj = (projectsList || []).find(p => (p.name || '').trim().toLowerCase() === projectName.trim().toLowerCase());
+  if (!proj) return PROJECT_TYPES;
+
+  let types = proj.projectType;
+  if (typeof types === 'string') {
+    try {
+      types = JSON.parse(types);
+    } catch (e) {
+      types = types.split(',').map(s => s.trim()).filter(Boolean);
+    }
+  }
+  if (Array.isArray(types) && types.length > 0) return types;
+  return PROJECT_TYPES;
+};
+
+const getAutoTypographyForProjectType = (projectsList, projectName, projectType) => {
+  if (!projectName) return '';
+  const proj = (projectsList || []).find(p => (p.name || '').trim().toLowerCase() === projectName.trim().toLowerCase());
+  if (!proj) return '';
+
+  let projTypo = proj.typography;
+  if (typeof projTypo === 'string') {
+    try {
+      projTypo = JSON.parse(projTypo);
+    } catch (e) {
+      projTypo = projTypo.split(',').map(s => s.trim()).filter(Boolean);
+    }
+  }
+  if (!Array.isArray(projTypo)) projTypo = [];
+
+  // If no projectType specified or projectType is empty, return ALL typographies saved for this project
+  if (!projectType || (typeof projectType === 'string' && !projectType.trim())) {
+    return projTypo.join(', ');
+  }
+
+  // Parse projectType which could be an array or a comma-separated string like "Apartment, Villa"
+  let selectedTypes = [];
+  if (Array.isArray(projectType)) {
+    selectedTypes = projectType;
+  } else if (typeof projectType === 'string') {
+    selectedTypes = projectType.split(',').map(s => s.trim()).filter(Boolean);
+  }
+
+  if (selectedTypes.length === 0) {
+    return projTypo.join(', ');
+  }
+
+  // If all project types are selected, return all project typographies directly
+  const projTypes = getProjectTypesForProject(projectsList, projectName);
+  const isAllTypesSelected = projTypes.length > 0 && projTypes.every(t => selectedTypes.some(st => st.toLowerCase() === t.toLowerCase()));
+  if (isAllTypesSelected) {
+    return projTypo.join(', ');
+  }
+
+  // Collect all valid typography strings across all selected types
+  const validTypoSet = new Set();
+  selectedTypes.forEach(type => {
+    const mapKey = Object.keys(PROJECT_TYPOGRAPHY_MAP).find(k => k.toLowerCase() === type.toLowerCase());
+    const list = mapKey ? PROJECT_TYPOGRAPHY_MAP[mapKey] : [];
+    list.forEach(item => validTypoSet.add(item.toLowerCase()));
+  });
+
+  // Filter project's typographies that match any of the selected types
+  const matched = projTypo.filter(t => validTypoSet.has(t.toLowerCase()));
+  return (matched.length > 0 ? matched : projTypo).join(', ');
+};
+
+
 const DEFAULT_COLUMNS = [
   { id: 'leadId', label: 'Lead ID', visible: true },
   { id: 'fullName', label: 'Full Name', visible: true },
@@ -69,6 +160,11 @@ const DEFAULT_COLUMNS = [
   { id: 'status', label: 'Status', visible: true },
   { id: 'priority', label: 'Priority', visible: true },
   { id: 'followupDate', label: 'Followup Date', visible: true },
+  { id: 'projectName', label: 'Project Name', visible: true },
+  { id: 'projectType', label: 'Project Type', visible: true },
+  { id: 'typography', label: 'Typography', visible: true },
+  { id: 'carpetArea', label: 'Carpet Area', visible: true },
+  { id: 'budget', label: 'Budget', visible: true },
   { id: 'plotsCount', label: 'No. of Guntha', visible: true },
   { id: 'assignedAgent', label: 'Assigned Agent', visible: true },
   { id: 'createdBy', label: 'Created By', visible: true },
@@ -191,8 +287,9 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
   const [mappedColumns, setMappedColumns] = useState([]); // columns from CSV mapped to DB
   const [showColumnMappingPopover, setShowColumnMappingPopover] = useState(false);
 
-  // Active Inline Dropdown Popover State: { rowId: string, field: 'status' | 'followupDate' | 'plotsCount' | 'assignedAgent' }
+  // Active Inline Dropdown Popover State: { rowId: string, field: 'status' | 'followupDate' | 'plotsCount' | 'assignedAgent' | 'projectName' | 'projectType' }
   const [activeDropdown, setActiveDropdown] = useState(null);
+  const [projectsList, setProjectsList] = useState([]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -950,10 +1047,26 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     }
   };
 
+  const fetchProjectsList = async () => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_BASE_URL}/api/projects`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.projects)) {
+        setProjectsList(data.projects);
+      }
+    } catch (err) {
+      console.warn('Backend projects fetch note:', err);
+    }
+  };
+
   useEffect(() => {
     fetchProfile();
     fetchEnquiries();
     fetchAgents();
+    fetchProjectsList();
   }, []);
 
   // Keep every user's view in sync with the DB (priority/status changes made by others)
@@ -1429,16 +1542,17 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     }
   };
 
-  // Generic handler for inline editing table fields (followupDate, plotsCount, visitDate, etc.)
-  const handleInlineFieldChange = async (id, fieldName, fieldValue) => {
+  // Generic handler for inline editing table fields (followupDate, plotsCount, projectName, projectType, etc.)
+  const handleInlineFieldChange = async (id, fieldName, fieldValue, extraFields = {}) => {
     const token = localStorage.getItem('adminToken');
     const performer = currentUser.name || (isAdmin ? 'Admin' : 'Sales Executive');
 
     const targetItem = enquiries.find(item => String(item._id || item.id) === String(id));
+    const allUpdates = { [fieldName]: fieldValue, ...extraFields };
 
     setEnquiries(prev => prev.map(item => {
       if (String(item._id || item.id) === String(id)) {
-        return { ...item, [fieldName]: fieldValue };
+        return { ...item, ...allUpdates };
       }
       return item;
     }));
@@ -1446,7 +1560,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     const localCache = JSON.parse(localStorage.getItem('localEnquiriesCache') || '[]');
     const updatedCache = localCache.map(item => {
       if (String(item._id || item.id) === String(id)) {
-        return { ...item, [fieldName]: fieldValue };
+        return { ...item, ...allUpdates };
       }
       return item;
     });
@@ -1460,7 +1574,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          [fieldName]: fieldValue,
+          ...allUpdates,
           phone: targetItem ? targetItem.phone : undefined,
           oldPhone: targetItem ? targetItem.phone : undefined,
           updatedBy: performer
@@ -1468,7 +1582,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       });
       const data = await res.json();
       if (data.success && data.data) {
-        const syncedItem = { ...data.data, [fieldName]: fieldValue };
+        const syncedItem = { ...data.data, ...allUpdates };
         setEnquiries(prev => prev.map(item => (String(item._id || item.id) === String(id)) ? syncedItem : item));
         const currentCache = JSON.parse(localStorage.getItem('localEnquiriesCache') || '[]');
         const refreshedCache = currentCache.map(item => (String(item._id || item.id) === String(id)) ? syncedItem : item);
@@ -1557,6 +1671,11 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
           email: updatedLead.email,
           plotsCount: updatedLead.plotsCount,
           plotInfo: updatedLead.plotInfo,
+          projectName: updatedLead.projectName,
+          projectType: updatedLead.projectType,
+          typography: updatedLead.typography,
+          carpetArea: updatedLead.carpetArea,
+          budget: updatedLead.budget,
           visitDate: updatedLead.visitDate,
           visitTime: updatedLead.visitTime || (updatedLead.followupDate ? '11:00' : ''),
           followupDate: updatedLead.followupDate || '',
@@ -1822,6 +1941,11 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     const priorityIdx = find(['priority', 'leadpriority'], ['priority']);
     const plotsCountIdx = find(['plotscount', 'guntha', 'noofguntha', 'plots', 'plotcount', 'gunthacount'], ['guntha']);
     const plotInfoIdx = find(['plotinfo', 'plot', 'plotno', 'plotsinfo', 'property', 'propertyinfo'], ['plotinfo', 'plotno']);
+    const projectNameIdx = find(['projectname', 'project', 'projecttitle'], ['project']);
+    const projectTypeIdx = find(['projecttype', 'propertytype', 'type'], ['type']);
+    const typographyIdx = find(['typography', 'configuration', 'config', 'bhk'], ['typography', 'config']);
+    const carpetAreaIdx = find(['carpetarea', 'carpet', 'area', 'superbuildup', 'size'], ['carpet', 'area']);
+    const budgetIdx = find(['budget', 'price', 'cost', 'quote', 'amount'], ['budget', 'price']);
 
     // Detect mapped and unmapped columns: non-empty headers matched/unmatched to any database field
     const unmappedColumns = headers.filter((h, i) => h && h.trim() && !used.has(i)).map(h => h.trim());
@@ -1852,6 +1976,11 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
         email: cell(row, emailIdx),
         plotsCount: cell(row, plotsCountIdx) || '1 Guntha',
         plotInfo: cell(row, plotInfoIdx),
+        projectName: cell(row, projectNameIdx),
+        projectType: cell(row, projectTypeIdx),
+        typography: cell(row, typographyIdx),
+        carpetArea: cell(row, carpetAreaIdx),
+        budget: cell(row, budgetIdx),
         status: cell(row, statusIdx) || 'New',
         priority: cell(row, priorityIdx) || 'Hot',
         notes: cell(row, remarksIdx),
@@ -2020,12 +2149,17 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       return;
     }
 
-    const headers = ['Lead ID', 'Full Name', 'Mobile No', 'Email Address', 'Number of Guntha', 'Selected Plot', 'Submitted Date', 'Status', 'Priority', 'Assigned Agent', 'Created By', 'Notes'];
+    const headers = ['Lead ID', 'Full Name', 'Mobile No', 'Email Address', 'Project Name', 'Project Type', 'Typography', 'Carpet Area', 'Budget', 'Number of Guntha', 'Selected Plot', 'Submitted Date', 'Status', 'Priority', 'Assigned Agent', 'Created By', 'Notes'];
     const rows = filteredEnquiries.map((item, idx) => [
       `"${getLeadDisplayId(item, idx, enquiries)}"`,
       `"${item.firstName || ''} ${item.lastName || ''}"`,
       `"${item.phone || ''}"`,
       `"${item.email || ''}"`,
+      `"${item.projectName || ''}"`,
+      `"${item.projectType || ''}"`,
+      `"${item.typography || ''}"`,
+      `"${item.carpetArea || ''}"`,
+      `"${item.budget || ''}"`,
       `"${item.plotsCount || '1 Guntha'}"`,
       `"${item.plotInfo || ''}"`,
       `"${new Date(item.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}"`,
@@ -2650,7 +2784,12 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       email.toLowerCase().includes(query) ||
       plotInfo.toLowerCase().includes(query) ||
       displayLeadId.includes(query) ||
-      displayUserId.includes(query);
+      displayUserId.includes(query) ||
+      (item.projectName || '').toLowerCase().includes(query) ||
+      (item.projectType || '').toLowerCase().includes(query) ||
+      (item.typography || '').toLowerCase().includes(query) ||
+      (item.carpetArea || '').toLowerCase().includes(query) ||
+      (item.budget || '').toLowerCase().includes(query);
 
     const checkSingleStatus = (st) => {
       if (st === 'All') return true;
@@ -2785,6 +2924,36 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
           }
           break;
         }
+        case 'projectName': {
+          const pA = (a.projectName || '').trim().toLowerCase();
+          const pB = (b.projectName || '').trim().toLowerCase();
+          comp = pA.localeCompare(pB) * sortMultiplier;
+          break;
+        }
+        case 'projectType': {
+          const tA = (a.projectType || '').trim().toLowerCase();
+          const tB = (b.projectType || '').trim().toLowerCase();
+          comp = tA.localeCompare(tB) * sortMultiplier;
+          break;
+        }
+        case 'typography': {
+          const tyA = (a.typography || '').trim().toLowerCase();
+          const tyB = (b.typography || '').trim().toLowerCase();
+          comp = tyA.localeCompare(tyB) * sortMultiplier;
+          break;
+        }
+        case 'carpetArea': {
+          const cA = (a.carpetArea || '').trim().toLowerCase();
+          const cB = (b.carpetArea || '').trim().toLowerCase();
+          comp = cA.localeCompare(cB) * sortMultiplier;
+          break;
+        }
+        case 'budget': {
+          const bA = (a.budget || '').trim().toLowerCase();
+          const bB = (b.budget || '').trim().toLowerCase();
+          comp = bA.localeCompare(bB) * sortMultiplier;
+          break;
+        }
         case 'plotsCount': {
           const getGunthaNum = (item) => {
             if (!item || !item.plotsCount) return 1;
@@ -2865,6 +3034,15 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       } else if (field === 'dateTimePicker') {
         targetHeight = 310;
         dropdownWidth = 290;
+      } else if (field === 'projectName') {
+        targetHeight = Math.min(260, Math.max(100, projectsList.length * 36 + 10));
+        dropdownWidth = Math.max(160, rect.width);
+      } else if (field === 'projectType') {
+        targetHeight = 180;
+        dropdownWidth = Math.max(220, rect.width);
+      } else if (field === 'typography') {
+        targetHeight = 180;
+        dropdownWidth = Math.max(220, rect.width);
       }
 
       // Available space above and below (with safety margin for taskbar/navbar)
@@ -3052,6 +3230,19 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
               )}
             </button>
 
+            {/* Project Management Standalone Button */}
+            <button 
+              onClick={() => setActiveTab('projects')}
+              class={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition shadow-md border cursor-pointer relative ${
+                activeTab === 'projects'
+                  ? 'bg-amber-400 text-slate-900 border-amber-300 ring-2 ring-amber-300/50 font-extrabold scale-105'
+                  : 'bg-white/10 hover:bg-white/20 text-white border-white/20'
+              }`}
+              title="Project Management"
+            >
+              <i class="fa-solid fa-building text-xs sm:text-sm"></i>
+            </button>
+
             {/* Registered Users Directory Button (SuperAdmin Only) */}
             {isSuperAdmin && (
               <button 
@@ -3179,7 +3370,13 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       {/* Main Dashboard Container */}
       <main class="w-full px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5 flex-1 flex flex-col min-h-0 overflow-hidden space-y-2 sm:space-y-3">
         
-        {activeTab === 'enquiries' || !isSuperAdmin ? (
+        {activeTab === 'projects' ? (
+          <ProjectManagement 
+            currentUser={currentUser} 
+            isSuperAdmin={isSuperAdmin} 
+            isAdmin={isAdmin} 
+          />
+        ) : (activeTab === 'enquiries' || !isSuperAdmin) ? (
           <>
             {/* Dashboard View Tab: 3 Distinct Sections (Aligned to Red Line Level) */}
             {activeView === 'dashboard' && (
@@ -4274,6 +4471,76 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   </div>
                                 </th>
                               );
+                            case 'projectName':
+                              return (
+                                <th 
+                                  key="projectName" 
+                                  onClick={() => handleSort('projectName')}
+                                  class={`py-2.5 px-2.5 whitespace-nowrap w-36 min-w-[130px] max-w-[150px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                  title={getSortTitle('Project Name')}
+                                >
+                                  <div class="flex items-center gap-1.5">
+                                    <span>Project Name</span>
+                                    {renderSortIndicator()}
+                                  </div>
+                                </th>
+                              );
+                            case 'projectType':
+                              return (
+                                <th 
+                                  key="projectType" 
+                                  onClick={() => handleSort('projectType')}
+                                  class={`py-2.5 px-2.5 whitespace-nowrap w-40 min-w-[130px] max-w-[180px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                  title={getSortTitle('Project Type')}
+                                >
+                                  <div class="flex items-center gap-1.5">
+                                    <span>Project Type</span>
+                                    {renderSortIndicator()}
+                                  </div>
+                                </th>
+                              );
+                            case 'typography':
+                              return (
+                                <th 
+                                  key="typography" 
+                                  onClick={() => handleSort('typography')}
+                                  class={`py-2.5 px-2.5 whitespace-nowrap w-48 min-w-[140px] max-w-[210px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                  title={getSortTitle('Typography')}
+                                >
+                                  <div class="flex items-center gap-1.5">
+                                    <span>Typography</span>
+                                    {renderSortIndicator()}
+                                  </div>
+                                </th>
+                              );
+                            case 'carpetArea':
+                              return (
+                                <th 
+                                  key="carpetArea" 
+                                  onClick={() => handleSort('carpetArea')}
+                                  class={`py-2.5 px-2.5 whitespace-nowrap w-28 min-w-[100px] max-w-[120px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 text-center ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                  title={getSortTitle('Carpet Area')}
+                                >
+                                  <div class="flex items-center justify-center gap-1.5">
+                                    <span>Carpet</span>
+                                    {renderSortIndicator()}
+                                  </div>
+                                </th>
+                              );
+                            case 'budget':
+                              return (
+                                <th 
+                                  key="budget" 
+                                  onClick={() => handleSort('budget')}
+                                  class={`py-2.5 px-2.5 whitespace-nowrap w-28 min-w-[110px] max-w-[130px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 text-center ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                  title={getSortTitle('Budget')}
+                                >
+                                  <div class="flex items-center justify-center gap-1.5">
+                                    <span>Budget</span>
+                                    {renderSortIndicator()}
+                                  </div>
+                                </th>
+                              );
                             case 'plotsCount':
                               return (
                                 <th 
@@ -4598,6 +4865,243 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                           onClose={() => setActiveDropdown(null)}
                                           coords={activeDropdown?.coords}
                                         />
+                                      )}
+                                    </td>
+                                  );
+                                }
+                                case 'projectName': {
+                                  const isProjectOpen = activeDropdown?.rowId === currentId && activeDropdown?.field === 'projectName';
+                                  const currentProjName = item.projectName || '';
+
+                                  return (
+                                    <td key="projectName" class={`py-2.5 px-2.5 whitespace-nowrap w-36 min-w-[130px] max-w-[150px] relative ${isProjectOpen ? 'z-50' : ''}`}>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => toggleDropdown(e, currentId, 'projectName')}
+                                        class="px-2 py-0.5 rounded-lg border border-slate-200 text-[10.5px] font-bold text-slate-800 bg-slate-50 hover:bg-slate-100 outline-none cursor-pointer transition shadow-2xs flex items-center justify-between gap-1 w-full custom-dropdown-toggle"
+                                        title="Click to select Project Name"
+                                      >
+                                        <span class="truncate flex items-center gap-1">
+                                          <i class="fa-solid fa-building text-[8.5px] text-[#B30E2E]"></i>
+                                          <span class="truncate">{currentProjName || <span class="text-gray-400 font-normal italic">Select Project</span>}</span>
+                                        </span>
+                                        <i class={`fa-solid fa-chevron-down text-[8px] text-gray-500 transition-transform ${isProjectOpen ? 'rotate-180' : ''}`}></i>
+                                      </button>
+
+                                      {isProjectOpen && (
+                                        <div 
+                                          class="fixed z-[9999] min-w-[160px] max-h-60 overflow-y-auto custom-scrollbar overscroll-contain bg-white rounded-xl shadow-2xl border border-gray-200 py-1 text-xs animate-fade-in custom-dropdown-menu"
+                                          style={{
+                                            top: activeDropdown?.coords ? `${activeDropdown.coords.top}px` : undefined,
+                                            left: activeDropdown?.coords ? `${activeDropdown.coords.left}px` : undefined,
+                                            minWidth: activeDropdown?.coords ? `${Math.max(160, activeDropdown.coords.width)}px` : '160px',
+                                            maxHeight: activeDropdown?.coords?.maxHeight ? `${activeDropdown.coords.maxHeight}px` : '240px'
+                                          }}
+                                        >
+                                          {projectsList.length === 0 ? (
+                                            <div class="px-3 py-2 text-[11px] text-gray-400 italic">No projects found. Create one in Projects tab.</div>
+                                          ) : (
+                                            projectsList.map((p) => {
+                                              const isSelected = currentProjName.toLowerCase() === (p.name || '').toLowerCase();
+                                              return (
+                                                <button
+                                                  key={p.id || p.name}
+                                                  type="button"
+                                                  onClick={() => {
+                                                    const newProjName = p.name;
+                                                    const availableTypes = getProjectTypesForProject(projectsList, newProjName);
+                                                    const newType = availableTypes.length > 0 ? availableTypes.join(', ') : '';
+                                                    const newTypo = getAutoTypographyForProjectType(projectsList, newProjName, newType);
+                                                    handleInlineFieldChange(currentId, 'projectName', newProjName, {
+                                                      projectType: newType,
+                                                      typography: newTypo
+                                                    });
+                                                    setActiveDropdown(null);
+                                                  }}
+                                                  class={`w-full px-3 py-1.5 text-left text-[11px] font-medium flex items-center justify-between hover:bg-slate-100 transition ${
+                                                    isSelected ? 'bg-slate-100 text-[#B30E2E] font-bold' : 'text-slate-700'
+                                                  }`}
+                                                >
+                                                  <span class="truncate flex items-center gap-1.5">
+                                                    <i class="fa-solid fa-building text-[9px] text-[#B30E2E]/80"></i>
+                                                    <span class="truncate">{p.name}</span>
+                                                  </span>
+                                                  {isSelected && <i class="fa-solid fa-check text-[10px] text-[#B30E2E]"></i>}
+                                                </button>
+                                              );
+                                            })
+                                          )}
+                                        </div>
+                                      )}
+                                    </td>
+                                  );
+                                }
+                                case 'projectType': {
+                                  const isTypeOpen = activeDropdown?.rowId === currentId && activeDropdown?.field === 'projectType';
+                                  const currentType = item.projectType || '';
+                                  const availableTypes = getProjectTypesForProject(projectsList, item.projectName);
+                                  const currentTypesList = (currentType || '').split(',').map(s => s.trim()).filter(Boolean);
+
+                                  const displayLabel = currentTypesList.length === 0 ? '—' : currentTypesList.join(', ');
+
+                                  return (
+                                    <td key="projectType" class={`py-2 px-2.5 whitespace-nowrap w-40 min-w-[130px] max-w-[180px] relative ${isTypeOpen ? 'z-50' : ''}`}>
+                                      {currentTypesList.length > 0 ? (
+                                        <button
+                                          type="button"
+                                          onClick={(e) => toggleDropdown(e, currentId, 'projectType')}
+                                          class="h-[27px] px-2.5 py-0.5 rounded-lg border border-rose-200/90 text-[10.5px] font-bold bg-rose-50/70 hover:bg-rose-100/80 text-rose-950 transition shadow-2xs flex items-center justify-between gap-1.5 w-full cursor-pointer select-none text-left custom-dropdown-toggle"
+                                          title={item.projectType ? `Project Type: ${item.projectType}` : ''}
+                                        >
+                                          <div class="flex items-center gap-1.5 min-w-0 flex-1 truncate">
+                                            <span class="truncate min-w-0">{displayLabel}</span>
+                                          </div>
+                                          <i class={`fa-solid fa-chevron-down text-[8px] text-rose-400 shrink-0 transition-transform ${isTypeOpen ? 'rotate-180 text-rose-700' : ''}`}></i>
+                                        </button>
+                                      ) : (
+                                        <div class="w-full flex items-center justify-center py-0.5">
+                                          <span class="text-gray-400 italic text-[10.5px]">—</span>
+                                        </div>
+                                      )}
+
+                                      {isTypeOpen && currentTypesList.length > 0 && (
+                                        <div 
+                                          class="fixed z-[9999] min-w-[220px] max-w-[320px] p-3 bg-white rounded-2xl shadow-2xl border border-rose-100 text-xs animate-fade-in custom-dropdown-menu"
+                                          style={{
+                                            top: activeDropdown?.coords ? `${activeDropdown.coords.top}px` : undefined,
+                                            left: activeDropdown?.coords ? `${activeDropdown.coords.left}px` : undefined,
+                                            maxHeight: activeDropdown?.coords?.maxHeight ? `${activeDropdown.coords.maxHeight}px` : '260px'
+                                          }}
+                                        >
+                                          <div class="flex items-center justify-between pb-2 mb-2 border-b border-rose-100/70">
+                                            <span class="font-bold text-rose-950 text-[11px]">Project Types</span>
+                                            <span class="text-[9.5px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
+                                              {currentTypesList.length} items
+                                            </span>
+                                          </div>
+
+                                          <div class="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto custom-scrollbar p-0.5">
+                                            {currentTypesList.map((t, idx) => (
+                                              <span 
+                                                key={idx} 
+                                                class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10.5px] font-bold bg-rose-50 border border-rose-200/90 text-rose-950 shadow-2xs hover:bg-rose-100 transition"
+                                              >
+                                                <span class="w-1.5 h-1.5 rounded-full bg-[#B30E2E]"></span>
+                                                <span>{t}</span>
+                                              </span>
+                                            ))}
+                                          </div>
+
+                                          <div class="mt-2 pt-2 border-t border-rose-50 text-[10px] text-gray-400 flex items-center justify-between">
+                                            <span>Auto-linked with project</span>
+                                            <button 
+                                              type="button" 
+                                              onClick={() => setActiveDropdown(null)} 
+                                              class="text-rose-700 hover:text-rose-900 font-bold text-[10px] hover:underline cursor-pointer"
+                                            >
+                                              Close
+                                            </button>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </td>
+                                  );
+                                }
+                                case 'typography': {
+                                  const isTypoOpen = activeDropdown?.rowId === currentId && activeDropdown?.field === 'typography';
+                                  const typoList = (item.typography || '').split(',').map(s => s.trim()).filter(Boolean);
+
+                                  const displayTypo = typoList.length === 0 ? '—' : typoList.join(', ');
+
+                                  return (
+                                    <td key="typography" class={`py-2 px-2.5 whitespace-nowrap w-48 min-w-[140px] max-w-[210px] relative ${isTypoOpen ? 'z-50' : ''}`}>
+                                      {typoList.length > 0 ? (
+                                        <button
+                                          type="button"
+                                          onClick={(e) => toggleDropdown(e, currentId, 'typography')}
+                                          class="h-[27px] px-2.5 py-0.5 rounded-lg border border-indigo-200/90 text-[10.5px] font-bold bg-indigo-50/70 hover:bg-indigo-100/80 text-indigo-950 transition shadow-2xs flex items-center justify-between gap-1.5 w-full cursor-pointer select-none text-left custom-dropdown-toggle"
+                                          title={item.typography}
+                                        >
+                                          <div class="flex items-center gap-1.5 min-w-0 flex-1 truncate">
+                                            <span class="truncate min-w-0">{displayTypo}</span>
+                                          </div>
+                                          <i class={`fa-solid fa-chevron-down text-[8px] text-indigo-400 shrink-0 transition-transform ${isTypoOpen ? 'rotate-180 text-indigo-700' : ''}`}></i>
+                                        </button>
+                                      ) : (
+                                        <div class="w-full flex items-center justify-center py-0.5">
+                                          <span class="text-gray-400 italic text-[10.5px]">—</span>
+                                        </div>
+                                      )}
+
+                                      {isTypoOpen && typoList.length > 0 && (
+                                        <div 
+                                          class="fixed z-[9999] min-w-[220px] max-w-[320px] p-3 bg-white rounded-2xl shadow-2xl border border-indigo-100 text-xs animate-fade-in custom-dropdown-menu"
+                                          style={{
+                                            top: activeDropdown?.coords ? `${activeDropdown.coords.top}px` : undefined,
+                                            left: activeDropdown?.coords ? `${activeDropdown.coords.left}px` : undefined,
+                                            maxHeight: activeDropdown?.coords?.maxHeight ? `${activeDropdown.coords.maxHeight}px` : '260px'
+                                          }}
+                                        >
+                                          <div class="flex items-center justify-between pb-2 mb-2 border-b border-indigo-100/70">
+                                            <span class="font-bold text-indigo-950 text-[11px]">Typography Details</span>
+                                            <span class="text-[9.5px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200">
+                                              {typoList.length} items
+                                            </span>
+                                          </div>
+
+                                          <div class="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto custom-scrollbar p-0.5">
+                                            {typoList.map((t, idx) => (
+                                              <span 
+                                                key={idx} 
+                                                class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10.5px] font-bold bg-indigo-50 border border-indigo-200/90 text-indigo-950 shadow-2xs hover:bg-indigo-100 transition"
+                                              >
+                                                <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                                                <span>{t}</span>
+                                              </span>
+                                            ))}
+                                          </div>
+
+                                          <div class="mt-2 pt-2 border-t border-indigo-50 text-[10px] text-gray-400 flex items-center justify-between">
+                                            <span>Auto-linked with project</span>
+                                            <button 
+                                              type="button" 
+                                              onClick={() => setActiveDropdown(null)} 
+                                              class="text-indigo-600 hover:text-indigo-800 font-bold text-[10px] hover:underline cursor-pointer"
+                                            >
+                                              Close
+                                            </button>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </td>
+                                  );
+                                }
+                                case 'carpetArea': {
+                                  return (
+                                    <td key="carpetArea" class="py-2.5 px-2.5 whitespace-nowrap w-28 min-w-[100px] max-w-[120px] text-center">
+                                      {item.carpetArea ? (
+                                        <span class="text-[11px] font-semibold text-gray-800 truncate block text-center" title={item.carpetArea}>
+                                          {item.carpetArea}
+                                        </span>
+                                      ) : (
+                                        <div class="w-full flex items-center justify-center py-0.5">
+                                          <span class="text-gray-400 italic text-[10.5px]">—</span>
+                                        </div>
+                                      )}
+                                    </td>
+                                  );
+                                }
+                                case 'budget': {
+                                  return (
+                                    <td key="budget" class="py-2.5 px-2.5 whitespace-nowrap w-28 min-w-[110px] max-w-[130px] text-center">
+                                      {item.budget ? (
+                                        <span class="text-[11px] font-bold text-gray-800 truncate block text-center" title={item.budget}>
+                                          {item.budget}
+                                        </span>
+                                      ) : (
+                                        <div class="w-full flex items-center justify-center py-0.5">
+                                          <span class="text-gray-400 italic text-[10.5px]">—</span>
+                                        </div>
                                       )}
                                     </td>
                                   );
@@ -5700,6 +6204,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                     </div>
                   </div>
                 </div>
+
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>

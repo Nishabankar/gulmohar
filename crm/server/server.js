@@ -31,11 +31,48 @@ const seedAdminUser = async () => {
       // Column may already exist
     }
 
+    // Ensure project details columns exist in leads table
+    const leadColumns = [
+      { name: 'project_name', type: "VARCHAR(255) NOT NULL DEFAULT ''" },
+      { name: 'project_type', type: "VARCHAR(100) NOT NULL DEFAULT ''" },
+      { name: 'typography', type: "VARCHAR(255) NOT NULL DEFAULT ''" },
+      { name: 'carpet_area', type: "VARCHAR(100) NOT NULL DEFAULT ''" },
+      { name: 'budget', type: "VARCHAR(100) NOT NULL DEFAULT ''" }
+    ];
+    for (const col of leadColumns) {
+      try {
+        await query(`ALTER TABLE leads ADD COLUMN ${col.name} ${col.type}`);
+      } catch (e) {
+        // Column may already exist
+      }
+    }
+
     // Clean up unwanted internal import history entries (Import & Sheet Status)
     try {
       await query("DELETE FROM lead_history WHERE field_name IN ('Import', 'Sheet Status')");
     } catch (e) {
       // Table may not exist yet or empty
+    }
+
+    // Ensure projects table exists
+    try {
+      await query(`
+        CREATE TABLE IF NOT EXISTS projects (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          developer_name VARCHAR(255) NOT NULL DEFAULT '',
+          project_type TEXT DEFAULT NULL,
+          typography TEXT DEFAULT NULL,
+          rera_number VARCHAR(100) DEFAULT NULL,
+          address TEXT DEFAULT NULL,
+          created_by VARCHAR(255) NOT NULL DEFAULT 'Admin',
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_project_name (name)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+      `);
+    } catch (e) {
+      console.warn('Projects table init note:', e.message);
     }
 
     // 2. Ensure SuperAdmin exists
@@ -87,6 +124,7 @@ const seedAdminUser = async () => {
 // Routes
 app.use('/api/enquiries', require('./routes/enquiryRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/projects', require('./routes/projectRoutes'));
 
 // Global JSON Error Handler
 app.use((err, req, res, next) => {

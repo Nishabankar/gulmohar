@@ -47,6 +47,11 @@ const formatEnquiryRow = (row, historyEntries = []) => {
     assignedTo: row.assigned_to ? row.assigned_to.toString() : '',
     createdBy: row.created_by || 'System',
     priority: (row.priority === 'Cold' || row.priority === 'Low') ? 'Cold' : 'Hot',
+    projectName: row.project_name || '',
+    projectType: row.project_type || '',
+    typography: row.typography || '',
+    carpetArea: row.carpet_area || '',
+    budget: row.budget || '',
     history: historyEntries
       .filter(h => h.field_name !== 'Import' && h.field_name !== 'Sheet Status')
       .map(h => ({
@@ -528,7 +533,7 @@ router.get('/enquiries/:id', protectAdmin, async (req, res) => {
 // @access  Protected
 router.patch('/enquiries/:id', protectAdmin, async (req, res) => {
   try {
-    const { firstName, lastName, phone, oldPhone, email, plotsCount, plotInfo, visitDate, visitTime, followupDate, status, notes, assignedAgentName, assignedTo, priority, updatedBy } = req.body;
+    const { firstName, lastName, phone, oldPhone, email, plotsCount, plotInfo, visitDate, visitTime, followupDate, status, notes, assignedAgentName, assignedTo, priority, updatedBy, projectName, projectType, typography, carpetArea, budget } = req.body;
     
     let enquiryId = parseInt(req.params.id, 10);
     let existing = null;
@@ -607,7 +612,12 @@ router.patch('/enquiries/:id', protectAdmin, async (req, res) => {
       { col: 'status', label: 'Status', incoming: status },
       { col: 'notes', label: 'Notes', incoming: notes },
       { col: 'assigned_agent_name', label: 'Assigned Agent', incoming: resolvedAgentName },
-      { col: 'priority', label: 'Priority', incoming: priority === undefined ? undefined : (matchOption(priority, PRIORITY_OPTIONS) || 'Hot') }
+      { col: 'priority', label: 'Priority', incoming: priority === undefined ? undefined : (matchOption(priority, PRIORITY_OPTIONS) || 'Hot') },
+      { col: 'project_name', label: 'Project Name', incoming: projectName },
+      { col: 'project_type', label: 'Project Type', incoming: projectType },
+      { col: 'typography', label: 'Typography', incoming: typography },
+      { col: 'carpet_area', label: 'Carpet Area', incoming: carpetArea },
+      { col: 'budget', label: 'Budget', incoming: budget }
     ];
 
     let newHistoryEntries = [];
@@ -1141,6 +1151,17 @@ router.post('/enquiries/import', protectAdmin, async (req, res) => {
       const plotsCount = str(lead.plotsCount) || '1 Guntha';
       const plotInfo = str(lead.plotInfo);
       const notes = str(lead.notes);
+      const projectName = str(lead.projectName);
+      const projectType = str(lead.projectType);
+      const typography = str(lead.typography);
+      const carpetArea = str(lead.carpetArea);
+      const budget = str(lead.budget);
+
+      if (projectName) history.push(['Project Name', '—', projectName]);
+      if (projectType) history.push(['Project Type', '—', projectType]);
+      if (typography) history.push(['Typography', '—', typography]);
+      if (carpetArea) history.push(['Carpet Area', '—', carpetArea]);
+      if (budget) history.push(['Budget', '—', budget]);
 
       // Status: map to our own list, unknown values fall back to New
       const rawStatus = str(lead.status);
@@ -1188,9 +1209,9 @@ router.post('/enquiries/import', protectAdmin, async (req, res) => {
       // Insert into MySQL leads table
       const [insertResult] = await query(
         `INSERT INTO leads 
-         (first_name, last_name, phone, email, plot_info, plots_count, visit_date, visit_time, followup_date, status, priority, notes, assigned_to, assigned_agent_name, created_by, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, 'System', COALESCE(?, UTC_TIMESTAMP()))`,
-        [firstName, lastName, cleanPhone, email, plotInfo, plotsCount, visitDate, followupDate, status, priority, notes, assignedTo, assignedAgentName, created ? created.utc : null]
+         (first_name, last_name, phone, email, plot_info, plots_count, project_name, project_type, typography, carpet_area, budget, visit_date, visit_time, followup_date, status, priority, notes, assigned_to, assigned_agent_name, created_by, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, 'System', COALESCE(?, UTC_TIMESTAMP()))`,
+        [firstName, lastName, cleanPhone, email, plotInfo, plotsCount, projectName, projectType, typography, carpetArea, budget, visitDate, followupDate, status, priority, notes, assignedTo, assignedAgentName, created ? created.utc : null]
       );
 
       const newId = insertResult.insertId;

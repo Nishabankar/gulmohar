@@ -317,6 +317,11 @@ router.put('/profile', protectAdmin, async (req, res) => {
   try {
     const adminId = req.admin.id;
     const adminUsername = (req.admin.username || '').toLowerCase().trim();
+
+    if (['system', 'systemadmin'].includes(adminUsername)) {
+      return res.status(403).json({ success: false, message: 'System account profile cannot be modified.' });
+    }
+
     const { name, username, email, phone, currentPassword, newPassword } = req.body;
 
     const [rows] = await query(

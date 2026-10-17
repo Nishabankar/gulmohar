@@ -3136,18 +3136,22 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
 
                     {/* Menu items */}
                     <div class="p-1.5 space-y-1 text-xs font-semibold">
-                      <button 
-                        onClick={() => {
-                          setShowProfileMenu(false);
-                          setShowEditProfileModal(true);
-                        }}
-                        class="w-full px-3 py-2 rounded-xl text-left text-gray-700 hover:bg-gray-100 hover:text-[#B30E2E] transition flex items-center gap-2.5 cursor-pointer"
-                      >
-                        <i class="fa-solid fa-user-pen text-gray-500 text-xs"></i>
-                        <span>Edit Profile</span>
-                      </button>
+                      {!isSystemAdmin && (
+                        <>
+                          <button 
+                            onClick={() => {
+                              setShowProfileMenu(false);
+                              setShowEditProfileModal(true);
+                            }}
+                            class="w-full px-3 py-2 rounded-xl text-left text-gray-700 hover:bg-gray-100 hover:text-[#B30E2E] transition flex items-center gap-2.5 cursor-pointer"
+                          >
+                            <i class="fa-solid fa-user-pen text-gray-500 text-xs"></i>
+                            <span>Edit Profile</span>
+                          </button>
 
-                      <div class="border-t border-gray-100 my-1"></div>
+                          <div class="border-t border-gray-100 my-1"></div>
+                        </>
+                      )}
 
                       <button 
                         onClick={() => {
@@ -5794,8 +5798,8 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
         </div>
       )}
 
-      {/* Edit Profile Modal (Admin & Sales Agents) */}
-      {showEditProfileModal && (
+      {/* Edit Profile Modal (Admin & Sales Agents - Disabled for System user) */}
+      {showEditProfileModal && !isSystemAdmin && (
         <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-fade-in">
           <div class="bg-white rounded-3xl shadow-2xl border border-gray-100 max-w-md w-full max-h-[90vh] overflow-hidden flex flex-col relative">
             

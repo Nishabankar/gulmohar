@@ -4794,7 +4794,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
             <div class="bg-white rounded-2xl shadow-sm border border-gray-200/80 relative flex-1 flex flex-col min-h-0 overflow-hidden">
               
               {/* Search Header Bar */}
-              <div class="px-4 py-3 border-b border-gray-100 bg-gray-50/70 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              <div class="px-3 sm:px-4 py-2.5 sm:py-3 border-b border-gray-100 bg-gray-50/70 flex items-center justify-between gap-2.5 sm:gap-3">
                 <div class="relative flex-1 max-w-md">
                   <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                     <i class="fa-solid fa-magnifying-glass text-xs"></i>

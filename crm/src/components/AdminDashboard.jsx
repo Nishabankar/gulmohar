@@ -170,33 +170,81 @@ const getAutoTypographyForProjectType = (projectsList, projectName, projectType)
 };
 
 
+const COLUMN_WIDTH_MAP = {
+  leadId: 76,
+  fullName: 160,
+  mobile: 140,
+  email: 155,
+  enquiryDate: 138,
+  status: 125,
+  priority: 92,
+  followupDate: 136,
+  projectName: 150,
+  projectType: 150,
+  typography: 180,
+  carpetArea: 110,
+  budget: 120,
+  plotsCount: 115,
+  assignedAgent: 140,
+  createdBy: 112,
+  notes: 50,
+  actions: 105
+};
+
+const COLUMN_CLASS_MAP = {
+  leadId: 'w-[76px] min-w-[76px] max-w-[76px]',
+  fullName: 'w-[160px] min-w-[160px] max-w-[160px]',
+  mobile: 'w-36 min-w-[135px] max-w-[140px]',
+  email: 'w-40 min-w-[145px] max-w-[155px]',
+  enquiryDate: 'w-36 min-w-[134px] max-w-[138px]',
+  status: 'w-32 min-w-[120px] max-w-[125px]',
+  priority: 'w-24 min-w-[88px] max-w-[92px]',
+  followupDate: 'w-36 min-w-[132px] max-w-[136px]',
+  projectName: 'w-36 min-w-[130px] max-w-[150px]',
+  projectType: 'w-40 min-w-[130px] max-w-[180px]',
+  typography: 'w-48 min-w-[140px] max-w-[210px]',
+  carpetArea: 'w-28 min-w-[100px] max-w-[120px]',
+  budget: 'w-28 min-w-[110px] max-w-[130px]',
+  plotsCount: 'w-28 min-w-[110px] max-w-[115px]',
+  assignedAgent: 'w-36 min-w-[136px] max-w-[140px]',
+  createdBy: 'w-28 min-w-[108px] max-w-[112px]',
+  notes: 'w-12 min-w-[50px] max-w-[50px]',
+  actions: 'w-[105px] min-w-[105px] max-w-[105px]'
+};
+
 const DEFAULT_COLUMNS = [
-  { id: 'leadId', label: 'Lead ID', visible: true },
-  { id: 'fullName', label: 'Full Name', visible: true },
-  { id: 'mobile', label: 'Mobile No.', visible: true },
-  { id: 'email', label: 'Email Address', visible: true },
-  { id: 'enquiryDate', label: 'Enquiry Date', visible: true },
-  { id: 'status', label: 'Status', visible: true },
-  { id: 'priority', label: 'Priority', visible: true },
-  { id: 'followupDate', label: 'Followup Date', visible: true },
-  { id: 'projectName', label: 'Project Name', visible: true },
-  { id: 'typography', label: 'Typography', visible: true },
-  { id: 'carpetArea', label: 'Carpet Area', visible: true },
-  { id: 'budget', label: 'Budget', visible: true },
-  { id: 'assignedAgent', label: 'Assigned Agent', visible: true },
-  { id: 'createdBy', label: 'Created By', visible: true },
-  { id: 'notes', label: 'Notes', visible: true },
-  { id: 'actions', label: 'Actions', visible: true }
+  { id: 'leadId', label: 'Lead ID', visible: true, pinned: true },
+  { id: 'fullName', label: 'Full Name', visible: true, pinned: true },
+  { id: 'mobile', label: 'Mobile No.', visible: true, pinned: false },
+  { id: 'email', label: 'Email Address', visible: true, pinned: false },
+  { id: 'enquiryDate', label: 'Enquiry Date', visible: true, pinned: false },
+  { id: 'status', label: 'Status', visible: true, pinned: false },
+  { id: 'priority', label: 'Priority', visible: true, pinned: false },
+  { id: 'followupDate', label: 'Followup Date', visible: true, pinned: false },
+  { id: 'projectName', label: 'Project Name', visible: true, pinned: false },
+  { id: 'typography', label: 'Typography', visible: true, pinned: false },
+  { id: 'carpetArea', label: 'Carpet Area', visible: true, pinned: false },
+  { id: 'budget', label: 'Budget', visible: true, pinned: false },
+  { id: 'assignedAgent', label: 'Assigned Agent', visible: true, pinned: false },
+  { id: 'createdBy', label: 'Created By', visible: true, pinned: false },
+  { id: 'notes', label: 'Notes', visible: true, pinned: false },
+  { id: 'actions', label: 'Actions', visible: true, pinned: true }
 ];
 
 // Add columns introduced after a user saved their layout (e.g. Priority), placed where DEFAULT_COLUMNS has them
 const withNewDefaultColumns = (cols) => {
-  const merged = cols.filter(c => c.id !== 'visitDate' && c.id !== 'projectType' && c.id !== 'plotsCount');
+  const merged = cols.filter(c => c.id !== 'visitDate' && c.id !== 'projectType' && c.id !== 'plotsCount').map(col => {
+    const def = DEFAULT_COLUMNS.find(d => d.id === col.id);
+    return {
+      ...col,
+      pinned: col.pinned !== undefined ? col.pinned : (def ? !!def.pinned : false)
+    };
+  });
   DEFAULT_COLUMNS.forEach((def, i) => {
     if (merged.some(m => m.id === def.id)) return;
     const prevId = i > 0 ? DEFAULT_COLUMNS[i - 1].id : null;
     const at = merged.findIndex(m => m.id === prevId);
-    merged.splice(at === -1 ? merged.length : at + 1, 0, def);
+    merged.splice(at === -1 ? merged.length : at + 1, 0, { ...def });
   });
   return merged;
 };
@@ -387,7 +435,8 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
             return {
               id: col.id,
               label: col.label || (def ? def.label : col.id),
-              visible: col.visible !== undefined ? col.visible : true
+              visible: col.visible !== undefined ? col.visible : true,
+              pinned: col.pinned !== undefined ? col.pinned : (def ? !!def.pinned : false)
             };
           });
           const withDefaults = withNewDefaultColumns(merged);
@@ -395,7 +444,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
           localStorage.setItem('leadsTableColumnConfig', JSON.stringify(withDefaults));
         }
       } catch (e) {
-        console.warn('Could not fetch column preferences from MongoDB:', e);
+        console.warn('Could not fetch column preferences from database:', e);
       }
     };
     fetchColumnPreferences();
@@ -432,6 +481,30 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     handleUpdateColumnConfig(updated);
   };
 
+  const toggleColumnPin = (colId) => {
+    const updated = columnConfig.map(col => {
+      if (col.id === colId) {
+        return { ...col, pinned: !col.pinned };
+      }
+      return col;
+    });
+
+    // Keep left-pinned columns grouped together at top (except actions which stays at end)
+    const actionsCol = updated.find(c => c.id === 'actions');
+    const nonActions = updated.filter(c => c.id !== 'actions');
+    const pinnedNonActions = nonActions.filter(c => c.pinned);
+    const unpinnedNonActions = nonActions.filter(c => !c.pinned);
+    const sorted = [...pinnedNonActions, ...unpinnedNonActions];
+    if (actionsCol) sorted.push(actionsCol);
+
+    handleUpdateColumnConfig(sorted);
+  };
+
+  const unpinAllColumns = () => {
+    const updated = columnConfig.map(col => ({ ...col, pinned: false }));
+    handleUpdateColumnConfig(updated);
+  };
+
   const moveColumn = (fromIdx, toIdx) => {
     if (toIdx < 0 || toIdx >= columnConfig.length) return;
     const updated = [...columnConfig];
@@ -451,6 +524,20 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [isMobileAgentDropdownOpen, setIsMobileAgentDropdownOpen] = useState(false);
   const [isMobileStatusDropdownOpen, setIsMobileStatusDropdownOpen] = useState(false);
+  const [isDesktopScreen, setIsDesktopScreen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 768;
+    }
+    return true;
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsDesktopScreen(window.innerWidth >= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -4408,21 +4495,101 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                   <p class="text-xs text-gray-400">Try adjusting your search query or status filter.</p>
                 </div>
               ) : (() => {
-                const isLeadIdVisible = columnConfig.find(c => c.id === 'leadId')?.visible !== false;
-                const checkboxWidth = isAdmin ? 36 : 0;
-                const leadIdWidth = 76;
-                const leadIdLeft = checkboxWidth;
-                const fullNameLeft = leadIdLeft + (isLeadIdVisible ? leadIdWidth : 0);
+                const visibleCols = columnConfig.filter(c => c.visible);
+                const actionsCol = columnConfig.find(c => c.id === 'actions');
+                const isActionsPinned = isDesktopScreen && (actionsCol ? !!actionsCol.pinned : false);
+
+                const leftPinnedCols = visibleCols.filter(c => c.id !== 'actions' && c.pinned);
+                const hasLeftPinnedColumn = isDesktopScreen && leftPinnedCols.length > 0;
+                const checkboxWidth = (isAdmin && hasLeftPinnedColumn) ? 36 : 0;
+
+                let currentLeft = checkboxWidth;
+                const colLeftMap = {};
+                if (isDesktopScreen) {
+                  visibleCols.forEach(c => {
+                    if (c.id !== 'actions' && c.pinned) {
+                      colLeftMap[c.id] = currentLeft;
+                      currentLeft += (COLUMN_WIDTH_MAP[c.id] || 140);
+                    }
+                  });
+                }
+
+                const isColPinned = (colId) => {
+                  if (!isDesktopScreen) return false;
+                  if (colId === 'actions') return isActionsPinned;
+                  return colLeftMap[colId] !== undefined;
+                };
+
+                const getThClass = (colId, isSorted = false, extra = '') => {
+                  const pinned = isColPinned(colId);
+                  const widthClass = COLUMN_CLASS_MAP[colId] || 'w-36 min-w-[130px] max-w-[150px]';
+                  const stickyClass = pinned 
+                    ? (colId === 'actions' ? 'sticky top-0 right-0 z-30 bg-gray-100' : 'sticky top-0 z-30 bg-gray-100')
+                    : '';
+                  const sortBg = isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : '';
+                  return `${stickyClass} border-b border-gray-200 py-2.5 px-2.5 whitespace-nowrap ${widthClass} cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${sortBg} ${extra}`.trim();
+                };
+
+                const getThStyle = (colId) => {
+                  const width = COLUMN_WIDTH_MAP[colId] || 140;
+                  const style = {
+                    width: `${width}px`,
+                    minWidth: `${width}px`,
+                    maxWidth: `${width}px`
+                  };
+                  if (colId === 'actions') {
+                    if (isActionsPinned) style.right = 0;
+                    return style;
+                  }
+                  if (colLeftMap[colId] !== undefined) {
+                    style.left = `${colLeftMap[colId]}px`;
+                  }
+                  return style;
+                };
+
+                const getTdClass = (colId, currentId, extra = '') => {
+                  const pinned = isColPinned(colId);
+                  const widthClass = COLUMN_CLASS_MAP[colId] || 'w-36 min-w-[130px] max-w-[150px]';
+                  const isSelected = selectedLeadIds.includes(currentId);
+                  const stickyClass = pinned
+                    ? (colId === 'actions'
+                        ? `sticky right-0 z-20 ${isSelected ? 'bg-[#FFF0F2]' : 'bg-white group-hover:bg-[#FFF5F6]'}`
+                        : `sticky z-20 ${isSelected ? 'bg-[#FFF0F2]' : 'bg-white group-hover:bg-[#FFF5F6]'}`)
+                    : '';
+                  return `${stickyClass} py-2.5 px-2.5 whitespace-nowrap ${widthClass} transition-colors ${extra}`.trim();
+                };
+
+                const getTdStyle = (colId) => {
+                  const width = COLUMN_WIDTH_MAP[colId] || 140;
+                  const style = {
+                    width: `${width}px`,
+                    minWidth: `${width}px`,
+                    maxWidth: `${width}px`
+                  };
+                  if (colId === 'actions') {
+                    if (isActionsPinned) style.right = 0;
+                    return style;
+                  }
+                  if (colLeftMap[colId] !== undefined) {
+                    style.left = `${colLeftMap[colId]}px`;
+                  }
+                  return style;
+                };
+
+                const totalTableWidth = (isAdmin ? 36 : 0) + visibleCols.reduce((sum, c) => sum + (COLUMN_WIDTH_MAP[c.id] || 140), 0);
 
                 return (
                   <div class="overflow-x-auto overflow-y-auto flex-1 min-h-0 custom-scrollbar w-full rounded-b-2xl">
-                    <table class="w-full min-w-full text-left border-collapse">
+                    <table 
+                      class="min-w-full text-left border-collapse table-fixed"
+                      style={{ minWidth: `${totalTableWidth}px`, width: `${totalTableWidth}px` }}
+                    >
                       <thead class="sticky top-0 z-10 bg-gray-100 shadow-2xs">
                         <tr class="bg-gray-100 border-b border-gray-200 text-[10px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">
                           {isAdmin && (
                             <th 
-                              class="sticky top-0 left-0 z-30 bg-gray-100 border-b border-gray-200 py-2.5 px-2 text-center whitespace-nowrap w-[36px] min-w-[36px] max-w-[36px]"
-                              style={{ left: 0 }}
+                              class={`${hasLeftPinnedColumn ? 'sticky top-0 left-0 z-30' : ''} bg-gray-100 border-b border-gray-200 py-2.5 px-2 text-center whitespace-nowrap w-[36px] min-w-[36px] max-w-[36px]`}
+                              style={hasLeftPinnedColumn ? { left: 0 } : undefined}
                             >
                               <input 
                                 type="checkbox"
@@ -4460,8 +4627,8 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   <th 
                                     key="leadId" 
                                     onClick={() => handleSort('leadId')}
-                                    class={`sticky top-0 z-30 bg-gray-100 border-b border-gray-200 py-2.5 px-2.5 whitespace-nowrap w-[76px] min-w-[76px] max-w-[76px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
-                                    style={{ left: `${leadIdLeft}px` }}
+                                    class={getThClass('leadId', isSorted)}
+                                    style={getThStyle('leadId')}
                                     title={getSortTitle('Lead ID')}
                                   >
                                     <div class="flex items-center gap-1.5">
@@ -4475,8 +4642,8 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   <th 
                                     key="fullName" 
                                     onClick={() => handleSort('fullName')}
-                                    class={`sticky top-0 z-30 bg-gray-100 border-b border-gray-200 py-2.5 px-2.5 whitespace-nowrap w-[160px] min-w-[160px] max-w-[160px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
-                                    style={{ left: `${fullNameLeft}px` }}
+                                    class={getThClass('fullName', isSorted)}
+                                    style={getThStyle('fullName')}
                                     title={getSortTitle('Full Name')}
                                   >
                                     <div class="flex items-center gap-1.5">
@@ -4485,220 +4652,242 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                     </div>
                                   </th>
                                 );
-                            case 'mobile':
-                              return (
-                                <th 
-                                  key="mobile" 
-                                  onClick={() => handleSort('mobile')}
-                                  class={`py-2.5 px-2.5 whitespace-nowrap w-36 min-w-[135px] max-w-[140px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
-                                  title={getSortTitle('Mobile No')}
-                                >
-                                  <div class="flex items-center gap-1.5">
-                                    <span>Mobile No</span>
-                                    {renderSortIndicator()}
-                                  </div>
-                                </th>
-                              );
-                            case 'email':
-                              return (
-                                <th 
-                                  key="email" 
-                                  onClick={() => handleSort('email')}
-                                  class={`py-2.5 px-2.5 whitespace-nowrap w-40 min-w-[145px] max-w-[155px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
-                                  title={getSortTitle('Email Address')}
-                                >
-                                  <div class="flex items-center gap-1.5 truncate">
-                                    <span>Email Address</span>
-                                    {renderSortIndicator()}
-                                  </div>
-                                </th>
-                              );
-                            case 'enquiryDate':
-                              return (
-                                <th 
-                                  key="enquiryDate" 
-                                  onClick={() => handleSort('enquiryDate')}
-                                  class={`py-2.5 px-2.5 whitespace-nowrap w-36 min-w-[134px] max-w-[138px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
-                                  title={getSortTitle('Enquiry Date')}
-                                >
-                                  <div class="flex items-center gap-1.5">
-                                    <span>Enquiry Date</span>
-                                    {renderSortIndicator()}
-                                  </div>
-                                </th>
-                              );
-                            case 'status':
-                              return (
-                                <th 
-                                  key="status" 
-                                  onClick={() => handleSort('status')}
-                                  class={`py-2.5 px-2.5 whitespace-nowrap w-32 min-w-[120px] max-w-[125px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
-                                  title={getSortTitle('Status')}
-                                >
-                                  <div class="flex items-center gap-1.5">
-                                    <span>Status</span>
-                                    {renderSortIndicator()}
-                                  </div>
-                                </th>
-                              );
-                            case 'priority':
-                              return (
-                                <th 
-                                  key="priority" 
-                                  onClick={() => handleSort('priority')}
-                                  class={`py-2.5 px-2.5 whitespace-nowrap w-24 min-w-[88px] max-w-[92px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
-                                  title={getSortTitle('Priority')}
-                                >
-                                  <div class="flex items-center gap-1.5">
-                                    <span>Priority</span>
-                                    {renderSortIndicator()}
-                                  </div>
-                                </th>
-                              );
-                            case 'followupDate':
-                              return (
-                                <th 
-                                  key="followupDate" 
-                                  onClick={() => handleSort('followupDate')}
-                                  class={`py-2.5 px-2.5 whitespace-nowrap w-36 min-w-[132px] max-w-[136px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
-                                  title={getSortTitle('Followup / Visit Date & Time')}
-                                >
-                                  <div class="flex items-center gap-1.5">
-                                    <span>Followup / Visit</span>
-                                    {renderSortIndicator()}
-                                  </div>
-                                </th>
-                              );
-                            case 'projectName':
-                              return (
-                                <th 
-                                  key="projectName" 
-                                  onClick={() => handleSort('projectName')}
-                                  class={`py-2.5 px-2.5 whitespace-nowrap w-36 min-w-[130px] max-w-[150px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
-                                  title={getSortTitle('Project Name')}
-                                >
-                                  <div class="flex items-center gap-1.5">
-                                    <span>Project Name</span>
-                                    {renderSortIndicator()}
-                                  </div>
-                                </th>
-                              );
-                            case 'projectType':
-                              return (
-                                <th 
-                                  key="projectType" 
-                                  onClick={() => handleSort('projectType')}
-                                  class={`py-2.5 px-2.5 whitespace-nowrap w-40 min-w-[130px] max-w-[180px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
-                                  title={getSortTitle('Project Type')}
-                                >
-                                  <div class="flex items-center gap-1.5">
-                                    <span>Project Type</span>
-                                    {renderSortIndicator()}
-                                  </div>
-                                </th>
-                              );
-                            case 'typography':
-                              return (
-                                <th 
-                                  key="typography" 
-                                  onClick={() => handleSort('typography')}
-                                  class={`py-2.5 px-2.5 whitespace-nowrap w-48 min-w-[140px] max-w-[210px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
-                                  title={getSortTitle('Typography')}
-                                >
-                                  <div class="flex items-center gap-1.5">
-                                    <span>Typography</span>
-                                    {renderSortIndicator()}
-                                  </div>
-                                </th>
-                              );
-                            case 'carpetArea':
-                              return (
-                                <th 
-                                  key="carpetArea" 
-                                  onClick={() => handleSort('carpetArea')}
-                                  class={`py-2.5 px-2.5 whitespace-nowrap w-28 min-w-[100px] max-w-[120px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 text-center ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
-                                  title={getSortTitle('Carpet Area')}
-                                >
-                                  <div class="flex items-center justify-center gap-1.5">
-                                    <span>Carpet</span>
-                                    {renderSortIndicator()}
-                                  </div>
-                                </th>
-                              );
-                            case 'budget':
-                              return (
-                                <th 
-                                  key="budget" 
-                                  onClick={() => handleSort('budget')}
-                                  class={`py-2.5 px-2.5 whitespace-nowrap w-28 min-w-[110px] max-w-[130px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 text-center ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
-                                  title={getSortTitle('Budget')}
-                                >
-                                  <div class="flex items-center justify-center gap-1.5">
-                                    <span>Budget</span>
-                                    {renderSortIndicator()}
-                                  </div>
-                                </th>
-                              );
-                            case 'plotsCount':
-                              return (
-                                <th 
-                                  key="plotsCount" 
-                                  onClick={() => handleSort('plotsCount')}
-                                  class={`py-2.5 px-2.5 whitespace-nowrap w-28 min-w-[110px] max-w-[115px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
-                                  title={getSortTitle('No. of Guntha')}
-                                >
-                                  <div class="flex items-center gap-1.5">
-                                    <span>No. of Guntha</span>
-                                    {renderSortIndicator()}
-                                  </div>
-                                </th>
-                              );
-                            case 'assignedAgent':
-                              return (
-                                <th 
-                                  key="assignedAgent" 
-                                  onClick={() => handleSort('assignedAgent')}
-                                  class={`py-2.5 px-2.5 whitespace-nowrap w-36 min-w-[136px] max-w-[140px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
-                                  title={getSortTitle('Assigned Agent')}
-                                >
-                                  <div class="flex items-center gap-1.5">
-                                    <span>Assigned Agent</span>
-                                    {renderSortIndicator()}
-                                  </div>
-                                </th>
-                              );
-                            case 'createdBy':
-                              return (
-                                <th 
-                                  key="createdBy" 
-                                  onClick={() => handleSort('createdBy')}
-                                  class={`py-2.5 px-2.5 whitespace-nowrap w-28 min-w-[108px] max-w-[112px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
-                                  title={getSortTitle('Created By')}
-                                >
-                                  <div class="flex items-center gap-1.5">
-                                    <span>Created By</span>
-                                    {renderSortIndicator()}
-                                  </div>
-                                </th>
-                              );
-                            case 'notes':
-                              return <th key="notes" class="py-2.5 px-2 text-center whitespace-nowrap w-12 min-w-[50px] max-w-[50px]">Notes</th>;
-                            case 'actions':
-                              return (
-                                <th 
-                                  key="actions" 
-                                  class="sticky top-0 right-0 z-30 bg-gray-100 border-b border-gray-200 py-2.5 px-2 text-center whitespace-nowrap w-[105px] min-w-[105px] max-w-[105px]"
-                                  style={{ right: 0 }}
-                                >
-                                  Actions
-                                </th>
-                              );
-                            default:
-                              return null;
-                          }
-                        })}
-                      </tr>
-                    </thead>
+                              case 'mobile':
+                                return (
+                                  <th 
+                                    key="mobile" 
+                                    onClick={() => handleSort('mobile')}
+                                    class={getThClass('mobile', isSorted)}
+                                    style={getThStyle('mobile')}
+                                    title={getSortTitle('Mobile No')}
+                                  >
+                                    <div class="flex items-center gap-1.5">
+                                      <span>Mobile No</span>
+                                      {renderSortIndicator()}
+                                    </div>
+                                  </th>
+                                );
+                              case 'email':
+                                return (
+                                  <th 
+                                    key="email" 
+                                    onClick={() => handleSort('email')}
+                                    class={getThClass('email', isSorted)}
+                                    style={getThStyle('email')}
+                                    title={getSortTitle('Email Address')}
+                                  >
+                                    <div class="flex items-center gap-1.5 truncate">
+                                      <span>Email Address</span>
+                                      {renderSortIndicator()}
+                                    </div>
+                                  </th>
+                                );
+                              case 'enquiryDate':
+                                return (
+                                  <th 
+                                    key="enquiryDate" 
+                                    onClick={() => handleSort('enquiryDate')}
+                                    class={getThClass('enquiryDate', isSorted)}
+                                    style={getThStyle('enquiryDate')}
+                                    title={getSortTitle('Enquiry Date')}
+                                  >
+                                    <div class="flex items-center gap-1.5">
+                                      <span>Enquiry Date</span>
+                                      {renderSortIndicator()}
+                                    </div>
+                                  </th>
+                                );
+                              case 'status':
+                                return (
+                                  <th 
+                                    key="status" 
+                                    onClick={() => handleSort('status')}
+                                    class={getThClass('status', isSorted)}
+                                    style={getThStyle('status')}
+                                    title={getSortTitle('Status')}
+                                  >
+                                    <div class="flex items-center gap-1.5">
+                                      <span>Status</span>
+                                      {renderSortIndicator()}
+                                    </div>
+                                  </th>
+                                );
+                              case 'priority':
+                                return (
+                                  <th 
+                                    key="priority" 
+                                    onClick={() => handleSort('priority')}
+                                    class={getThClass('priority', isSorted)}
+                                    style={getThStyle('priority')}
+                                    title={getSortTitle('Priority')}
+                                  >
+                                    <div class="flex items-center gap-1.5">
+                                      <span>Priority</span>
+                                      {renderSortIndicator()}
+                                    </div>
+                                  </th>
+                                );
+                              case 'followupDate':
+                                return (
+                                  <th 
+                                    key="followupDate" 
+                                    onClick={() => handleSort('followupDate')}
+                                    class={getThClass('followupDate', isSorted)}
+                                    style={getThStyle('followupDate')}
+                                    title={getSortTitle('Followup / Visit Date & Time')}
+                                  >
+                                    <div class="flex items-center gap-1.5">
+                                      <span>Followup / Visit</span>
+                                      {renderSortIndicator()}
+                                    </div>
+                                  </th>
+                                );
+                              case 'projectName':
+                                return (
+                                  <th 
+                                    key="projectName" 
+                                    onClick={() => handleSort('projectName')}
+                                    class={getThClass('projectName', isSorted)}
+                                    style={getThStyle('projectName')}
+                                    title={getSortTitle('Project Name')}
+                                  >
+                                    <div class="flex items-center gap-1.5">
+                                      <span>Project Name</span>
+                                      {renderSortIndicator()}
+                                    </div>
+                                  </th>
+                                );
+                              case 'projectType':
+                                return (
+                                  <th 
+                                    key="projectType" 
+                                    onClick={() => handleSort('projectType')}
+                                    class={getThClass('projectType', isSorted)}
+                                    style={getThStyle('projectType')}
+                                    title={getSortTitle('Project Type')}
+                                  >
+                                    <div class="flex items-center gap-1.5">
+                                      <span>Project Type</span>
+                                      {renderSortIndicator()}
+                                    </div>
+                                  </th>
+                                );
+                              case 'typography':
+                                return (
+                                  <th 
+                                    key="typography" 
+                                    onClick={() => handleSort('typography')}
+                                    class={getThClass('typography', isSorted)}
+                                    style={getThStyle('typography')}
+                                    title={getSortTitle('Typography')}
+                                  >
+                                    <div class="flex items-center gap-1.5">
+                                      <span>Typography</span>
+                                      {renderSortIndicator()}
+                                    </div>
+                                  </th>
+                                );
+                              case 'carpetArea':
+                                return (
+                                  <th 
+                                    key="carpetArea" 
+                                    onClick={() => handleSort('carpetArea')}
+                                    class={getThClass('carpetArea', isSorted, 'text-center')}
+                                    style={getThStyle('carpetArea')}
+                                    title={getSortTitle('Carpet Area')}
+                                  >
+                                    <div class="flex items-center justify-center gap-1.5">
+                                      <span>Carpet</span>
+                                      {renderSortIndicator()}
+                                    </div>
+                                  </th>
+                                );
+                              case 'budget':
+                                return (
+                                  <th 
+                                    key="budget" 
+                                    onClick={() => handleSort('budget')}
+                                    class={getThClass('budget', isSorted, 'text-center')}
+                                    style={getThStyle('budget')}
+                                    title={getSortTitle('Budget')}
+                                  >
+                                    <div class="flex items-center justify-center gap-1.5">
+                                      <span>Budget</span>
+                                      {renderSortIndicator()}
+                                    </div>
+                                  </th>
+                                );
+                              case 'plotsCount':
+                                return (
+                                  <th 
+                                    key="plotsCount" 
+                                    onClick={() => handleSort('plotsCount')}
+                                    class={getThClass('plotsCount', isSorted)}
+                                    style={getThStyle('plotsCount')}
+                                    title={getSortTitle('No. of Guntha')}
+                                  >
+                                    <div class="flex items-center gap-1.5">
+                                      <span>No. of Guntha</span>
+                                      {renderSortIndicator()}
+                                    </div>
+                                  </th>
+                                );
+                              case 'assignedAgent':
+                                return (
+                                  <th 
+                                    key="assignedAgent" 
+                                    onClick={() => handleSort('assignedAgent')}
+                                    class={getThClass('assignedAgent', isSorted)}
+                                    style={getThStyle('assignedAgent')}
+                                    title={getSortTitle('Assigned Agent')}
+                                  >
+                                    <div class="flex items-center gap-1.5">
+                                      <span>Assigned Agent</span>
+                                      {renderSortIndicator()}
+                                    </div>
+                                  </th>
+                                );
+                              case 'createdBy':
+                                return (
+                                  <th 
+                                    key="createdBy" 
+                                    onClick={() => handleSort('createdBy')}
+                                    class={getThClass('createdBy', isSorted)}
+                                    style={getThStyle('createdBy')}
+                                    title={getSortTitle('Created By')}
+                                  >
+                                    <div class="flex items-center gap-1.5">
+                                      <span>Created By</span>
+                                      {renderSortIndicator()}
+                                    </div>
+                                  </th>
+                                );
+                              case 'notes':
+                                return (
+                                  <th 
+                                    key="notes" 
+                                    class={`${isColPinned('notes') ? 'sticky top-0 z-30 bg-gray-100' : ''} border-b border-gray-200 py-2.5 px-2 text-center whitespace-nowrap w-[50px] min-w-[50px] max-w-[50px]`}
+                                    style={getThStyle('notes')}
+                                  >
+                                    Notes
+                                  </th>
+                                );
+                              case 'actions':
+                                return (
+                                  <th 
+                                    key="actions" 
+                                    class={`${isActionsPinned ? 'sticky top-0 right-0 z-30' : ''} bg-gray-100 border-b border-gray-200 py-2.5 px-2 text-center whitespace-nowrap w-[105px] min-w-[105px] max-w-[105px]`}
+                                    style={isActionsPinned ? { right: 0 } : undefined}
+                                  >
+                                    Actions
+                                  </th>
+                                );
+                              default:
+                                return null;
+                            }
+                          })}
+                        </tr>
+                      </thead>
                     <tbody class="divide-y divide-gray-100 text-[11.5px]">
                       {filteredEnquiries.map((item, idx) => {
                         const currentId = item._id || item.id || `lead-row-${idx}`;
@@ -4709,10 +4898,10 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                           <tr key={currentId} class={`group hover:bg-rose-50/20 transition ${selectedLeadIds.includes(currentId) ? 'bg-rose-50/40' : ''} ${hasActiveDropdownInRow ? 'relative z-50' : 'relative z-0'}`}>
                             {isAdmin && (
                               <td 
-                                class={`sticky left-0 z-20 py-2.5 px-2 text-center whitespace-nowrap w-[36px] min-w-[36px] max-w-[36px] transition-colors ${
+                                class={`${hasLeftPinnedColumn ? 'sticky left-0 z-20' : ''} py-2.5 px-2 text-center whitespace-nowrap w-[36px] min-w-[36px] max-w-[36px] transition-colors ${
                                   selectedLeadIds.includes(currentId) ? 'bg-[#FFF0F2]' : 'bg-white group-hover:bg-[#FFF5F6]'
                                 }`}
-                                style={{ left: 0 }}
+                                style={hasLeftPinnedColumn ? { left: 0 } : undefined}
                               >
                                 <input 
                                   type="checkbox"
@@ -4729,10 +4918,8 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   return (
                                     <td 
                                       key="leadId" 
-                                      class={`sticky z-20 py-2.5 px-2.5 whitespace-nowrap w-[76px] min-w-[76px] max-w-[76px] transition-colors ${
-                                        selectedLeadIds.includes(currentId) ? 'bg-[#FFF0F2]' : 'bg-white group-hover:bg-[#FFF5F6]'
-                                      }`}
-                                      style={{ left: `${leadIdLeft}px` }}
+                                      class={getTdClass('leadId', currentId)}
+                                      style={getTdStyle('leadId')}
                                     >
                                       <span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-rose-50 text-[#B30E2E] border border-rose-200/80 shadow-xs">
                                         {displayLeadId}
@@ -4743,10 +4930,8 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   return (
                                     <td 
                                       key="fullName" 
-                                      class={`sticky z-20 py-2.5 px-2.5 font-bold text-gray-800 whitespace-nowrap w-[160px] min-w-[160px] max-w-[160px] transition-colors ${
-                                        selectedLeadIds.includes(currentId) ? 'bg-[#FFF0F2]' : 'bg-white group-hover:bg-[#FFF5F6]'
-                                      }`}
-                                      style={{ left: `${fullNameLeft}px` }}
+                                      class={getTdClass('fullName', currentId, 'font-bold text-gray-800')}
+                                      style={getTdStyle('fullName')}
                                     >
                                       <div class="flex items-center gap-1.5 truncate max-w-[150px]">
                                         <div class="w-5 h-5 rounded-full bg-[#FCD6DC] text-[#B30E2E] font-bold text-[10px] flex items-center justify-center flex-shrink-0 border border-[#FCD6DC]">
@@ -4760,7 +4945,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   );
                                 case 'mobile':
                                   return (
-                                    <td key="mobile" class="py-2.5 px-2.5 whitespace-nowrap w-36 min-w-[135px] max-w-[140px]">
+                                    <td key="mobile" class={getTdClass('mobile', currentId)} style={getTdStyle('mobile')}>
                                       {item.phone ? (
                                         <div class="flex items-center gap-1.5 whitespace-nowrap">
                                           <a 
@@ -4808,7 +4993,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   );
                                 case 'email':
                                   return (
-                                    <td key="email" class="py-2.5 px-2.5 whitespace-nowrap w-40 min-w-[145px] max-w-[155px]">
+                                    <td key="email" class={getTdClass('email', currentId)} style={getTdStyle('email')}>
                                       {item.email ? (
                                         <a 
                                           href={`mailto:${item.email}`}
@@ -4825,7 +5010,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   );
                                 case 'enquiryDate':
                                   return (
-                                    <td key="enquiryDate" class="py-2.5 px-2.5 whitespace-nowrap w-36 min-w-[134px] max-w-[138px]">
+                                    <td key="enquiryDate" class={getTdClass('enquiryDate', currentId)} style={getTdStyle('enquiryDate')}>
                                       <div class="font-semibold text-gray-800 text-[10px] whitespace-nowrap">
                                         <i class="fa-regular fa-clock text-[8.5px] text-gray-400 mr-0.5"></i>
                                         {new Date(item.createdAt || Date.now()).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' })}
@@ -4843,7 +5028,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                     'Not Interested', 'Site Visit Scheduled', 'Site Visit Done', 'Won', 'Lost'
                                   ];
                                   return (
-                                    <td key="status" class={`py-2.5 px-2.5 whitespace-nowrap w-32 min-w-[120px] max-w-[125px] relative ${isStatusOpen ? 'z-50' : ''}`}>
+                                    <td key="status" class={getTdClass('status', currentId, `relative ${isStatusOpen ? '!z-50' : ''}`)} style={getTdStyle('status')}>
                                       <button
                                         type="button"
                                         onClick={(e) => toggleDropdown(e, currentId, 'status')}
@@ -4889,7 +5074,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   const rawPriority = item.priority;
                                   const currentPriority = (rawPriority === 'Cold' || rawPriority === 'Low') ? 'Cold' : 'Hot';
                                   return (
-                                    <td key="priority" class={`py-2.5 px-2.5 whitespace-nowrap w-24 min-w-[88px] max-w-[92px] relative ${isPriorityOpen ? 'z-50' : ''}`}>
+                                    <td key="priority" class={getTdClass('priority', currentId, `relative ${isPriorityOpen ? '!z-50' : ''}`)} style={getTdStyle('priority')}>
                                       <button
                                         type="button"
                                         onClick={(e) => toggleDropdown(e, currentId, 'priority')}
@@ -4938,7 +5123,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   const hasDateOrTime = !!formattedDate || !!formattedTime;
 
                                   return (
-                                    <td key="followupDate" class={`py-2.5 px-2.5 whitespace-nowrap w-36 min-w-[132px] max-w-[136px] relative ${isPickerOpen ? 'z-50' : ''}`}>
+                                    <td key="followupDate" class={getTdClass('followupDate', currentId, `relative ${isPickerOpen ? '!z-50' : ''}`)} style={getTdStyle('followupDate')}>
                                       <button
                                         type="button"
                                         onClick={(e) => toggleDropdown(e, currentId, 'dateTimePicker')}
@@ -4998,7 +5183,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   const currentProjName = matchedProject ? matchedProject.name : '';
 
                                   return (
-                                    <td key="projectName" class={`py-2.5 px-2.5 whitespace-nowrap w-36 min-w-[130px] max-w-[150px] relative ${isProjectOpen ? 'z-50' : ''}`}>
+                                    <td key="projectName" class={getTdClass('projectName', currentId, `relative ${isProjectOpen ? '!z-50' : ''}`)} style={getTdStyle('projectName')}>
                                       <button
                                         type="button"
                                         onClick={(e) => toggleDropdown(e, currentId, 'projectName')}
@@ -5072,7 +5257,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   const displayLabel = currentTypesList.length === 0 ? '—' : currentTypesList.join(', ');
 
                                   return (
-                                    <td key="projectType" class={`py-2 px-2.5 whitespace-nowrap w-40 min-w-[130px] max-w-[180px] relative ${isTypeOpen ? 'z-50' : ''}`}>
+                                    <td key="projectType" class={getTdClass('projectType', currentId, `py-2 relative ${isTypeOpen ? '!z-50' : ''}`)} style={getTdStyle('projectType')}>
                                       {currentTypesList.length > 0 ? (
                                         <button
                                           type="button"
@@ -5151,26 +5336,28 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   // Parse lead's own stored typography
                                   const rawLeadTypos = (item.typography || '').split(',').map(s => s.trim()).filter(Boolean);
 
-                                  // If matchedProject has configured typographies, and lead's typography was truncated (< projectTypos.length) or empty,
-                                  // prefer project's full typography list so all 41 items are displayed without any 255-character cutoff!
-                                  const typoList = matchedProject
-                                    ? (projectTypos.length > rawLeadTypos.length ? projectTypos : (rawLeadTypos.length > 0 ? rawLeadTypos : projectTypos))
-                                    : rawLeadTypos;
-
+                                  // If lead has stored typography, use that. If lead's typography is empty, use project's configured typographies.
+                                  const typoList = rawLeadTypos.length > 0 ? rawLeadTypos : projectTypos;
                                   const displayTypo = typoList.length === 0 ? '—' : typoList.join(', ');
 
                                   return (
-                                    <td key="typography" class={`py-2 px-2.5 whitespace-nowrap w-48 min-w-[140px] max-w-[210px] relative ${isTypoOpen ? 'z-50' : ''}`}>
+                                    <td key="typography" class={getTdClass('typography', currentId, `py-2 relative ${isTypoOpen ? '!z-50' : ''}`)} style={getTdStyle('typography')}>
                                       {typoList.length > 0 ? (
                                         <button
                                           type="button"
                                           onClick={(e) => toggleDropdown(e, currentId, 'typography')}
-                                          class="h-[27px] px-2.5 py-0.5 rounded-lg border border-indigo-200/90 text-[10.5px] font-bold bg-indigo-50/70 hover:bg-indigo-100/80 text-indigo-950 transition shadow-2xs flex items-center justify-between gap-1.5 w-full cursor-pointer select-none text-left custom-dropdown-toggle"
+                                          class="h-[27px] px-2 py-0.5 rounded-lg border border-indigo-200/90 text-[10.5px] font-bold bg-indigo-50/70 hover:bg-indigo-100/80 text-indigo-950 transition shadow-2xs flex items-center justify-between gap-1 w-full max-w-full cursor-pointer select-none text-left custom-dropdown-toggle overflow-hidden"
                                           title={typoList.join(', ')}
                                         >
-                                          <div class="flex items-center gap-1.5 min-w-0 flex-1 truncate">
-                                            <span class="truncate min-w-0">{displayTypo}</span>
+                                          <div class="flex items-center gap-1 min-w-0 flex-1 overflow-hidden">
+                                            <i class="fa-solid fa-shapes text-[8.5px] text-indigo-600 shrink-0"></i>
+                                            <span class="truncate min-w-0 flex-1 block">{displayTypo}</span>
                                           </div>
+                                          {typoList.length > 1 && (
+                                            <span class="text-[9px] font-bold text-indigo-700 bg-indigo-100/80 px-1 py-0.2 rounded shrink-0">
+                                              +{typoList.length - 1}
+                                            </span>
+                                          )}
                                           <i class={`fa-solid fa-chevron-down text-[8px] text-indigo-400 shrink-0 transition-transform ${isTypoOpen ? 'rotate-180 text-indigo-700' : ''}`}></i>
                                         </button>
                                       ) : (
@@ -5189,9 +5376,9 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                             style={{
                                               top: activeDropdown?.coords?.top != null ? `${activeDropdown.coords.top}px` : undefined,
                                               bottom: activeDropdown?.coords?.bottom != null ? `${activeDropdown.coords.bottom}px` : undefined,
-                                              left: activeDropdown?.coords ? `${activeDropdown.coords.left}px` : undefined,
-                                              width: activeDropdown?.coords ? `${Math.max(340, activeDropdown.coords.width)}px` : '340px',
-                                              maxHeight: activeDropdown?.coords?.maxHeight ? `${activeDropdown.coords.maxHeight}px` : '360px',
+                                              left: activeDropdown?.coords ? `${Math.min(window.innerWidth - 330, Math.max(10, activeDropdown.coords.left))}px` : undefined,
+                                              width: '320px',
+                                              maxHeight: activeDropdown?.coords?.maxHeight ? `${activeDropdown.coords.maxHeight}px` : '340px',
                                               transformOrigin: activeDropdown?.coords?.bottom != null ? 'bottom left' : 'top left'
                                             }}
                                             onClick={(e) => e.stopPropagation()}
@@ -5281,7 +5468,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                     displayCarpet = `${displayCarpet} sqft`;
                                   }
                                   return (
-                                    <td key="carpetArea" class="py-2.5 px-2.5 whitespace-nowrap w-28 min-w-[100px] max-w-[120px] text-center">
+                                    <td key="carpetArea" class={getTdClass('carpetArea', currentId, 'text-center')} style={getTdStyle('carpetArea')}>
                                       {displayCarpet ? (
                                         <span class="text-[11px] font-semibold text-gray-800 truncate block text-center" title={displayCarpet}>
                                           {displayCarpet}
@@ -5296,7 +5483,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 }
                                 case 'budget': {
                                   return (
-                                    <td key="budget" class="py-2.5 px-2.5 whitespace-nowrap w-28 min-w-[110px] max-w-[130px] text-center">
+                                    <td key="budget" class={getTdClass('budget', currentId, 'text-center')} style={getTdStyle('budget')}>
                                       {item.budget ? (
                                         <span class="text-[11px] font-bold text-gray-800 truncate block text-center" title={item.budget}>
                                           {item.budget}
@@ -5319,7 +5506,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   ];
 
                                   return (
-                                    <td key="plotsCount" class={`py-2.5 px-2.5 whitespace-nowrap w-28 min-w-[110px] max-w-[115px] relative ${isPlotsOpen ? 'z-50' : ''}`}>
+                                    <td key="plotsCount" class={getTdClass('plotsCount', currentId, `relative ${isPlotsOpen ? '!z-50' : ''}`)} style={getTdStyle('plotsCount')}>
                                       <div class="flex items-center gap-1 whitespace-nowrap">
                                         <button
                                           type="button"
@@ -5373,7 +5560,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   const currentAgent = item.assignedAgentName || (allAgents[0] ? allAgents[0].name : 'Unassigned');
 
                                   return (
-                                    <td key="assignedAgent" class={`py-2.5 px-2.5 whitespace-nowrap w-36 min-w-[136px] max-w-[140px] relative ${isAgentOpen ? 'z-50' : ''}`}>
+                                    <td key="assignedAgent" class={getTdClass('assignedAgent', currentId, `relative ${isAgentOpen ? '!z-50' : ''}`)} style={getTdStyle('assignedAgent')}>
                                       {isAdmin ? (
                                         <>
                                           <button
@@ -5434,7 +5621,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   const creator = item.createdBy || 'System';
                                   const isSystemCreated = creator.toLowerCase() === 'system' || ['super admin', 'system admin', 'admin', 'client'].includes(creator.toLowerCase());
                                   return (
-                                    <td key="createdBy" class="py-2.5 px-2.5 whitespace-nowrap w-28 min-w-[108px] max-w-[112px]">
+                                    <td key="createdBy" class={getTdClass('createdBy', currentId)} style={getTdStyle('createdBy')}>
                                       {isSystemCreated ? (
                                         <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-700 border border-gray-200 shadow-2xs">
                                           <i class="fa-solid fa-user text-[8.5px] text-gray-500"></i>
@@ -5451,7 +5638,11 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 }
                                 case 'notes':
                                   return (
-                                    <td key="notes" class="py-2.5 px-2 text-center whitespace-nowrap w-12 min-w-[50px] max-w-[50px]">
+                                    <td 
+                                      key="notes" 
+                                      class={`${isColPinned('notes') ? `sticky z-20 ${selectedLeadIds.includes(currentId) ? 'bg-[#FFF0F2]' : 'bg-white group-hover:bg-[#FFF5F6]'}` : ''} py-2.5 px-2 text-center whitespace-nowrap w-[50px] min-w-[50px] max-w-[50px] transition-colors`}
+                                      style={getTdStyle('notes')}
+                                    >
                                       <button 
                                         type="button"
                                         onClick={(e) => handleOpenNotePopover(e, item)}
@@ -5472,10 +5663,8 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   return (
                                     <td 
                                       key="actions" 
-                                      class={`sticky right-0 z-20 py-2.5 px-2 text-center whitespace-nowrap w-[105px] min-w-[105px] max-w-[105px] transition-colors ${
-                                        selectedLeadIds.includes(currentId) ? 'bg-[#FFF0F2]' : 'bg-white group-hover:bg-[#FFF5F6]'
-                                      }`}
-                                      style={{ right: 0 }}
+                                      class={`${isActionsPinned ? `sticky right-0 z-20 ${selectedLeadIds.includes(currentId) ? 'bg-[#FFF0F2]' : 'bg-white group-hover:bg-[#FFF5F6]'}` : ''} py-2.5 px-2 text-center whitespace-nowrap w-[105px] min-w-[105px] max-w-[105px] transition-colors`}
+                                      style={isActionsPinned ? { right: 0 } : undefined}
                                     >
                                       <div class="flex items-center justify-center gap-1">
                                         <button 
@@ -7421,17 +7610,28 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
         <div class="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-fade-in">
           <div class="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-lg overflow-hidden flex flex-col max-h-[85vh] animate-scale-up">
             {/* Modal Header */}
-            <div class="px-5 py-3.5 bg-slate-50 border-b border-gray-200 flex items-center justify-between">
+            <div class="px-5 py-3 bg-slate-50 border-b border-gray-200 flex items-center justify-between">
               <h3 class="font-bold text-slate-800 text-sm sm:text-base">Table Columns</h3>
               <div class="flex items-center gap-2">
                 <button
+                  type="button"
+                  onClick={unpinAllColumns}
+                  class="h-7 px-2 py-1 rounded-lg text-[11px] font-semibold text-slate-600 hover:bg-slate-100 border border-slate-200 transition cursor-pointer flex items-center gap-1 whitespace-nowrap"
+                  title="Unfreeze all columns"
+                >
+                  <i class="fa-solid fa-thumbtack text-[9.5px] text-slate-400"></i>
+                  <span>Unfreeze All</span>
+                </button>
+                <button
+                  type="button"
                   onClick={resetColumnConfig}
-                  class="px-2.5 py-1 rounded-lg text-xs font-semibold text-rose-700 hover:bg-rose-50 border border-rose-200 transition cursor-pointer"
+                  class="h-7 px-2.5 py-1 rounded-lg text-[11px] font-semibold text-rose-700 hover:bg-rose-50 border border-rose-200 transition cursor-pointer whitespace-nowrap flex items-center"
                   title="Reset to default columns"
                 >
                   Reset
                 </button>
                 <button
+                  type="button"
                   onClick={() => setShowColumnConfigModal(false)}
                   class="w-7 h-7 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center transition cursor-pointer"
                 >
@@ -7440,7 +7640,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
               </div>
             </div>
 
-            {/* Columns List with Drag & Drop + Arrows + Checkbox */}
+            {/* Columns List with Drag & Drop + Freeze Button + Arrows + Checkbox */}
             <div class="p-4 overflow-y-auto custom-scrollbar flex-1 space-y-2">
               {columnConfig.map((col, idx) => (
                 <div
@@ -7458,22 +7658,43 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                     col.visible ? 'bg-white border-gray-200 hover:border-purple-300' : 'bg-gray-50 border-gray-200 opacity-60'
                   }`}
                 >
-                  <div class="flex items-center gap-3">
+                  <div class="flex items-center gap-2.5 min-w-0">
                     <span class="cursor-grab active:cursor-grabbing text-slate-400 hover:text-slate-600 px-1">
                       <i class="fa-solid fa-grip-vertical text-xs"></i>
                     </span>
-                    <label class="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-800 select-none">
+                    <label class="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-800 select-none truncate">
                       <input
                         type="checkbox"
                         checked={col.visible}
                         onChange={() => toggleColumnVisibility(col.id)}
                         class="w-4 h-4 rounded text-[#B30E2E] focus:ring-[#B30E2E] cursor-pointer accent-[#B30E2E]"
                       />
-                      <span>{col.label}</span>
+                      <span class="truncate">{col.label}</span>
                     </label>
+                    {col.pinned && (
+                      <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9.5px] font-bold bg-blue-50 text-blue-700 border border-blue-200 shrink-0">
+                        <i class="fa-solid fa-thumbtack text-[8px] rotate-45"></i>
+                        <span>Frozen</span>
+                      </span>
+                    )}
                   </div>
 
-                  <div class="flex items-center gap-1">
+                  <div class="flex items-center gap-1.5 shrink-0">
+                    {/* Freeze / Pin Toggle Button */}
+                    <button
+                      type="button"
+                      onClick={() => toggleColumnPin(col.id)}
+                      class={`px-2 py-1 rounded-md text-[10.5px] font-semibold flex items-center gap-1 transition cursor-pointer border ${
+                        col.pinned 
+                          ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600 shadow-2xs' 
+                          : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200'
+                      }`}
+                      title={col.pinned ? 'Column is frozen. Click to unfreeze' : 'Click to freeze column while scrolling'}
+                    >
+                      <i class={`fa-solid fa-thumbtack text-[9px] ${col.pinned ? 'rotate-45' : ''}`}></i>
+                      <span>{col.pinned ? 'Frozen' : 'Freeze'}</span>
+                    </button>
+
                     <button
                       disabled={idx === 0}
                       onClick={() => moveColumn(idx, idx - 1)}
@@ -7498,8 +7719,9 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
             {/* Modal Footer */}
             <div class="px-5 py-3 bg-slate-50 border-t border-gray-200 flex items-center justify-end">
               <button
+                type="button"
                 onClick={() => setShowColumnConfigModal(false)}
-                class="px-4 py-1.5 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B2E] text-white text-xs font-bold transition shadow-xs cursor-pointer"
+                class="px-5 py-1.5 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B2E] text-white text-xs font-bold transition shadow-xs cursor-pointer"
               >
                 Done
               </button>

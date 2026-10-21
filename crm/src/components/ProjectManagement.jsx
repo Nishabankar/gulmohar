@@ -780,16 +780,10 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
             <table className="w-full min-w-full text-left border-collapse">
               <thead className="sticky top-0 z-10 bg-gray-100 shadow-2xs">
                 <tr className="bg-gray-100 border-b border-gray-200 text-[10px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">
-                  <th 
-                    className="sticky top-0 left-0 z-30 bg-gray-100 border-b border-gray-200 py-2.5 px-3 text-center whitespace-nowrap w-14 min-w-[56px] max-w-[56px]"
-                    style={{ left: 0 }}
-                  >
+                  <th className="py-2.5 px-3 text-center whitespace-nowrap w-14 min-w-[56px] max-w-[56px]">
                     # ID
                   </th>
-                  <th 
-                    className="sticky top-0 z-30 bg-gray-100 border-b border-gray-200 py-2.5 px-3 whitespace-nowrap min-w-[150px] max-w-[160px]"
-                    style={{ left: '56px' }}
-                  >
+                  <th className="py-2.5 px-3 whitespace-nowrap min-w-[150px] max-w-[160px]">
                     Project Name
                   </th>
                   <th className="py-2.5 px-3 whitespace-nowrap min-w-[130px]">Developer</th>
@@ -798,10 +792,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                   <th className="py-2.5 px-3 whitespace-nowrap min-w-[120px]">RERA No</th>
                   <th className="py-2.5 px-3 whitespace-nowrap min-w-[170px]">Area / Address</th>
                   {canManage && (
-                    <th 
-                      className="sticky top-0 right-0 z-30 bg-gray-100 border-b border-gray-200 py-2.5 px-3 text-center whitespace-nowrap w-20 min-w-[80px] max-w-[80px]"
-                      style={{ right: 0 }}
-                    >
+                    <th className="py-2.5 px-3 text-center whitespace-nowrap w-20 min-w-[80px] max-w-[80px]">
                       Actions
                     </th>
                   )}
@@ -820,18 +811,12 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                       className="hover:bg-slate-50/80 transition group"
                     >
                       {/* ID */}
-                      <td 
-                        className="sticky left-0 z-20 py-2.5 px-3 text-center text-gray-400 font-mono text-[10.5px] bg-white group-hover:bg-slate-50 transition-colors w-14 min-w-[56px] max-w-[56px]"
-                        style={{ left: 0 }}
-                      >
+                      <td className="py-2.5 px-3 text-center text-gray-400 font-mono text-[10.5px] w-14 min-w-[56px] max-w-[56px]">
                         #{project.id || idx + 1}
                       </td>
 
                       {/* Project Name */}
-                      <td 
-                        className="sticky z-20 py-2.5 px-3 font-bold text-gray-900 whitespace-nowrap bg-white group-hover:bg-slate-50 transition-colors min-w-[150px] max-w-[160px]"
-                        style={{ left: '56px' }}
-                      >
+                      <td className="py-2.5 px-3 font-bold text-gray-900 whitespace-nowrap min-w-[150px] max-w-[160px]">
                         <span className="hover:text-[#B30E2E] transition-colors">
                           {project.name}
                         </span>
@@ -1009,10 +994,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
 
                       {/* Actions */}
                       {canManage && (
-                        <td 
-                          className="sticky right-0 z-20 py-2.5 px-3 text-center whitespace-nowrap bg-white group-hover:bg-slate-50 transition-colors w-20 min-w-[80px] max-w-[80px]"
-                          style={{ right: 0 }}
-                        >
+                        <td className="py-2.5 px-3 text-center whitespace-nowrap w-20 min-w-[80px] max-w-[80px]">
                           <div className="flex items-center justify-center gap-1.5">
                             {/* Edit Button */}
                             <button

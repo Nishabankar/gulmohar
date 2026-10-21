@@ -3219,16 +3219,18 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
           maxHeight = Math.min(targetHeight, Math.max(140, spaceAbove));
         }
       } else {
-        // In modals (Edit Lead / New Lead), open upwards for bottom fields to avoid bottom taskbar clipping
-        const isModalBottomField = (rowId === 'edit-modal' || rowId === 'new-lead-modal') && field !== 'budget';
-        if (isModalBottomField && spaceAbove >= targetHeight) {
-          top = Math.max(8, rect.top - targetHeight - 4);
+        const isModal = (rowId === 'edit-modal' || rowId === 'new-lead-modal');
+        // In modals or tight screens: if space below is limited or space above is larger, open upwards
+        const shouldOpenUpwards = (isModal && (spaceBelow < targetHeight || (spaceAbove >= 180 && spaceBelow < 280))) 
+          || (spaceBelow < targetHeight && spaceAbove >= targetHeight);
+
+        if (shouldOpenUpwards && spaceAbove >= 130) {
+          maxHeight = Math.min(targetHeight, Math.max(120, spaceAbove));
+          top = Math.max(8, rect.top - maxHeight - 4);
         } else if (spaceBelow >= targetHeight) {
           // Plenty of space below: open downwards
+          maxHeight = Math.min(targetHeight, Math.max(140, spaceBelow));
           top = rect.bottom + 4;
-        } else if (spaceAbove >= targetHeight) {
-          // Not enough space below: open upwards from the button
-          top = Math.max(8, rect.top - targetHeight - 4);
         } else {
           // In tight viewport spaces: pick the side with more space and clamp maxHeight
           if (spaceBelow >= spaceAbove) {
@@ -3240,11 +3242,16 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
           }
         }
 
-        // GUARANTEE: Never let top + targetHeight overflow the bottom of the viewport!
-        if (top + targetHeight > window.innerHeight - 12) {
-          top = Math.max(8, window.innerHeight - targetHeight - 12);
+        // GUARANTEE: Never let top + maxHeight overflow the bottom of the viewport!
+        if (top + maxHeight > window.innerHeight - 12) {
+          top = Math.max(8, window.innerHeight - maxHeight - 12);
         }
         if (top < 8) top = 8;
+      }
+
+      // Keep dropdown width responsive within viewport
+      if (dropdownWidth > window.innerWidth - 16) {
+        dropdownWidth = window.innerWidth - 16;
       }
 
       // Horizontally align with the clicked button, keeping within viewport
@@ -6630,6 +6637,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                             top: activeDropdown?.coords ? `${activeDropdown.coords.top}px` : undefined,
                             left: activeDropdown?.coords ? `${activeDropdown.coords.left}px` : undefined,
                             width: activeDropdown?.coords ? `${activeDropdown.coords.width}px` : '240px',
+                            maxHeight: activeDropdown?.coords?.maxHeight ? `${activeDropdown.coords.maxHeight}px` : '260px',
                           }}
                         >
                           {/* Manual Input Field for Custom Budget */}
@@ -6641,7 +6649,6 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                               <div class="relative flex-1">
                                 <input
                                   type="text"
-                                  autoFocus
                                   value={editingEnquiry.budget || ''}
                                   onChange={(e) => setEditingEnquiry({ ...editingEnquiry, budget: e.target.value })}
                                   onKeyDown={(e) => {
@@ -6681,7 +6688,14 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                             </div>
                           </div>
 
-                          <div class="max-h-52 overflow-y-auto custom-scrollbar overscroll-contain py-1">
+                          <div 
+                            class="overflow-y-auto custom-scrollbar overscroll-contain py-1 flex-1 min-h-0"
+                            style={{
+                              maxHeight: activeDropdown?.coords?.maxHeight 
+                                ? `${Math.max(90, activeDropdown.coords.maxHeight - 50)}px` 
+                                : '208px'
+                            }}
+                          >
                             <button
                               type="button"
                               onClick={() => {
@@ -7237,6 +7251,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                             top: activeDropdown?.coords ? `${activeDropdown.coords.top}px` : undefined,
                             left: activeDropdown?.coords ? `${activeDropdown.coords.left}px` : undefined,
                             width: activeDropdown?.coords ? `${activeDropdown.coords.width}px` : '240px',
+                            maxHeight: activeDropdown?.coords?.maxHeight ? `${activeDropdown.coords.maxHeight}px` : '260px',
                           }}
                         >
                           {/* Manual Input Field for Custom Budget */}
@@ -7248,7 +7263,6 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                               <div class="relative flex-1">
                                 <input
                                   type="text"
-                                  autoFocus
                                   value={newLeadFormData.budget || ''}
                                   onChange={(e) => setNewLeadFormData({ ...newLeadFormData, budget: e.target.value })}
                                   onKeyDown={(e) => {
@@ -7288,7 +7302,14 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                             </div>
                           </div>
 
-                          <div class="max-h-52 overflow-y-auto custom-scrollbar overscroll-contain py-1">
+                          <div 
+                            class="overflow-y-auto custom-scrollbar overscroll-contain py-1 flex-1 min-h-0"
+                            style={{
+                              maxHeight: activeDropdown?.coords?.maxHeight 
+                                ? `${Math.max(90, activeDropdown.coords.maxHeight - 50)}px` 
+                                : '208px'
+                            }}
+                          >
                             <button
                               type="button"
                               onClick={() => {

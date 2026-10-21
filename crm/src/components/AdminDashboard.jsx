@@ -3206,8 +3206,9 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
         targetHeight = 180;
         dropdownWidth = Math.max(220, rect.width);
       } else if (field === 'typography') {
-        targetHeight = 360;
-        dropdownWidth = Math.max(340, rect.width);
+        const isModal = (rowId === 'edit-modal' || rowId === 'new-lead-modal');
+        targetHeight = isModal ? 260 : 360;
+        dropdownWidth = isModal ? Math.max(260, rect.width) : Math.max(340, rect.width);
       } else if (field === 'budget') {
         targetHeight = 250;
         dropdownWidth = Math.max(240, rect.width);
@@ -3220,15 +3221,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       let bottom;
       let maxHeight = targetHeight;
 
-      if (field === 'typography') {
-        if (spaceBelow >= 240 || spaceBelow >= spaceAbove) {
-          top = rect.bottom + 4;
-          maxHeight = Math.min(targetHeight, Math.max(140, spaceBelow));
-        } else {
-          bottom = window.innerHeight - rect.top + 4;
-          maxHeight = Math.min(targetHeight, Math.max(140, spaceAbove));
-        }
-      } else {
+      {
         const isModal = (rowId === 'edit-modal' || rowId === 'new-lead-modal');
         // In modals or tight screens: if space below is limited or space above is larger, open upwards
         const shouldOpenUpwards = (isModal && (spaceBelow < targetHeight || (spaceAbove >= 180 && spaceBelow < 280))) 
@@ -6496,13 +6489,189 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1">Typography</label>
-                    <input
-                      type="text"
-                      value={editingEnquiry.typography || ''}
-                      onChange={(e) => setEditingEnquiry({ ...editingEnquiry, typography: e.target.value })}
-                      placeholder="Select project to autofill or enter typography"
-                      class="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800 bg-white"
-                    />
+                    <div class="relative w-full">
+                      <button
+                        type="button"
+                        onClick={(e) => toggleDropdown(e, 'edit-modal', 'typography')}
+                        class={`w-full h-[38px] px-3 py-2 rounded-xl border text-xs flex items-center justify-between cursor-pointer transition custom-dropdown-toggle bg-white ${
+                          activeDropdown?.rowId === 'edit-modal' && activeDropdown?.field === 'typography'
+                            ? 'border-[#B30E2E] ring-1 ring-[#FCD6DC]'
+                            : 'border-gray-300 hover:border-gray-400'
+                        }`}
+                      >
+                        <span class={editingEnquiry.typography ? 'font-semibold text-gray-800 truncate' : 'text-gray-400 truncate'}>
+                          {editingEnquiry.typography || 'Select Typography'}
+                        </span>
+                        <i class={`fa-solid fa-chevron-down text-[10px] text-gray-400 transition-transform shrink-0 ${
+                          activeDropdown?.rowId === 'edit-modal' && activeDropdown?.field === 'typography' ? 'rotate-180 text-[#B30E2E]' : ''
+                        }`}></i>
+                      </button>
+
+                      {activeDropdown?.rowId === 'edit-modal' && activeDropdown?.field === 'typography' && (() => {
+                        const currentProjName = editingEnquiry.projectName || '';
+                        const matchedProj = (projectsList || []).find(p => (p.name || '').trim().toLowerCase() === currentProjName.trim().toLowerCase());
+                        let availableTypos = [];
+                        if (matchedProj) {
+                          let pt = matchedProj.typography;
+                          if (typeof pt === 'string') {
+                            try { pt = JSON.parse(pt); } catch (e) { pt = pt.split(',').map(s => s.trim()).filter(Boolean); }
+                          }
+                          if (Array.isArray(pt)) availableTypos = pt;
+                        }
+                        if (availableTypos.length === 0) {
+                          Object.values(PROJECT_TYPOGRAPHY_MAP).forEach(list => {
+                            list.forEach(item => {
+                              if (!availableTypos.includes(item) && !item.includes('Flat') && !item.includes('Villa')) {
+                                availableTypos.push(item);
+                              }
+                            });
+                          });
+                        }
+
+                        const selectedTypos = (editingEnquiry.typography || '').split(',').map(s => s.trim()).filter(Boolean);
+                        const query = tableTypoFilter.trim().toLowerCase();
+                        const filteredTypos = query 
+                          ? availableTypos.filter(t => t.toLowerCase().includes(query))
+                          : availableTypos;
+
+                        return (
+                          <div
+                            class="fixed z-[9999] bg-white rounded-xl shadow-2xl border border-gray-200 py-1 text-xs animate-fade-in custom-dropdown-menu overflow-hidden flex flex-col"
+                            style={{
+                              top: activeDropdown?.coords ? `${activeDropdown.coords.top}px` : undefined,
+                              left: activeDropdown?.coords ? `${activeDropdown.coords.left}px` : undefined,
+                              width: activeDropdown?.coords ? `${activeDropdown.coords.width}px` : '260px',
+                              maxHeight: activeDropdown?.coords?.maxHeight ? `${activeDropdown.coords.maxHeight}px` : '260px',
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {/* Search Bar & Select All */}
+                            <div class="p-2 border-b border-gray-100 bg-gray-50 flex-shrink-0 space-y-1.5">
+                              <div class="relative flex items-center">
+                                <i class="fa-solid fa-magnifying-glass text-gray-400 text-[10px] absolute left-2.5 pointer-events-none"></i>
+                                <input
+                                  type="text"
+                                  value={tableTypoFilter}
+                                  onChange={(e) => setTableTypoFilter(e.target.value)}
+                                  placeholder="Search typography..."
+                                  class="w-full pl-7 pr-6 py-1 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#B30E2E] transition"
+                                />
+                                {tableTypoFilter && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setTableTypoFilter('')}
+                                    class="absolute right-2 text-gray-400 hover:text-gray-600 text-[10px] w-4 h-4 flex items-center justify-center cursor-pointer"
+                                  >
+                                    <i class="fa-solid fa-xmark"></i>
+                                  </button>
+                                )}
+                              </div>
+
+                              <div class="flex items-center justify-between px-0.5">
+                                <span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                                  {selectedTypos.length} of {availableTypos.length} selected
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const isAll = availableTypos.length > 0 && availableTypos.every(t => selectedTypos.some(st => st.toLowerCase() === t.toLowerCase()));
+                                    setEditingEnquiry({
+                                      ...editingEnquiry,
+                                      typography: isAll ? '' : availableTypos.join(', ')
+                                    });
+                                  }}
+                                  class="text-[10.5px] font-bold text-[#B30E2E] hover:underline cursor-pointer"
+                                >
+                                  {availableTypos.length > 0 && availableTypos.every(t => selectedTypos.some(st => st.toLowerCase() === t.toLowerCase())) ? 'Deselect All' : 'Select All'}
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Options List */}
+                            <div 
+                              class="overflow-y-auto custom-scrollbar overscroll-contain py-1 flex-1 min-h-0 divide-y divide-gray-50"
+                              style={{
+                                maxHeight: activeDropdown?.coords?.maxHeight 
+                                  ? `${Math.max(90, activeDropdown.coords.maxHeight - 85)}px` 
+                                  : '175px'
+                              }}
+                            >
+                              {filteredTypos.length === 0 ? (
+                                <div class="py-4 px-3 text-center">
+                                  <p class="text-xs font-semibold text-gray-600">No matching typography</p>
+                                  {query && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const next = [...selectedTypos, tableTypoFilter.trim()];
+                                        setEditingEnquiry({ ...editingEnquiry, typography: next.join(', ') });
+                                        setTableTypoFilter('');
+                                      }}
+                                      class="mt-1.5 px-2.5 py-1 text-[11px] font-bold bg-[#B30E2E] text-white rounded-lg hover:bg-[#8A0B22] cursor-pointer inline-flex items-center gap-1"
+                                    >
+                                      <i class="fa-solid fa-plus text-[9px]"></i>
+                                      <span>Add "{tableTypoFilter.trim()}"</span>
+                                    </button>
+                                  )}
+                                </div>
+                              ) : (
+                                filteredTypos.map((item) => {
+                                  const isChecked = selectedTypos.some(t => t.toLowerCase() === item.toLowerCase());
+                                  return (
+                                    <button
+                                      key={item}
+                                      type="button"
+                                      onClick={() => {
+                                        let next;
+                                        if (isChecked) {
+                                          next = selectedTypos.filter(t => t.toLowerCase() !== item.toLowerCase());
+                                        } else {
+                                          next = [...selectedTypos, item];
+                                        }
+                                        setEditingEnquiry({
+                                          ...editingEnquiry,
+                                          typography: next.join(', ')
+                                        });
+                                      }}
+                                      class={`w-full px-3 py-1.5 text-left text-xs font-semibold flex items-center justify-between hover:bg-rose-50 transition cursor-pointer ${
+                                        isChecked ? 'bg-[#FFF0F2] text-[#B30E2E] font-bold' : 'text-gray-700'
+                                      }`}
+                                    >
+                                      <span class="flex items-center gap-2 truncate">
+                                        <span class={`w-3.5 h-3.5 rounded flex items-center justify-center border transition shrink-0 ${
+                                          isChecked ? 'bg-[#B30E2E] border-[#B30E2E] text-white' : 'bg-white border-gray-300'
+                                        }`}>
+                                          {isChecked && <i class="fa-solid fa-check text-[8px]"></i>}
+                                        </span>
+                                        <span class="truncate">{item}</span>
+                                      </span>
+                                    </button>
+                                  );
+                                })
+                              )}
+                            </div>
+
+                            {/* Footer Bar */}
+                            <div class="px-2.5 py-1.5 border-t border-gray-100 bg-gray-50 flex items-center justify-between shrink-0">
+                              <span class="text-[11px] font-semibold text-gray-500">
+                                {selectedTypos.length} selected
+                              </span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveDropdown(null);
+                                  setTableTypoFilter('');
+                                }}
+                                class="px-3 py-1 bg-[#B30E2E] hover:bg-[#8A0B22] text-white text-[11px] font-bold rounded-lg transition cursor-pointer shadow-xs"
+                              >
+                                Done
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
                   </div>
                 </div>
 
@@ -7110,13 +7279,189 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1">Typography</label>
-                    <input
-                      type="text"
-                      value={newLeadFormData.typography || ''}
-                      onChange={(e) => setNewLeadFormData({ ...newLeadFormData, typography: e.target.value })}
-                      placeholder="Select project to autofill or enter typography"
-                      class="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800 bg-white"
-                    />
+                    <div class="relative w-full">
+                      <button
+                        type="button"
+                        onClick={(e) => toggleDropdown(e, 'new-lead-modal', 'typography')}
+                        class={`w-full h-[38px] px-3 py-2 rounded-xl border text-xs flex items-center justify-between cursor-pointer transition custom-dropdown-toggle bg-white ${
+                          activeDropdown?.rowId === 'new-lead-modal' && activeDropdown?.field === 'typography'
+                            ? 'border-[#B30E2E] ring-1 ring-[#FCD6DC]'
+                            : 'border-gray-300 hover:border-gray-400'
+                        }`}
+                      >
+                        <span class={newLeadFormData.typography ? 'font-semibold text-gray-800 truncate' : 'text-gray-400 truncate'}>
+                          {newLeadFormData.typography || 'Select Typography'}
+                        </span>
+                        <i class={`fa-solid fa-chevron-down text-[10px] text-gray-400 transition-transform shrink-0 ${
+                          activeDropdown?.rowId === 'new-lead-modal' && activeDropdown?.field === 'typography' ? 'rotate-180 text-[#B30E2E]' : ''
+                        }`}></i>
+                      </button>
+
+                      {activeDropdown?.rowId === 'new-lead-modal' && activeDropdown?.field === 'typography' && (() => {
+                        const currentProjName = newLeadFormData.projectName || '';
+                        const matchedProj = (projectsList || []).find(p => (p.name || '').trim().toLowerCase() === currentProjName.trim().toLowerCase());
+                        let availableTypos = [];
+                        if (matchedProj) {
+                          let pt = matchedProj.typography;
+                          if (typeof pt === 'string') {
+                            try { pt = JSON.parse(pt); } catch (e) { pt = pt.split(',').map(s => s.trim()).filter(Boolean); }
+                          }
+                          if (Array.isArray(pt)) availableTypos = pt;
+                        }
+                        if (availableTypos.length === 0) {
+                          Object.values(PROJECT_TYPOGRAPHY_MAP).forEach(list => {
+                            list.forEach(item => {
+                              if (!availableTypos.includes(item) && !item.includes('Flat') && !item.includes('Villa')) {
+                                availableTypos.push(item);
+                              }
+                            });
+                          });
+                        }
+
+                        const selectedTypos = (newLeadFormData.typography || '').split(',').map(s => s.trim()).filter(Boolean);
+                        const query = tableTypoFilter.trim().toLowerCase();
+                        const filteredTypos = query 
+                          ? availableTypos.filter(t => t.toLowerCase().includes(query))
+                          : availableTypos;
+
+                        return (
+                          <div
+                            class="fixed z-[9999] bg-white rounded-xl shadow-2xl border border-gray-200 py-1 text-xs animate-fade-in custom-dropdown-menu overflow-hidden flex flex-col"
+                            style={{
+                              top: activeDropdown?.coords ? `${activeDropdown.coords.top}px` : undefined,
+                              left: activeDropdown?.coords ? `${activeDropdown.coords.left}px` : undefined,
+                              width: activeDropdown?.coords ? `${activeDropdown.coords.width}px` : '260px',
+                              maxHeight: activeDropdown?.coords?.maxHeight ? `${activeDropdown.coords.maxHeight}px` : '260px',
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {/* Search Bar & Select All */}
+                            <div class="p-2 border-b border-gray-100 bg-gray-50 flex-shrink-0 space-y-1.5">
+                              <div class="relative flex items-center">
+                                <i class="fa-solid fa-magnifying-glass text-gray-400 text-[10px] absolute left-2.5 pointer-events-none"></i>
+                                <input
+                                  type="text"
+                                  value={tableTypoFilter}
+                                  onChange={(e) => setTableTypoFilter(e.target.value)}
+                                  placeholder="Search typography..."
+                                  class="w-full pl-7 pr-6 py-1 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#B30E2E] transition"
+                                />
+                                {tableTypoFilter && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setTableTypoFilter('')}
+                                    class="absolute right-2 text-gray-400 hover:text-gray-600 text-[10px] w-4 h-4 flex items-center justify-center cursor-pointer"
+                                  >
+                                    <i class="fa-solid fa-xmark"></i>
+                                  </button>
+                                )}
+                              </div>
+
+                              <div class="flex items-center justify-between px-0.5">
+                                <span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                                  {selectedTypos.length} of {availableTypos.length} selected
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const isAll = availableTypos.length > 0 && availableTypos.every(t => selectedTypos.some(st => st.toLowerCase() === t.toLowerCase()));
+                                    setNewLeadFormData({
+                                      ...newLeadFormData,
+                                      typography: isAll ? '' : availableTypos.join(', ')
+                                    });
+                                  }}
+                                  class="text-[10.5px] font-bold text-[#B30E2E] hover:underline cursor-pointer"
+                                >
+                                  {availableTypos.length > 0 && availableTypos.every(t => selectedTypos.some(st => st.toLowerCase() === t.toLowerCase())) ? 'Deselect All' : 'Select All'}
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Options List */}
+                            <div 
+                              class="overflow-y-auto custom-scrollbar overscroll-contain py-1 flex-1 min-h-0 divide-y divide-gray-50"
+                              style={{
+                                maxHeight: activeDropdown?.coords?.maxHeight 
+                                  ? `${Math.max(90, activeDropdown.coords.maxHeight - 85)}px` 
+                                  : '175px'
+                              }}
+                            >
+                              {filteredTypos.length === 0 ? (
+                                <div class="py-4 px-3 text-center">
+                                  <p class="text-xs font-semibold text-gray-600">No matching typography</p>
+                                  {query && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const next = [...selectedTypos, tableTypoFilter.trim()];
+                                        setNewLeadFormData({ ...newLeadFormData, typography: next.join(', ') });
+                                        setTableTypoFilter('');
+                                      }}
+                                      class="mt-1.5 px-2.5 py-1 text-[11px] font-bold bg-[#B30E2E] text-white rounded-lg hover:bg-[#8A0B22] cursor-pointer inline-flex items-center gap-1"
+                                    >
+                                      <i class="fa-solid fa-plus text-[9px]"></i>
+                                      <span>Add "{tableTypoFilter.trim()}"</span>
+                                    </button>
+                                  )}
+                                </div>
+                              ) : (
+                                filteredTypos.map((item) => {
+                                  const isChecked = selectedTypos.some(t => t.toLowerCase() === item.toLowerCase());
+                                  return (
+                                    <button
+                                      key={item}
+                                      type="button"
+                                      onClick={() => {
+                                        let next;
+                                        if (isChecked) {
+                                          next = selectedTypos.filter(t => t.toLowerCase() !== item.toLowerCase());
+                                        } else {
+                                          next = [...selectedTypos, item];
+                                        }
+                                        setNewLeadFormData({
+                                          ...newLeadFormData,
+                                          typography: next.join(', ')
+                                        });
+                                      }}
+                                      class={`w-full px-3 py-1.5 text-left text-xs font-semibold flex items-center justify-between hover:bg-rose-50 transition cursor-pointer ${
+                                        isChecked ? 'bg-[#FFF0F2] text-[#B30E2E] font-bold' : 'text-gray-700'
+                                      }`}
+                                    >
+                                      <span class="flex items-center gap-2 truncate">
+                                        <span class={`w-3.5 h-3.5 rounded flex items-center justify-center border transition shrink-0 ${
+                                          isChecked ? 'bg-[#B30E2E] border-[#B30E2E] text-white' : 'bg-white border-gray-300'
+                                        }`}>
+                                          {isChecked && <i class="fa-solid fa-check text-[8px]"></i>}
+                                        </span>
+                                        <span class="truncate">{item}</span>
+                                      </span>
+                                    </button>
+                                  );
+                                })
+                              )}
+                            </div>
+
+                            {/* Footer Bar */}
+                            <div class="px-2.5 py-1.5 border-t border-gray-100 bg-gray-50 flex items-center justify-between shrink-0">
+                              <span class="text-[11px] font-semibold text-gray-500">
+                                {selectedTypos.length} selected
+                              </span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveDropdown(null);
+                                  setTableTypoFilter('');
+                                }}
+                                class="px-3 py-1 bg-[#B30E2E] hover:bg-[#8A0B22] text-white text-[11px] font-bold rounded-lg transition cursor-pointer shadow-xs"
+                              >
+                                Done
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
                   </div>
                 </div>
 

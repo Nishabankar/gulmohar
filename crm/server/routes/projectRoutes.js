@@ -270,6 +270,7 @@ router.put('/:id', protectAdmin, async (req, res) => {
 // @access  Protected (SuperAdmin, Admin, SystemAdmin)
 router.delete('/:id', protectAdmin, async (req, res) => {
   try {
+    const { id } = req.params;
     const [existing] = await query('SELECT id, name FROM projects WHERE id = ? LIMIT 1', [id]);
     if (!existing || existing.length === 0) {
       return res.status(404).json({ success: false, message: 'Project not found.' });

@@ -246,8 +246,10 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
     let top;
     let maxHeight = dropdownHeight;
 
-    // If space below is limited, open UPWARDS in front of modal content
-    if (spaceBelow < (isMobile ? 180 : 240) && spaceAbove > spaceBelow) {
+    // In mobile view or when space below is limited: OPEN UPWARDS ("upper ki side")
+    const shouldOpenUpwards = (isMobile && spaceAbove >= 140) || (spaceBelow < 260 && spaceAbove > spaceBelow);
+
+    if (shouldOpenUpwards) {
       maxHeight = Math.min(dropdownHeight, Math.max(140, spaceAbove));
       top = Math.max(8, rect.top - maxHeight - 4);
     } else {

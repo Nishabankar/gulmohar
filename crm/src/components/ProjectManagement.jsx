@@ -24,66 +24,66 @@ export const APARTMENT_TYPOGRAPHY_GROUPS = [
   },
   {
     group: '1 BHK',
-    items: ['1 BHK Flat', '1 BHK Duplex', '1 BHK Penthouse']
+    items: ['1 BHK', '1 BHK Duplex', '1 BHK Penthouse', '1 BHK Garden']
   },
   {
     group: '1.5 BHK',
-    items: ['1.5 BHK Flat', '1.5 BHK Duplex', '1.5 BHK Penthouse']
+    items: ['1.5 BHK', '1.5 BHK Duplex', '1.5 BHK Penthouse', '1.5 BHK Garden']
   },
   {
     group: '2 BHK',
-    items: ['2 BHK Flat', '2 BHK Duplex', '2 BHK Penthouse']
+    items: ['2 BHK', '2 BHK Duplex', '2 BHK Penthouse', '2 BHK Garden']
   },
   {
     group: '2.5 BHK',
-    items: ['2.5 BHK Flat', '2.5 BHK Duplex', '2.5 BHK Penthouse']
+    items: ['2.5 BHK', '2.5 BHK Duplex', '2.5 BHK Penthouse', '2.5 BHK Garden']
   },
   {
     group: '3 BHK',
-    items: ['3 BHK Flat', '3 BHK Duplex', '3 BHK Penthouse']
+    items: ['3 BHK', '3 BHK Duplex', '3 BHK Penthouse', '3 BHK Garden']
   },
   {
     group: '3.5 BHK',
-    items: ['3.5 BHK Flat', '3.5 BHK Duplex', '3.5 BHK Penthouse']
+    items: ['3.5 BHK', '3.5 BHK Duplex', '3.5 BHK Penthouse', '3.5 BHK Garden']
   },
   {
     group: '4 BHK',
-    items: ['4 BHK Flat', '4 BHK Duplex', '4 BHK Penthouse']
+    items: ['4 BHK', '4 BHK Duplex', '4 BHK Penthouse', '4 BHK Garden']
   },
   {
     group: '4.5 BHK',
-    items: ['4.5 BHK Flat', '4.5 BHK Duplex', '4.5 BHK Penthouse']
+    items: ['4.5 BHK', '4.5 BHK Duplex', '4.5 BHK Penthouse', '4.5 BHK Garden']
   },
   {
     group: '5 BHK',
-    items: ['5 BHK Flat', '5 BHK Duplex', '5 BHK Penthouse']
+    items: ['5 BHK', '5 BHK Duplex', '5 BHK Penthouse', '5 BHK Garden']
   }
 ];
 
 export const TYPOGRAPHY_BY_TYPE = {
   Apartment: [
     'Studio Apartment',
-    '1 BHK Flat', '1 BHK Duplex', '1 BHK Penthouse',
-    '1.5 BHK Flat', '1.5 BHK Duplex', '1.5 BHK Penthouse',
-    '2 BHK Flat', '2 BHK Duplex', '2 BHK Penthouse',
-    '2.5 BHK Flat', '2.5 BHK Duplex', '2.5 BHK Penthouse',
-    '3 BHK Flat', '3 BHK Duplex', '3 BHK Penthouse',
-    '3.5 BHK Flat', '3.5 BHK Duplex', '3.5 BHK Penthouse',
-    '4 BHK Flat', '4 BHK Duplex', '4 BHK Penthouse',
-    '4.5 BHK Flat', '4.5 BHK Duplex', '4.5 BHK Penthouse',
-    '5 BHK Flat', '5 BHK Duplex', '5 BHK Penthouse',
-    '1 BHK', '1.5 BHK', '2 BHK', '2.5 BHK', '3 BHK', '3.5 BHK', '4 BHK', '4.5 BHK', '5 BHK', 'Penthouse / Duplex'
+    '1 BHK', '1 BHK Duplex', '1 BHK Penthouse', '1 BHK Garden',
+    '1.5 BHK', '1.5 BHK Duplex', '1.5 BHK Penthouse', '1.5 BHK Garden',
+    '2 BHK', '2 BHK Duplex', '2 BHK Penthouse', '2 BHK Garden',
+    '2.5 BHK', '2.5 BHK Duplex', '2.5 BHK Penthouse', '2.5 BHK Garden',
+    '3 BHK', '3 BHK Duplex', '3 BHK Penthouse', '3 BHK Garden',
+    '3.5 BHK', '3.5 BHK Duplex', '3.5 BHK Penthouse', '3.5 BHK Garden',
+    '4 BHK', '4 BHK Duplex', '4 BHK Penthouse', '4 BHK Garden',
+    '4.5 BHK', '4.5 BHK Duplex', '4.5 BHK Penthouse', '4.5 BHK Garden',
+    '5 BHK', '5 BHK Duplex', '5 BHK Penthouse', '5 BHK Garden',
+    'Penthouse / Duplex'
   ],
   Villa: [
-    '1 BHK Villa',
-    '1.5 BHK Villa',
-    '2 BHK Villa',
-    '2.5 BHK Villa',
-    '3 BHK Villa',
-    '3.5 BHK Villa',
-    '4 BHK Villa',
-    '4.5 BHK Villa',
-    '5 BHK Villa'
+    '1 BHK',
+    '1.5 BHK',
+    '2 BHK',
+    '2.5 BHK',
+    '3 BHK',
+    '3.5 BHK',
+    '4 BHK',
+    '4.5 BHK',
+    '5 BHK'
   ],
   Plots: [
     'Residential',
@@ -465,8 +465,14 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
 
       let nextTypo = [...prev.typography];
       if (exists) {
-        const removedTypeOptions = TYPOGRAPHY_BY_TYPE[type] || [];
-        nextTypo = nextTypo.filter(t => !removedTypeOptions.includes(t));
+        const remainingOptions = new Set();
+        nextTypes.forEach(remType => {
+          if (remType === 'Apartment') {
+            APARTMENT_TYPOGRAPHY_GROUPS.forEach(grp => grp.items.forEach(it => remainingOptions.add(it)));
+          }
+          (TYPOGRAPHY_BY_TYPE[remType] || []).forEach(it => remainingOptions.add(it));
+        });
+        nextTypo = nextTypo.filter(t => remainingOptions.has(t));
       }
 
       return {
@@ -1314,7 +1320,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                   value={typoSearch}
                   onChange={(e) => setTypoSearch(e.target.value)}
                   onClick={(e) => e.stopPropagation()}
-                  placeholder="Search typography (e.g. 2 BHK, Flat, Penthouse)..."
+                  placeholder="Search typography (e.g. 2 BHK, Duplex, Garden)..."
                   className="w-full pl-8 pr-7 py-1.5 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition shadow-xs"
                 />
                 {typoSearch && (

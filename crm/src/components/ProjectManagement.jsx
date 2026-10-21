@@ -846,118 +846,19 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                       </td>
 
                       {/* Typography */}
-                      <td className={`py-2 px-3 whitespace-nowrap w-48 min-w-[140px] max-w-[210px] relative ${isTypoOpen ? 'z-50' : ''}`}>
+                      <td className="py-2.5 px-3 w-52 min-w-[150px] max-w-[220px]">
                         {typos.length > 0 ? (
-                          <button
-                            type="button"
-                            onClick={(e) => toggleTableTypoDropdown(e, project.id || project._id || idx)}
-                            className="h-[27px] px-2.5 py-0.5 rounded-lg border border-indigo-200/90 text-[10.5px] font-bold bg-indigo-50/70 hover:bg-indigo-100/80 text-indigo-950 transition shadow-2xs flex items-center justify-between gap-1.5 w-full cursor-pointer select-none text-left custom-table-typo-toggle"
+                          <span 
+                            className="text-[11px] font-semibold text-gray-800 whitespace-normal break-words leading-tight block"
                             title={displayTypo}
                           >
-                            <div className="flex items-center gap-1.5 min-w-0 flex-1 truncate">
-                              <span className="truncate min-w-0">{displayTypo}</span>
-                            </div>
-                            <i className={`fa-solid fa-chevron-down text-[8px] text-indigo-400 shrink-0 transition-transform ${isTypoOpen ? 'rotate-180 text-indigo-700' : ''}`}></i>
-                          </button>
+                            {displayTypo}
+                          </span>
                         ) : (
                           <div className="w-full flex items-center justify-center py-0.5">
                             <span className="text-gray-400 italic text-[10.5px]">—</span>
                           </div>
                         )}
-
-                        {isTypoOpen && typos.length > 0 && (() => {
-                          const q = tableTypoFilter.trim().toLowerCase();
-                          const filtered = q ? typos.filter(t => t.toLowerCase().includes(q)) : typos;
-
-                          return (
-                            <div 
-                              className="fixed z-[9999] bg-white rounded-2xl shadow-2xl border border-indigo-100 text-xs animate-fade-in flex flex-col overflow-hidden custom-table-typo-menu"
-                              style={{
-                                top: activeTableTypoDropdown?.coords?.top != null ? `${activeTableTypoDropdown.coords.top}px` : undefined,
-                                bottom: activeTableTypoDropdown?.coords?.bottom != null ? `${activeTableTypoDropdown.coords.bottom}px` : undefined,
-                                left: activeTableTypoDropdown?.coords ? `${activeTableTypoDropdown.coords.left}px` : undefined,
-                                width: activeTableTypoDropdown?.coords ? `${Math.max(340, activeTableTypoDropdown.coords.width)}px` : '340px',
-                                maxHeight: activeTableTypoDropdown?.coords?.maxHeight ? `${activeTableTypoDropdown.coords.maxHeight}px` : '360px',
-                                transformOrigin: activeTableTypoDropdown?.coords?.bottom != null ? 'bottom left' : 'top left'
-                              }}
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              {/* Header */}
-                              <div className="px-3.5 py-2.5 border-b border-indigo-100/70 bg-gradient-to-r from-indigo-50/80 to-purple-50/50 flex items-center justify-between flex-shrink-0">
-                                <div className="flex items-center gap-2">
-                                  <i className="fa-solid fa-shapes text-indigo-600 text-xs"></i>
-                                  <span className="font-bold text-indigo-950 text-xs">Typography Details</span>
-                                </div>
-                                <span className="text-[10px] font-bold text-indigo-700 bg-white px-2 py-0.5 rounded-full border border-indigo-200/80 shadow-2xs">
-                                  {typos.length} items
-                                </span>
-                              </div>
-
-                              {/* Quick Search Filter if > 6 items */}
-                              {typos.length > 6 && (
-                                <div className="px-3 py-1.5 border-b border-indigo-50 bg-white flex-shrink-0">
-                                  <div className="relative flex items-center">
-                                    <i className="fa-solid fa-magnifying-glass text-indigo-300 text-[10px] absolute left-2.5 pointer-events-none"></i>
-                                    <input
-                                      type="text"
-                                      value={tableTypoFilter}
-                                      onChange={(e) => setTableTypoFilter(e.target.value)}
-                                      placeholder="Search typographies..."
-                                      className="w-full pl-7 pr-6 py-1 bg-gray-50 border border-gray-200 rounded-lg text-[11px] font-medium text-gray-800 placeholder-gray-400 focus:outline-none focus:border-indigo-500 focus:bg-white transition"
-                                    />
-                                    {tableTypoFilter && (
-                                      <button
-                                        type="button"
-                                        onClick={() => setTableTypoFilter('')}
-                                        className="absolute right-2 text-gray-400 hover:text-gray-600 text-[10px] cursor-pointer"
-                                      >
-                                        <i className="fa-solid fa-xmark"></i>
-                                      </button>
-                                    )}
-                                  </div>
-                                </div>
-                              )}
-
-                              {/* Scrollable Badges List */}
-                              <div className="p-3 overflow-y-auto overscroll-contain custom-scrollbar flex-1 max-h-[240px]">
-                                <div className="flex flex-wrap gap-1.5">
-                                  {filtered.map((item, bIdx) => (
-                                    <span 
-                                      key={bIdx}
-                                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10.5px] font-semibold bg-indigo-50/80 border border-indigo-200/80 text-indigo-950 shadow-2xs hover:bg-indigo-100 transition"
-                                    >
-                                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0"></span>
-                                      <span>{item}</span>
-                                    </span>
-                                  ))}
-                                  {filtered.length === 0 && (
-                                    <div className="py-4 text-center w-full text-gray-400 italic text-[11px]">
-                                      No typography matches "{tableTypoFilter}"
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-
-                              {/* Footer */}
-                              <div className="px-3.5 py-2 border-t border-indigo-100/70 bg-gray-50/90 text-[10.5px] text-gray-500 flex items-center justify-between flex-shrink-0">
-                                <span className="text-[10px] text-gray-400 flex items-center gap-1.5">
-                                  <i className="fa-solid fa-shapes text-[9px] text-indigo-400"></i>
-                                  <span>Project Typographies</span>
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setActiveTableTypoDropdown(null);
-                                    setTableTypoFilter('');
-                                  }}
-                                  className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-[10.5px] transition shadow-2xs cursor-pointer"
-                                >
-                                  Close
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })()}
                       </td>
 
                       {/* RERA Number */}

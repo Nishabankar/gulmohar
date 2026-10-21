@@ -186,6 +186,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
     if (!btn) return;
     const rect = btn.getBoundingClientRect();
     const dropdownHeight = Math.min(260, PROJECT_TYPES.length * 40 + 60);
+    const dropdownWidth = Math.min(rect.width, Math.max(200, window.innerWidth - 24));
     const spaceBelow = window.innerHeight - rect.bottom - 16;
     const spaceAbove = rect.top - 16;
 
@@ -198,10 +199,20 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
       maxHeight = Math.max(140, Math.min(spaceBelow, dropdownHeight));
     }
 
+    if (top + maxHeight > window.innerHeight - 12) {
+      top = Math.max(10, window.innerHeight - maxHeight - 12);
+    }
+
+    let left = rect.left;
+    if (left + dropdownWidth > window.innerWidth - 12) {
+      left = Math.max(12, window.innerWidth - dropdownWidth - 12);
+    }
+    if (left < 12) left = 12;
+
     setTypeCoords({
       top,
-      left: rect.left,
-      width: rect.width,
+      left,
+      width: dropdownWidth,
       maxHeight
     });
     setIsTypeDropdownOpen(true);
@@ -221,27 +232,38 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
     const btn = e.currentTarget;
     if (!btn) return;
     const rect = btn.getBoundingClientRect();
-    const dropdownHeight = 360;
+    const dropdownHeight = Math.min(380, window.innerHeight - 60);
+    const dropdownWidth = Math.min(Math.max(rect.width, 340), Math.max(280, window.innerWidth - 24));
     const spaceBelow = window.innerHeight - rect.bottom - 16;
     const spaceAbove = rect.top - 16;
 
-    let top = rect.bottom + 4;
-    let maxHeight = dropdownHeight;
+    let top;
+    let maxHeight;
 
     // If space below is limited, open UPWARDS in front of modal content
-    if (spaceBelow < dropdownHeight && spaceAbove >= dropdownHeight) {
-      top = Math.max(10, rect.top - dropdownHeight - 4);
-    } else if (spaceBelow < dropdownHeight && spaceAbove > spaceBelow) {
-      top = Math.max(10, rect.top - Math.min(spaceAbove, dropdownHeight) - 4);
-      maxHeight = spaceAbove;
+    if (spaceBelow < 260 && spaceAbove > spaceBelow) {
+      maxHeight = Math.min(dropdownHeight, Math.max(180, spaceAbove));
+      top = Math.max(10, rect.top - maxHeight - 4);
     } else {
-      maxHeight = Math.max(180, Math.min(spaceBelow, dropdownHeight));
+      maxHeight = Math.min(dropdownHeight, Math.max(180, spaceBelow));
+      top = rect.bottom + 4;
     }
+
+    // Clamp top so it never overflows bottom of screen
+    if (top + maxHeight > window.innerHeight - 12) {
+      top = Math.max(10, window.innerHeight - maxHeight - 12);
+    }
+
+    let left = rect.left;
+    if (left + dropdownWidth > window.innerWidth - 12) {
+      left = Math.max(12, window.innerWidth - dropdownWidth - 12);
+    }
+    if (left < 12) left = 12;
 
     setTypoCoords({
       top,
-      left: rect.left,
-      width: Math.max(rect.width, 360),
+      left,
+      width: dropdownWidth,
       maxHeight
     });
     setTypoSearch('');
@@ -276,12 +298,18 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
     };
 
     const handleScrollOrResize = (e) => {
-      // If the scroll happened inside the dropdown menu itself, DO NOT close it!
+      // Never close dropdowns on mobile viewport resize (e.g. keyboard open/close)
+      if (e && e.type === 'resize' && typeof window !== 'undefined' && window.innerWidth < 640) {
+        return;
+      }
+
+      // If the scroll happened inside the dropdown menu itself or inside the modal content, DO NOT close it!
       if (e && e.target && e.target.closest) {
         if (
           e.target.closest('.project-type-dropdown-menu') || 
           e.target.closest('.project-typo-dropdown-menu') ||
-          e.target.closest('.custom-table-typo-menu')
+          e.target.closest('.custom-table-typo-menu') ||
+          e.target.closest('.project-modal-scrollable')
         ) {
           return;
         }
@@ -293,11 +321,13 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
     window.addEventListener('resize', handleScrollOrResize);
     window.addEventListener('scroll', handleScrollOrResize, true);
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
       window.removeEventListener('resize', handleScrollOrResize);
       window.removeEventListener('scroll', handleScrollOrResize, true);
     };
@@ -963,7 +993,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
             <form onSubmit={handleSubmitForm} className="flex-1 flex flex-col min-h-0 overflow-hidden">
               
               {/* Middle Scrollable Content */}
-              <div className="p-4 sm:p-5 space-y-3.5 overflow-y-auto flex-1 custom-scrollbar">
+              <div className="p-4 sm:p-5 space-y-3.5 overflow-y-auto flex-1 custom-scrollbar project-modal-scrollable">
                 
                 {/* In-Form Success / Error Banner (Exact Lead Modal Style) */}
                 {formMsg && (() => {
@@ -1278,8 +1308,8 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
         </div>
       )}
 
-      {/* FLOATING PROJECT TYPOGRAPHY DROPDOWN MENU (position: fixed z-[99999] so it floats in FRONT of modal & footer) */}
-      {showModal && isTypoDropdownOpen && typoCoords && formData.projectType.length > 0 && (() => {
+      {/* PROJECT TYPOGRAPHY SELECTOR (Mobile Bottom Sheet + Desktop Floating Dropdown) */}
+      {showModal && isTypoDropdownOpen && formData.projectType.length > 0 && (() => {
         const query = typoSearch.trim().toLowerCase();
 
         // Calculate total matches across all selected project types
@@ -1299,29 +1329,19 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
           }
         });
 
-        return (
-          <div 
-            onWheel={(e) => e.stopPropagation()}
-            className="fixed z-[99999] bg-white border border-gray-200 rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-fade-in project-typo-dropdown-menu"
-            style={{
-              top: `${typoCoords.top}px`,
-              left: `${typoCoords.left}px`,
-              width: `${typoCoords.width}px`,
-              maxHeight: `${typoCoords.maxHeight}px`
-            }}
-          >
+        const renderDropdownBody = (isMobile) => (
+          <>
             {/* STICKY SEARCH BAR AT TOP */}
-            <div className="p-2.5 border-b border-gray-100 bg-gray-50/95 flex-shrink-0 space-y-2">
+            <div className="p-2.5 sm:p-2 border-b border-gray-100 bg-gray-50/95 flex-shrink-0 space-y-2">
               <div className="relative flex items-center">
                 <i className="fa-solid fa-magnifying-glass text-gray-400 text-xs absolute left-3 pointer-events-none"></i>
                 <input
                   type="text"
-                  autoFocus
                   value={typoSearch}
                   onChange={(e) => setTypoSearch(e.target.value)}
                   onClick={(e) => e.stopPropagation()}
                   placeholder="Search typography (e.g. 2 BHK, Duplex, Garden)..."
-                  className="w-full pl-8 pr-7 py-1.5 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition shadow-xs"
+                  className="w-full pl-8 pr-7 py-2 sm:py-1.5 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition shadow-xs"
                 />
                 {typoSearch && (
                   <button
@@ -1330,7 +1350,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                       e.stopPropagation();
                       setTypoSearch('');
                     }}
-                    className="absolute right-2.5 text-gray-400 hover:text-gray-600 w-4 h-4 rounded-full flex items-center justify-center cursor-pointer text-[10px]"
+                    className="absolute right-2.5 text-gray-400 hover:text-gray-600 w-5 h-5 rounded-full flex items-center justify-center cursor-pointer text-xs"
                     title="Clear search"
                   >
                     <i className="fa-solid fa-xmark"></i>
@@ -1339,7 +1359,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
               </div>
 
               {/* SELECT ALL TOOLBAR (Only shown for Miscellaneous projects) */}
-              <div className="flex items-center justify-between px-0.5 pt-0.5">
+              <div className="flex items-center justify-between px-1 pt-0.5">
                 <span className="text-[10.5px] font-bold text-gray-500 uppercase tracking-wider">
                   {formData.typography.length} of {allAvailableTypographies.length} selected
                 </span>
@@ -1403,12 +1423,12 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                                     key={item}
                                     type="button"
                                     onClick={() => handleToggleTypography(item)}
-                                    className={`w-full text-left px-3 py-1.5 text-xs font-semibold hover:bg-rose-50 hover:text-[#B30E2E] transition flex items-center gap-2.5 cursor-pointer ${
+                                    className={`w-full text-left px-3.5 py-2.5 sm:py-1.5 text-xs font-semibold hover:bg-rose-50 hover:text-[#B30E2E] transition flex items-center gap-2.5 cursor-pointer ${
                                       isChecked ? 'bg-[#FFF0F2]/60 text-[#B30E2E] font-bold' : 'text-gray-700'
                                     }`}
                                   >
                                     <span
-                                      className={`w-3.5 h-3.5 rounded flex items-center justify-center border transition flex-shrink-0 ${
+                                      className={`w-4 h-4 sm:w-3.5 sm:h-3.5 rounded flex items-center justify-center border transition flex-shrink-0 ${
                                         isChecked
                                           ? 'bg-[#B30E2E] border-[#B30E2E] text-white'
                                           : 'bg-white border-gray-300'
@@ -1446,12 +1466,12 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                             key={item}
                             type="button"
                             onClick={() => handleToggleTypography(item)}
-                            className={`w-full text-left px-3 py-2 text-xs font-semibold hover:bg-rose-50 hover:text-[#B30E2E] transition flex items-center gap-2.5 cursor-pointer ${
+                            className={`w-full text-left px-3.5 py-2.5 sm:py-2 text-xs font-semibold hover:bg-rose-50 hover:text-[#B30E2E] transition flex items-center gap-2.5 cursor-pointer ${
                               isChecked ? 'bg-[#FFF0F2]/60 text-[#B30E2E] font-bold' : 'text-gray-700'
                             }`}
                           >
                             <span
-                              className={`w-3.5 h-3.5 rounded flex items-center justify-center border transition flex-shrink-0 ${
+                              className={`w-4 h-4 sm:w-3.5 sm:h-3.5 rounded flex items-center justify-center border transition flex-shrink-0 ${
                                 isChecked
                                   ? 'bg-[#B30E2E] border-[#B30E2E] text-white'
                                   : 'bg-white border-gray-300'
@@ -1470,7 +1490,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
             </div>
 
             {/* FOOTER BAR: SELECTION SUMMARY & DONE BUTTON */}
-            <div className="p-2 border-t border-gray-100 bg-gray-50 flex items-center justify-between flex-shrink-0">
+            <div className="p-3 sm:p-2 border-t border-gray-100 bg-gray-50 flex items-center justify-between flex-shrink-0">
               <div className="flex items-center gap-2">
                 {isMiscellaneousProject && (
                   <button
@@ -1481,7 +1501,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                     {allAvailableTypographies.length > 0 && allAvailableTypographies.every(item => formData.typography.includes(item)) ? 'Deselect All' : 'Select All'}
                   </button>
                 )}
-                <span className="text-[11px] font-semibold text-gray-500">
+                <span className="text-xs sm:text-[11px] font-semibold text-gray-500">
                   ({formData.typography.length} selected)
                 </span>
               </div>
@@ -1491,12 +1511,69 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                   setIsTypoDropdownOpen(false);
                   setTypoSearch('');
                 }}
-                className="px-3 py-1 bg-[#B30E2E] hover:bg-[#8A0B22] text-white text-[11px] font-bold rounded-lg transition cursor-pointer shadow-xs"
+                className="px-4 py-2 sm:px-3 sm:py-1 bg-[#B30E2E] hover:bg-[#8A0B22] text-white text-xs sm:text-[11px] font-bold rounded-xl sm:rounded-lg transition cursor-pointer shadow-xs"
               >
                 Done
               </button>
             </div>
-          </div>
+          </>
+        );
+
+        return (
+          <>
+            {/* MOBILE VIEW: BOTTOM SHEET OVERLAY WITH BACKDROP (sm:hidden) */}
+            <div 
+              className="fixed inset-0 z-[99999] bg-black/60 backdrop-blur-xs flex flex-col justify-end sm:hidden animate-fade-in"
+              onClick={() => {
+                setIsTypoDropdownOpen(false);
+                setTypoSearch('');
+              }}
+            >
+              <div 
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white rounded-t-3xl shadow-2xl flex flex-col max-h-[85vh] w-full overflow-hidden project-typo-dropdown-menu animate-slide-up"
+              >
+                {/* Mobile Bottom Sheet Header */}
+                <div className="px-4 py-3 bg-gradient-to-r from-[#B30E2E] via-[#8A0B22] to-[#590414] text-white flex items-center justify-between flex-shrink-0">
+                  <div className="flex items-center gap-2">
+                    <i className="fa-solid fa-shapes text-sm"></i>
+                    <span className="font-bold text-sm">Select Typography</span>
+                    <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-medium">
+                      {formData.typography.length} selected
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsTypoDropdownOpen(false);
+                      setTypoSearch('');
+                    }}
+                    className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/80 hover:text-white transition cursor-pointer"
+                  >
+                    <i className="fa-solid fa-xmark text-xs"></i>
+                  </button>
+                </div>
+
+                {renderDropdownBody(true)}
+              </div>
+            </div>
+
+            {/* DESKTOP VIEW: FLOATING DROPDOWN MENU (hidden sm:flex) */}
+            {typoCoords && (
+              <div 
+                onWheel={(e) => e.stopPropagation()}
+                className="hidden sm:flex fixed z-[99999] bg-white border border-gray-200 rounded-2xl shadow-2xl flex-col overflow-hidden animate-fade-in project-typo-dropdown-menu"
+                style={{
+                  top: `${typoCoords.top}px`,
+                  left: `${typoCoords.left}px`,
+                  width: `${typoCoords.width}px`,
+                  maxHeight: `${typoCoords.maxHeight}px`
+                }}
+              >
+                {renderDropdownBody(false)}
+              </div>
+            )}
+          </>
         );
       })()}
 

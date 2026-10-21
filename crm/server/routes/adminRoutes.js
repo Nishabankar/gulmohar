@@ -437,6 +437,21 @@ router.put('/profile', protectAdmin, async (req, res) => {
 router.get('/enquiries', protectAdmin, async (req, res) => {
   try {
     const { status, search } = req.query;
+
+    // Self-healing: auto-cleanup any orphaned leads linked to deleted projects
+    try {
+      await query(`
+        UPDATE leads l
+        LEFT JOIN projects p ON LOWER(TRIM(l.project_name)) = LOWER(TRIM(p.name))
+        SET l.project_name = NULL, l.project_type = NULL, l.typography = NULL
+        WHERE l.project_name IS NOT NULL 
+          AND TRIM(l.project_name) != '' 
+          AND p.id IS NULL
+      `);
+    } catch (cleanupErr) {
+      // Non-fatal
+    }
+
     let sql = 'SELECT * FROM leads WHERE 1=1';
     let params = [];
 

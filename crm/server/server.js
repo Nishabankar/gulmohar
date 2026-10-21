@@ -34,9 +34,9 @@ const seedAdminUser = async () => {
     // Ensure project details columns exist in leads table
     const leadColumns = [
       { name: 'project_name', type: "VARCHAR(255) NOT NULL DEFAULT ''" },
-      { name: 'project_type', type: "VARCHAR(100) NOT NULL DEFAULT ''" },
-      { name: 'typography', type: "VARCHAR(255) NOT NULL DEFAULT ''" },
-      { name: 'carpet_area', type: "VARCHAR(100) NOT NULL DEFAULT ''" },
+      { name: 'project_type', type: "TEXT DEFAULT NULL" },
+      { name: 'typography', type: "TEXT DEFAULT NULL" },
+      { name: 'carpet_area', type: "TEXT DEFAULT NULL" },
       { name: 'budget', type: "VARCHAR(100) NOT NULL DEFAULT ''" }
     ];
     for (const col of leadColumns) {
@@ -45,6 +45,47 @@ const seedAdminUser = async () => {
       } catch (e) {
         // Column may already exist
       }
+    }
+
+    // Expand existing lead columns from VARCHAR to TEXT so multiple typographies & types are never truncated
+    try {
+      await query("ALTER TABLE leads MODIFY COLUMN typography TEXT DEFAULT NULL");
+    } catch (e) {
+      // Ignore if not permitted
+    }
+    try {
+      await query("ALTER TABLE leads MODIFY COLUMN project_type TEXT DEFAULT NULL");
+    } catch (e) {
+      // Ignore if not permitted
+    }
+    try {
+      await query("ALTER TABLE leads MODIFY COLUMN carpet_area TEXT DEFAULT NULL");
+    } catch (e) {
+      // Ignore if not permitted
+    }
+
+    // Auto-repair any existing leads whose typography was truncated by the 255-char limit
+    try {
+      const [projects] = await query("SELECT name, typography FROM projects WHERE typography IS NOT NULL AND typography != ''");
+      for (const p of projects || []) {
+        if (!p.name || !p.typography) continue;
+        let list = [];
+        try {
+          const parsed = JSON.parse(p.typography);
+          if (Array.isArray(parsed)) list = parsed;
+        } catch (e) {
+          list = p.typography.split(',').map(s => s.trim()).filter(Boolean);
+        }
+        if (list.length > 0) {
+          const fullTypoStr = list.join(', ');
+          await query(
+            "UPDATE leads SET typography = ? WHERE LOWER(TRIM(project_name)) = LOWER(TRIM(?)) AND (LENGTH(typography) >= 240 OR typography = '' OR typography IS NULL)",
+            [fullTypoStr, p.name]
+          );
+        }
+      }
+    } catch (e) {
+      // Table may not exist yet
     }
 
     // Clean up unwanted internal import history entries (Import & Sheet Status)
@@ -64,6 +105,7 @@ const seedAdminUser = async () => {
           project_type TEXT DEFAULT NULL,
           typography TEXT DEFAULT NULL,
           rera_number VARCHAR(100) DEFAULT NULL,
+          area VARCHAR(255) DEFAULT NULL,
           address TEXT DEFAULT NULL,
           created_by VARCHAR(255) NOT NULL DEFAULT 'Admin',
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -71,6 +113,12 @@ const seedAdminUser = async () => {
           INDEX idx_project_name (name)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
       `);
+      // Auto-migrate column 'area' if table was created previously without it
+      try {
+        await query("ALTER TABLE projects ADD COLUMN area VARCHAR(255) DEFAULT NULL AFTER rera_number");
+      } catch (alterErr) {
+        // Column already exists, safe to ignore
+      }
     } catch (e) {
       console.warn('Projects table init note:', e.message);
     }

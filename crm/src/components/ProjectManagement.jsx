@@ -3,61 +3,109 @@ import { API_BASE_URL } from '../config';
 
 export const PROJECT_TYPES = [
   'Apartment',
-  'Studio',
   'Villa',
-  'Farm House'
+  'Plots'
+];
+
+export const PROJECT_AREAS = [
+  'Kharadi',
+  'Upper Kharadi',
+  'Hadapsar',
+  'Mundhwa',
+  'Keshavnagar',
+  'Wagholi',
+  'Shikrapur'
+];
+
+export const APARTMENT_TYPOGRAPHY_GROUPS = [
+  {
+    group: 'Studio',
+    items: ['Studio Apartment']
+  },
+  {
+    group: '1 BHK',
+    items: ['1 BHK Flat', '1 BHK Duplex', '1 BHK Penthouse']
+  },
+  {
+    group: '1.5 BHK',
+    items: ['1.5 BHK Flat', '1.5 BHK Duplex', '1.5 BHK Penthouse']
+  },
+  {
+    group: '2 BHK',
+    items: ['2 BHK Flat', '2 BHK Duplex', '2 BHK Penthouse']
+  },
+  {
+    group: '2.5 BHK',
+    items: ['2.5 BHK Flat', '2.5 BHK Duplex', '2.5 BHK Penthouse']
+  },
+  {
+    group: '3 BHK',
+    items: ['3 BHK Flat', '3 BHK Duplex', '3 BHK Penthouse']
+  },
+  {
+    group: '3.5 BHK',
+    items: ['3.5 BHK Flat', '3.5 BHK Duplex', '3.5 BHK Penthouse']
+  },
+  {
+    group: '4 BHK',
+    items: ['4 BHK Flat', '4 BHK Duplex', '4 BHK Penthouse']
+  },
+  {
+    group: '4.5 BHK',
+    items: ['4.5 BHK Flat', '4.5 BHK Duplex', '4.5 BHK Penthouse']
+  },
+  {
+    group: '5 BHK',
+    items: ['5 BHK Flat', '5 BHK Duplex', '5 BHK Penthouse']
+  }
 ];
 
 export const TYPOGRAPHY_BY_TYPE = {
   Apartment: [
     'Studio Apartment',
-    '1 RK',
-    '1 BHK',
-    '1.5 BHK',
-    '2 BHK',
-    '2.5 BHK',
-    '3 BHK',
-    '3.5 BHK',
-    '4 BHK',
-    '5 BHK',
-    'Penthouse / Duplex'
-  ],
-  Studio: [
-    'Studio Apartment',
-    '1 RK Studio',
-    'Executive Studio'
+    '1 BHK Flat', '1 BHK Duplex', '1 BHK Penthouse',
+    '1.5 BHK Flat', '1.5 BHK Duplex', '1.5 BHK Penthouse',
+    '2 BHK Flat', '2 BHK Duplex', '2 BHK Penthouse',
+    '2.5 BHK Flat', '2.5 BHK Duplex', '2.5 BHK Penthouse',
+    '3 BHK Flat', '3 BHK Duplex', '3 BHK Penthouse',
+    '3.5 BHK Flat', '3.5 BHK Duplex', '3.5 BHK Penthouse',
+    '4 BHK Flat', '4 BHK Duplex', '4 BHK Penthouse',
+    '4.5 BHK Flat', '4.5 BHK Duplex', '4.5 BHK Penthouse',
+    '5 BHK Flat', '5 BHK Duplex', '5 BHK Penthouse',
+    '1 BHK', '1.5 BHK', '2 BHK', '2.5 BHK', '3 BHK', '3.5 BHK', '4 BHK', '4.5 BHK', '5 BHK', 'Penthouse / Duplex'
   ],
   Villa: [
+    '1 BHK Villa',
+    '1.5 BHK Villa',
     '2 BHK Villa',
+    '2.5 BHK Villa',
     '3 BHK Villa',
+    '3.5 BHK Villa',
     '4 BHK Villa',
-    '5 BHK Villa',
-    'Row House',
-    'Duplex Villa'
+    '4.5 BHK Villa',
+    '5 BHK Villa'
   ],
-  'Farm House': [
-    '1 Guntha',
-    '2 Guntha',
-    '3 Guntha',
-    '4 Guntha',
-    '5 Guntha',
-    '6 Guntha',
-    '7 Guntha',
-    '8 Guntha',
-    '9 Guntha',
-    '10 Guntha',
-    '11 Guntha',
-    '21 Guntha',
-    'Half Acre (20 Guntha)',
-    '1 Acre',
-    '2+ Acre'
-  ]
+  Plots: [
+    'Residential',
+    'Industrial',
+    'Agriculture',
+    'Non-Agriculture'
+  ],
+  Studio: [
+    'Studio Apartment', '1 RK Studio', 'Executive Studio'
+  ],
+  'Farm House': []
 };
 
 const TYPE_BADGE_STYLE = {
   Apartment: 'bg-blue-50 text-blue-700 border-blue-200',
-  Studio: 'bg-purple-50 text-purple-700 border-purple-200',
   Villa: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  Plots: 'bg-amber-50 text-amber-800 border-amber-200',
+  Industrial: 'bg-slate-100 text-slate-800 border-slate-300',
+  Agriculture: 'bg-green-50 text-green-800 border-green-200',
+  'Non-Agriculture': 'bg-teal-50 text-teal-800 border-teal-200',
+  Residential: 'bg-indigo-50 text-indigo-800 border-indigo-200',
+  Studio: 'bg-purple-50 text-purple-700 border-purple-200',
   'Farm House': 'bg-amber-50 text-amber-800 border-amber-200'
 };
 
@@ -66,17 +114,20 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState('All');
+  const [areaFilter, setAreaFilter] = useState('All');
 
   // Modal States
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState('create'); // 'create' | 'edit'
   const [editingProjectId, setEditingProjectId] = useState(null);
+  const [isCustomArea, setIsCustomArea] = useState(false);
 
   // Floating Dropdown State (Fixed Positioning so it floats in FRONT without overflow clipping)
   const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
   const [isTypoDropdownOpen, setIsTypoDropdownOpen] = useState(false);
   const [typeCoords, setTypeCoords] = useState(null);
   const [typoCoords, setTypoCoords] = useState(null);
+  const [typoSearch, setTypoSearch] = useState('');
 
   const typeDropdownRef = useRef(null);
   const typoDropdownRef = useRef(null);
@@ -88,12 +139,16 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
     projectType: [],
     typography: [],
     reraNumber: '',
+    area: '',
     address: ''
   };
   const [formData, setFormData] = useState(initialFormState);
-  const [customTypoInput, setCustomTypoInput] = useState('');
   const [formMsg, setFormMsg] = useState('');
   const [formSubmitting, setFormSubmitting] = useState(false);
+
+  // Table Typography Popover State
+  const [activeTableTypoDropdown, setActiveTableTypoDropdown] = useState(null); // { projectId, coords }
+  const [tableTypoFilter, setTableTypoFilter] = useState('');
 
   // Delete Confirmation Modal State
   const [deleteConfirmation, setDeleteConfirmation] = useState({
@@ -130,7 +185,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
     const btn = e.currentTarget;
     if (!btn) return;
     const rect = btn.getBoundingClientRect();
-    const dropdownHeight = Math.min(220, PROJECT_TYPES.length * 40 + 20);
+    const dropdownHeight = Math.min(260, PROJECT_TYPES.length * 40 + 60);
     const spaceBelow = window.innerHeight - rect.bottom - 16;
     const spaceAbove = rect.top - 16;
 
@@ -158,6 +213,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
     if (formData.projectType.length === 0) return;
     if (isTypoDropdownOpen) {
       setIsTypoDropdownOpen(false);
+      setTypoSearch('');
       return;
     }
     setIsTypeDropdownOpen(false);
@@ -165,7 +221,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
     const btn = e.currentTarget;
     if (!btn) return;
     const rect = btn.getBoundingClientRect();
-    const dropdownHeight = 240;
+    const dropdownHeight = 360;
     const spaceBelow = window.innerHeight - rect.bottom - 16;
     const spaceAbove = rect.top - 16;
 
@@ -179,15 +235,16 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
       top = Math.max(10, rect.top - Math.min(spaceAbove, dropdownHeight) - 4);
       maxHeight = spaceAbove;
     } else {
-      maxHeight = Math.max(150, Math.min(spaceBelow, dropdownHeight));
+      maxHeight = Math.max(180, Math.min(spaceBelow, dropdownHeight));
     }
 
     setTypoCoords({
       top,
       left: rect.left,
-      width: rect.width,
+      width: Math.max(rect.width, 360),
       maxHeight
     });
+    setTypoSearch('');
     setIsTypoDropdownOpen(true);
   };
 
@@ -207,6 +264,14 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
         !event.target.closest('.project-typo-dropdown-menu')
       ) {
         setIsTypoDropdownOpen(false);
+        setTypoSearch('');
+      }
+      if (
+        !event.target.closest('.custom-table-typo-menu') &&
+        !event.target.closest('.custom-table-typo-toggle')
+      ) {
+        setActiveTableTypoDropdown(null);
+        setTableTypoFilter('');
       }
     };
 
@@ -215,13 +280,16 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
       if (e && e.target && e.target.closest) {
         if (
           e.target.closest('.project-type-dropdown-menu') || 
-          e.target.closest('.project-typo-dropdown-menu')
+          e.target.closest('.project-typo-dropdown-menu') ||
+          e.target.closest('.custom-table-typo-menu')
         ) {
           return;
         }
       }
       setIsTypeDropdownOpen(false);
       setIsTypoDropdownOpen(false);
+      setActiveTableTypoDropdown(null);
+      setTableTypoFilter('');
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -234,6 +302,48 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
       window.removeEventListener('scroll', handleScrollOrResize, true);
     };
   }, []);
+
+  // Toggle Typography popover for Table Row
+  const toggleTableTypoDropdown = (e, projectId) => {
+    e.stopPropagation();
+    if (activeTableTypoDropdown?.projectId === projectId) {
+      setActiveTableTypoDropdown(null);
+      setTableTypoFilter('');
+      return;
+    }
+
+    setTableTypoFilter('');
+    const btn = e.currentTarget;
+    if (!btn) return;
+    const rect = btn.getBoundingClientRect();
+    const targetHeight = 360;
+    const dropdownWidth = Math.max(340, rect.width);
+
+    const spaceBelow = window.innerHeight - rect.bottom - 16;
+    const spaceAbove = rect.top - 16;
+    let top;
+    let bottom;
+    let maxHeight = targetHeight;
+
+    if (spaceBelow >= 240 || spaceBelow >= spaceAbove) {
+      top = rect.bottom + 4;
+      maxHeight = Math.min(targetHeight, Math.max(140, spaceBelow));
+    } else {
+      bottom = window.innerHeight - rect.top + 4;
+      maxHeight = Math.min(targetHeight, Math.max(140, spaceAbove));
+    }
+
+    let left = rect.left;
+    if (left + dropdownWidth > window.innerWidth - 12) {
+      left = Math.max(8, window.innerWidth - dropdownWidth - 12);
+    }
+    if (left < 8) left = 8;
+
+    setActiveTableTypoDropdown({
+      projectId,
+      coords: { top, bottom, left, width: dropdownWidth, maxHeight }
+    });
+  };
 
   // Fetch Projects from API
   const fetchProjects = async () => {
@@ -273,26 +383,32 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
         if (!hasType) return false;
       }
 
+      // Area Filter
+      if (areaFilter !== 'All') {
+        if ((p.area || '').toLowerCase() !== areaFilter.toLowerCase()) return false;
+      }
+
       // Search Query
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase().trim();
       const name = (p.name || '').toLowerCase();
       const dev = (p.developerName || '').toLowerCase();
+      const area = (p.area || '').toLowerCase();
       const addr = (p.address || '').toLowerCase();
       const rera = (p.reraNumber || '').toLowerCase();
       const typesStr = (Array.isArray(p.projectType) ? p.projectType.join(' ') : '').toLowerCase();
       const typoStr = (Array.isArray(p.typography) ? p.typography.join(' ') : '').toLowerCase();
 
-      return name.includes(q) || dev.includes(q) || addr.includes(q) || rera.includes(q) || typesStr.includes(q) || typoStr.includes(q);
+      return name.includes(q) || dev.includes(q) || area.includes(q) || addr.includes(q) || rera.includes(q) || typesStr.includes(q) || typoStr.includes(q);
     });
-  }, [projects, searchQuery, typeFilter]);
+  }, [projects, searchQuery, typeFilter, areaFilter]);
 
   // Open Create Modal
   const handleOpenCreateModal = () => {
     setModalMode('create');
     setEditingProjectId(null);
     setFormData(initialFormState);
-    setCustomTypoInput('');
+    setIsCustomArea(false);
     setFormMsg('');
     setIsTypeDropdownOpen(false);
     setIsTypoDropdownOpen(false);
@@ -303,15 +419,36 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
   const handleOpenEditModal = (project) => {
     setModalMode('edit');
     setEditingProjectId(project.id || project._id);
+
+    const rawTypes = Array.isArray(project.projectType) ? project.projectType : (project.projectType ? [project.projectType] : []);
+    const mainTypes = rawTypes.filter(t => PROJECT_TYPES.includes(t) || t === 'Studio' || t === 'Farm House');
+
+    if (mainTypes.includes('Farm House') && !mainTypes.includes('Plots')) {
+      mainTypes.push('Plots');
+    }
+
+    let initialTypos = Array.isArray(project.typography) ? [...project.typography] : (project.typography ? [project.typography] : []);
+    // If old test project had sub-types in projectType, migrate them into typography
+    const oldPlotTypes = rawTypes.filter(t => ['Industrial', 'Commercial / Industrial', 'Agriculture', 'Non-Agriculture', 'Residential'].includes(t));
+    oldPlotTypes.forEach(st => {
+      const mapped = st === 'Industrial' ? 'Commercial / Industrial' : st;
+      if (!initialTypos.includes(mapped)) {
+        initialTypos.push(mapped);
+      }
+    });
+
+    const projectArea = project.area || '';
+    setIsCustomArea(Boolean(projectArea && !PROJECT_AREAS.includes(projectArea)));
+
     setFormData({
       name: project.name || '',
       developerName: project.developerName || '',
-      projectType: Array.isArray(project.projectType) ? [...project.projectType] : (project.projectType ? [project.projectType] : []),
-      typography: Array.isArray(project.typography) ? [...project.typography] : (project.typography ? [project.typography] : []),
+      projectType: mainTypes,
+      typography: initialTypos,
       reraNumber: project.reraNumber || '',
+      area: projectArea,
       address: project.address || ''
     });
-    setCustomTypoInput('');
     setFormMsg('');
     setIsTypeDropdownOpen(false);
     setIsTypoDropdownOpen(false);
@@ -354,18 +491,70 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
     });
   };
 
-  // Add Custom Typography Tag
-  const handleAddCustomTypo = (e) => {
-    e.preventDefault();
-    const val = customTypoInput.trim();
-    if (!val) return;
-    if (!formData.typography.includes(val)) {
-      setFormData(prev => ({
+  // Select All or Deselect All Project Types
+  const handleToggleSelectAllProjectTypes = () => {
+    setFormData(prev => {
+      const isAllSelected = PROJECT_TYPES.every(t => prev.projectType.includes(t));
+      if (isAllSelected) {
+        return {
+          ...prev,
+          projectType: [],
+          typography: []
+        };
+      }
+      return {
         ...prev,
-        typography: [...prev.typography, val]
-      }));
+        projectType: [...PROJECT_TYPES]
+      };
+    });
+  };
+
+  // Only Miscellaneous projects allow "Select All"
+  const isMiscellaneousProject = (formData.name || '').trim().toLowerCase().includes('miscellaneous');
+
+  // Get all available typographies for current selected project types
+  const allAvailableTypographies = useMemo(() => {
+    const list = [];
+    formData.projectType.forEach(pType => {
+      if (pType === 'Apartment') {
+        APARTMENT_TYPOGRAPHY_GROUPS.forEach(grp => {
+          grp.items.forEach(item => {
+            if (!list.includes(item)) list.push(item);
+          });
+        });
+      } else {
+        const opts = TYPOGRAPHY_BY_TYPE[pType] || [];
+        opts.forEach(item => {
+          if (!list.includes(item)) list.push(item);
+        });
+      }
+    });
+    return list;
+  }, [formData.projectType]);
+
+  // Select All or Deselect All Typographies across selected project types
+  const handleToggleSelectAllTypography = () => {
+    const query = typoSearch.trim().toLowerCase();
+    let targetItems = allAvailableTypographies;
+    if (query) {
+      targetItems = targetItems.filter(item => item.toLowerCase().includes(query));
     }
-    setCustomTypoInput('');
+    if (targetItems.length === 0) return;
+
+    setFormData(prev => {
+      const isAllTargetSelected = targetItems.every(item => prev.typography.includes(item));
+      if (isAllTargetSelected) {
+        return {
+          ...prev,
+          typography: prev.typography.filter(item => !targetItems.includes(item))
+        };
+      }
+      const combined = [...new Set([...prev.typography, ...targetItems])];
+      return {
+        ...prev,
+        typography: combined
+      };
+    });
   };
 
   // Submit Create or Edit Form
@@ -378,15 +567,32 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
       return;
     }
 
+    if (formData.projectType.length === 0) {
+      setFormMsg('Project Type is required. Please select at least one type.');
+      return;
+    }
+
+    if (formData.typography.length === 0) {
+      setFormMsg('Project Typography is required. Please select at least one typography.');
+      return;
+    }
+
+    if (!formData.area.trim() && !formData.address.trim()) {
+      setFormMsg('Area is required.');
+      return;
+    }
+
     setFormSubmitting(true);
     try {
       const token = getAuthToken();
+
       const payload = {
         name: formData.name.trim(),
         developerName: formData.developerName.trim(),
         projectType: formData.projectType,
         typography: formData.typography,
         reraNumber: formData.reraNumber.trim(),
+        area: formData.area.trim(),
         address: formData.address.trim()
       };
 
@@ -474,7 +680,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
       {/* Projects Title Section */}
       <div className="flex-shrink-0">
         <h2 className="text-base sm:text-lg font-serif font-bold text-gray-900 tracking-wide">
-          Project Management
+          Projects
         </h2>
       </div>
 
@@ -495,12 +701,12 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                 type="text" 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search project by name, developer, rera, location..."
+                placeholder="Search project by name, developer, area, rera, location..."
                 className="w-full pl-9 pr-7 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-xs bg-white font-medium shadow-xs"
               />
               {searchQuery && (
                 <button 
-                  type="button"
+                  type="button" 
                   onClick={() => setSearchQuery('')}
                   className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-gray-400 hover:text-gray-600 text-xs cursor-pointer"
                 >
@@ -509,8 +715,22 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
               )}
             </div>
 
+            {/* Area Filter Select */}
+            <div className="w-36 flex-shrink-0 relative">
+              <select
+                value={areaFilter}
+                onChange={(e) => setAreaFilter(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-xs bg-white hover:bg-gray-50 font-bold text-gray-700 cursor-pointer shadow-xs"
+              >
+                <option value="All">All Areas</option>
+                {PROJECT_AREAS.map(a => (
+                  <option key={a} value={a}>{a}</option>
+                ))}
+              </select>
+            </div>
+
             {/* Type Filter Select */}
-            <div className="w-44 flex-shrink-0 relative">
+            <div className="w-36 flex-shrink-0 relative">
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
@@ -529,7 +749,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
             {/* Create Project Button (Exact Create Lead Icon Button with + badge) */}
             {canManage && (
               <button 
-                type="button"
+                type="button" 
                 onClick={handleOpenCreateModal}
                 className="w-9 h-9 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white flex items-center justify-center transition shadow-sm border border-rose-900/40 cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
                 title="Create New Project"
@@ -560,15 +780,30 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
             <table className="w-full min-w-full text-left border-collapse">
               <thead className="sticky top-0 z-10 bg-gray-100 shadow-2xs">
                 <tr className="bg-gray-100 border-b border-gray-200 text-[10px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">
-                  <th className="py-2.5 px-3 text-center whitespace-nowrap w-14"># ID</th>
-                  <th className="py-2.5 px-3 whitespace-nowrap min-w-[150px]">Project Name</th>
+                  <th 
+                    className="sticky top-0 left-0 z-30 bg-gray-100 border-b border-gray-200 py-2.5 px-3 text-center whitespace-nowrap w-14 min-w-[56px] max-w-[56px]"
+                    style={{ left: 0 }}
+                  >
+                    # ID
+                  </th>
+                  <th 
+                    className="sticky top-0 z-30 bg-gray-100 border-b border-gray-200 py-2.5 px-3 whitespace-nowrap min-w-[150px] max-w-[160px]"
+                    style={{ left: '56px' }}
+                  >
+                    Project Name
+                  </th>
                   <th className="py-2.5 px-3 whitespace-nowrap min-w-[130px]">Developer</th>
                   <th className="py-2.5 px-3 whitespace-nowrap min-w-[130px]">Project Type</th>
                   <th className="py-2.5 px-3 whitespace-nowrap min-w-[180px]">Typography</th>
                   <th className="py-2.5 px-3 whitespace-nowrap min-w-[120px]">RERA No</th>
-                  <th className="py-2.5 px-3 whitespace-nowrap min-w-[160px]">Location</th>
+                  <th className="py-2.5 px-3 whitespace-nowrap min-w-[170px]">Area / Address</th>
                   {canManage && (
-                    <th className="py-2.5 px-3 text-center whitespace-nowrap w-20">Actions</th>
+                    <th 
+                      className="sticky top-0 right-0 z-30 bg-gray-100 border-b border-gray-200 py-2.5 px-3 text-center whitespace-nowrap w-20 min-w-[80px] max-w-[80px]"
+                      style={{ right: 0 }}
+                    >
+                      Actions
+                    </th>
                   )}
                 </tr>
               </thead>
@@ -576,6 +811,8 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                 {filteredProjects.map((project, idx) => {
                   const types = Array.isArray(project.projectType) ? project.projectType : [project.projectType].filter(Boolean);
                   const typos = Array.isArray(project.typography) ? project.typography : [project.typography].filter(Boolean);
+                  const displayTypo = typos.length === 0 ? '—' : typos.join(', ');
+                  const isTypoOpen = activeTableTypoDropdown?.projectId === (project.id || project._id || idx);
 
                   return (
                     <tr 
@@ -583,12 +820,18 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                       className="hover:bg-slate-50/80 transition group"
                     >
                       {/* ID */}
-                      <td className="py-2.5 px-3 text-center text-gray-400 font-mono text-[10.5px]">
+                      <td 
+                        className="sticky left-0 z-20 py-2.5 px-3 text-center text-gray-400 font-mono text-[10.5px] bg-white group-hover:bg-slate-50 transition-colors w-14 min-w-[56px] max-w-[56px]"
+                        style={{ left: 0 }}
+                      >
                         #{project.id || idx + 1}
                       </td>
 
                       {/* Project Name */}
-                      <td className="py-2.5 px-3 font-bold text-gray-900 whitespace-nowrap">
+                      <td 
+                        className="sticky z-20 py-2.5 px-3 font-bold text-gray-900 whitespace-nowrap bg-white group-hover:bg-slate-50 transition-colors min-w-[150px] max-w-[160px]"
+                        style={{ left: '56px' }}
+                      >
                         <span className="hover:text-[#B30E2E] transition-colors">
                           {project.name}
                         </span>
@@ -618,21 +861,118 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                       </td>
 
                       {/* Typography */}
-                      <td className="py-2.5 px-3">
-                        {typos.length === 0 ? (
-                          <span className="text-gray-400 italic">—</span>
+                      <td className={`py-2 px-3 whitespace-nowrap w-48 min-w-[140px] max-w-[210px] relative ${isTypoOpen ? 'z-50' : ''}`}>
+                        {typos.length > 0 ? (
+                          <button
+                            type="button"
+                            onClick={(e) => toggleTableTypoDropdown(e, project.id || project._id || idx)}
+                            className="h-[27px] px-2.5 py-0.5 rounded-lg border border-indigo-200/90 text-[10.5px] font-bold bg-indigo-50/70 hover:bg-indigo-100/80 text-indigo-950 transition shadow-2xs flex items-center justify-between gap-1.5 w-full cursor-pointer select-none text-left custom-table-typo-toggle"
+                            title={displayTypo}
+                          >
+                            <div className="flex items-center gap-1.5 min-w-0 flex-1 truncate">
+                              <span className="truncate min-w-0">{displayTypo}</span>
+                            </div>
+                            <i className={`fa-solid fa-chevron-down text-[8px] text-indigo-400 shrink-0 transition-transform ${isTypoOpen ? 'rotate-180 text-indigo-700' : ''}`}></i>
+                          </button>
                         ) : (
-                          <div className="flex flex-wrap gap-1 max-w-sm">
-                            {typos.map(item => (
-                              <span 
-                                key={item}
-                                className="px-1.5 py-0.5 rounded bg-gray-100 border border-gray-200/80 text-[10px] font-semibold text-gray-700"
-                              >
-                                {item}
-                              </span>
-                            ))}
+                          <div className="w-full flex items-center justify-center py-0.5">
+                            <span className="text-gray-400 italic text-[10.5px]">—</span>
                           </div>
                         )}
+
+                        {isTypoOpen && typos.length > 0 && (() => {
+                          const q = tableTypoFilter.trim().toLowerCase();
+                          const filtered = q ? typos.filter(t => t.toLowerCase().includes(q)) : typos;
+
+                          return (
+                            <div 
+                              className="fixed z-[9999] bg-white rounded-2xl shadow-2xl border border-indigo-100 text-xs animate-fade-in flex flex-col overflow-hidden custom-table-typo-menu"
+                              style={{
+                                top: activeTableTypoDropdown?.coords?.top != null ? `${activeTableTypoDropdown.coords.top}px` : undefined,
+                                bottom: activeTableTypoDropdown?.coords?.bottom != null ? `${activeTableTypoDropdown.coords.bottom}px` : undefined,
+                                left: activeTableTypoDropdown?.coords ? `${activeTableTypoDropdown.coords.left}px` : undefined,
+                                width: activeTableTypoDropdown?.coords ? `${Math.max(340, activeTableTypoDropdown.coords.width)}px` : '340px',
+                                maxHeight: activeTableTypoDropdown?.coords?.maxHeight ? `${activeTableTypoDropdown.coords.maxHeight}px` : '360px',
+                                transformOrigin: activeTableTypoDropdown?.coords?.bottom != null ? 'bottom left' : 'top left'
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {/* Header */}
+                              <div className="px-3.5 py-2.5 border-b border-indigo-100/70 bg-gradient-to-r from-indigo-50/80 to-purple-50/50 flex items-center justify-between flex-shrink-0">
+                                <div className="flex items-center gap-2">
+                                  <i className="fa-solid fa-shapes text-indigo-600 text-xs"></i>
+                                  <span className="font-bold text-indigo-950 text-xs">Typography Details</span>
+                                </div>
+                                <span className="text-[10px] font-bold text-indigo-700 bg-white px-2 py-0.5 rounded-full border border-indigo-200/80 shadow-2xs">
+                                  {typos.length} items
+                                </span>
+                              </div>
+
+                              {/* Quick Search Filter if > 6 items */}
+                              {typos.length > 6 && (
+                                <div className="px-3 py-1.5 border-b border-indigo-50 bg-white flex-shrink-0">
+                                  <div className="relative flex items-center">
+                                    <i className="fa-solid fa-magnifying-glass text-indigo-300 text-[10px] absolute left-2.5 pointer-events-none"></i>
+                                    <input
+                                      type="text"
+                                      value={tableTypoFilter}
+                                      onChange={(e) => setTableTypoFilter(e.target.value)}
+                                      placeholder="Search typographies..."
+                                      className="w-full pl-7 pr-6 py-1 bg-gray-50 border border-gray-200 rounded-lg text-[11px] font-medium text-gray-800 placeholder-gray-400 focus:outline-none focus:border-indigo-500 focus:bg-white transition"
+                                    />
+                                    {tableTypoFilter && (
+                                      <button
+                                        type="button"
+                                        onClick={() => setTableTypoFilter('')}
+                                        className="absolute right-2 text-gray-400 hover:text-gray-600 text-[10px] cursor-pointer"
+                                      >
+                                        <i className="fa-solid fa-xmark"></i>
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Scrollable Badges List */}
+                              <div className="p-3 overflow-y-auto overscroll-contain custom-scrollbar flex-1 max-h-[240px]">
+                                <div className="flex flex-wrap gap-1.5">
+                                  {filtered.map((item, bIdx) => (
+                                    <span 
+                                      key={bIdx}
+                                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10.5px] font-semibold bg-indigo-50/80 border border-indigo-200/80 text-indigo-950 shadow-2xs hover:bg-indigo-100 transition"
+                                    >
+                                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0"></span>
+                                      <span>{item}</span>
+                                    </span>
+                                  ))}
+                                  {filtered.length === 0 && (
+                                    <div className="py-4 text-center w-full text-gray-400 italic text-[11px]">
+                                      No typography matches "{tableTypoFilter}"
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Footer */}
+                              <div className="px-3.5 py-2 border-t border-indigo-100/70 bg-gray-50/90 text-[10.5px] text-gray-500 flex items-center justify-between flex-shrink-0">
+                                <span className="text-[10px] text-gray-400 flex items-center gap-1.5">
+                                  <i className="fa-solid fa-shapes text-[9px] text-indigo-400"></i>
+                                  <span>Project Typographies</span>
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveTableTypoDropdown(null);
+                                    setTableTypoFilter('');
+                                  }}
+                                  className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-[10.5px] transition shadow-2xs cursor-pointer"
+                                >
+                                  Close
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </td>
 
                       {/* RERA Number */}
@@ -646,14 +986,33 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                         )}
                       </td>
 
-                      {/* Address */}
-                      <td className="py-2.5 px-3 text-gray-600 max-w-xs truncate" title={project.address}>
-                        {project.address || <span className="text-gray-400 italic">—</span>}
+                      {/* Location & Area */}
+                      <td className="py-2.5 px-3 max-w-xs" title={`${project.area ? project.area + ' - ' : ''}${project.address || ''}`}>
+                        {project.area || project.address ? (
+                          <div className="flex flex-col gap-0.5">
+                            {project.area && (
+                              <span className="font-bold text-gray-900 text-xs flex items-center gap-1.5">
+                                <i className="fa-solid fa-location-dot text-[#B30E2E] text-[10px]"></i>
+                                <span>{project.area}</span>
+                              </span>
+                            )}
+                            {project.address && (
+                              <span className="text-[11px] text-gray-500 truncate" title={project.address}>
+                                {project.address}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400 italic">—</span>
+                        )}
                       </td>
 
                       {/* Actions */}
                       {canManage && (
-                        <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                        <td 
+                          className="sticky right-0 z-20 py-2.5 px-3 text-center whitespace-nowrap bg-white group-hover:bg-slate-50 transition-colors w-20 min-w-[80px] max-w-[80px]"
+                          style={{ right: 0 }}
+                        >
                           <div className="flex items-center justify-center gap-1.5">
                             {/* Edit Button */}
                             <button
@@ -738,7 +1097,33 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                       type="text" 
                       required 
                       value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      onChange={(e) => {
+                        const newName = e.target.value;
+                        const wasMisc = (formData.name || '').trim().toLowerCase().includes('miscellaneous');
+                        const isNowMisc = newName.trim().toLowerCase().includes('miscellaneous');
+
+                        if (!wasMisc && isNowMisc) {
+                          // Auto-select all project types and all typographies when Miscellaneous is typed
+                          const allTypes = [...PROJECT_TYPES];
+                          const allTypos = [];
+                          allTypes.forEach(pType => {
+                            if (pType === 'Apartment') {
+                              APARTMENT_TYPOGRAPHY_GROUPS.forEach(grp => grp.items.forEach(it => { if (!allTypos.includes(it)) allTypos.push(it); }));
+                            } else {
+                              const opts = TYPOGRAPHY_BY_TYPE[pType] || [];
+                              opts.forEach(it => { if (!allTypos.includes(it)) allTypos.push(it); });
+                            }
+                          });
+                          setFormData({
+                            ...formData,
+                            name: newName,
+                            projectType: allTypes,
+                            typography: allTypos
+                          });
+                        } else {
+                          setFormData({ ...formData, name: newName });
+                        }
+                      }}
                       placeholder="Enter project name"
                       className="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC]"
                     />
@@ -770,7 +1155,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                 {/* 3. Project Type (Exact Lead Dropdown Trigger Button) */}
                 <div ref={typeDropdownRef} className="relative">
                   <label className="block text-xs font-bold text-gray-700 mb-1">
-                    Project Type
+                    Project Type *
                   </label>
                   <button
                     type="button"
@@ -795,7 +1180,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                 {/* 4. Project Typography (Exact Lead Dropdown Trigger Button) */}
                 <div ref={typoDropdownRef} className="relative">
                   <label className="block text-xs font-bold text-gray-700 mb-1">
-                    Project Typography
+                    Project Typography *
                   </label>
                   <button
                     type="button"
@@ -822,16 +1207,93 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                   </button>
                 </div>
 
-                {/* 5. Location */}
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Location</label>
-                  <textarea 
-                    rows={2}
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    placeholder="Enter project location"
-                    className="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC]"
-                  />
+                {/* 5. Area & Address (Side by Side) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Area Dropdown */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-bold text-gray-700">
+                        Area <span className="text-rose-500">*</span>
+                      </label>
+                      {isCustomArea ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsCustomArea(false);
+                            setFormData(prev => ({ ...prev, area: '' }));
+                          }}
+                          className="text-[10px] text-[#B30E2E] hover:underline font-bold flex items-center gap-1 cursor-pointer"
+                        >
+                          <i className="fa-solid fa-list text-[9px]"></i>
+                          <span>Area List</span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsCustomArea(true);
+                            setFormData(prev => ({ ...prev, area: '' }));
+                          }}
+                          className="text-[10px] text-gray-500 hover:text-[#B30E2E] font-medium flex items-center gap-1 cursor-pointer"
+                          title="Type custom area"
+                        >
+                          <i className="fa-solid fa-plus text-[9px]"></i>
+                          <span>Custom Area</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {isCustomArea ? (
+                      <div className="relative flex items-center">
+                        <input 
+                          type="text"
+                          required
+                          autoFocus
+                          value={formData.area}
+                          onChange={(e) => setFormData({ ...formData, area: e.target.value })}
+                          placeholder="Type custom area..."
+                          className="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800 bg-white"
+                        />
+                      </div>
+                    ) : (
+                      <select 
+                        required
+                        value={formData.area}
+                        onChange={(e) => {
+                          if (e.target.value === '__custom__') {
+                            setIsCustomArea(true);
+                            setFormData({ ...formData, area: '' });
+                          } else {
+                            setFormData({ ...formData, area: e.target.value });
+                          }
+                        }}
+                        className="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800 bg-white cursor-pointer"
+                      >
+                        <option value="">Select Area</option>
+                        {formData.area && !PROJECT_AREAS.includes(formData.area) && (
+                          <option value={formData.area}>{formData.area}</option>
+                        )}
+                        {PROJECT_AREAS.map(areaName => (
+                          <option key={areaName} value={areaName}>{areaName}</option>
+                        ))}
+                        <option value="__custom__">+ Other / Custom Area</option>
+                      </select>
+                    )}
+                  </div>
+
+                  {/* Address Field */}
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      Address
+                    </label>
+                    <input 
+                      type="text"
+                      value={formData.address}
+                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                      placeholder="Enter project address"
+                      className="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800"
+                    />
+                  </div>
                 </div>
 
               </div>
@@ -875,7 +1337,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
       {showModal && isTypeDropdownOpen && typeCoords && (
         <div 
           onWheel={(e) => e.stopPropagation()}
-          className="fixed z-[99999] bg-white border border-gray-200 rounded-xl shadow-2xl py-1 overflow-y-auto overscroll-contain custom-scrollbar animate-fade-in project-type-dropdown-menu"
+          className="fixed z-[99999] bg-white border border-gray-200 rounded-xl shadow-2xl overflow-y-auto overscroll-contain custom-scrollbar animate-fade-in project-type-dropdown-menu flex flex-col"
           style={{
             top: `${typeCoords.top}px`,
             left: `${typeCoords.left}px`,
@@ -883,100 +1345,271 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
             maxHeight: `${typeCoords.maxHeight}px`
           }}
         >
-          {PROJECT_TYPES.map(type => {
-            const isChecked = formData.projectType.includes(type);
-            return (
+          {/* SELECT ALL TOOLBAR (Only shown for Miscellaneous projects) */}
+          <div className="px-3 py-1.5 border-b border-gray-100 bg-gray-50 flex items-center justify-between flex-shrink-0">
+            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Project Types</span>
+            {isMiscellaneousProject && (
               <button
-                key={type}
                 type="button"
-                onClick={() => handleToggleProjectType(type)}
-                className={`w-full text-left px-3 py-2 text-xs font-semibold hover:bg-rose-50 hover:text-[#B30E2E] transition flex items-center gap-2.5 cursor-pointer ${
-                  isChecked ? 'bg-[#FFF0F2]/60 text-[#B30E2E] font-bold' : 'text-gray-700'
-                }`}
+                onClick={handleToggleSelectAllProjectTypes}
+                className="text-[11px] font-bold text-[#B30E2E] hover:text-[#8A0B22] hover:underline cursor-pointer flex items-center gap-1"
               >
-                <span
-                  className={`w-3.5 h-3.5 rounded flex items-center justify-center border transition flex-shrink-0 ${
-                    isChecked
-                      ? 'bg-[#B30E2E] border-[#B30E2E] text-white'
-                      : 'bg-white border-gray-300'
+                <i className={`fa-solid ${PROJECT_TYPES.every(t => formData.projectType.includes(t)) ? 'fa-square-check' : 'fa-check-double'} text-[10px]`}></i>
+                <span>{PROJECT_TYPES.every(t => formData.projectType.includes(t)) ? 'Deselect All' : 'Select All'}</span>
+              </button>
+            )}
+          </div>
+
+          <div className="py-1">
+            {PROJECT_TYPES.map(type => {
+              const isChecked = formData.projectType.includes(type);
+              return (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => handleToggleProjectType(type)}
+                  className={`w-full text-left px-3 py-2 text-xs font-semibold hover:bg-rose-50 hover:text-[#B30E2E] transition flex items-center gap-2.5 cursor-pointer ${
+                    isChecked ? 'bg-[#FFF0F2]/60 text-[#B30E2E] font-bold' : 'text-gray-700'
                   }`}
                 >
-                  {isChecked && <i className="fa-solid fa-check text-[9px]"></i>}
-                </span>
-                <span className="truncate">{type}</span>
-              </button>
-            );
-          })}
+                  <span
+                    className={`w-3.5 h-3.5 rounded flex items-center justify-center border transition flex-shrink-0 ${
+                      isChecked
+                        ? 'bg-[#B30E2E] border-[#B30E2E] text-white'
+                        : 'bg-white border-gray-300'
+                    }`}
+                  >
+                    {isChecked && <i className="fa-solid fa-check text-[9px]"></i>}
+                  </span>
+                  <span className="truncate">{type}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
 
       {/* FLOATING PROJECT TYPOGRAPHY DROPDOWN MENU (position: fixed z-[99999] so it floats in FRONT of modal & footer) */}
-      {showModal && isTypoDropdownOpen && typoCoords && formData.projectType.length > 0 && (
-        <div 
-          onWheel={(e) => e.stopPropagation()}
-          className="fixed z-[99999] bg-white border border-gray-200 rounded-xl shadow-2xl py-1 overflow-y-auto overscroll-contain custom-scrollbar animate-fade-in project-typo-dropdown-menu"
-          style={{
-            top: `${typoCoords.top}px`,
-            left: `${typoCoords.left}px`,
-            width: `${typoCoords.width}px`,
-            maxHeight: `${typoCoords.maxHeight}px`
-          }}
-        >
-          {formData.projectType.map(pType => {
-            const options = TYPOGRAPHY_BY_TYPE[pType] || [];
-            return (
-              <div key={pType} className="border-b border-gray-100 last:border-none py-1">
-                <div className="px-3 py-1 text-[10px] font-bold text-gray-500 uppercase tracking-wider bg-gray-50 flex items-center justify-between">
-                  <span>{pType} Configurations</span>
-                </div>
-                {options.map(item => {
-                  const isChecked = formData.typography.includes(item);
-                  return (
-                    <button
-                      key={item}
-                      type="button"
-                      onClick={() => handleToggleTypography(item)}
-                      className={`w-full text-left px-3 py-2 text-xs font-semibold hover:bg-rose-50 hover:text-[#B30E2E] transition flex items-center gap-2.5 cursor-pointer ${
-                        isChecked ? 'bg-[#FFF0F2]/60 text-[#B30E2E] font-bold' : 'text-gray-700'
-                      }`}
-                    >
-                      <span
-                        className={`w-3.5 h-3.5 rounded flex items-center justify-center border transition flex-shrink-0 ${
-                          isChecked
-                            ? 'bg-[#B30E2E] border-[#B30E2E] text-white'
-                            : 'bg-white border-gray-300'
-                        }`}
-                      >
-                        {isChecked && <i className="fa-solid fa-check text-[9px]"></i>}
-                      </span>
-                      <span className="truncate">{item}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            );
-          })}
+      {showModal && isTypoDropdownOpen && typoCoords && formData.projectType.length > 0 && (() => {
+        const query = typoSearch.trim().toLowerCase();
 
-          {/* Add Custom Tag */}
-          <div className="p-2 border-t border-gray-100 bg-gray-50 flex items-center gap-1.5">
-            <input
-              type="text"
-              value={customTypoInput}
-              onChange={(e) => setCustomTypoInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustomTypo(e); }}}
-              placeholder="Add custom typography tag..."
-              className="flex-1 px-2.5 py-1 rounded-lg border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] bg-white"
-            />
-            <button
-              type="button"
-              onClick={handleAddCustomTypo}
-              className="px-2.5 py-1 bg-[#B30E2E] hover:bg-[#8A0B22] text-white rounded-lg text-xs font-bold cursor-pointer transition shadow-2xs"
-            >
-              + Add
-            </button>
+        // Calculate total matches across all selected project types
+        let totalMatches = 0;
+        formData.projectType.forEach(pType => {
+          if (pType === 'Apartment') {
+            APARTMENT_TYPOGRAPHY_GROUPS.forEach(grp => {
+              if (!query || grp.group.toLowerCase().includes(query)) {
+                totalMatches += grp.items.length;
+              } else {
+                totalMatches += grp.items.filter(item => item.toLowerCase().includes(query)).length;
+              }
+            });
+          } else {
+            const opts = TYPOGRAPHY_BY_TYPE[pType] || [];
+            totalMatches += query ? opts.filter(item => item.toLowerCase().includes(query)).length : opts.length;
+          }
+        });
+
+        return (
+          <div 
+            onWheel={(e) => e.stopPropagation()}
+            className="fixed z-[99999] bg-white border border-gray-200 rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-fade-in project-typo-dropdown-menu"
+            style={{
+              top: `${typoCoords.top}px`,
+              left: `${typoCoords.left}px`,
+              width: `${typoCoords.width}px`,
+              maxHeight: `${typoCoords.maxHeight}px`
+            }}
+          >
+            {/* STICKY SEARCH BAR AT TOP */}
+            <div className="p-2.5 border-b border-gray-100 bg-gray-50/95 flex-shrink-0 space-y-2">
+              <div className="relative flex items-center">
+                <i className="fa-solid fa-magnifying-glass text-gray-400 text-xs absolute left-3 pointer-events-none"></i>
+                <input
+                  type="text"
+                  autoFocus
+                  value={typoSearch}
+                  onChange={(e) => setTypoSearch(e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                  placeholder="Search typography (e.g. 2 BHK, Flat, Penthouse)..."
+                  className="w-full pl-8 pr-7 py-1.5 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition shadow-xs"
+                />
+                {typoSearch && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setTypoSearch('');
+                    }}
+                    className="absolute right-2.5 text-gray-400 hover:text-gray-600 w-4 h-4 rounded-full flex items-center justify-center cursor-pointer text-[10px]"
+                    title="Clear search"
+                  >
+                    <i className="fa-solid fa-xmark"></i>
+                  </button>
+                )}
+              </div>
+
+              {/* SELECT ALL TOOLBAR (Only shown for Miscellaneous projects) */}
+              <div className="flex items-center justify-between px-0.5 pt-0.5">
+                <span className="text-[10.5px] font-bold text-gray-500 uppercase tracking-wider">
+                  {formData.typography.length} of {allAvailableTypographies.length} selected
+                </span>
+                {isMiscellaneousProject && (
+                  <button
+                    type="button"
+                    onClick={handleToggleSelectAllTypography}
+                    className="text-[11px] font-bold text-[#B30E2E] hover:text-[#8A0B22] hover:underline cursor-pointer flex items-center gap-1"
+                  >
+                    <i className={`fa-solid ${allAvailableTypographies.length > 0 && allAvailableTypographies.every(item => formData.typography.includes(item)) ? 'fa-square-check' : 'fa-check-double'} text-[10px]`}></i>
+                    <span>
+                      {allAvailableTypographies.length > 0 && allAvailableTypographies.every(item => formData.typography.includes(item)) ? 'Deselect All' : 'Select All'}
+                    </span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* SCROLLABLE LIST OF TYPOGRAPHIES */}
+            <div className="overflow-y-auto overscroll-contain custom-scrollbar flex-1 py-1">
+              {totalMatches === 0 ? (
+                <div className="py-7 px-4 text-center">
+                  <div className="w-8 h-8 rounded-full bg-gray-100 text-gray-400 mx-auto flex items-center justify-center text-xs mb-2">
+                    <i className="fa-solid fa-magnifying-glass"></i>
+                  </div>
+                  <p className="text-xs font-bold text-gray-700">No typography matches</p>
+                  <p className="text-[11px] text-gray-400 mt-0.5">Try searching with a different keyword</p>
+                </div>
+              ) : (
+                formData.projectType.map(pType => {
+                  const options = TYPOGRAPHY_BY_TYPE[pType] || [];
+
+                  if (pType === 'Apartment') {
+                    const filteredGroups = APARTMENT_TYPOGRAPHY_GROUPS.map(grp => {
+                      if (!query) return grp;
+                      if (grp.group.toLowerCase().includes(query)) return grp;
+                      const matched = grp.items.filter(it => it.toLowerCase().includes(query));
+                      return { ...grp, items: matched };
+                    }).filter(grp => grp.items.length > 0);
+
+                    if (filteredGroups.length === 0) return null;
+
+                    return (
+                      <div key={pType} className="border-b border-gray-100 last:border-none py-1">
+                        <div className="px-3 py-1.5 text-[10px] font-bold text-gray-500 uppercase tracking-wider bg-gray-50 flex items-center justify-between">
+                          <span>Apartment Configurations</span>
+                        </div>
+                        <div className="divide-y divide-gray-100">
+                          {filteredGroups.map(grp => (
+                            <div key={grp.group} className="py-1">
+                              <div className="px-3 py-1 bg-gray-50/80 text-[10px] font-bold text-gray-500 uppercase tracking-wider flex items-center justify-between border-y border-gray-100/80">
+                                <span>{grp.group}</span>
+                                <span className="text-[9px] text-gray-400 font-normal">
+                                  {grp.items.filter(item => formData.typography.includes(item)).length} selected
+                                </span>
+                              </div>
+                              {grp.items.map(item => {
+                                const isChecked = formData.typography.includes(item);
+                                return (
+                                  <button
+                                    key={item}
+                                    type="button"
+                                    onClick={() => handleToggleTypography(item)}
+                                    className={`w-full text-left px-3 py-1.5 text-xs font-semibold hover:bg-rose-50 hover:text-[#B30E2E] transition flex items-center gap-2.5 cursor-pointer ${
+                                      isChecked ? 'bg-[#FFF0F2]/60 text-[#B30E2E] font-bold' : 'text-gray-700'
+                                    }`}
+                                  >
+                                    <span
+                                      className={`w-3.5 h-3.5 rounded flex items-center justify-center border transition flex-shrink-0 ${
+                                        isChecked
+                                          ? 'bg-[#B30E2E] border-[#B30E2E] text-white'
+                                          : 'bg-white border-gray-300'
+                                      }`}
+                                    >
+                                      {isChecked && <i className="fa-solid fa-check text-[9px]"></i>}
+                                    </span>
+                                    <span className="truncate">{item}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // Non-Apartment (Plots, Villa)
+                  const filteredOptions = query
+                    ? options.filter(item => item.toLowerCase().includes(query))
+                    : options;
+
+                  if (filteredOptions.length === 0) return null;
+
+                  return (
+                    <div key={pType} className="border-b border-gray-100 last:border-none py-1">
+                      <div className="px-3 py-1.5 text-[10px] font-bold text-gray-500 uppercase tracking-wider bg-gray-50 flex items-center justify-between">
+                        <span>{pType === 'Plots' ? 'Plot Sub-Types' : `${pType} Configurations`}</span>
+                      </div>
+                      {filteredOptions.map(item => {
+                        const isChecked = formData.typography.includes(item);
+                        return (
+                          <button
+                            key={item}
+                            type="button"
+                            onClick={() => handleToggleTypography(item)}
+                            className={`w-full text-left px-3 py-2 text-xs font-semibold hover:bg-rose-50 hover:text-[#B30E2E] transition flex items-center gap-2.5 cursor-pointer ${
+                              isChecked ? 'bg-[#FFF0F2]/60 text-[#B30E2E] font-bold' : 'text-gray-700'
+                            }`}
+                          >
+                            <span
+                              className={`w-3.5 h-3.5 rounded flex items-center justify-center border transition flex-shrink-0 ${
+                                isChecked
+                                  ? 'bg-[#B30E2E] border-[#B30E2E] text-white'
+                                  : 'bg-white border-gray-300'
+                              }`}
+                            >
+                              {isChecked && <i className="fa-solid fa-check text-[9px]"></i>}
+                            </span>
+                            <span className="truncate">{item}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* FOOTER BAR: SELECTION SUMMARY & DONE BUTTON */}
+            <div className="p-2 border-t border-gray-100 bg-gray-50 flex items-center justify-between flex-shrink-0">
+              <div className="flex items-center gap-2">
+                {isMiscellaneousProject && (
+                  <button
+                    type="button"
+                    onClick={handleToggleSelectAllTypography}
+                    className="text-[11px] font-bold text-[#B30E2E] hover:text-[#8A0B22] hover:underline cursor-pointer"
+                  >
+                    {allAvailableTypographies.length > 0 && allAvailableTypographies.every(item => formData.typography.includes(item)) ? 'Deselect All' : 'Select All'}
+                  </button>
+                )}
+                <span className="text-[11px] font-semibold text-gray-500">
+                  ({formData.typography.length} selected)
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsTypoDropdownOpen(false);
+                  setTypoSearch('');
+                }}
+                className="px-3 py-1 bg-[#B30E2E] hover:bg-[#8A0B22] text-white text-[11px] font-bold rounded-lg transition cursor-pointer shadow-xs"
+              >
+                Done
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* DELETE CONFIRMATION MODAL */}
       {deleteConfirmation.isOpen && (

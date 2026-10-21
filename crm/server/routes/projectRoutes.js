@@ -28,6 +28,7 @@ const formatProjectRow = (row) => {
     projectType: parseList(row.project_type),
     typography: parseList(row.typography),
     reraNumber: row.rera_number || '',
+    area: row.area || '',
     address: row.address || '',
     createdBy: row.created_by || 'Admin',
     createdAt: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString(),
@@ -46,8 +47,8 @@ router.get('/', protectAdmin, async (req, res) => {
 
     if (search && search.trim()) {
       const q = `%${search.trim().toLowerCase()}%`;
-      sql += ' AND (LOWER(name) LIKE ? OR LOWER(developer_name) LIKE ? OR LOWER(address) LIKE ? OR LOWER(rera_number) LIKE ?)';
-      params.push(q, q, q, q);
+      sql += ' AND (LOWER(name) LIKE ? OR LOWER(developer_name) LIKE ? OR LOWER(address) LIKE ? OR LOWER(area) LIKE ? OR LOWER(rera_number) LIKE ?)';
+      params.push(q, q, q, q, q);
     }
 
     if (type && type.trim() && type !== 'All') {
@@ -101,7 +102,7 @@ router.get('/:id', protectAdmin, async (req, res) => {
 // @access  Protected (SuperAdmin, Admin, SystemAdmin, Manager)
 router.post('/', protectAdmin, async (req, res) => {
   try {
-    const { name, developerName = '', projectType = [], typography = [], reraNumber = '', address = '' } = req.body;
+    const { name, developerName = '', projectType = [], typography = [], reraNumber = '', area = '', address = '' } = req.body;
 
     if (!name || !name.trim()) {
       return res.status(400).json({
@@ -113,6 +114,7 @@ router.post('/', protectAdmin, async (req, res) => {
     const cleanName = name.trim();
     const cleanDeveloper = developerName ? developerName.trim() : '';
     const cleanRera = reraNumber ? reraNumber.trim() : '';
+    const cleanArea = area ? area.trim() : '';
     const cleanAddress = address ? address.trim() : '';
 
     // Check for duplicate project name
@@ -127,14 +129,35 @@ router.post('/', protectAdmin, async (req, res) => {
     const projectTypeArray = Array.isArray(projectType) ? projectType : (projectType ? [projectType] : []);
     const typographyArray = Array.isArray(typography) ? typography : (typography ? [typography] : []);
 
+    if (projectTypeArray.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Project Type is required. Please select at least one type.'
+      });
+    }
+
+    if (typographyArray.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Project Typography is required. Please select at least one typography.'
+      });
+    }
+
+    if (!cleanArea && !cleanAddress) {
+      return res.status(400).json({
+        success: false,
+        message: 'Area is a required field.'
+      });
+    }
+
     const projectTypeJson = JSON.stringify(projectTypeArray);
     const typographyJson = JSON.stringify(typographyArray);
     const createdBy = req.admin?.username || 'Admin';
 
     const [result] = await query(
-      `INSERT INTO projects (name, developer_name, project_type, typography, rera_number, address, created_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [cleanName, cleanDeveloper, projectTypeJson, typographyJson, cleanRera, cleanAddress, createdBy]
+      `INSERT INTO projects (name, developer_name, project_type, typography, rera_number, area, address, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [cleanName, cleanDeveloper, projectTypeJson, typographyJson, cleanRera, cleanArea, cleanAddress, createdBy]
     );
 
     const newProjectId = result.insertId;
@@ -161,7 +184,7 @@ router.post('/', protectAdmin, async (req, res) => {
 router.put('/:id', protectAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, developerName = '', projectType = [], typography = [], reraNumber = '', address = '' } = req.body;
+    const { name, developerName = '', projectType = [], typography = [], reraNumber = '', area = '', address = '' } = req.body;
 
     if (!name || !name.trim()) {
       return res.status(400).json({
@@ -173,6 +196,7 @@ router.put('/:id', protectAdmin, async (req, res) => {
     const cleanName = name.trim();
     const cleanDeveloper = developerName ? developerName.trim() : '';
     const cleanRera = reraNumber ? reraNumber.trim() : '';
+    const cleanArea = area ? area.trim() : '';
     const cleanAddress = address ? address.trim() : '';
 
     // Check if project exists
@@ -193,14 +217,35 @@ router.put('/:id', protectAdmin, async (req, res) => {
     const projectTypeArray = Array.isArray(projectType) ? projectType : (projectType ? [projectType] : []);
     const typographyArray = Array.isArray(typography) ? typography : (typography ? [typography] : []);
 
+    if (projectTypeArray.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Project Type is required. Please select at least one type.'
+      });
+    }
+
+    if (typographyArray.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Project Typography is required. Please select at least one typography.'
+      });
+    }
+
+    if (!cleanArea && !cleanAddress) {
+      return res.status(400).json({
+        success: false,
+        message: 'Area is a required field.'
+      });
+    }
+
     const projectTypeJson = JSON.stringify(projectTypeArray);
     const typographyJson = JSON.stringify(typographyArray);
 
     await query(
       `UPDATE projects 
-       SET name = ?, developer_name = ?, project_type = ?, typography = ?, rera_number = ?, address = ?
+       SET name = ?, developer_name = ?, project_type = ?, typography = ?, rera_number = ?, area = ?, address = ?
        WHERE id = ?`,
-      [cleanName, cleanDeveloper, projectTypeJson, typographyJson, cleanRera, cleanAddress, id]
+      [cleanName, cleanDeveloper, projectTypeJson, typographyJson, cleanRera, cleanArea, cleanAddress, id]
     );
 
     const [updatedRows] = await query('SELECT * FROM projects WHERE id = ? LIMIT 1', [id]);
@@ -225,18 +270,30 @@ router.put('/:id', protectAdmin, async (req, res) => {
 // @access  Protected (SuperAdmin, Admin, SystemAdmin)
 router.delete('/:id', protectAdmin, async (req, res) => {
   try {
-    const { id } = req.params;
-
     const [existing] = await query('SELECT id, name FROM projects WHERE id = ? LIMIT 1', [id]);
     if (!existing || existing.length === 0) {
       return res.status(404).json({ success: false, message: 'Project not found.' });
     }
 
+    const projName = existing[0].name;
+
     await query('DELETE FROM projects WHERE id = ?', [id]);
+
+    // Automatically unassign linked leads when this project is deleted
+    if (projName) {
+      try {
+        await query(
+          'UPDATE leads SET project_name = NULL, project_type = NULL, typography = NULL WHERE LOWER(TRIM(project_name)) = LOWER(TRIM(?))',
+          [projName]
+        );
+      } catch (err) {
+        console.warn('Could not reset leads for deleted project:', err.message);
+      }
+    }
 
     return res.json({
       success: true,
-      message: `Project '${existing[0].name}' deleted successfully.`
+      message: `Project '${projName}' deleted successfully and linked leads unassigned.`
     });
   } catch (error) {
     console.error('Delete Project Error:', error.message);

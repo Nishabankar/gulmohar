@@ -61,24 +61,43 @@ const formatToInputDate = (dateStr) => {
   }
 };
 
-const PROJECT_TYPES = ['Apartment', 'Studio', 'Villa', 'Farm House'];
+const PROJECT_TYPES = ['Apartment', 'Villa', 'Plots'];
 
 const PROJECT_TYPOGRAPHY_MAP = {
   'Apartment': [
-    'Studio Apartment', '1 RK', '1 BHK', '1.5 BHK', '2 BHK', '2.5 BHK', 
-    '3 BHK', '3.5 BHK', '4 BHK', '5 BHK', 'Penthouse / Duplex'
+    'Studio Apartment',
+    '1 BHK Flat', '1 BHK Duplex', '1 BHK Penthouse',
+    '1.5 BHK Flat', '1.5 BHK Duplex', '1.5 BHK Penthouse',
+    '2 BHK Flat', '2 BHK Duplex', '2 BHK Penthouse',
+    '2.5 BHK Flat', '2.5 BHK Duplex', '2.5 BHK Penthouse',
+    '3 BHK Flat', '3 BHK Duplex', '3 BHK Penthouse',
+    '3.5 BHK Flat', '3.5 BHK Duplex', '3.5 BHK Penthouse',
+    '4 BHK Flat', '4 BHK Duplex', '4 BHK Penthouse',
+    '4.5 BHK Flat', '4.5 BHK Duplex', '4.5 BHK Penthouse',
+    '5 BHK Flat', '5 BHK Duplex', '5 BHK Penthouse',
+    '1 BHK', '1.5 BHK', '2 BHK', '2.5 BHK', '3 BHK', '3.5 BHK', '4 BHK', '4.5 BHK', '5 BHK', 'Penthouse / Duplex'
+  ],
+  'Villa': [
+    '1 BHK Villa',
+    '1.5 BHK Villa',
+    '2 BHK Villa',
+    '2.5 BHK Villa',
+    '3 BHK Villa',
+    '3.5 BHK Villa',
+    '4 BHK Villa',
+    '4.5 BHK Villa',
+    '5 BHK Villa'
+  ],
+  'Plots': [
+    'Residential',
+    'Industrial',
+    'Agriculture',
+    'Non-Agriculture'
   ],
   'Studio': [
     'Studio Apartment', '1 RK Studio', 'Executive Studio'
   ],
-  'Villa': [
-    '2 BHK Villa', '3 BHK Villa', '4 BHK Villa', '5 BHK Villa', 'Row House', 'Duplex Villa'
-  ],
-  'Farm House': [
-    '1 Guntha', '2 Guntha', '3 Guntha', '4 Guntha', '5 Guntha', 
-    '6 Guntha', '7 Guntha', '8 Guntha', '9 Guntha', '10 Guntha',
-    '11 Guntha', '21 Guntha', 'Half Acre (20 Guntha)', '1 Acre', '2+ Acre'
-  ]
+  'Farm House': []
 };
 
 const getProjectTypesForProject = (projectsList, projectName) => {
@@ -147,7 +166,7 @@ const getAutoTypographyForProjectType = (projectsList, projectName, projectType)
 
   // Filter project's typographies that match any of the selected types
   const matched = projTypo.filter(t => validTypoSet.has(t.toLowerCase()));
-  return (matched.length > 0 ? matched : projTypo).join(', ');
+  return (matched.length > 0 ? matched : (validTypoSet.size > 0 ? projTypo : [])).join(', ');
 };
 
 
@@ -161,11 +180,9 @@ const DEFAULT_COLUMNS = [
   { id: 'priority', label: 'Priority', visible: true },
   { id: 'followupDate', label: 'Followup Date', visible: true },
   { id: 'projectName', label: 'Project Name', visible: true },
-  { id: 'projectType', label: 'Project Type', visible: true },
   { id: 'typography', label: 'Typography', visible: true },
   { id: 'carpetArea', label: 'Carpet Area', visible: true },
   { id: 'budget', label: 'Budget', visible: true },
-  { id: 'plotsCount', label: 'No. of Guntha', visible: true },
   { id: 'assignedAgent', label: 'Assigned Agent', visible: true },
   { id: 'createdBy', label: 'Created By', visible: true },
   { id: 'notes', label: 'Notes', visible: true },
@@ -174,7 +191,7 @@ const DEFAULT_COLUMNS = [
 
 // Add columns introduced after a user saved their layout (e.g. Priority), placed where DEFAULT_COLUMNS has them
 const withNewDefaultColumns = (cols) => {
-  const merged = [...cols];
+  const merged = cols.filter(c => c.id !== 'visitDate' && c.id !== 'projectType' && c.id !== 'plotsCount');
   DEFAULT_COLUMNS.forEach((def, i) => {
     if (merged.some(m => m.id === def.id)) return;
     const prevId = i > 0 ? DEFAULT_COLUMNS[i - 1].id : null;
@@ -185,6 +202,20 @@ const withNewDefaultColumns = (cols) => {
 };
 
 const PRIORITY_OPTIONS = ['Hot', 'Cold'];
+export const BUDGET_OPTIONS = (() => {
+  const opts = ['25 L'];
+  for (let lakh = 50; lakh <= 500; lakh += 5) {
+    if (lakh < 100) {
+      opts.push(`${lakh} L`);
+    } else if (lakh % 100 === 0) {
+      opts.push(`${lakh / 100} Cr`);
+    } else {
+      opts.push(`${(lakh / 100).toFixed(2)} Cr`);
+    }
+  }
+  opts.push('5+ Cr');
+  return opts;
+})();
 const PRIORITY_BADGE = {
   Hot: 'bg-rose-50 border-rose-300 text-[#B30E2E]',
   Cold: 'bg-sky-50 border-sky-300 text-sky-700',
@@ -290,12 +321,14 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
   // Active Inline Dropdown Popover State: { rowId: string, field: 'status' | 'followupDate' | 'plotsCount' | 'assignedAgent' | 'projectName' | 'projectType' }
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [projectsList, setProjectsList] = useState([]);
+  const [tableTypoFilter, setTableTypoFilter] = useState('');
 
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (activeDropdown) {
         if (!e.target || typeof e.target.closest !== 'function' || (!e.target.closest('.custom-dropdown-menu') && !e.target.closest('.custom-dropdown-toggle'))) {
           setActiveDropdown(null);
+          setTableTypoFilter('');
         }
       }
     };
@@ -303,6 +336,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       if (activeDropdown) {
         if (!e.target || typeof e.target.closest !== 'function' || !e.target.closest('.custom-dropdown-menu')) {
           setActiveDropdown(null);
+          setTableTypoFilter('');
         }
       }
     };
@@ -323,8 +357,12 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          const filtered = parsed.filter(c => c.id !== 'visitDate');
-          if (filtered.length > 0) return withNewDefaultColumns(filtered);
+          const filtered = parsed.filter(c => c.id !== 'visitDate' && c.id !== 'projectType' && c.id !== 'plotsCount');
+          if (filtered.length > 0) {
+            const result = withNewDefaultColumns(filtered);
+            try { localStorage.setItem('leadsTableColumnConfig', JSON.stringify(result)); } catch (err) {}
+            return result;
+          }
         }
       }
     } catch (e) {}
@@ -343,7 +381,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
         });
         const data = await res.json();
         if (data.success && Array.isArray(data.columnPreferences) && data.columnPreferences.length > 0) {
-          const filteredPrefs = data.columnPreferences.filter(c => c.id !== 'visitDate');
+          const filteredPrefs = data.columnPreferences.filter(c => c.id !== 'visitDate' && c.id !== 'projectType' && c.id !== 'plotsCount');
           const merged = filteredPrefs.map(col => {
             const def = DEFAULT_COLUMNS.find(d => d.id === col.id);
             return {
@@ -546,7 +584,12 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     lastName: '',
     phone: '',
     email: '',
-    plotsCount: '1 Guntha',
+    projectName: '',
+    projectType: '',
+    typography: '',
+    carpetArea: '',
+    budget: '',
+    plotsCount: '',
     visitDate: '',
     visitTime: '',
     followupDate: '',
@@ -1069,6 +1112,14 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     fetchProjectsList();
   }, []);
 
+  // Refetch projects & enquiries when switching back to enquiries tab
+  useEffect(() => {
+    if (activeTab === 'enquiries') {
+      fetchProjectsList();
+      fetchEnquiries({ silent: true });
+    }
+  }, [activeTab]);
+
   // Keep every user's view in sync with the DB (priority/status changes made by others)
   // ponytail: 60s polling + refetch on tab focus; switch to websockets/SSE if near-instant sync is needed
   useEffect(() => {
@@ -1146,12 +1197,22 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       }
     }
 
+    let formattedCarpet = (newLeadFormData.carpetArea || '').trim();
+    if (formattedCarpet && !/sq\.?\s*ft/i.test(formattedCarpet)) {
+      formattedCarpet = `${formattedCarpet} sqft`;
+    }
+
     const payload = {
       firstName: newLeadFormData.firstName.trim(),
       lastName: newLeadFormData.lastName.trim(),
       phone: newLeadFormData.phone.trim(),
       email: newLeadFormData.email.trim(),
-      plotsCount: newLeadFormData.plotsCount || '1 Guntha',
+      projectName: (newLeadFormData.projectName || '').trim(),
+      projectType: (newLeadFormData.projectType || '').trim(),
+      typography: (newLeadFormData.typography || '').trim(),
+      carpetArea: formattedCarpet,
+      budget: (newLeadFormData.budget || '').trim(),
+      plotsCount: formattedCarpet || newLeadFormData.plotsCount || '1 Plot',
       visitDate: newLeadFormData.visitDate || '',
       visitTime: newLeadFormData.visitTime || (newLeadFormData.followupDate ? '11:00' : ''),
       followupDate: newLeadFormData.followupDate || '',
@@ -1182,7 +1243,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
         setTimeout(() => {
           setShowCreateLeadModal(false);
           setCreateLeadMsg('');
-          setNewLeadFormData({ firstName: '', lastName: '', phone: '', email: '', plotsCount: '1 Guntha', visitDate: '', visitTime: '', followupDate: '', priority: 'Hot', notes: '', assignedAgentName: 'auto' });
+          setNewLeadFormData({ firstName: '', lastName: '', phone: '', email: '', projectName: '', projectType: '', typography: '', carpetArea: '', budget: '', plotsCount: '', visitDate: '', visitTime: '', followupDate: '', priority: 'Hot', notes: '', assignedAgentName: 'auto' });
         }, 1000);
       } else {
         setSubmittingLead(false);
@@ -1656,6 +1717,11 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     const token = localStorage.getItem('adminToken');
 
 
+    let formattedEditCarpet = (updatedLead.carpetArea || '').trim();
+    if (formattedEditCarpet && !/sq\.?\s*ft/i.test(formattedEditCarpet)) {
+      formattedEditCarpet = `${formattedEditCarpet} sqft`;
+    }
+
     try {
       const res = await fetch(`${API_BASE_URL}/api/admin/enquiries/${leadKey}`, {
         method: 'PATCH',
@@ -1669,13 +1735,13 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
           phone: updatedLead.phone,
           oldPhone: existingLead ? existingLead.phone : '',
           email: updatedLead.email,
-          plotsCount: updatedLead.plotsCount,
+          plotsCount: formattedEditCarpet || updatedLead.plotsCount,
           plotInfo: updatedLead.plotInfo,
           projectName: updatedLead.projectName,
           projectType: updatedLead.projectType,
           typography: updatedLead.typography,
-          carpetArea: updatedLead.carpetArea,
-          budget: updatedLead.budget,
+          carpetArea: formattedEditCarpet,
+          budget: (updatedLead.budget || '').trim(),
           visitDate: updatedLead.visitDate,
           visitTime: updatedLead.visitTime || (updatedLead.followupDate ? '11:00' : ''),
           followupDate: updatedLead.followupDate || '',
@@ -3008,8 +3074,10 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
   const toggleDropdown = (e, rowId, field) => {
     if (activeDropdown?.rowId === rowId && activeDropdown?.field === field) {
       setActiveDropdown(null);
+      setTableTypoFilter('');
       return;
     }
+    setTableTypoFilter('');
 
     if (e && e.currentTarget) {
       const rect = e.currentTarget.getBoundingClientRect();
@@ -3041,42 +3109,56 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
         targetHeight = 180;
         dropdownWidth = Math.max(220, rect.width);
       } else if (field === 'typography') {
-        targetHeight = 180;
-        dropdownWidth = Math.max(220, rect.width);
+        targetHeight = 360;
+        dropdownWidth = Math.max(340, rect.width);
+      } else if (field === 'budget') {
+        targetHeight = 250;
+        dropdownWidth = Math.max(240, rect.width);
       }
 
       // Available space above and below (with safety margin for taskbar/navbar)
       const spaceBelow = window.innerHeight - rect.bottom - 16;
       const spaceAbove = rect.top - 16;
       let top;
+      let bottom;
       let maxHeight = targetHeight;
 
-      // In modals (Edit Lead / New Lead), open upwards if there is room above to avoid bottom taskbar clipping
-      const isModal = rowId === 'edit-modal' || rowId === 'new-lead-modal';
-      if (isModal && spaceAbove >= targetHeight) {
-        top = Math.max(8, rect.top - targetHeight - 4);
-      } else if (spaceBelow >= targetHeight) {
-        // Plenty of space below: open downwards
-        top = rect.bottom + 4;
-      } else if (spaceAbove >= targetHeight) {
-        // Not enough space below: open upwards from the button
-        top = Math.max(8, rect.top - targetHeight - 4);
-      } else {
-        // In tight viewport spaces: pick the side with more space and clamp maxHeight
-        if (spaceBelow >= spaceAbove) {
+      if (field === 'typography') {
+        if (spaceBelow >= 240 || spaceBelow >= spaceAbove) {
           top = rect.bottom + 4;
-          maxHeight = Math.max(120, spaceBelow);
+          maxHeight = Math.min(targetHeight, Math.max(140, spaceBelow));
         } else {
-          maxHeight = Math.max(120, spaceAbove);
-          top = Math.max(8, rect.top - maxHeight - 4);
+          bottom = window.innerHeight - rect.top + 4;
+          maxHeight = Math.min(targetHeight, Math.max(140, spaceAbove));
         }
-      }
+      } else {
+        // In modals (Edit Lead / New Lead), open upwards for bottom fields to avoid bottom taskbar clipping
+        const isModalBottomField = (rowId === 'edit-modal' || rowId === 'new-lead-modal') && field !== 'budget';
+        if (isModalBottomField && spaceAbove >= targetHeight) {
+          top = Math.max(8, rect.top - targetHeight - 4);
+        } else if (spaceBelow >= targetHeight) {
+          // Plenty of space below: open downwards
+          top = rect.bottom + 4;
+        } else if (spaceAbove >= targetHeight) {
+          // Not enough space below: open upwards from the button
+          top = Math.max(8, rect.top - targetHeight - 4);
+        } else {
+          // In tight viewport spaces: pick the side with more space and clamp maxHeight
+          if (spaceBelow >= spaceAbove) {
+            top = rect.bottom + 4;
+            maxHeight = Math.max(120, spaceBelow);
+          } else {
+            maxHeight = Math.max(120, spaceAbove);
+            top = Math.max(8, rect.top - maxHeight - 4);
+          }
+        }
 
-      // GUARANTEE: Never let top + targetHeight overflow the bottom of the viewport!
-      if (top + targetHeight > window.innerHeight - 12) {
-        top = Math.max(8, window.innerHeight - targetHeight - 12);
+        // GUARANTEE: Never let top + targetHeight overflow the bottom of the viewport!
+        if (top + targetHeight > window.innerHeight - 12) {
+          top = Math.max(8, window.innerHeight - targetHeight - 12);
+        }
+        if (top < 8) top = 8;
       }
-      if (top < 8) top = 8;
 
       // Horizontally align with the clicked button, keeping within viewport
       let left = rect.left;
@@ -3091,7 +3173,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       setActiveDropdown({
         rowId,
         field,
-        coords: { top, left, width: dropdownWidth, maxHeight }
+        coords: { top, bottom, left, width: dropdownWidth, maxHeight }
       });
     } else {
       setActiveDropdown({ rowId, field });
@@ -3188,7 +3270,11 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
           {/* Center: System Title */}
           <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none text-center">
             <h1 class="hidden md:block text-base sm:text-lg lg:text-xl font-serif font-bold text-white tracking-wide whitespace-nowrap">
-              Lead Management System
+              {activeTab === 'projects'
+                ? 'Project Management System'
+                : activeTab === 'users'
+                ? 'User Management System'
+                : 'Lead Management System'}
             </h1>
           </div>
 
@@ -4321,72 +4407,84 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                   <p class="text-sm font-medium text-gray-600">No matching lead records found.</p>
                   <p class="text-xs text-gray-400">Try adjusting your search query or status filter.</p>
                 </div>
-              ) : (
-                <div class="overflow-x-auto overflow-y-auto flex-1 min-h-0 custom-scrollbar w-full rounded-b-2xl">
-                  <table class="w-full min-w-full text-left border-collapse">
-                    <thead class="sticky top-0 z-10 bg-gray-100 shadow-2xs">
-                      <tr class="bg-gray-100 border-b border-gray-200 text-[10px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">
-                        {isAdmin && (
-                          <th class="py-2.5 px-2 text-center whitespace-nowrap w-9 min-w-[36px] max-w-[36px]">
-                            <input 
-                              type="checkbox"
-                              checked={filteredEnquiries.length > 0 && filteredEnquiries.every(item => selectedLeadIds.includes(item._id || item.id))}
-                              onChange={handleToggleSelectAll}
-                              class="w-3.5 h-3.5 rounded border-gray-300 text-[#B30E2E] focus:ring-[#B30E2E] cursor-pointer accent-[#B30E2E]"
-                              title="Select All / Deselect All Leads"
-                            />
-                          </th>
-                        )}
-                        {columnConfig.filter(c => c.visible).map(col => {
-                          const isSorted = sortConfig.key === col.id;
-                          const isAsc = isSorted && sortConfig.direction === 'asc';
-                          const isDesc = isSorted && sortConfig.direction === 'desc';
+              ) : (() => {
+                const isLeadIdVisible = columnConfig.find(c => c.id === 'leadId')?.visible !== false;
+                const checkboxWidth = isAdmin ? 36 : 0;
+                const leadIdWidth = 76;
+                const leadIdLeft = checkboxWidth;
+                const fullNameLeft = leadIdLeft + (isLeadIdVisible ? leadIdWidth : 0);
 
-                          const renderSortIndicator = () => {
-                            if (isAsc) {
-                              return <i class="fa-solid fa-arrow-up text-[#B30E2E] text-[9.5px]"></i>;
-                            }
-                            if (isDesc) {
-                              return <i class="fa-solid fa-arrow-down text-[#B30E2E] text-[9.5px]"></i>;
-                            }
-                            return <i class="fa-solid fa-sort text-gray-300 group-hover:text-gray-500 text-[9px] transition-colors"></i>;
-                          };
+                return (
+                  <div class="overflow-x-auto overflow-y-auto flex-1 min-h-0 custom-scrollbar w-full rounded-b-2xl">
+                    <table class="w-full min-w-full text-left border-collapse">
+                      <thead class="sticky top-0 z-10 bg-gray-100 shadow-2xs">
+                        <tr class="bg-gray-100 border-b border-gray-200 text-[10px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                          {isAdmin && (
+                            <th 
+                              class="sticky top-0 left-0 z-30 bg-gray-100 border-b border-gray-200 py-2.5 px-2 text-center whitespace-nowrap w-[36px] min-w-[36px] max-w-[36px]"
+                              style={{ left: 0 }}
+                            >
+                              <input 
+                                type="checkbox"
+                                checked={filteredEnquiries.length > 0 && filteredEnquiries.every(item => selectedLeadIds.includes(item._id || item.id))}
+                                onChange={handleToggleSelectAll}
+                                class="w-3.5 h-3.5 rounded border-gray-300 text-[#B30E2E] focus:ring-[#B30E2E] cursor-pointer accent-[#B30E2E]"
+                                title="Select All / Deselect All Leads"
+                              />
+                            </th>
+                          )}
+                          {columnConfig.filter(c => c.visible).map(col => {
+                            const isSorted = sortConfig.key === col.id;
+                            const isAsc = isSorted && sortConfig.direction === 'asc';
+                            const isDesc = isSorted && sortConfig.direction === 'desc';
 
-                          const getSortTitle = (label) => {
-                            if (!isSorted) return `Click to sort by ${label} (A-Z / Ascending)`;
-                            if (isAsc) return `Sorted Ascending. Click for Descending (Z-A)`;
-                            return `Sorted Descending. Click to reset to default order`;
-                          };
+                            const renderSortIndicator = () => {
+                              if (isAsc) {
+                                return <i class="fa-solid fa-arrow-up text-[#B30E2E] text-[9.5px]"></i>;
+                              }
+                              if (isDesc) {
+                                return <i class="fa-solid fa-arrow-down text-[#B30E2E] text-[9.5px]"></i>;
+                              }
+                              return <i class="fa-solid fa-sort text-gray-300 group-hover:text-gray-500 text-[9px] transition-colors"></i>;
+                            };
 
-                          switch (col.id) {
-                            case 'leadId':
-                              return (
-                                <th 
-                                  key="leadId" 
-                                  onClick={() => handleSort('leadId')}
-                                  class={`py-2.5 px-2.5 whitespace-nowrap w-20 min-w-[70px] max-w-[80px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
-                                  title={getSortTitle('Lead ID')}
-                                >
-                                  <div class="flex items-center gap-1.5">
-                                    <span>Lead ID</span>
-                                    {renderSortIndicator()}
-                                  </div>
-                                </th>
-                              );
-                            case 'fullName':
-                              return (
-                                <th 
-                                  key="fullName" 
-                                  onClick={() => handleSort('fullName')}
-                                  class={`py-2.5 px-2.5 whitespace-nowrap w-44 min-w-[155px] max-w-[160px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
-                                  title={getSortTitle('Full Name')}
-                                >
-                                  <div class="flex items-center gap-1.5">
-                                    <span>Full Name</span>
-                                    {renderSortIndicator()}
-                                  </div>
-                                </th>
-                              );
+                            const getSortTitle = (label) => {
+                              if (!isSorted) return `Click to sort by ${label} (A-Z / Ascending)`;
+                              if (isAsc) return `Sorted Ascending. Click for Descending (Z-A)`;
+                              return `Sorted Descending. Click to reset to default order`;
+                            };
+
+                            switch (col.id) {
+                              case 'leadId':
+                                return (
+                                  <th 
+                                    key="leadId" 
+                                    onClick={() => handleSort('leadId')}
+                                    class={`sticky top-0 z-30 bg-gray-100 border-b border-gray-200 py-2.5 px-2.5 whitespace-nowrap w-[76px] min-w-[76px] max-w-[76px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                    style={{ left: `${leadIdLeft}px` }}
+                                    title={getSortTitle('Lead ID')}
+                                  >
+                                    <div class="flex items-center gap-1.5">
+                                      <span>Lead ID</span>
+                                      {renderSortIndicator()}
+                                    </div>
+                                  </th>
+                                );
+                              case 'fullName':
+                                return (
+                                  <th 
+                                    key="fullName" 
+                                    onClick={() => handleSort('fullName')}
+                                    class={`sticky top-0 z-30 bg-gray-100 border-b border-gray-200 py-2.5 px-2.5 whitespace-nowrap w-[160px] min-w-[160px] max-w-[160px] cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : ''}`}
+                                    style={{ left: `${fullNameLeft}px` }}
+                                    title={getSortTitle('Full Name')}
+                                  >
+                                    <div class="flex items-center gap-1.5">
+                                      <span>Full Name</span>
+                                      {renderSortIndicator()}
+                                    </div>
+                                  </th>
+                                );
                             case 'mobile':
                               return (
                                 <th 
@@ -4586,7 +4684,15 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                             case 'notes':
                               return <th key="notes" class="py-2.5 px-2 text-center whitespace-nowrap w-12 min-w-[50px] max-w-[50px]">Notes</th>;
                             case 'actions':
-                              return <th key="actions" class="py-2.5 px-2 text-center whitespace-nowrap w-24 min-w-[105px] max-w-[105px]">Actions</th>;
+                              return (
+                                <th 
+                                  key="actions" 
+                                  class="sticky top-0 right-0 z-30 bg-gray-100 border-b border-gray-200 py-2.5 px-2 text-center whitespace-nowrap w-[105px] min-w-[105px] max-w-[105px]"
+                                  style={{ right: 0 }}
+                                >
+                                  Actions
+                                </th>
+                              );
                             default:
                               return null;
                           }
@@ -4600,9 +4706,14 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                         const displayUserId = getCustomerUserId(item, enquiries);
                         const hasActiveDropdownInRow = activeDropdown?.rowId === currentId;
                         return (
-                          <tr key={currentId} class={`hover:bg-rose-50/20 transition ${selectedLeadIds.includes(currentId) ? 'bg-rose-50/40' : ''} ${hasActiveDropdownInRow ? 'relative z-50' : 'relative z-0'}`}>
+                          <tr key={currentId} class={`group hover:bg-rose-50/20 transition ${selectedLeadIds.includes(currentId) ? 'bg-rose-50/40' : ''} ${hasActiveDropdownInRow ? 'relative z-50' : 'relative z-0'}`}>
                             {isAdmin && (
-                              <td class="py-2.5 px-2 text-center whitespace-nowrap w-9 min-w-[36px] max-w-[36px]">
+                              <td 
+                                class={`sticky left-0 z-20 py-2.5 px-2 text-center whitespace-nowrap w-[36px] min-w-[36px] max-w-[36px] transition-colors ${
+                                  selectedLeadIds.includes(currentId) ? 'bg-[#FFF0F2]' : 'bg-white group-hover:bg-[#FFF5F6]'
+                                }`}
+                                style={{ left: 0 }}
+                              >
                                 <input 
                                   type="checkbox"
                                   checked={selectedLeadIds.includes(currentId)}
@@ -4616,7 +4727,13 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                               switch (col.id) {
                                 case 'leadId':
                                   return (
-                                    <td key="leadId" class="py-2.5 px-2.5 whitespace-nowrap w-20 min-w-[70px] max-w-[80px]">
+                                    <td 
+                                      key="leadId" 
+                                      class={`sticky z-20 py-2.5 px-2.5 whitespace-nowrap w-[76px] min-w-[76px] max-w-[76px] transition-colors ${
+                                        selectedLeadIds.includes(currentId) ? 'bg-[#FFF0F2]' : 'bg-white group-hover:bg-[#FFF5F6]'
+                                      }`}
+                                      style={{ left: `${leadIdLeft}px` }}
+                                    >
                                       <span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-rose-50 text-[#B30E2E] border border-rose-200/80 shadow-xs">
                                         {displayLeadId}
                                       </span>
@@ -4624,7 +4741,13 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   );
                                 case 'fullName':
                                   return (
-                                    <td key="fullName" class="py-2.5 px-2.5 font-bold text-gray-800 whitespace-nowrap w-44 min-w-[155px] max-w-[160px]">
+                                    <td 
+                                      key="fullName" 
+                                      class={`sticky z-20 py-2.5 px-2.5 font-bold text-gray-800 whitespace-nowrap w-[160px] min-w-[160px] max-w-[160px] transition-colors ${
+                                        selectedLeadIds.includes(currentId) ? 'bg-[#FFF0F2]' : 'bg-white group-hover:bg-[#FFF5F6]'
+                                      }`}
+                                      style={{ left: `${fullNameLeft}px` }}
+                                    >
                                       <div class="flex items-center gap-1.5 truncate max-w-[150px]">
                                         <div class="w-5 h-5 rounded-full bg-[#FCD6DC] text-[#B30E2E] font-bold text-[10px] flex items-center justify-center flex-shrink-0 border border-[#FCD6DC]">
                                           {(item.firstName || 'C')[0].toUpperCase()}
@@ -4871,7 +4994,8 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 }
                                 case 'projectName': {
                                   const isProjectOpen = activeDropdown?.rowId === currentId && activeDropdown?.field === 'projectName';
-                                  const currentProjName = item.projectName || '';
+                                  const matchedProject = (projectsList || []).find(p => (p.name || '').trim().toLowerCase() === (item.projectName || '').trim().toLowerCase());
+                                  const currentProjName = matchedProject ? matchedProject.name : '';
 
                                   return (
                                     <td key="projectName" class={`py-2.5 px-2.5 whitespace-nowrap w-36 min-w-[130px] max-w-[150px] relative ${isProjectOpen ? 'z-50' : ''}`}>
@@ -4938,9 +5062,12 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 }
                                 case 'projectType': {
                                   const isTypeOpen = activeDropdown?.rowId === currentId && activeDropdown?.field === 'projectType';
-                                  const currentType = item.projectType || '';
-                                  const availableTypes = getProjectTypesForProject(projectsList, item.projectName);
-                                  const currentTypesList = (currentType || '').split(',').map(s => s.trim()).filter(Boolean);
+                                  const matchedProject = (projectsList || []).find(p => (p.name || '').trim().toLowerCase() === (item.projectName || '').trim().toLowerCase());
+                                  const availableTypes = matchedProject ? getProjectTypesForProject(projectsList, matchedProject.name) : [];
+                                  const rawLeadTypes = (item.projectType || '').split(',').map(s => s.trim()).filter(Boolean);
+                                  const currentTypesList = matchedProject
+                                    ? (availableTypes.length > rawLeadTypes.length ? availableTypes : (rawLeadTypes.length > 0 ? rawLeadTypes : availableTypes))
+                                    : rawLeadTypes;
 
                                   const displayLabel = currentTypesList.length === 0 ? '—' : currentTypesList.join(', ');
 
@@ -4951,7 +5078,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                           type="button"
                                           onClick={(e) => toggleDropdown(e, currentId, 'projectType')}
                                           class="h-[27px] px-2.5 py-0.5 rounded-lg border border-rose-200/90 text-[10.5px] font-bold bg-rose-50/70 hover:bg-rose-100/80 text-rose-950 transition shadow-2xs flex items-center justify-between gap-1.5 w-full cursor-pointer select-none text-left custom-dropdown-toggle"
-                                          title={item.projectType ? `Project Type: ${item.projectType}` : ''}
+                                          title={currentTypesList.length > 0 ? `Project Type: ${currentTypesList.join(', ')}` : ''}
                                         >
                                           <div class="flex items-center gap-1.5 min-w-0 flex-1 truncate">
                                             <span class="truncate min-w-0">{displayLabel}</span>
@@ -5009,7 +5136,26 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 }
                                 case 'typography': {
                                   const isTypoOpen = activeDropdown?.rowId === currentId && activeDropdown?.field === 'typography';
-                                  const typoList = (item.typography || '').split(',').map(s => s.trim()).filter(Boolean);
+                                  const matchedProject = (projectsList || []).find(p => (p.name || '').trim().toLowerCase() === (item.projectName || '').trim().toLowerCase());
+
+                                  // Extract full configured typographies from the matched project
+                                  let projectTypos = [];
+                                  if (matchedProject) {
+                                    let pt = matchedProject.typography;
+                                    if (typeof pt === 'string') {
+                                      try { pt = JSON.parse(pt); } catch (e) { pt = pt.split(',').map(s => s.trim()).filter(Boolean); }
+                                    }
+                                    if (Array.isArray(pt)) projectTypos = pt;
+                                  }
+
+                                  // Parse lead's own stored typography
+                                  const rawLeadTypos = (item.typography || '').split(',').map(s => s.trim()).filter(Boolean);
+
+                                  // If matchedProject has configured typographies, and lead's typography was truncated (< projectTypos.length) or empty,
+                                  // prefer project's full typography list so all 41 items are displayed without any 255-character cutoff!
+                                  const typoList = matchedProject
+                                    ? (projectTypos.length > rawLeadTypos.length ? projectTypos : (rawLeadTypos.length > 0 ? rawLeadTypos : projectTypos))
+                                    : rawLeadTypos;
 
                                   const displayTypo = typoList.length === 0 ? '—' : typoList.join(', ');
 
@@ -5020,7 +5166,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                           type="button"
                                           onClick={(e) => toggleDropdown(e, currentId, 'typography')}
                                           class="h-[27px] px-2.5 py-0.5 rounded-lg border border-indigo-200/90 text-[10.5px] font-bold bg-indigo-50/70 hover:bg-indigo-100/80 text-indigo-950 transition shadow-2xs flex items-center justify-between gap-1.5 w-full cursor-pointer select-none text-left custom-dropdown-toggle"
-                                          title={item.typography}
+                                          title={typoList.join(', ')}
                                         >
                                           <div class="flex items-center gap-1.5 min-w-0 flex-1 truncate">
                                             <span class="truncate min-w-0">{displayTypo}</span>
@@ -5033,55 +5179,112 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                         </div>
                                       )}
 
-                                      {isTypoOpen && typoList.length > 0 && (
-                                        <div 
-                                          class="fixed z-[9999] min-w-[220px] max-w-[320px] p-3 bg-white rounded-2xl shadow-2xl border border-indigo-100 text-xs animate-fade-in custom-dropdown-menu"
-                                          style={{
-                                            top: activeDropdown?.coords ? `${activeDropdown.coords.top}px` : undefined,
-                                            left: activeDropdown?.coords ? `${activeDropdown.coords.left}px` : undefined,
-                                            maxHeight: activeDropdown?.coords?.maxHeight ? `${activeDropdown.coords.maxHeight}px` : '260px'
-                                          }}
-                                        >
-                                          <div class="flex items-center justify-between pb-2 mb-2 border-b border-indigo-100/70">
-                                            <span class="font-bold text-indigo-950 text-[11px]">Typography Details</span>
-                                            <span class="text-[9.5px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200">
-                                              {typoList.length} items
-                                            </span>
-                                          </div>
+                                      {isTypoOpen && typoList.length > 0 && (() => {
+                                        const q = tableTypoFilter.trim().toLowerCase();
+                                        const filteredTypoList = q ? typoList.filter(t => t.toLowerCase().includes(q)) : typoList;
 
-                                          <div class="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto custom-scrollbar p-0.5">
-                                            {typoList.map((t, idx) => (
-                                              <span 
-                                                key={idx} 
-                                                class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10.5px] font-bold bg-indigo-50 border border-indigo-200/90 text-indigo-950 shadow-2xs hover:bg-indigo-100 transition"
-                                              >
-                                                <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
-                                                <span>{t}</span>
+                                        return (
+                                          <div 
+                                            class="fixed z-[9999] bg-white rounded-2xl shadow-2xl border border-indigo-100 text-xs animate-fade-in custom-dropdown-menu flex flex-col overflow-hidden"
+                                            style={{
+                                              top: activeDropdown?.coords?.top != null ? `${activeDropdown.coords.top}px` : undefined,
+                                              bottom: activeDropdown?.coords?.bottom != null ? `${activeDropdown.coords.bottom}px` : undefined,
+                                              left: activeDropdown?.coords ? `${activeDropdown.coords.left}px` : undefined,
+                                              width: activeDropdown?.coords ? `${Math.max(340, activeDropdown.coords.width)}px` : '340px',
+                                              maxHeight: activeDropdown?.coords?.maxHeight ? `${activeDropdown.coords.maxHeight}px` : '360px',
+                                              transformOrigin: activeDropdown?.coords?.bottom != null ? 'bottom left' : 'top left'
+                                            }}
+                                            onClick={(e) => e.stopPropagation()}
+                                          >
+                                            {/* Header */}
+                                            <div class="px-3.5 py-2.5 border-b border-indigo-100/70 bg-gradient-to-r from-indigo-50/80 to-purple-50/50 flex items-center justify-between flex-shrink-0">
+                                              <div class="flex items-center gap-2">
+                                                <i class="fa-solid fa-shapes text-indigo-600 text-xs"></i>
+                                                <span class="font-bold text-indigo-950 text-xs">Typography Details</span>
+                                              </div>
+                                              <span class="text-[10px] font-bold text-indigo-700 bg-white px-2 py-0.5 rounded-full border border-indigo-200/80 shadow-2xs">
+                                                {typoList.length} items
                                               </span>
-                                            ))}
-                                          </div>
+                                            </div>
 
-                                          <div class="mt-2 pt-2 border-t border-indigo-50 text-[10px] text-gray-400 flex items-center justify-between">
-                                            <span>Auto-linked with project</span>
-                                            <button 
-                                              type="button" 
-                                              onClick={() => setActiveDropdown(null)} 
-                                              class="text-indigo-600 hover:text-indigo-800 font-bold text-[10px] hover:underline cursor-pointer"
-                                            >
-                                              Close
-                                            </button>
+                                            {/* Quick Search Filter if > 6 items */}
+                                            {typoList.length > 6 && (
+                                              <div class="px-3 py-1.5 border-b border-indigo-50 bg-white flex-shrink-0">
+                                                <div class="relative flex items-center">
+                                                  <i class="fa-solid fa-magnifying-glass text-indigo-300 text-[10px] absolute left-2.5 pointer-events-none"></i>
+                                                  <input
+                                                    type="text"
+                                                    value={tableTypoFilter}
+                                                    onChange={(e) => setTableTypoFilter(e.target.value)}
+                                                    placeholder="Search typographies..."
+                                                    class="w-full pl-7 pr-6 py-1 bg-gray-50 border border-gray-200 rounded-lg text-[11px] font-medium text-gray-800 placeholder-gray-400 focus:outline-none focus:border-indigo-500 focus:bg-white transition"
+                                                  />
+                                                  {tableTypoFilter && (
+                                                    <button
+                                                      type="button"
+                                                      onClick={() => setTableTypoFilter('')}
+                                                      class="absolute right-2 text-gray-400 hover:text-gray-600 text-[10px] cursor-pointer"
+                                                    >
+                                                      <i class="fa-solid fa-xmark"></i>
+                                                    </button>
+                                                  )}
+                                                </div>
+                                              </div>
+                                            )}
+
+                                            {/* Scrollable Badges List */}
+                                            <div class="p-3 overflow-y-auto overscroll-contain custom-scrollbar flex-1 max-h-[240px]">
+                                              <div class="flex flex-wrap gap-1.5">
+                                                {filteredTypoList.map((t, idx) => (
+                                                  <span 
+                                                    key={idx} 
+                                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10.5px] font-semibold bg-indigo-50/80 border border-indigo-200/80 text-indigo-950 shadow-2xs hover:bg-indigo-100 transition"
+                                                  >
+                                                    <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0"></span>
+                                                    <span>{t}</span>
+                                                  </span>
+                                                ))}
+                                                {filteredTypoList.length === 0 && (
+                                                  <div class="py-4 text-center w-full text-gray-400 italic text-[11px]">
+                                                    No typography matches "{tableTypoFilter}"
+                                                  </div>
+                                                )}
+                                              </div>
+                                            </div>
+
+                                            {/* Footer */}
+                                            <div class="px-3.5 py-2 border-t border-indigo-100/70 bg-gray-50/90 text-[10.5px] text-gray-500 flex items-center justify-between flex-shrink-0">
+                                              <span class="text-[10px] text-gray-400 flex items-center gap-1.5">
+                                                <i class="fa-solid fa-link text-[9px] text-indigo-400"></i>
+                                                <span>Auto-linked with project</span>
+                                              </span>
+                                              <button 
+                                                type="button" 
+                                                onClick={() => {
+                                                  setActiveDropdown(null);
+                                                  setTableTypoFilter('');
+                                                }} 
+                                                class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-[10.5px] transition shadow-2xs cursor-pointer"
+                                              >
+                                                Close
+                                              </button>
+                                            </div>
                                           </div>
-                                        </div>
-                                      )}
+                                        );
+                                      })()}
                                     </td>
                                   );
                                 }
                                 case 'carpetArea': {
+                                  let displayCarpet = (item.carpetArea || '').trim();
+                                  if (displayCarpet && !/sq\.?\s*ft/i.test(displayCarpet)) {
+                                    displayCarpet = `${displayCarpet} sqft`;
+                                  }
                                   return (
                                     <td key="carpetArea" class="py-2.5 px-2.5 whitespace-nowrap w-28 min-w-[100px] max-w-[120px] text-center">
-                                      {item.carpetArea ? (
-                                        <span class="text-[11px] font-semibold text-gray-800 truncate block text-center" title={item.carpetArea}>
-                                          {item.carpetArea}
+                                      {displayCarpet ? (
+                                        <span class="text-[11px] font-semibold text-gray-800 truncate block text-center" title={displayCarpet}>
+                                          {displayCarpet}
                                         </span>
                                       ) : (
                                         <div class="w-full flex items-center justify-center py-0.5">
@@ -5267,10 +5470,27 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   );
                                 case 'actions':
                                   return (
-                                    <td key="actions" class="py-2.5 px-2 text-center whitespace-nowrap w-24 min-w-[105px] max-w-[105px]">
+                                    <td 
+                                      key="actions" 
+                                      class={`sticky right-0 z-20 py-2.5 px-2 text-center whitespace-nowrap w-[105px] min-w-[105px] max-w-[105px] transition-colors ${
+                                        selectedLeadIds.includes(currentId) ? 'bg-[#FFF0F2]' : 'bg-white group-hover:bg-[#FFF5F6]'
+                                      }`}
+                                      style={{ right: 0 }}
+                                    >
                                       <div class="flex items-center justify-center gap-1">
                                         <button 
-                                          onClick={() => { setEditingEnquiry({ ...item }); setEditModalSuccessMsg(''); }}
+                                          onClick={() => { 
+                                            const matchedProj = (projectsList || []).find(p => (p.name || '').trim().toLowerCase() === (item.projectName || '').trim().toLowerCase());
+                                            let bestTypo = item.typography || '';
+                                            if (matchedProj) {
+                                              const fullTypos = getAutoTypographyForProjectType(projectsList, matchedProj.name, item.projectType);
+                                              if (fullTypos && fullTypos.length > bestTypo.length) {
+                                                bestTypo = fullTypos;
+                                              }
+                                            }
+                                            setEditingEnquiry({ ...item, typography: bestTypo }); 
+                                            setEditModalSuccessMsg(''); 
+                                          }}
                                           class="w-6 h-6 rounded-md bg-amber-100 hover:bg-amber-200 text-amber-800 flex items-center justify-center transition cursor-pointer"
                                           title="Edit Lead Details"
                                         >
@@ -5306,7 +5526,8 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                     </tbody>
                   </table>
                 </div>
-              )}
+              );
+            })()}
             </div>
           </div>
         )
@@ -6138,27 +6359,189 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                   </div>
                 </div>
 
+                {/* Project Name & Typography */}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">Number of Guntha</label>
-                    <select 
-                      value={editingEnquiry.plotsCount || '1 Guntha'} 
-                      onChange={(e) => setEditingEnquiry({ ...editingEnquiry, plotsCount: e.target.value })}
-                      class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Project Name</label>
+                    <select
+                      value={editingEnquiry.projectName || ''}
+                      onChange={(e) => {
+                        const newProjName = e.target.value;
+                        const availableTypes = getProjectTypesForProject(projectsList, newProjName);
+                        const newType = availableTypes.length > 0 ? availableTypes.join(', ') : '';
+                        const newTypo = getAutoTypographyForProjectType(projectsList, newProjName, newType);
+                        setEditingEnquiry({
+                          ...editingEnquiry,
+                          projectName: newProjName,
+                          projectType: newType,
+                          typography: newTypo
+                        });
+                      }}
+                      class="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800 bg-white"
                     >
-                      <option value="1 Guntha">1 Guntha</option>
-                      <option value="2 Guntha">2 Guntha</option>
-                      <option value="3 Guntha">3 Guntha</option>
-                      <option value="4 Guntha">4 Guntha</option>
-                      <option value="5 Guntha">5 Guntha</option>
-                      <option value="6 Guntha">6 Guntha</option>
-                      <option value="7 Guntha">7 Guntha</option>
-                      <option value="8 Guntha">8 Guntha</option>
-                      <option value="9 Guntha">9 Guntha</option>
-                      <option value="10 Guntha">10 Guntha</option>
-                      <option value="11+ Guntha (Bulk / Investment)">11+ Guntha (Bulk / Investment)</option>
+                      <option value="">Select Project</option>
+                      {editingEnquiry.projectName && !projectsList.some(p => (p.name || '').trim().toLowerCase() === (editingEnquiry.projectName || '').trim().toLowerCase()) && (
+                        <option value={editingEnquiry.projectName}>{editingEnquiry.projectName}</option>
+                      )}
+                      {projectsList.map((p) => (
+                        <option key={p.id || p.name} value={p.name}>
+                          {p.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Typography</label>
+                    <input
+                      type="text"
+                      value={editingEnquiry.typography || ''}
+                      onChange={(e) => setEditingEnquiry({ ...editingEnquiry, typography: e.target.value })}
+                      placeholder="Select project to autofill or enter typography"
+                      class="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800 bg-white"
+                    />
+                  </div>
+                </div>
+
+                {/* Min Carpet Area & Max Budget */}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Min Carpet Area</label>
+                    <input 
+                      type="text" 
+                      value={editingEnquiry.carpetArea || ''} 
+                      onChange={(e) => setEditingEnquiry({ ...editingEnquiry, carpetArea: e.target.value })}
+                      placeholder="Enter min carpet"
+                      class="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Max Budget</label>
+                    <div class="relative w-full">
+                      <button
+                        type="button"
+                        onClick={(e) => toggleDropdown(e, 'edit-modal', 'budget')}
+                        class={`w-full h-[38px] px-3 py-2 rounded-xl border text-xs flex items-center justify-between cursor-pointer transition custom-dropdown-toggle bg-white ${
+                          activeDropdown?.rowId === 'edit-modal' && activeDropdown?.field === 'budget'
+                            ? 'border-[#B30E2E] ring-1 ring-[#FCD6DC]'
+                            : 'border-gray-300 hover:border-gray-400'
+                        }`}
+                      >
+                        <span class={editingEnquiry.budget ? 'font-semibold text-gray-800 truncate' : 'text-gray-400 truncate'}>
+                          {editingEnquiry.budget || 'Select Max Budget'}
+                        </span>
+                        <i class={`fa-solid fa-chevron-down text-[10px] text-gray-400 transition-transform shrink-0 ${
+                          activeDropdown?.rowId === 'edit-modal' && activeDropdown?.field === 'budget' ? 'rotate-180 text-[#B30E2E]' : ''
+                        }`}></i>
+                      </button>
+
+                      {activeDropdown?.rowId === 'edit-modal' && activeDropdown?.field === 'budget' && (
+                        <div
+                          class="fixed z-[9999] bg-white rounded-xl shadow-2xl border border-gray-200 py-1 text-xs animate-fade-in custom-dropdown-menu overflow-hidden flex flex-col"
+                          style={{
+                            top: activeDropdown?.coords ? `${activeDropdown.coords.top}px` : undefined,
+                            left: activeDropdown?.coords ? `${activeDropdown.coords.left}px` : undefined,
+                            width: activeDropdown?.coords ? `${activeDropdown.coords.width}px` : '240px',
+                          }}
+                        >
+                          {/* Manual Input Field for Custom Budget */}
+                          <div
+                            class="p-2 border-b border-gray-100 bg-gray-50 flex-shrink-0"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div class="flex items-center gap-1.5">
+                              <div class="relative flex-1">
+                                <input
+                                  type="text"
+                                  autoFocus
+                                  value={editingEnquiry.budget || ''}
+                                  onChange={(e) => setEditingEnquiry({ ...editingEnquiry, budget: e.target.value })}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      setActiveDropdown(null);
+                                    }
+                                  }}
+                                  placeholder="Enter custom budget..."
+                                  class="w-full pl-2.5 pr-6 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition"
+                                />
+                                {editingEnquiry.budget && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setEditingEnquiry({ ...editingEnquiry, budget: '' });
+                                    }}
+                                    class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-[10px] w-4 h-4 flex items-center justify-center cursor-pointer"
+                                    title="Clear budget"
+                                  >
+                                    <i class="fa-solid fa-xmark"></i>
+                                  </button>
+                                )}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveDropdown(null);
+                                }}
+                                class="px-2.5 py-1.5 bg-[#B30E2E] hover:bg-[#8A0B22] text-white text-[11px] font-bold rounded-lg shrink-0 cursor-pointer shadow-xs transition"
+                                title="Apply budget"
+                              >
+                                Set
+                              </button>
+                            </div>
+                          </div>
+
+                          <div class="max-h-52 overflow-y-auto custom-scrollbar overscroll-contain py-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingEnquiry({ ...editingEnquiry, budget: '' });
+                                setActiveDropdown(null);
+                              }}
+                              class={`w-full text-left px-3 py-1.5 text-xs transition cursor-pointer flex items-center justify-between ${
+                                !editingEnquiry.budget ? 'bg-rose-50 text-[#B30E2E] font-bold' : 'text-gray-500 hover:bg-gray-50'
+                              }`}
+                            >
+                              <span>Select Max Budget</span>
+                              {!editingEnquiry.budget && <i class="fa-solid fa-check text-[10px] text-[#B30E2E]"></i>}
+                            </button>
+                            {editingEnquiry.budget && !BUDGET_OPTIONS.includes(editingEnquiry.budget) && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setActiveDropdown(null);
+                                }}
+                                class="w-full text-left px-3 py-1.5 text-xs transition cursor-pointer flex items-center justify-between bg-rose-50 text-[#B30E2E] font-bold border-y border-rose-100"
+                              >
+                                <span class="truncate">Custom: {editingEnquiry.budget}</span>
+                                <i class="fa-solid fa-check text-[10px] text-[#B30E2E]"></i>
+                              </button>
+                            )}
+                            {BUDGET_OPTIONS.map((opt) => (
+                              <button
+                                key={opt}
+                                type="button"
+                                onClick={() => {
+                                  setEditingEnquiry({ ...editingEnquiry, budget: opt });
+                                  setActiveDropdown(null);
+                                }}
+                                class={`w-full text-left px-3 py-1.5 text-xs transition cursor-pointer flex items-center justify-between ${
+                                  editingEnquiry.budget === opt ? 'bg-rose-50 text-[#B30E2E] font-bold' : 'text-gray-700 hover:bg-gray-50'
+                                }`}
+                              >
+                                <span>{opt}</span>
+                                {editingEnquiry.budget === opt && <i class="fa-solid fa-check text-[10px] text-[#B30E2E]"></i>}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1">
                       {editingEnquiry.status === 'Site Visit Scheduled' ? 'Visit Date & Time' : 'Followup Date & Time'}
@@ -6203,8 +6586,17 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                       )}
                     </div>
                   </div>
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Priority</label>
+                    <select 
+                      value={(editingEnquiry.priority === 'Cold' || editingEnquiry.priority === 'Low') ? 'Cold' : 'Hot'}
+                      onChange={(e) => setEditingEnquiry({ ...editingEnquiry, priority: e.target.value })}
+                      class="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E]"
+                    >
+                      {PRIORITY_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                    </select>
+                  </div>
                 </div>
-
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
@@ -6248,17 +6640,6 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                       />
                     )}
                   </div>
-                </div>
-
-                <div>
-                  <label class="block text-xs font-bold text-gray-700 mb-1">Priority</label>
-                  <select 
-                    value={(editingEnquiry.priority === 'Cold' || editingEnquiry.priority === 'Low') ? 'Cold' : 'Hot'}
-                    onChange={(e) => setEditingEnquiry({ ...editingEnquiry, priority: e.target.value })}
-                    class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E]"
-                  >
-                    {PRIORITY_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                  </select>
                 </div>
 
                 <div>
@@ -6588,28 +6969,187 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                   </div>
                 </div>
 
-                {/* 3. Number of Guntha & Followup Date */}
+                {/* Project Name & Typography */}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">Number of Guntha</label>
-                    <select 
-                      value={newLeadFormData.plotsCount}
-                      onChange={(e) => setNewLeadFormData({ ...newLeadFormData, plotsCount: e.target.value })}
-                      class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800"
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Project Name</label>
+                    <select
+                      value={newLeadFormData.projectName || ''}
+                      onChange={(e) => {
+                        const newProjName = e.target.value;
+                        const availableTypes = getProjectTypesForProject(projectsList, newProjName);
+                        const newType = availableTypes.length > 0 ? availableTypes.join(', ') : '';
+                        const newTypo = getAutoTypographyForProjectType(projectsList, newProjName, newType);
+                        setNewLeadFormData({
+                          ...newLeadFormData,
+                          projectName: newProjName,
+                          projectType: newType,
+                          typography: newTypo
+                        });
+                      }}
+                      class="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800 bg-white"
                     >
-                      <option value="1 Guntha">1 Guntha</option>
-                      <option value="2 Guntha">2 Guntha</option>
-                      <option value="3 Guntha">3 Guntha</option>
-                      <option value="4 Guntha">4 Guntha</option>
-                      <option value="5 Guntha">5 Guntha</option>
-                      <option value="6 Guntha">6 Guntha</option>
-                      <option value="7 Guntha">7 Guntha</option>
-                      <option value="8 Guntha">8 Guntha</option>
-                      <option value="9 Guntha">9 Guntha</option>
-                      <option value="10 Guntha">10 Guntha</option>
-                      <option value="11+ Guntha (Bulk / Investment)">11+ Guntha (Bulk / Investment)</option>
+                      <option value="">Select Project</option>
+                      {projectsList.map((p) => (
+                        <option key={p.id || p.name} value={p.name}>
+                          {p.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Typography</label>
+                    <input
+                      type="text"
+                      value={newLeadFormData.typography || ''}
+                      onChange={(e) => setNewLeadFormData({ ...newLeadFormData, typography: e.target.value })}
+                      placeholder="Select project to autofill or enter typography"
+                      class="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800 bg-white"
+                    />
+                  </div>
+                </div>
+
+                {/* 3. Min Carpet Area & Max Budget */}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Min Carpet Area</label>
+                    <input 
+                      type="text" 
+                      value={newLeadFormData.carpetArea}
+                      onChange={(e) => setNewLeadFormData({ ...newLeadFormData, carpetArea: e.target.value })}
+                      placeholder="Enter min carpet"
+                      class="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC]"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Max Budget</label>
+                    <div class="relative w-full">
+                      <button
+                        type="button"
+                        onClick={(e) => toggleDropdown(e, 'new-lead-modal', 'budget')}
+                        class={`w-full h-[38px] px-3 py-2 rounded-xl border text-xs flex items-center justify-between cursor-pointer transition custom-dropdown-toggle bg-white ${
+                          activeDropdown?.rowId === 'new-lead-modal' && activeDropdown?.field === 'budget'
+                            ? 'border-[#B30E2E] ring-1 ring-[#FCD6DC]'
+                            : 'border-gray-300 hover:border-gray-400'
+                        }`}
+                      >
+                        <span class={newLeadFormData.budget ? 'font-semibold text-gray-800 truncate' : 'text-gray-400 truncate'}>
+                          {newLeadFormData.budget || 'Select Max Budget'}
+                        </span>
+                        <i class={`fa-solid fa-chevron-down text-[10px] text-gray-400 transition-transform shrink-0 ${
+                          activeDropdown?.rowId === 'new-lead-modal' && activeDropdown?.field === 'budget' ? 'rotate-180 text-[#B30E2E]' : ''
+                        }`}></i>
+                      </button>
+
+                      {activeDropdown?.rowId === 'new-lead-modal' && activeDropdown?.field === 'budget' && (
+                        <div
+                          class="fixed z-[9999] bg-white rounded-xl shadow-2xl border border-gray-200 py-1 text-xs animate-fade-in custom-dropdown-menu overflow-hidden flex flex-col"
+                          style={{
+                            top: activeDropdown?.coords ? `${activeDropdown.coords.top}px` : undefined,
+                            left: activeDropdown?.coords ? `${activeDropdown.coords.left}px` : undefined,
+                            width: activeDropdown?.coords ? `${activeDropdown.coords.width}px` : '240px',
+                          }}
+                        >
+                          {/* Manual Input Field for Custom Budget */}
+                          <div
+                            class="p-2 border-b border-gray-100 bg-gray-50 flex-shrink-0"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div class="flex items-center gap-1.5">
+                              <div class="relative flex-1">
+                                <input
+                                  type="text"
+                                  autoFocus
+                                  value={newLeadFormData.budget || ''}
+                                  onChange={(e) => setNewLeadFormData({ ...newLeadFormData, budget: e.target.value })}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      setActiveDropdown(null);
+                                    }
+                                  }}
+                                  placeholder="Enter custom budget..."
+                                  class="w-full pl-2.5 pr-6 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition"
+                                />
+                                {newLeadFormData.budget && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setNewLeadFormData({ ...newLeadFormData, budget: '' });
+                                    }}
+                                    class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-[10px] w-4 h-4 flex items-center justify-center cursor-pointer"
+                                    title="Clear budget"
+                                  >
+                                    <i class="fa-solid fa-xmark"></i>
+                                  </button>
+                                )}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveDropdown(null);
+                                }}
+                                class="px-2.5 py-1.5 bg-[#B30E2E] hover:bg-[#8A0B22] text-white text-[11px] font-bold rounded-lg shrink-0 cursor-pointer shadow-xs transition"
+                                title="Apply budget"
+                              >
+                                Set
+                              </button>
+                            </div>
+                          </div>
+
+                          <div class="max-h-52 overflow-y-auto custom-scrollbar overscroll-contain py-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setNewLeadFormData({ ...newLeadFormData, budget: '' });
+                                setActiveDropdown(null);
+                              }}
+                              class={`w-full text-left px-3 py-1.5 text-xs transition cursor-pointer flex items-center justify-between ${
+                                !newLeadFormData.budget ? 'bg-rose-50 text-[#B30E2E] font-bold' : 'text-gray-500 hover:bg-gray-50'
+                              }`}
+                            >
+                              <span>Select Max Budget</span>
+                              {!newLeadFormData.budget && <i class="fa-solid fa-check text-[10px] text-[#B30E2E]"></i>}
+                            </button>
+                            {newLeadFormData.budget && !BUDGET_OPTIONS.includes(newLeadFormData.budget) && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setActiveDropdown(null);
+                                }}
+                                class="w-full text-left px-3 py-1.5 text-xs transition cursor-pointer flex items-center justify-between bg-rose-50 text-[#B30E2E] font-bold border-y border-rose-100"
+                              >
+                                <span class="truncate">Custom: {newLeadFormData.budget}</span>
+                                <i class="fa-solid fa-check text-[10px] text-[#B30E2E]"></i>
+                              </button>
+                            )}
+                            {BUDGET_OPTIONS.map((opt) => (
+                              <button
+                                key={opt}
+                                type="button"
+                                onClick={() => {
+                                  setNewLeadFormData({ ...newLeadFormData, budget: opt });
+                                  setActiveDropdown(null);
+                                }}
+                                class={`w-full text-left px-3 py-1.5 text-xs transition cursor-pointer flex items-center justify-between ${
+                                  newLeadFormData.budget === opt ? 'bg-rose-50 text-[#B30E2E] font-bold' : 'text-gray-700 hover:bg-gray-50'
+                                }`}
+                              >
+                                <span>{opt}</span>
+                                {newLeadFormData.budget === opt && <i class="fa-solid fa-check text-[10px] text-[#B30E2E]"></i>}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4. Followup Date & Time & Assign Sales Executive */}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1">Followup Date & Time</label>
                     <div class="relative w-full">
@@ -6652,34 +7192,32 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                       )}
                     </div>
                   </div>
-                </div>
 
-
-                {/* 4. Assign Sales Executive */}
-                <div>
-                  <label class="block text-xs font-bold text-gray-700 mb-1">Assign Sales Executive</label>
-                  {isAdmin ? (
-                    <select
-                      value={newLeadFormData.assignedAgentName || 'auto'}
-                      onChange={(e) => setNewLeadFormData({ ...newLeadFormData, assignedAgentName: e.target.value })}
-                      class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800 bg-white"
-                    >
-                      <option value="auto">Auto Alternate (Round-Robin)</option>
-                      {allAgents.map((agent) => (
-                        <option key={agent.id || agent.username} value={agent.name || agent.username}>
-                          {agent.name || agent.username}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <div class="px-3 py-2 rounded-xl border border-emerald-200 bg-emerald-50 text-xs font-bold text-emerald-800 flex items-center justify-between">
-                      <span class="flex items-center gap-1.5">
-                        <i class="fa-solid fa-user-check text-emerald-600"></i>
-                        <span>{currentUser.name || 'Sales Executive'} (You)</span>
-                      </span>
-                      <span class="text-[10px] text-emerald-700 uppercase font-bold tracking-wider bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-300/60">Auto-Assigned</span>
-                    </div>
-                  )}
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Assign Sales Executive</label>
+                    {isAdmin ? (
+                      <select
+                        value={newLeadFormData.assignedAgentName || 'auto'}
+                        onChange={(e) => setNewLeadFormData({ ...newLeadFormData, assignedAgentName: e.target.value })}
+                        class="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800 bg-white"
+                      >
+                        <option value="auto">Auto Alternate (Round-Robin)</option>
+                        {allAgents.map((agent) => (
+                          <option key={agent.id || agent.username} value={agent.name || agent.username}>
+                            {agent.name || agent.username}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <div class="h-[38px] px-3 py-2 rounded-xl border border-emerald-200 bg-emerald-50 text-xs font-bold text-emerald-800 flex items-center justify-between">
+                        <span class="flex items-center gap-1.5 truncate">
+                          <i class="fa-solid fa-user-check text-emerald-600 shrink-0"></i>
+                          <span class="truncate">{currentUser.name || 'Sales Executive'} (You)</span>
+                        </span>
+                        <span class="text-[9px] text-emerald-700 uppercase font-bold tracking-wider bg-emerald-100 px-1.5 py-0.5 rounded-full border border-emerald-300/60 shrink-0">Auto</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* 5. Notes */}

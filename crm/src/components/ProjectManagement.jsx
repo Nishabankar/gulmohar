@@ -218,7 +218,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
     setIsTypeDropdownOpen(true);
   };
 
-  // Toggle Typography Dropdown with smart viewport calculation
+  // Toggle Typography Dropdown with smart viewport calculation (Compact Box)
   const handleToggleTypoDropdown = (e) => {
     e.stopPropagation();
     if (formData.projectType.length === 0) return;
@@ -232,27 +232,34 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
     const btn = e.currentTarget;
     if (!btn) return;
     const rect = btn.getBoundingClientRect();
-    const dropdownHeight = Math.min(380, window.innerHeight - 60);
-    const dropdownWidth = Math.min(Math.max(rect.width, 340), Math.max(280, window.innerWidth - 24));
+    const isMobile = window.innerWidth < 640;
+
+    // Compact box dimensions
+    const dropdownHeight = isMobile ? Math.min(250, window.innerHeight - 80) : Math.min(320, window.innerHeight - 80);
+    const dropdownWidth = isMobile
+      ? Math.min(rect.width > 200 ? rect.width : 290, window.innerWidth - 24)
+      : Math.min(Math.max(rect.width, 320), window.innerWidth - 24);
+
     const spaceBelow = window.innerHeight - rect.bottom - 16;
     const spaceAbove = rect.top - 16;
 
     let top;
-    let maxHeight;
+    let maxHeight = dropdownHeight;
 
     // If space below is limited, open UPWARDS in front of modal content
-    if (spaceBelow < 260 && spaceAbove > spaceBelow) {
-      maxHeight = Math.min(dropdownHeight, Math.max(180, spaceAbove));
-      top = Math.max(10, rect.top - maxHeight - 4);
+    if (spaceBelow < (isMobile ? 180 : 240) && spaceAbove > spaceBelow) {
+      maxHeight = Math.min(dropdownHeight, Math.max(140, spaceAbove));
+      top = Math.max(8, rect.top - maxHeight - 4);
     } else {
-      maxHeight = Math.min(dropdownHeight, Math.max(180, spaceBelow));
+      maxHeight = Math.min(dropdownHeight, Math.max(140, spaceBelow));
       top = rect.bottom + 4;
     }
 
     // Clamp top so it never overflows bottom of screen
-    if (top + maxHeight > window.innerHeight - 12) {
-      top = Math.max(10, window.innerHeight - maxHeight - 12);
+    if (top + maxHeight > window.innerHeight - 10) {
+      top = Math.max(8, window.innerHeight - maxHeight - 10);
     }
+    if (top < 8) top = 8;
 
     let left = rect.left;
     if (left + dropdownWidth > window.innerWidth - 12) {
@@ -1308,8 +1315,8 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
         </div>
       )}
 
-      {/* PROJECT TYPOGRAPHY SELECTOR (Mobile Bottom Sheet + Desktop Floating Dropdown) */}
-      {showModal && isTypoDropdownOpen && formData.projectType.length > 0 && (() => {
+      {/* FLOATING PROJECT TYPOGRAPHY DROPDOWN MENU (Compact Box) */}
+      {showModal && isTypoDropdownOpen && typoCoords && formData.projectType.length > 0 && (() => {
         const query = typoSearch.trim().toLowerCase();
 
         // Calculate total matches across all selected project types
@@ -1329,91 +1336,122 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
           }
         });
 
-        const renderDropdownBody = (isMobile) => (
+        return (
           <>
-            {/* STICKY SEARCH BAR AT TOP */}
-            <div className="p-2.5 sm:p-2 border-b border-gray-100 bg-gray-50/95 flex-shrink-0 space-y-2">
-              <div className="relative flex items-center">
-                <i className="fa-solid fa-magnifying-glass text-gray-400 text-xs absolute left-3 pointer-events-none"></i>
-                <input
-                  type="text"
-                  value={typoSearch}
-                  onChange={(e) => setTypoSearch(e.target.value)}
-                  onClick={(e) => e.stopPropagation()}
-                  placeholder="Search typography (e.g. 2 BHK, Duplex, Garden)..."
-                  className="w-full pl-8 pr-7 py-2 sm:py-1.5 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition shadow-xs"
-                />
-                {typoSearch && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setTypoSearch('');
-                    }}
-                    className="absolute right-2.5 text-gray-400 hover:text-gray-600 w-5 h-5 rounded-full flex items-center justify-center cursor-pointer text-xs"
-                    title="Clear search"
-                  >
-                    <i className="fa-solid fa-xmark"></i>
-                  </button>
-                )}
-              </div>
+            {/* Subtle backdrop on mobile so tapping outside closes it immediately */}
+            <div 
+              className="fixed inset-0 z-[99998] bg-black/25 sm:hidden animate-fade-in"
+              onClick={() => {
+                setIsTypoDropdownOpen(false);
+                setTypoSearch('');
+              }}
+            />
 
-              {/* SELECT ALL TOOLBAR (Only shown for Miscellaneous projects) */}
-              <div className="flex items-center justify-between px-1 pt-0.5">
-                <span className="text-[10.5px] font-bold text-gray-500 uppercase tracking-wider">
-                  {formData.typography.length} of {allAvailableTypographies.length} selected
-                </span>
-                {isMiscellaneousProject && (
-                  <button
-                    type="button"
-                    onClick={handleToggleSelectAllTypography}
-                    className="text-[11px] font-bold text-[#B30E2E] hover:text-[#8A0B22] hover:underline cursor-pointer flex items-center gap-1"
-                  >
-                    <i className={`fa-solid ${allAvailableTypographies.length > 0 && allAvailableTypographies.every(item => formData.typography.includes(item)) ? 'fa-square-check' : 'fa-check-double'} text-[10px]`}></i>
-                    <span>
-                      {allAvailableTypographies.length > 0 && allAvailableTypographies.every(item => formData.typography.includes(item)) ? 'Deselect All' : 'Select All'}
-                    </span>
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* SCROLLABLE LIST OF TYPOGRAPHIES */}
-            <div className="overflow-y-auto overscroll-contain custom-scrollbar flex-1 py-1">
-              {totalMatches === 0 ? (
-                <div className="py-7 px-4 text-center">
-                  <div className="w-8 h-8 rounded-full bg-gray-100 text-gray-400 mx-auto flex items-center justify-center text-xs mb-2">
-                    <i className="fa-solid fa-magnifying-glass"></i>
-                  </div>
-                  <p className="text-xs font-bold text-gray-700">No typography matches</p>
-                  <p className="text-[11px] text-gray-400 mt-0.5">Try searching with a different keyword</p>
+            <div 
+              onWheel={(e) => e.stopPropagation()}
+              className="fixed z-[99999] bg-white border border-gray-200 rounded-xl shadow-2xl flex flex-col overflow-hidden animate-fade-in project-typo-dropdown-menu"
+              style={{
+                top: `${typoCoords.top}px`,
+                left: `${typoCoords.left}px`,
+                width: `${typoCoords.width}px`,
+                maxHeight: `${typoCoords.maxHeight}px`
+              }}
+            >
+              {/* COMPACT HEADER / TITLE */}
+              <div className="px-3 py-1.5 bg-gray-50 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-bold text-gray-700">Project Typography</span>
+                  <span className="text-[10px] bg-rose-100 text-[#B30E2E] px-1.5 py-0.2 rounded-full font-bold">
+                    {formData.typography.length}
+                  </span>
                 </div>
-              ) : (
-                formData.projectType.map(pType => {
-                  const options = TYPOGRAPHY_BY_TYPE[pType] || [];
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsTypoDropdownOpen(false);
+                    setTypoSearch('');
+                  }}
+                  className="w-5 h-5 rounded-full hover:bg-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 transition cursor-pointer text-xs"
+                >
+                  <i className="fa-solid fa-xmark"></i>
+                </button>
+              </div>
 
-                  if (pType === 'Apartment') {
-                    const filteredGroups = APARTMENT_TYPOGRAPHY_GROUPS.map(grp => {
-                      if (!query) return grp;
-                      if (grp.group.toLowerCase().includes(query)) return grp;
-                      const matched = grp.items.filter(it => it.toLowerCase().includes(query));
-                      return { ...grp, items: matched };
-                    }).filter(grp => grp.items.length > 0);
+              {/* STICKY SEARCH BAR */}
+              <div className="p-2 border-b border-gray-100 bg-white flex-shrink-0 space-y-1.5">
+                <div className="relative flex items-center">
+                  <i className="fa-solid fa-magnifying-glass text-gray-400 text-[10px] absolute left-2.5 pointer-events-none"></i>
+                  <input
+                    type="text"
+                    value={typoSearch}
+                    onChange={(e) => setTypoSearch(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    placeholder="Search typography..."
+                    className="w-full pl-7 pr-6 py-1 bg-gray-50 border border-gray-200 rounded-lg text-xs font-medium text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#B30E2E] focus:bg-white transition"
+                  />
+                  {typoSearch && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setTypoSearch('');
+                      }}
+                      className="absolute right-2 text-gray-400 hover:text-gray-600 w-4 h-4 rounded-full flex items-center justify-center cursor-pointer text-[10px]"
+                    >
+                      <i className="fa-solid fa-xmark"></i>
+                    </button>
+                  )}
+                </div>
 
-                    if (filteredGroups.length === 0) return null;
+                {/* SELECT ALL (Only for Miscellaneous) */}
+                {isMiscellaneousProject && (
+                  <div className="flex items-center justify-between px-0.5">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                      {formData.typography.length} of {allAvailableTypographies.length}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleToggleSelectAllTypography}
+                      className="text-[10px] font-bold text-[#B30E2E] hover:underline cursor-pointer"
+                    >
+                      {allAvailableTypographies.length > 0 && allAvailableTypographies.every(item => formData.typography.includes(item)) ? 'Deselect All' : 'Select All'}
+                    </button>
+                  </div>
+                )}
+              </div>
 
-                    return (
-                      <div key={pType} className="border-b border-gray-100 last:border-none py-1">
-                        <div className="px-3 py-1.5 text-[10px] font-bold text-gray-500 uppercase tracking-wider bg-gray-50 flex items-center justify-between">
-                          <span>Apartment Configurations</span>
-                        </div>
-                        <div className="divide-y divide-gray-100">
+              {/* SCROLLABLE LIST OF TYPOGRAPHIES (COMPACT ROWS) */}
+              <div className="overflow-y-auto overscroll-contain custom-scrollbar flex-1 py-0.5">
+                {totalMatches === 0 ? (
+                  <div className="py-5 px-3 text-center">
+                    <p className="text-xs font-bold text-gray-600">No matches</p>
+                    <p className="text-[10px] text-gray-400">Try a different search</p>
+                  </div>
+                ) : (
+                  formData.projectType.map(pType => {
+                    const options = TYPOGRAPHY_BY_TYPE[pType] || [];
+
+                    if (pType === 'Apartment') {
+                      const filteredGroups = APARTMENT_TYPOGRAPHY_GROUPS.map(grp => {
+                        if (!query) return grp;
+                        if (grp.group.toLowerCase().includes(query)) return grp;
+                        const matched = grp.items.filter(it => it.toLowerCase().includes(query));
+                        return { ...grp, items: matched };
+                      }).filter(grp => grp.items.length > 0);
+
+                      if (filteredGroups.length === 0) return null;
+
+                      return (
+                        <div key={pType} className="border-b border-gray-100 last:border-none py-0.5">
+                          <div className="px-2.5 py-1 text-[9.5px] font-bold text-gray-400 uppercase tracking-wider bg-gray-50/70">
+                            Apartment
+                          </div>
                           {filteredGroups.map(grp => (
-                            <div key={grp.group} className="py-1">
-                              <div className="px-3 py-1 bg-gray-50/80 text-[10px] font-bold text-gray-500 uppercase tracking-wider flex items-center justify-between border-y border-gray-100/80">
+                            <div key={grp.group} className="py-0.5">
+                              <div className="px-2.5 py-0.5 text-[9px] font-bold text-gray-400 uppercase flex items-center justify-between">
                                 <span>{grp.group}</span>
-                                <span className="text-[9px] text-gray-400 font-normal">
-                                  {grp.items.filter(item => formData.typography.includes(item)).length} selected
+                                <span className="text-[8.5px] text-gray-400 font-normal">
+                                  {grp.items.filter(item => formData.typography.includes(item)).length}/{grp.items.length}
                                 </span>
                               </div>
                               {grp.items.map(item => {
@@ -1423,18 +1461,18 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                                     key={item}
                                     type="button"
                                     onClick={() => handleToggleTypography(item)}
-                                    className={`w-full text-left px-3.5 py-2.5 sm:py-1.5 text-xs font-semibold hover:bg-rose-50 hover:text-[#B30E2E] transition flex items-center gap-2.5 cursor-pointer ${
-                                      isChecked ? 'bg-[#FFF0F2]/60 text-[#B30E2E] font-bold' : 'text-gray-700'
+                                    className={`w-full text-left px-2.5 py-1 text-xs font-medium hover:bg-rose-50 hover:text-[#B30E2E] transition flex items-center gap-2 cursor-pointer ${
+                                      isChecked ? 'bg-[#FFF0F2] text-[#B30E2E] font-bold' : 'text-gray-700'
                                     }`}
                                   >
                                     <span
-                                      className={`w-4 h-4 sm:w-3.5 sm:h-3.5 rounded flex items-center justify-center border transition flex-shrink-0 ${
+                                      className={`w-3.5 h-3.5 rounded flex items-center justify-center border transition flex-shrink-0 ${
                                         isChecked
                                           ? 'bg-[#B30E2E] border-[#B30E2E] text-white'
                                           : 'bg-white border-gray-300'
                                       }`}
                                     >
-                                      {isChecked && <i className="fa-solid fa-check text-[9px]"></i>}
+                                      {isChecked && <i className="fa-solid fa-check text-[8px]"></i>}
                                     </span>
                                     <span className="truncate">{item}</span>
                                   </button>
@@ -1443,136 +1481,68 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                             </div>
                           ))}
                         </div>
-                      </div>
-                    );
-                  }
+                      );
+                    }
 
-                  // Non-Apartment (Plots, Villa)
-                  const filteredOptions = query
-                    ? options.filter(item => item.toLowerCase().includes(query))
-                    : options;
+                    // Non-Apartment (Villa, Plots)
+                    const filteredOptions = query
+                      ? options.filter(item => item.toLowerCase().includes(query))
+                      : options;
 
-                  if (filteredOptions.length === 0) return null;
+                    if (filteredOptions.length === 0) return null;
 
-                  return (
-                    <div key={pType} className="border-b border-gray-100 last:border-none py-1">
-                      <div className="px-3 py-1.5 text-[10px] font-bold text-gray-500 uppercase tracking-wider bg-gray-50 flex items-center justify-between">
-                        <span>{pType === 'Plots' ? 'Plot Sub-Types' : `${pType} Configurations`}</span>
-                      </div>
-                      {filteredOptions.map(item => {
-                        const isChecked = formData.typography.includes(item);
-                        return (
-                          <button
-                            key={item}
-                            type="button"
-                            onClick={() => handleToggleTypography(item)}
-                            className={`w-full text-left px-3.5 py-2.5 sm:py-2 text-xs font-semibold hover:bg-rose-50 hover:text-[#B30E2E] transition flex items-center gap-2.5 cursor-pointer ${
-                              isChecked ? 'bg-[#FFF0F2]/60 text-[#B30E2E] font-bold' : 'text-gray-700'
-                            }`}
-                          >
-                            <span
-                              className={`w-4 h-4 sm:w-3.5 sm:h-3.5 rounded flex items-center justify-center border transition flex-shrink-0 ${
-                                isChecked
-                                  ? 'bg-[#B30E2E] border-[#B30E2E] text-white'
-                                  : 'bg-white border-gray-300'
+                    return (
+                      <div key={pType} className="border-b border-gray-100 last:border-none py-0.5">
+                        <div className="px-2.5 py-1 text-[9.5px] font-bold text-gray-400 uppercase tracking-wider bg-gray-50/70">
+                          {pType === 'Plots' ? 'Plot Sub-Types' : pType}
+                        </div>
+                        {filteredOptions.map(item => {
+                          const isChecked = formData.typography.includes(item);
+                          return (
+                            <button
+                              key={item}
+                              type="button"
+                              onClick={() => handleToggleTypography(item)}
+                              className={`w-full text-left px-2.5 py-1.5 text-xs font-medium hover:bg-rose-50 hover:text-[#B30E2E] transition flex items-center gap-2 cursor-pointer ${
+                                isChecked ? 'bg-[#FFF0F2] text-[#B30E2E] font-bold' : 'text-gray-700'
                               }`}
                             >
-                              {isChecked && <i className="fa-solid fa-check text-[9px]"></i>}
-                            </span>
-                            <span className="truncate">{item}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  );
-                })
-              )}
-            </div>
-
-            {/* FOOTER BAR: SELECTION SUMMARY & DONE BUTTON */}
-            <div className="p-3 sm:p-2 border-t border-gray-100 bg-gray-50 flex items-center justify-between flex-shrink-0">
-              <div className="flex items-center gap-2">
-                {isMiscellaneousProject && (
-                  <button
-                    type="button"
-                    onClick={handleToggleSelectAllTypography}
-                    className="text-[11px] font-bold text-[#B30E2E] hover:text-[#8A0B22] hover:underline cursor-pointer"
-                  >
-                    {allAvailableTypographies.length > 0 && allAvailableTypographies.every(item => formData.typography.includes(item)) ? 'Deselect All' : 'Select All'}
-                  </button>
+                              <span
+                                className={`w-3.5 h-3.5 rounded flex items-center justify-center border transition flex-shrink-0 ${
+                                  isChecked
+                                    ? 'bg-[#B30E2E] border-[#B30E2E] text-white'
+                                    : 'bg-white border-gray-300'
+                                }`}
+                              >
+                                {isChecked && <i className="fa-solid fa-check text-[8px]"></i>}
+                              </span>
+                              <span className="truncate">{item}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    );
+                  })
                 )}
-                <span className="text-xs sm:text-[11px] font-semibold text-gray-500">
-                  ({formData.typography.length} selected)
+              </div>
+
+              {/* COMPACT FOOTER */}
+              <div className="px-2.5 py-1.5 border-t border-gray-100 bg-gray-50 flex items-center justify-between flex-shrink-0">
+                <span className="text-[11px] font-semibold text-gray-500">
+                  {formData.typography.length} selected
                 </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsTypoDropdownOpen(false);
-                  setTypoSearch('');
-                }}
-                className="px-4 py-2 sm:px-3 sm:py-1 bg-[#B30E2E] hover:bg-[#8A0B22] text-white text-xs sm:text-[11px] font-bold rounded-xl sm:rounded-lg transition cursor-pointer shadow-xs"
-              >
-                Done
-              </button>
-            </div>
-          </>
-        );
-
-        return (
-          <>
-            {/* MOBILE VIEW: BOTTOM SHEET OVERLAY WITH BACKDROP (sm:hidden) */}
-            <div 
-              className="fixed inset-0 z-[99999] bg-black/60 backdrop-blur-xs flex flex-col justify-end sm:hidden animate-fade-in"
-              onClick={() => {
-                setIsTypoDropdownOpen(false);
-                setTypoSearch('');
-              }}
-            >
-              <div 
-                onClick={(e) => e.stopPropagation()}
-                className="bg-white rounded-t-3xl shadow-2xl flex flex-col max-h-[85vh] w-full overflow-hidden project-typo-dropdown-menu animate-slide-up"
-              >
-                {/* Mobile Bottom Sheet Header */}
-                <div className="px-4 py-3 bg-gradient-to-r from-[#B30E2E] via-[#8A0B22] to-[#590414] text-white flex items-center justify-between flex-shrink-0">
-                  <div className="flex items-center gap-2">
-                    <i className="fa-solid fa-shapes text-sm"></i>
-                    <span className="font-bold text-sm">Select Typography</span>
-                    <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-medium">
-                      {formData.typography.length} selected
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsTypoDropdownOpen(false);
-                      setTypoSearch('');
-                    }}
-                    className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/80 hover:text-white transition cursor-pointer"
-                  >
-                    <i className="fa-solid fa-xmark text-xs"></i>
-                  </button>
-                </div>
-
-                {renderDropdownBody(true)}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsTypoDropdownOpen(false);
+                    setTypoSearch('');
+                  }}
+                  className="px-3 py-1 bg-[#B30E2E] hover:bg-[#8A0B22] text-white text-[11px] font-bold rounded-lg transition cursor-pointer shadow-xs"
+                >
+                  Done
+                </button>
               </div>
             </div>
-
-            {/* DESKTOP VIEW: FLOATING DROPDOWN MENU (hidden sm:flex) */}
-            {typoCoords && (
-              <div 
-                onWheel={(e) => e.stopPropagation()}
-                className="hidden sm:flex fixed z-[99999] bg-white border border-gray-200 rounded-2xl shadow-2xl flex-col overflow-hidden animate-fade-in project-typo-dropdown-menu"
-                style={{
-                  top: `${typoCoords.top}px`,
-                  left: `${typoCoords.left}px`,
-                  width: `${typoCoords.width}px`,
-                  maxHeight: `${typoCoords.maxHeight}px`
-                }}
-              >
-                {renderDropdownBody(false)}
-              </div>
-            )}
           </>
         );
       })()}

@@ -209,7 +209,7 @@ export default function HeroBanner() {
                 <i class="fa-solid fa-star text-[#B30E2E] text-[9px]"></i>
               </div>
               <div class="text-xs sm:text-base font-extrabold leading-tight text-gray-900 drop-shadow-sm">
-                Plots @ <span class="text-[#B30E2E] font-black text-sm sm:text-lg">₹ 2.99 Lakh</span> Onwards
+                Plots @ <span class="text-[#B30E2E] font-black text-sm sm:text-lg">₹ 3.50 Lakh</span> All Inclusive
               </div>
               <div class="text-[9px] sm:text-[11px] text-[#0D5235] font-bold flex items-center gap-1">
                 <span>⚡ Limited Period Offer</span>

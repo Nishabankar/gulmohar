@@ -8,7 +8,7 @@ export default function MasterPlan({ onOpenLightbox }) {
     { label: 'Standard Plot Area', value: '1000 Sq.Ft.', highlight: true },
     { label: 'Internal Road Widths', value: '25 Ft & 18 Ft Roads', green: true },
     { label: 'Plot Ownership', value: 'Individual 7/12 Extract Option' },
-    { label: 'Price', value: '₹ 2.99 Lakh Onwards', highlight: true },
+    { label: 'Price', value: '₹ 3.50 Lakh All Inclusive', highlight: true },
   ];
 
   return (

@@ -149,7 +149,7 @@ export default function About() {
             href="#contact" 
             class="w-full sm:w-auto inline-flex items-center justify-center space-x-2 bg-[#B30E2E] hover:bg-[#8A0B22] text-white font-bold text-xs sm:text-sm px-5 py-2 rounded-full shadow-md hover:shadow-lg transition cursor-pointer"
           >
-            <span>Book Plot @ ₹ 2.99 Lakh</span>
+            <span>Book Plot @ ₹ 3.50 Lakh All Inclusive</span>
             <i class="fa-solid fa-arrow-right text-[10px]"></i>
           </a>
 

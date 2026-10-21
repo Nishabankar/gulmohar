@@ -68,7 +68,7 @@ export default function PolicyModal({ isOpen, type, onClose }) {
               <div>
                 <h4 class="font-bold text-gray-900 text-sm mb-1">2. How We Use Your Information</h4>
                 <p>
-                  The information provided is strictly used by our authorized sales helpline team (+91 7447 212121) to contact you regarding plot availability, pricing details (starting @ ₹ 2.99 Lakh), site inspection arrangements, and brochure sharing.
+                  The information provided is strictly used by our authorized sales helpline team (+91 7447 212121) to contact you regarding plot availability, pricing details (starting @ ₹ 3.50 Lakh All Inclusive), site inspection arrangements, and brochure sharing.
                 </p>
               </div>
 
@@ -96,7 +96,7 @@ export default function PolicyModal({ isOpen, type, onClose }) {
               <div>
                 <h4 class="font-bold text-gray-900 text-sm mb-1">1. Project Information & Representation</h4>
                 <p>
-                  All project details, plot layouts, master plans, dimensions (1000 Sq.Ft standard), amenities, and pricing (₹ 2.99 Lakh onwards) presented on this website are conceptual and indicative of the Gulmohar City residential plot project in Malthan, Shikrapur.
+                  All project details, plot layouts, master plans, dimensions (1000 Sq.Ft standard), amenities, and pricing (₹ 3.50 Lakh All Inclusive) presented on this website are conceptual and indicative of the Gulmohar City residential plot project in Malthan, Shikrapur.
                 </p>
               </div>
 

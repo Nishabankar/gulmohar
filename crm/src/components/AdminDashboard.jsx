@@ -1739,7 +1739,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       typography: (newLeadFormData.typography || '').trim(),
       carpetArea: formattedCarpet,
       budget: formatBudgetValue(newLeadFormData.budget),
-      plotsCount: formattedCarpet || newLeadFormData.plotsCount || '1 Plot',
+      plotsCount: newLeadFormData.plotsCount || '',
       visitDate: newLeadFormData.visitDate || '',
       visitTime: newLeadFormData.visitTime || (newLeadFormData.followupDate ? '11:00' : ''),
       followupDate: newLeadFormData.followupDate || '',
@@ -2262,7 +2262,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
           phone: updatedLead.phone,
           oldPhone: existingLead ? existingLead.phone : '',
           email: updatedLead.email,
-          plotsCount: formattedEditCarpet || updatedLead.plotsCount,
+          plotsCount: updatedLead.plotsCount || '',
           plotInfo: updatedLead.plotInfo,
           projectName: updatedLead.projectName,
           projectType: updatedLead.projectType,
@@ -4305,7 +4305,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                       {(() => {
                         if (!selectedHistoryLead) return null;
                         const mongoHistory = (selectedHistoryLead.history || []).filter(
-                          item => item.fieldName !== 'Import' && item.fieldName !== 'Sheet Status'
+                          item => item.fieldName !== 'Import' && item.fieldName !== 'Sheet Status' && item.fieldName !== 'No. of Guntha' && item.fieldName !== 'Number of Guntha'
                         );
 
                         if (mongoHistory.length === 0) {

@@ -619,7 +619,7 @@ router.patch('/enquiries/:id', protectAdmin, async (req, res) => {
       { col: 'last_name', label: 'Last Name', incoming: lastName },
       { col: 'phone', label: 'Mobile No.', incoming: phone },
       { col: 'email', label: 'Email Address', incoming: email },
-      { col: 'plots_count', label: 'No. of Guntha', incoming: plotsCount },
+
       { col: 'plot_info', label: 'Plot Info', incoming: plotInfo },
       { col: 'visit_date', label: 'Visit Date', incoming: visitDate },
       { col: 'visit_time', label: 'Visit Time', incoming: visitTime },

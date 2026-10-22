@@ -826,8 +826,18 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
               <tbody className="divide-y divide-gray-100 text-xs">
                 {filteredProjects.map((project, idx) => {
                   const types = Array.isArray(project.projectType) ? project.projectType : [project.projectType].filter(Boolean);
-                  const typos = Array.isArray(project.typography) ? project.typography : [project.typography].filter(Boolean);
-                  const displayTypo = typos.length === 0 ? '—' : typos.join(', ');
+                  let typos = [];
+                  if (Array.isArray(project.typography)) {
+                    typos = project.typography;
+                  } else if (typeof project.typography === 'string') {
+                    try {
+                      const parsed = JSON.parse(project.typography);
+                      if (Array.isArray(parsed)) typos = parsed;
+                      else typos = project.typography.split(',').map(s => s.trim()).filter(Boolean);
+                    } catch (e) {
+                      typos = project.typography.split(',').map(s => s.trim()).filter(Boolean);
+                    }
+                  }
                   const isTypoOpen = activeTableTypoDropdown?.projectId === (project.id || project._id || idx);
 
                   return (
@@ -873,12 +883,16 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                       {/* Typography */}
                       <td className="py-2.5 px-3 w-52 min-w-[150px] max-w-[220px]">
                         {typos.length > 0 ? (
-                          <span 
-                            className="text-[11px] font-semibold text-gray-800 whitespace-normal break-words leading-tight block"
-                            title={displayTypo}
-                          >
-                            {displayTypo}
-                          </span>
+                          <div className="flex flex-col gap-0.5" title={typos.join('\n')}>
+                            {typos.map((t, i) => (
+                              <span 
+                                key={i}
+                                className="text-[11px] font-semibold text-gray-800 leading-tight block whitespace-nowrap"
+                              >
+                                {t}
+                              </span>
+                            ))}
+                          </div>
                         ) : (
                           <div className="w-full flex items-center justify-center py-0.5">
                             <span className="text-gray-400 italic text-[10.5px]">—</span>

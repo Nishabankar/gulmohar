@@ -5789,17 +5789,20 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
 
                                   const rawLeadTypos = (item.typography || '').split(',').map(s => s.trim()).filter(Boolean);
                                   const typoList = rawLeadTypos.length > 0 ? rawLeadTypos : projectTypos;
-                                  const displayTypo = typoList.join(', ');
 
                                   return (
                                     <td key="typography" class={getTdClass('typography', currentId, 'py-2')} style={getTdStyle('typography')}>
                                       {typoList.length > 0 ? (
-                                        <span 
-                                          class="text-[11px] font-semibold text-gray-800 whitespace-normal break-words leading-tight block"
-                                          title={displayTypo}
-                                        >
-                                          {displayTypo}
-                                        </span>
+                                        <div class="flex flex-col gap-0.5" title={typoList.join('\n')}>
+                                          {typoList.map((t, i) => (
+                                            <span
+                                              key={i}
+                                              class="text-[11px] font-semibold text-gray-800 leading-tight block whitespace-nowrap"
+                                            >
+                                              {t}
+                                            </span>
+                                          ))}
+                                        </div>
                                       ) : (
                                         <div class="w-full flex items-center justify-center py-0.5">
                                           <span class="text-gray-400 italic text-[10.5px]">—</span>

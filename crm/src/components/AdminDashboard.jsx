@@ -603,6 +603,107 @@ export const BUDGET_OPTIONS = (() => {
   opts.push('5+ Cr');
   return opts;
 })();
+
+export const formatBudgetValue = (val) => {
+  if (!val && val !== 0) return '';
+  let str = String(val).trim();
+  if (!str) return '';
+
+  // Handle '5+ Cr' or similar range markers
+  if (/^\d+\+\s*Cr$/i.test(str)) {
+    return str.replace(/\s+/g, ' ').replace(/cr/i, 'Cr');
+  }
+
+  // Already standard format like '55 L', '1.5 Cr', '25 L'
+  if (/^\d+(\.\d+)?\s*(L|Cr)$/i.test(str)) {
+    const match = str.match(/^(\d+(?:\.\d+)?)\s*(L|Cr)$/i);
+    if (match) {
+      const numPart = Number(parseFloat(match[1]).toFixed(2));
+      const unit = match[2].toUpperCase() === 'CR' ? 'Cr' : 'L';
+      return `${numPart} ${unit}`;
+    }
+    return str;
+  }
+
+  // Handle words like 'lakh', 'lakhs', 'lac', 'lacs' (e.g. '55 lakh', '55lakhs', '₹55 lacs')
+  const lakhWordMatch = str.match(/^₹?\s*(\d+(?:\.\d+)?)\s*(?:lakhs?|lacs?)\b/i);
+  if (lakhWordMatch) {
+    const numPart = Number(parseFloat(lakhWordMatch[1]).toFixed(2));
+    return `${numPart} L`;
+  }
+
+  // Handle words like 'crore', 'crores', 'cr' (e.g. '1.5 crore', '1.5cr', '₹2 crores')
+  const crWordMatch = str.match(/^₹?\s*(\d+(?:\.\d+)?)\s*(?:crores?|cr)\b/i);
+  if (crWordMatch) {
+    const numPart = Number(parseFloat(crWordMatch[1]).toFixed(2));
+    return `${numPart} Cr`;
+  }
+
+  // Clean currency symbols, commas and spaces
+  const cleanNumStr = str.replace(/[₹,\s]/g, '').replace(/^(?:rs\.?|inr)\s*/i, '');
+  const num = parseFloat(cleanNumStr);
+
+  if (!isNaN(num) && num > 0) {
+    // Full value in Crores (>= 1 Crore = 10,000,000, e.g. 15000000 -> 1.5 Cr, 10000000 -> 1 Cr)
+    if (num >= 10000000) {
+      const cr = Number((num / 10000000).toFixed(2));
+      return `${cr} Cr`;
+    }
+    // Full value in Lakhs (>= 100,000 and < 10,000,000, e.g. 5500000 -> 55 L, 550000 -> 5.5 L)
+    if (num >= 100000) {
+      const lakh = Number((num / 100000).toFixed(2));
+      return `${lakh} L`;
+    }
+    // Value in thousands (>= 1,000 and < 100,000, e.g. 50000 -> 0.5 L)
+    if (num >= 1000) {
+      const lakh = Number((num / 100000).toFixed(2));
+      return `${lakh} L`;
+    }
+    // If user enters a number >= 10 and < 100 (e.g. 55, 75, 80) -> treat as Lakhs
+    if (num >= 10 && num < 100) {
+      return `${num} L`;
+    }
+    // If user enters a number < 10 (e.g. 1.5, 2, 3.5) -> treat as Crores
+    if (num > 0 && num < 10) {
+      return `${num} Cr`;
+    }
+  }
+
+  return str;
+};
+
+export const parseBudgetToNumber = (val) => {
+  if (!val && val !== 0) return 0;
+  const str = String(val).trim().toLowerCase();
+  if (!str) return 0;
+
+  if (str.includes('5+')) return 50000001;
+
+  const crMatch = str.match(/([\d.]+)\s*(?:cr|crore)/i);
+  if (crMatch) {
+    return parseFloat(crMatch[1]) * 10000000;
+  }
+
+  const lakhMatch = str.match(/([\d.]+)\s*(?:l|lakh|lac)/i);
+  if (lakhMatch) {
+    return parseFloat(lakhMatch[1]) * 100000;
+  }
+
+  const kMatch = str.match(/([\d.]+)\s*(?:k|thousand)/i);
+  if (kMatch) {
+    return parseFloat(kMatch[1]) * 1000;
+  }
+
+  const clean = str.replace(/[₹,\s]/g, '').replace(/^(?:rs\.?|inr)\s*/i, '');
+  const num = parseFloat(clean);
+  if (!isNaN(num)) {
+    if (num >= 100000) return num;
+    if (num >= 10 && num < 100) return num * 100000;
+    if (num > 0 && num < 10) return num * 10000000;
+    return num;
+  }
+  return 0;
+};
 const PRIORITY_BADGE = {
   Hot: 'bg-rose-50 border-rose-300 text-[#B30E2E]',
   Cold: 'bg-sky-50 border-sky-300 text-sky-700',
@@ -1637,7 +1738,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       projectType: (newLeadFormData.projectType || '').trim(),
       typography: (newLeadFormData.typography || '').trim(),
       carpetArea: formattedCarpet,
-      budget: (newLeadFormData.budget || '').trim(),
+      budget: formatBudgetValue(newLeadFormData.budget),
       plotsCount: formattedCarpet || newLeadFormData.plotsCount || '1 Plot',
       visitDate: newLeadFormData.visitDate || '',
       visitTime: newLeadFormData.visitTime || (newLeadFormData.followupDate ? '11:00' : ''),
@@ -2167,7 +2268,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
           projectType: updatedLead.projectType,
           typography: updatedLead.typography,
           carpetArea: formattedEditCarpet,
-          budget: (updatedLead.budget || '').trim(),
+          budget: formatBudgetValue(updatedLead.budget),
           visitDate: updatedLead.visitDate,
           visitTime: updatedLead.visitTime || (updatedLead.followupDate ? '11:00' : ''),
           followupDate: updatedLead.followupDate || '',
@@ -3281,7 +3382,8 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       (item.projectType || '').toLowerCase().includes(query) ||
       (item.typography || '').toLowerCase().includes(query) ||
       (item.carpetArea || '').toLowerCase().includes(query) ||
-      (item.budget || '').toLowerCase().includes(query);
+      (item.budget || '').toLowerCase().includes(query) ||
+      formatBudgetValue(item.budget).toLowerCase().includes(query);
 
     const checkSingleStatus = (st) => {
       if (st === 'All') return true;
@@ -3441,9 +3543,13 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
           break;
         }
         case 'budget': {
-          const bA = (a.budget || '').trim().toLowerCase();
-          const bB = (b.budget || '').trim().toLowerCase();
-          comp = bA.localeCompare(bB) * sortMultiplier;
+          const numA = parseBudgetToNumber(a.budget);
+          const numB = parseBudgetToNumber(b.budget);
+          if (numA !== numB) {
+            comp = (numA - numB) * sortMultiplier;
+          } else {
+            comp = (a.budget || '').localeCompare(b.budget || '') * sortMultiplier;
+          }
           break;
         }
         case 'plotsCount': {
@@ -5722,11 +5828,12 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   );
                                 }
                                 case 'budget': {
+                                  const displayBudget = formatBudgetValue(item.budget);
                                   return (
                                     <td key="budget" class={getTdClass('budget', currentId, 'text-center')} style={getTdStyle('budget')}>
-                                      {item.budget ? (
-                                        <span class="text-[11px] font-bold text-gray-800 truncate block text-center" title={item.budget}>
-                                          {item.budget}
+                                      {displayBudget ? (
+                                        <span class="text-[11px] font-bold text-gray-800 truncate block text-center" title={displayBudget}>
+                                          {displayBudget}
                                         </span>
                                       ) : (
                                         <div class="w-full flex items-center justify-center py-0.5">
@@ -6868,7 +6975,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                       class="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800"
                     />
                   </div>
-                  <div>
+                                    <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1">Max Budget</label>
                     <div class="relative w-full">
                       <button
@@ -6881,7 +6988,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                         }`}
                       >
                         <span class={editingEnquiry.budget ? 'font-semibold text-gray-800 truncate' : 'text-gray-400 truncate'}>
-                          {editingEnquiry.budget || 'Select Max Budget'}
+                          {formatBudgetValue(editingEnquiry.budget) || 'Select Max Budget'}
                         </span>
                         <i class={`fa-solid fa-chevron-down text-[10px] text-gray-400 transition-transform shrink-0 ${
                           activeDropdown?.rowId === 'edit-modal' && activeDropdown?.field === 'budget' ? 'rotate-180 text-[#B30E2E]' : ''
@@ -6909,13 +7016,20 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   type="text"
                                   value={editingEnquiry.budget || ''}
                                   onChange={(e) => setEditingEnquiry({ ...editingEnquiry, budget: e.target.value })}
+                                  onBlur={() => {
+                                    if (editingEnquiry.budget) {
+                                      setEditingEnquiry({ ...editingEnquiry, budget: formatBudgetValue(editingEnquiry.budget) });
+                                    }
+                                  }}
                                   onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
                                       e.preventDefault();
+                                      const formatted = formatBudgetValue(editingEnquiry.budget);
+                                      setEditingEnquiry({ ...editingEnquiry, budget: formatted });
                                       setActiveDropdown(null);
                                     }
                                   }}
-                                  placeholder="Enter custom budget..."
+                                  placeholder="Enter custom budget (e.g. 5500000, 55L, 1.5 Cr)..."
                                   class="w-full pl-2.5 pr-6 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition"
                                 />
                                 {editingEnquiry.budget && (
@@ -6936,6 +7050,8 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
+                                  const formatted = formatBudgetValue(editingEnquiry.budget);
+                                  setEditingEnquiry({ ...editingEnquiry, budget: formatted });
                                   setActiveDropdown(null);
                                 }}
                                 class="px-2.5 py-1.5 bg-[#B30E2E] hover:bg-[#8A0B22] text-white text-[11px] font-bold rounded-lg shrink-0 cursor-pointer shadow-xs transition"
@@ -6954,47 +7070,57 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 : '208px'
                             }}
                           >
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditingEnquiry({ ...editingEnquiry, budget: '' });
-                                setActiveDropdown(null);
-                              }}
-                              class={`w-full text-left px-3 py-1.5 text-xs transition cursor-pointer flex items-center justify-between ${
-                                !editingEnquiry.budget ? 'bg-rose-50 text-[#B30E2E] font-bold' : 'text-gray-500 hover:bg-gray-50'
-                              }`}
-                            >
-                              <span>Select Max Budget</span>
-                              {!editingEnquiry.budget && <i class="fa-solid fa-check text-[10px] text-[#B30E2E]"></i>}
-                            </button>
-                            {editingEnquiry.budget && !BUDGET_OPTIONS.includes(editingEnquiry.budget) && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setActiveDropdown(null);
-                                }}
-                                class="w-full text-left px-3 py-1.5 text-xs transition cursor-pointer flex items-center justify-between bg-rose-50 text-[#B30E2E] font-bold border-y border-rose-100"
-                              >
-                                <span class="truncate">Custom: {editingEnquiry.budget}</span>
-                                <i class="fa-solid fa-check text-[10px] text-[#B30E2E]"></i>
-                              </button>
-                            )}
-                            {BUDGET_OPTIONS.map((opt) => (
-                              <button
-                                key={opt}
-                                type="button"
-                                onClick={() => {
-                                  setEditingEnquiry({ ...editingEnquiry, budget: opt });
-                                  setActiveDropdown(null);
-                                }}
-                                class={`w-full text-left px-3 py-1.5 text-xs transition cursor-pointer flex items-center justify-between ${
-                                  editingEnquiry.budget === opt ? 'bg-rose-50 text-[#B30E2E] font-bold' : 'text-gray-700 hover:bg-gray-50'
-                                }`}
-                              >
-                                <span>{opt}</span>
-                                {editingEnquiry.budget === opt && <i class="fa-solid fa-check text-[10px] text-[#B30E2E]"></i>}
-                              </button>
-                            ))}
+                            {(() => {
+                              const currentFormatted = formatBudgetValue(editingEnquiry.budget);
+                              const isCustom = currentFormatted && !BUDGET_OPTIONS.includes(currentFormatted);
+                              return (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setEditingEnquiry({ ...editingEnquiry, budget: '' });
+                                      setActiveDropdown(null);
+                                    }}
+                                    class={`w-full text-left px-3 py-1.5 text-xs transition cursor-pointer flex items-center justify-between ${
+                                      !currentFormatted ? 'bg-rose-50 text-[#B30E2E] font-bold' : 'text-gray-500 hover:bg-gray-50'
+                                    }`}
+                                  >
+                                    <span>Select Max Budget</span>
+                                    {!currentFormatted && <i class="fa-solid fa-check text-[10px] text-[#B30E2E]"></i>}
+                                  </button>
+
+                                  {isCustom && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setActiveDropdown(null);
+                                      }}
+                                      class="w-full text-left px-3 py-1.5 text-xs transition cursor-pointer flex items-center justify-between bg-rose-50 text-[#B30E2E] font-bold border-y border-rose-100"
+                                    >
+                                      <span class="truncate">Custom: {currentFormatted}</span>
+                                      <i class="fa-solid fa-check text-[10px] text-[#B30E2E]"></i>
+                                    </button>
+                                  )}
+
+                                  {BUDGET_OPTIONS.map((opt) => (
+                                    <button
+                                      key={opt}
+                                      type="button"
+                                      onClick={() => {
+                                        setEditingEnquiry({ ...editingEnquiry, budget: opt });
+                                        setActiveDropdown(null);
+                                      }}
+                                      class={`w-full text-left px-3 py-1.5 text-xs transition cursor-pointer flex items-center justify-between ${
+                                        currentFormatted === opt ? 'bg-rose-50 text-[#B30E2E] font-bold' : 'text-gray-700 hover:bg-gray-50'
+                                      }`}
+                                    >
+                                      <span>{opt}</span>
+                                      {currentFormatted === opt && <i class="fa-solid fa-check text-[10px] text-[#B30E2E]"></i>}
+                                    </button>
+                                  ))}
+                                </>
+                              );
+                            })()}
                           </div>
                         </div>
                       )}
@@ -7507,7 +7633,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                       class="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC]"
                     />
                   </div>
-                  <div>
+                                    <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1">Max Budget</label>
                     <div class="relative w-full">
                       <button
@@ -7520,7 +7646,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                         }`}
                       >
                         <span class={newLeadFormData.budget ? 'font-semibold text-gray-800 truncate' : 'text-gray-400 truncate'}>
-                          {newLeadFormData.budget || 'Select Max Budget'}
+                          {formatBudgetValue(newLeadFormData.budget) || 'Select Max Budget'}
                         </span>
                         <i class={`fa-solid fa-chevron-down text-[10px] text-gray-400 transition-transform shrink-0 ${
                           activeDropdown?.rowId === 'new-lead-modal' && activeDropdown?.field === 'budget' ? 'rotate-180 text-[#B30E2E]' : ''
@@ -7548,13 +7674,20 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   type="text"
                                   value={newLeadFormData.budget || ''}
                                   onChange={(e) => setNewLeadFormData({ ...newLeadFormData, budget: e.target.value })}
+                                  onBlur={() => {
+                                    if (newLeadFormData.budget) {
+                                      setNewLeadFormData({ ...newLeadFormData, budget: formatBudgetValue(newLeadFormData.budget) });
+                                    }
+                                  }}
                                   onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
                                       e.preventDefault();
+                                      const formatted = formatBudgetValue(newLeadFormData.budget);
+                                      setNewLeadFormData({ ...newLeadFormData, budget: formatted });
                                       setActiveDropdown(null);
                                     }
                                   }}
-                                  placeholder="Enter custom budget..."
+                                  placeholder="Enter custom budget (e.g. 5500000, 55L, 1.5 Cr)..."
                                   class="w-full pl-2.5 pr-6 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition"
                                 />
                                 {newLeadFormData.budget && (
@@ -7575,6 +7708,8 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
+                                  const formatted = formatBudgetValue(newLeadFormData.budget);
+                                  setNewLeadFormData({ ...newLeadFormData, budget: formatted });
                                   setActiveDropdown(null);
                                 }}
                                 class="px-2.5 py-1.5 bg-[#B30E2E] hover:bg-[#8A0B22] text-white text-[11px] font-bold rounded-lg shrink-0 cursor-pointer shadow-xs transition"
@@ -7593,47 +7728,57 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 : '208px'
                             }}
                           >
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setNewLeadFormData({ ...newLeadFormData, budget: '' });
-                                setActiveDropdown(null);
-                              }}
-                              class={`w-full text-left px-3 py-1.5 text-xs transition cursor-pointer flex items-center justify-between ${
-                                !newLeadFormData.budget ? 'bg-rose-50 text-[#B30E2E] font-bold' : 'text-gray-500 hover:bg-gray-50'
-                              }`}
-                            >
-                              <span>Select Max Budget</span>
-                              {!newLeadFormData.budget && <i class="fa-solid fa-check text-[10px] text-[#B30E2E]"></i>}
-                            </button>
-                            {newLeadFormData.budget && !BUDGET_OPTIONS.includes(newLeadFormData.budget) && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setActiveDropdown(null);
-                                }}
-                                class="w-full text-left px-3 py-1.5 text-xs transition cursor-pointer flex items-center justify-between bg-rose-50 text-[#B30E2E] font-bold border-y border-rose-100"
-                              >
-                                <span class="truncate">Custom: {newLeadFormData.budget}</span>
-                                <i class="fa-solid fa-check text-[10px] text-[#B30E2E]"></i>
-                              </button>
-                            )}
-                            {BUDGET_OPTIONS.map((opt) => (
-                              <button
-                                key={opt}
-                                type="button"
-                                onClick={() => {
-                                  setNewLeadFormData({ ...newLeadFormData, budget: opt });
-                                  setActiveDropdown(null);
-                                }}
-                                class={`w-full text-left px-3 py-1.5 text-xs transition cursor-pointer flex items-center justify-between ${
-                                  newLeadFormData.budget === opt ? 'bg-rose-50 text-[#B30E2E] font-bold' : 'text-gray-700 hover:bg-gray-50'
-                                }`}
-                              >
-                                <span>{opt}</span>
-                                {newLeadFormData.budget === opt && <i class="fa-solid fa-check text-[10px] text-[#B30E2E]"></i>}
-                              </button>
-                            ))}
+                            {(() => {
+                              const currentFormatted = formatBudgetValue(newLeadFormData.budget);
+                              const isCustom = currentFormatted && !BUDGET_OPTIONS.includes(currentFormatted);
+                              return (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setNewLeadFormData({ ...newLeadFormData, budget: '' });
+                                      setActiveDropdown(null);
+                                    }}
+                                    class={`w-full text-left px-3 py-1.5 text-xs transition cursor-pointer flex items-center justify-between ${
+                                      !currentFormatted ? 'bg-rose-50 text-[#B30E2E] font-bold' : 'text-gray-500 hover:bg-gray-50'
+                                    }`}
+                                  >
+                                    <span>Select Max Budget</span>
+                                    {!currentFormatted && <i class="fa-solid fa-check text-[10px] text-[#B30E2E]"></i>}
+                                  </button>
+
+                                  {isCustom && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setActiveDropdown(null);
+                                      }}
+                                      class="w-full text-left px-3 py-1.5 text-xs transition cursor-pointer flex items-center justify-between bg-rose-50 text-[#B30E2E] font-bold border-y border-rose-100"
+                                    >
+                                      <span class="truncate">Custom: {currentFormatted}</span>
+                                      <i class="fa-solid fa-check text-[10px] text-[#B30E2E]"></i>
+                                    </button>
+                                  )}
+
+                                  {BUDGET_OPTIONS.map((opt) => (
+                                    <button
+                                      key={opt}
+                                      type="button"
+                                      onClick={() => {
+                                        setNewLeadFormData({ ...newLeadFormData, budget: opt });
+                                        setActiveDropdown(null);
+                                      }}
+                                      class={`w-full text-left px-3 py-1.5 text-xs transition cursor-pointer flex items-center justify-between ${
+                                        currentFormatted === opt ? 'bg-rose-50 text-[#B30E2E] font-bold' : 'text-gray-700 hover:bg-gray-50'
+                                      }`}
+                                    >
+                                      <span>{opt}</span>
+                                      {currentFormatted === opt && <i class="fa-solid fa-check text-[10px] text-[#B30E2E]"></i>}
+                                    </button>
+                                  ))}
+                                </>
+                              );
+                            })()}
                           </div>
                         </div>
                       )}

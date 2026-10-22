@@ -114,7 +114,6 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState('All');
-  const [areaFilter, setAreaFilter] = useState('All');
 
   // Modal States
   const [showModal, setShowModal] = useState(false);
@@ -422,11 +421,6 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
         if (!hasType) return false;
       }
 
-      // Area Filter
-      if (areaFilter !== 'All') {
-        if ((p.area || '').toLowerCase() !== areaFilter.toLowerCase()) return false;
-      }
-
       // Search Query
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase().trim();
@@ -440,7 +434,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
 
       return name.includes(q) || dev.includes(q) || area.includes(q) || addr.includes(q) || rera.includes(q) || typesStr.includes(q) || typoStr.includes(q);
     });
-  }, [projects, searchQuery, typeFilter, areaFilter]);
+  }, [projects, searchQuery, typeFilter]);
 
   // Open Create Modal
   const handleOpenCreateModal = () => {
@@ -758,20 +752,6 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                   <i className="fa-solid fa-circle-xmark"></i>
                 </button>
               )}
-            </div>
-
-            {/* Area Filter Select */}
-            <div className="w-36 flex-shrink-0 relative">
-              <select
-                value={areaFilter}
-                onChange={(e) => setAreaFilter(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-xs bg-white hover:bg-gray-50 font-bold text-gray-700 cursor-pointer shadow-xs"
-              >
-                <option value="All">All Areas</option>
-                {PROJECT_AREAS.map(a => (
-                  <option key={a} value={a}>{a}</option>
-                ))}
-              </select>
             </div>
 
             {/* Type Filter Select */}

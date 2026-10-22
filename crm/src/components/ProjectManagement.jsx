@@ -119,7 +119,6 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState('create'); // 'create' | 'edit'
   const [editingProjectId, setEditingProjectId] = useState(null);
-  const [isCustomArea, setIsCustomArea] = useState(false);
 
   // Floating Dropdown State (Fixed Positioning so it floats in FRONT without overflow clipping)
   const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
@@ -441,7 +440,6 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
     setModalMode('create');
     setEditingProjectId(null);
     setFormData(initialFormState);
-    setIsCustomArea(false);
     setFormMsg('');
     setIsTypeDropdownOpen(false);
     setIsTypoDropdownOpen(false);
@@ -472,7 +470,6 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
     });
 
     const projectArea = project.area || '';
-    setIsCustomArea(Boolean(projectArea && !PROJECT_AREAS.includes(projectArea)));
 
     setFormData({
       name: project.name || '',
@@ -1135,74 +1132,24 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {/* Area Dropdown */}
                   <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs font-bold text-gray-700">
-                        Area <span className="text-rose-500">*</span>
-                      </label>
-                      {isCustomArea ? (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsCustomArea(false);
-                            setFormData(prev => ({ ...prev, area: '' }));
-                          }}
-                          className="text-[10px] text-[#B30E2E] hover:underline font-bold flex items-center gap-1 cursor-pointer"
-                        >
-                          <i className="fa-solid fa-list text-[9px]"></i>
-                          <span>Area List</span>
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsCustomArea(true);
-                            setFormData(prev => ({ ...prev, area: '' }));
-                          }}
-                          className="text-[10px] text-gray-500 hover:text-[#B30E2E] font-medium flex items-center gap-1 cursor-pointer"
-                          title="Type custom area"
-                        >
-                          <i className="fa-solid fa-plus text-[9px]"></i>
-                          <span>Custom Area</span>
-                        </button>
-                      )}
-                    </div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      Area <span className="text-rose-500">*</span>
+                    </label>
 
-                    {isCustomArea ? (
-                      <div className="relative flex items-center">
-                        <input 
-                          type="text"
-                          required
-                          autoFocus
-                          value={formData.area}
-                          onChange={(e) => setFormData({ ...formData, area: e.target.value })}
-                          placeholder="Type custom area..."
-                          className="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800 bg-white"
-                        />
-                      </div>
-                    ) : (
-                      <select 
-                        required
-                        value={formData.area}
-                        onChange={(e) => {
-                          if (e.target.value === '__custom__') {
-                            setIsCustomArea(true);
-                            setFormData({ ...formData, area: '' });
-                          } else {
-                            setFormData({ ...formData, area: e.target.value });
-                          }
-                        }}
-                        className="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800 bg-white cursor-pointer"
-                      >
-                        <option value="">Select Area</option>
-                        {formData.area && !PROJECT_AREAS.includes(formData.area) && (
-                          <option value={formData.area}>{formData.area}</option>
-                        )}
-                        {PROJECT_AREAS.map(areaName => (
-                          <option key={areaName} value={areaName}>{areaName}</option>
-                        ))}
-                        <option value="__custom__">+ Other / Custom Area</option>
-                      </select>
-                    )}
+                    <select 
+                      required
+                      value={formData.area}
+                      onChange={(e) => setFormData({ ...formData, area: e.target.value })}
+                      className="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800 bg-white cursor-pointer"
+                    >
+                      <option value="">Select Area</option>
+                      {formData.area && !PROJECT_AREAS.includes(formData.area) && (
+                        <option value={formData.area}>{formData.area}</option>
+                      )}
+                      {PROJECT_AREAS.map(areaName => (
+                        <option key={areaName} value={areaName}>{areaName}</option>
+                      ))}
+                    </select>
                   </div>
 
                   {/* Address Field */}

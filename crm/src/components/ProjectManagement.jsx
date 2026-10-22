@@ -881,7 +881,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                       </td>
 
                       {/* Typography */}
-                      <td className="py-2.5 px-3 w-52 min-w-[150px] max-w-[220px]">
+                      <td className="py-2.5 px-4 w-52 min-w-[150px] max-w-[220px]">
                         {typos.length > 0 ? (
                           <div className="flex flex-col gap-0.5" title={typos.join('\n')}>
                             {typos.map((t, i) => (

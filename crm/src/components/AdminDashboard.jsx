@@ -191,8 +191,8 @@ const COLUMN_WIDTH_MAP = {
   followupDate: 136,
   projectName: 150,
   projectType: 150,
-  typography: 180,
-  carpetArea: 110,
+  typography: 160,
+  carpetArea: 115,
   budget: 120,
   plotsCount: 115,
   assignedAgent: 140,
@@ -212,8 +212,8 @@ const COLUMN_CLASS_MAP = {
   followupDate: 'w-36 min-w-[132px] max-w-[136px]',
   projectName: 'w-36 min-w-[130px] max-w-[150px]',
   projectType: 'w-40 min-w-[130px] max-w-[180px]',
-  typography: 'w-48 min-w-[140px] max-w-[210px]',
-  carpetArea: 'w-28 min-w-[100px] max-w-[120px]',
+  typography: 'w-44 min-w-[130px] max-w-[180px]',
+  carpetArea: 'w-28 min-w-[105px] max-w-[125px]',
   budget: 'w-28 min-w-[110px] max-w-[130px]',
   plotsCount: 'w-28 min-w-[110px] max-w-[115px]',
   assignedAgent: 'w-36 min-w-[136px] max-w-[140px]',
@@ -5233,11 +5233,11 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   <th 
                                     key="typography" 
                                     onClick={() => handleSort('typography')}
-                                    class={getThClass('typography', isSorted)}
+                                    class={getThClass('typography', isSorted, 'text-center')}
                                     style={getThStyle('typography')}
                                     title={getSortTitle('Typography')}
                                   >
-                                    <div class="flex items-center gap-1.5">
+                                    <div class="flex items-center justify-center gap-1.5">
                                       <span>Typography</span>
                                       {renderSortIndicator()}
                                     </div>
@@ -5791,9 +5791,9 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   const typoList = rawLeadTypos.length > 0 ? rawLeadTypos : projectTypos;
 
                                   return (
-                                    <td key="typography" class={getTdClass('typography', currentId, 'py-2')} style={getTdStyle('typography')}>
+                                    <td key="typography" class={getTdClass('typography', currentId, 'py-2 px-3 text-center')} style={getTdStyle('typography')}>
                                       {typoList.length > 0 ? (
-                                        <div class="flex flex-col gap-0.5" title={typoList.join('\n')}>
+                                        <div class="inline-flex flex-col items-start gap-0.5 text-left" title={typoList.join('\n')}>
                                           {typoList.map((t, i) => (
                                             <span
                                               key={i}

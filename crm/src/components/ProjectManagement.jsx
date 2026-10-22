@@ -123,12 +123,16 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
   // Floating Dropdown State (Fixed Positioning so it floats in FRONT without overflow clipping)
   const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
   const [isTypoDropdownOpen, setIsTypoDropdownOpen] = useState(false);
+  const [isAreaDropdownOpen, setIsAreaDropdownOpen] = useState(false);
   const [typeCoords, setTypeCoords] = useState(null);
   const [typoCoords, setTypoCoords] = useState(null);
+  const [areaCoords, setAreaCoords] = useState(null);
   const [typoSearch, setTypoSearch] = useState('');
+  const [areaSearch, setAreaSearch] = useState('');
 
   const typeDropdownRef = useRef(null);
   const typoDropdownRef = useRef(null);
+  const areaDropdownRef = useRef(null);
 
   // Form State
   const initialFormState = {
@@ -179,6 +183,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
       return;
     }
     setIsTypoDropdownOpen(false);
+    setIsAreaDropdownOpen(false);
 
     const btn = e.currentTarget;
     if (!btn) return;
@@ -226,6 +231,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
       return;
     }
     setIsTypeDropdownOpen(false);
+    setIsAreaDropdownOpen(false);
 
     const btn = e.currentTarget;
     if (!btn) return;
@@ -277,6 +283,74 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
     setIsTypoDropdownOpen(true);
   };
 
+  // Toggle Area Dropdown with smart viewport calculation
+  const handleToggleAreaDropdown = (e) => {
+    e.stopPropagation();
+    if (isAreaDropdownOpen) {
+      setIsAreaDropdownOpen(false);
+      setAreaSearch('');
+      return;
+    }
+    setIsTypeDropdownOpen(false);
+    setIsTypoDropdownOpen(false);
+
+    const btn = e.currentTarget;
+    if (!btn) return;
+    const rect = btn.getBoundingClientRect();
+    const isMobile = window.innerWidth < 640;
+
+    const availableAreas = [...PROJECT_AREAS];
+    if (formData.area && !availableAreas.includes(formData.area)) {
+      availableAreas.unshift(formData.area);
+    }
+
+    const dropdownHeight = isMobile
+      ? Math.min(260, window.innerHeight - 80)
+      : Math.min(280, availableAreas.length * 40 + 70);
+
+    const dropdownWidth = isMobile
+      ? Math.min(Math.max(rect.width, 260), window.innerWidth - 24)
+      : Math.min(Math.max(rect.width, 240), window.innerWidth - 24);
+
+    const spaceBelow = window.innerHeight - rect.bottom - 16;
+    const spaceAbove = rect.top - 16;
+
+    let top;
+    let maxHeight = dropdownHeight;
+
+    // In mobile view or when space below is limited: OPEN UPWARDS ("upper ki side")
+    const shouldOpenUpwards = (isMobile && spaceAbove >= 120) || (spaceBelow < dropdownHeight && spaceAbove > spaceBelow);
+
+    if (shouldOpenUpwards) {
+      maxHeight = Math.min(dropdownHeight, Math.max(140, spaceAbove));
+      top = Math.max(8, rect.top - maxHeight - 4);
+    } else {
+      maxHeight = Math.min(dropdownHeight, Math.max(140, spaceBelow));
+      top = rect.bottom + 4;
+    }
+
+    // Clamp top so it never overflows bottom of screen
+    if (top + maxHeight > window.innerHeight - 10) {
+      top = Math.max(8, window.innerHeight - maxHeight - 10);
+    }
+    if (top < 8) top = 8;
+
+    let left = rect.left;
+    if (left + dropdownWidth > window.innerWidth - 12) {
+      left = Math.max(12, window.innerWidth - dropdownWidth - 12);
+    }
+    if (left < 12) left = 12;
+
+    setAreaCoords({
+      top,
+      left,
+      width: dropdownWidth,
+      maxHeight
+    });
+    setAreaSearch('');
+    setIsAreaDropdownOpen(true);
+  };
+
   // Close dropdowns on outside click or scroll
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -294,6 +368,14 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
       ) {
         setIsTypoDropdownOpen(false);
         setTypoSearch('');
+      }
+      if (
+        areaDropdownRef.current && 
+        !areaDropdownRef.current.contains(event.target) && 
+        !event.target.closest('.project-area-dropdown-menu')
+      ) {
+        setIsAreaDropdownOpen(false);
+        setAreaSearch('');
       }
       if (
         !event.target.closest('.custom-table-typo-menu') &&
@@ -315,6 +397,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
         if (
           e.target.closest('.project-type-dropdown-menu') || 
           e.target.closest('.project-typo-dropdown-menu') ||
+          e.target.closest('.project-area-dropdown-menu') ||
           e.target.closest('.custom-table-typo-menu') ||
           e.target.closest('.project-modal-scrollable')
         ) {
@@ -323,6 +406,8 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
       }
       setIsTypeDropdownOpen(false);
       setIsTypoDropdownOpen(false);
+      setIsAreaDropdownOpen(false);
+      setAreaSearch('');
       setActiveTableTypoDropdown(null);
       setTableTypoFilter('');
     };
@@ -443,6 +528,8 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
     setFormMsg('');
     setIsTypeDropdownOpen(false);
     setIsTypoDropdownOpen(false);
+    setIsAreaDropdownOpen(false);
+    setAreaSearch('');
     setShowModal(true);
   };
 
@@ -483,6 +570,8 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
     setFormMsg('');
     setIsTypeDropdownOpen(false);
     setIsTypoDropdownOpen(false);
+    setIsAreaDropdownOpen(false);
+    setAreaSearch('');
     setShowModal(true);
   };
 
@@ -1131,25 +1220,34 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                 {/* 5. Area & Address (Side by Side) */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {/* Area Dropdown */}
-                  <div>
+                  <div ref={areaDropdownRef} className="relative">
                     <label className="block text-xs font-bold text-gray-700 mb-1">
                       Area <span className="text-rose-500">*</span>
                     </label>
 
-                    <select 
+                    <button
+                      type="button"
+                      onClick={handleToggleAreaDropdown}
+                      className={`w-full h-[38px] px-3 py-2 rounded-xl border text-xs flex items-center justify-between cursor-pointer transition bg-white ${
+                        isAreaDropdownOpen
+                          ? 'border-[#B30E2E] ring-1 ring-[#FCD6DC]'
+                          : 'border-gray-300 hover:border-gray-400'
+                      }`}
+                    >
+                      <span className={formData.area ? 'font-semibold text-gray-800 truncate' : 'text-gray-400 truncate'}>
+                        {formData.area || 'Select Area'}
+                      </span>
+                      <i className={`fa-solid fa-chevron-down text-xs text-gray-400 transition-transform flex-shrink-0 ${isAreaDropdownOpen ? 'rotate-180 text-[#B30E2E]' : ''}`}></i>
+                    </button>
+
+                    <input
+                      type="text"
+                      className="sr-only"
+                      tabIndex={-1}
                       required
                       value={formData.area}
-                      onChange={(e) => setFormData({ ...formData, area: e.target.value })}
-                      className="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800 bg-white cursor-pointer"
-                    >
-                      <option value="">Select Area</option>
-                      {formData.area && !PROJECT_AREAS.includes(formData.area) && (
-                        <option value={formData.area}>{formData.area}</option>
-                      )}
-                      {PROJECT_AREAS.map(areaName => (
-                        <option key={areaName} value={areaName}>{areaName}</option>
-                      ))}
-                    </select>
+                      onChange={() => {}}
+                    />
                   </div>
 
                   {/* Address Field */}
@@ -1486,6 +1584,114 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                 >
                   Done
                 </button>
+              </div>
+            </div>
+          </>
+        );
+      })()}
+
+      {/* FLOATING AREA DROPDOWN MENU */}
+      {showModal && isAreaDropdownOpen && areaCoords && (() => {
+        const query = areaSearch.trim().toLowerCase();
+        const availableAreas = [...PROJECT_AREAS];
+        if (formData.area && !availableAreas.includes(formData.area)) {
+          availableAreas.unshift(formData.area);
+        }
+        const filteredAreas = query 
+          ? availableAreas.filter(a => a.toLowerCase().includes(query))
+          : availableAreas;
+
+        return (
+          <>
+            {/* Subtle backdrop on mobile so tapping outside closes it immediately */}
+            <div 
+              className="fixed inset-0 z-[99998] bg-black/25 sm:hidden animate-fade-in"
+              onClick={() => {
+                setIsAreaDropdownOpen(false);
+                setAreaSearch('');
+              }}
+            />
+
+            <div 
+              onWheel={(e) => e.stopPropagation()}
+              className="fixed z-[99999] bg-white border border-gray-200 rounded-xl shadow-2xl flex flex-col overflow-hidden animate-fade-in project-area-dropdown-menu"
+              style={{
+                top: `${areaCoords.top}px`,
+                left: `${areaCoords.left}px`,
+                width: `${areaCoords.width}px`,
+                maxHeight: `${areaCoords.maxHeight}px`
+              }}
+            >
+              {/* Header with Title & Search */}
+              <div className="p-2 border-b border-gray-100 bg-gray-50 flex-shrink-0 space-y-1.5">
+                <div className="flex items-center justify-between px-1">
+                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Select Area</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsAreaDropdownOpen(false);
+                      setAreaSearch('');
+                    }}
+                    className="w-4 h-4 rounded-full hover:bg-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 transition cursor-pointer text-xs"
+                  >
+                    <i className="fa-solid fa-xmark text-[10px]"></i>
+                  </button>
+                </div>
+
+                <div className="relative flex items-center">
+                  <i className="fa-solid fa-magnifying-glass text-gray-400 text-[10px] absolute left-2.5 pointer-events-none"></i>
+                  <input
+                    type="text"
+                    value={areaSearch}
+                    onChange={(e) => setAreaSearch(e.target.value)}
+                    placeholder="Search area..."
+                    className="w-full pl-7 pr-6 py-1 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#B30E2E]"
+                  />
+                  {areaSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setAreaSearch('')}
+                      className="absolute right-2 text-gray-400 hover:text-gray-600 text-[10px] w-4 h-4 flex items-center justify-center cursor-pointer"
+                    >
+                      <i className="fa-solid fa-xmark"></i>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Scrollable Area List */}
+              <div className="overflow-y-auto overscroll-contain custom-scrollbar flex-1 py-1">
+                {filteredAreas.length === 0 ? (
+                  <div className="py-4 px-3 text-center text-gray-400 text-xs">
+                    No area found
+                  </div>
+                ) : (
+                  filteredAreas.map(areaName => {
+                    const isSelected = formData.area === areaName;
+                    return (
+                      <button
+                        key={areaName}
+                        type="button"
+                        onClick={() => {
+                          setFormData(prev => ({ ...prev, area: areaName }));
+                          setIsAreaDropdownOpen(false);
+                          setAreaSearch('');
+                        }}
+                        className={`w-full text-left px-3 py-2 text-xs font-semibold hover:bg-rose-50 hover:text-[#B30E2E] transition flex items-center justify-between cursor-pointer ${
+                          isSelected ? 'bg-[#FFF0F2] text-[#B30E2E] font-bold' : 'text-gray-700'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 truncate">
+                          <i className={`fa-solid fa-location-dot text-[10.5px] ${isSelected ? 'text-[#B30E2E]' : 'text-gray-400'}`}></i>
+                          <span className="truncate">{areaName}</span>
+                        </div>
+                        {isSelected && (
+                          <i className="fa-solid fa-check text-[10px] text-[#B30E2E]"></i>
+                        )}
+                      </button>
+                    );
+                  })
+                )}
               </div>
             </div>
           </>

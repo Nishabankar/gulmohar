@@ -20,7 +20,7 @@ export const PROJECT_AREAS = [
 export const APARTMENT_TYPOGRAPHY_GROUPS = [
   {
     group: 'Studio',
-    items: ['Studio Apartment']
+    items: ['Studio']
   },
   {
     group: '1 BHK',
@@ -62,7 +62,7 @@ export const APARTMENT_TYPOGRAPHY_GROUPS = [
 
 export const TYPOGRAPHY_BY_TYPE = {
   Apartment: [
-    'Studio Apartment',
+    'Studio',
     '1 BHK', '1 BHK Duplex', '1 BHK Penthouse', '1 BHK Garden',
     '1.5 BHK', '1.5 BHK Duplex', '1.5 BHK Penthouse', '1.5 BHK Garden',
     '2 BHK', '2 BHK Duplex', '2 BHK Penthouse', '2 BHK Garden',
@@ -92,7 +92,7 @@ export const TYPOGRAPHY_BY_TYPE = {
     'Non-Agriculture'
   ],
   Studio: [
-    'Studio Apartment', '1 RK Studio', 'Executive Studio'
+    'Studio', '1 RK Studio', 'Executive Studio'
   ],
   'Farm House': []
 };
@@ -461,6 +461,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
     }
 
     let initialTypos = Array.isArray(project.typography) ? [...project.typography] : (project.typography ? [project.typography] : []);
+    initialTypos = initialTypos.map(t => (t && t.trim().toLowerCase() === 'studio apartment') ? 'Studio' : t);
     // If old test project had sub-types in projectType, migrate them into typography
     const oldPlotTypes = rawTypes.filter(t => ['Industrial', 'Commercial / Industrial', 'Agriculture', 'Non-Agriculture', 'Residential'].includes(t));
     oldPlotTypes.forEach(st => {
@@ -838,6 +839,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                       typos = project.typography.split(',').map(s => s.trim()).filter(Boolean);
                     }
                   }
+                  typos = typos.map(t => (t && t.trim().toLowerCase() === 'studio apartment') ? 'Studio' : t);
                   const isTypoOpen = activeTableTypoDropdown?.projectId === (project.id || project._id || idx);
 
                   return (

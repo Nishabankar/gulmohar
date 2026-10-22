@@ -65,7 +65,7 @@ const PROJECT_TYPES = ['Apartment', 'Villa', 'Plots'];
 
 const PROJECT_TYPOGRAPHY_MAP = {
   'Apartment': [
-    'Studio Apartment',
+    'Studio',
     '1 BHK', '1 BHK Duplex', '1 BHK Penthouse', '1 BHK Garden',
     '1.5 BHK', '1.5 BHK Duplex', '1.5 BHK Penthouse', '1.5 BHK Garden',
     '2 BHK', '2 BHK Duplex', '2 BHK Penthouse', '2 BHK Garden',
@@ -105,7 +105,7 @@ const PROJECT_TYPOGRAPHY_MAP = {
     'Non-Agriculture'
   ],
   'Studio': [
-    'Studio Apartment', '1 RK Studio', 'Executive Studio'
+    'Studio', '1 RK Studio', 'Executive Studio'
   ],
   'Farm House': []
 };
@@ -239,7 +239,7 @@ const LeadTypographyDropdownMenu = ({
   // Parse current selected typographies for this lead
   const selectedTypos = (currentTypography || '')
     .split(',')
-    .map(s => s.trim())
+    .map(s => (s.trim().toLowerCase() === 'studio apartment' ? 'Studio' : s.trim()))
     .filter(Boolean);
 
   // Collect all available typographies across activeTypes
@@ -5788,7 +5788,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   }
 
                                   const rawLeadTypos = (item.typography || '').split(',').map(s => s.trim()).filter(Boolean);
-                                  const typoList = rawLeadTypos.length > 0 ? rawLeadTypos : projectTypos;
+                                  const typoList = (rawLeadTypos.length > 0 ? rawLeadTypos : projectTypos).map(t => (typeof t === 'string' && t.trim().toLowerCase() === 'studio apartment') ? 'Studio' : t);
 
                                   return (
                                     <td key="typography" class={getTdClass('typography', currentId, 'py-2 px-3 text-center')} style={getTdStyle('typography')}>
@@ -6021,6 +6021,9 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                           onClick={() => { 
                                             const matchedProj = (projectsList || []).find(p => (p.name || '').trim().toLowerCase() === (item.projectName || '').trim().toLowerCase());
                                             let bestTypo = item.typography || '';
+                                            if (bestTypo) {
+                                              bestTypo = bestTypo.split(',').map(s => s.trim().toLowerCase() === 'studio apartment' ? 'Studio' : s.trim()).join(', ');
+                                            }
                                             if (matchedProj) {
                                               const fullTypos = getAutoTypographyForProjectType(projectsList, matchedProj.name, item.projectType);
                                               if (fullTypos && fullTypos.length > bestTypo.length) {
@@ -6943,7 +6946,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                         }`}
                       >
                         <span class={editingEnquiry.typography ? 'font-semibold text-gray-800 truncate' : 'text-gray-400 truncate'}>
-                          {editingEnquiry.typography || 'Select Typography'}
+                          {editingEnquiry.typography ? editingEnquiry.typography.split(',').map(s => s.trim().toLowerCase() === 'studio apartment' ? 'Studio' : s.trim()).join(', ') : 'Select Typography'}
                         </span>
                         <i class={`fa-solid fa-chevron-down text-[10px] text-gray-400 transition-transform shrink-0 ${
                           activeDropdown?.rowId === 'edit-modal' && activeDropdown?.field === 'typography' ? 'rotate-180 text-[#B30E2E]' : ''
@@ -7601,7 +7604,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                         }`}
                       >
                         <span class={newLeadFormData.typography ? 'font-semibold text-gray-800 truncate' : 'text-gray-400 truncate'}>
-                          {newLeadFormData.typography || 'Select Typography'}
+                          {newLeadFormData.typography ? newLeadFormData.typography.split(',').map(s => s.trim().toLowerCase() === 'studio apartment' ? 'Studio' : s.trim()).join(', ') : 'Select Typography'}
                         </span>
                         <i class={`fa-solid fa-chevron-down text-[10px] text-gray-400 transition-transform shrink-0 ${
                           activeDropdown?.rowId === 'new-lead-modal' && activeDropdown?.field === 'typography' ? 'rotate-180 text-[#B30E2E]' : ''

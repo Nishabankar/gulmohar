@@ -242,24 +242,86 @@ const LeadTypographyDropdownMenu = ({
     .map(s => (s.trim().toLowerCase() === 'studio apartment' ? 'Studio' : s.trim()))
     .filter(Boolean);
 
-  // Collect all available typographies across activeTypes
-  const allTyposList = [];
+  // Check if project has specific saved typographies in projects database
+  const matchedProject = (projectsList || []).find(
+    p => (p.name || '').trim().toLowerCase() === (projectName || '').trim().toLowerCase()
+  );
+
+  let projectSavedTypos = [];
+  if (matchedProject) {
+    let pt = matchedProject.typography;
+    if (typeof pt === 'string') {
+      try {
+        pt = JSON.parse(pt);
+      } catch (e) {
+        pt = pt.split(',').map(s => s.trim()).filter(Boolean);
+      }
+    }
+    if (Array.isArray(pt)) {
+      projectSavedTypos = pt
+        .map(s => (typeof s === 'string' && s.trim().toLowerCase() === 'studio apartment' ? 'Studio' : (s || '').trim()))
+        .filter(Boolean);
+    }
+  }
+
+  const isProjectScoped = projectSavedTypos.length > 0;
+  const projectAllowedSet = new Set(projectSavedTypos.map(t => t.toLowerCase()));
+
+  // Collect standard typography list across activeTypes
+  const standardTyposList = [];
   activeTypes.forEach(pType => {
     if (pType === 'Apartment') {
       APARTMENT_TYPOGRAPHY_GROUPS.forEach(grp => {
         grp.items.forEach(it => {
-          if (!allTyposList.includes(it)) allTyposList.push(it);
+          if (!standardTyposList.includes(it)) standardTyposList.push(it);
         });
       });
     } else {
       const opts = TYPOGRAPHY_BY_TYPE[pType] || [];
       opts.forEach(it => {
-        if (!allTyposList.includes(it)) allTyposList.push(it);
+        if (!standardTyposList.includes(it)) standardTyposList.push(it);
       });
     }
   });
 
-  // Collect any previously selected legacy/custom values not in standard list
+  // Collect all available typographies for this dropdown:
+  // If project-scoped, ONLY include typographies configured for this project!
+  const allTyposList = [];
+  if (isProjectScoped) {
+    activeTypes.forEach(pType => {
+      if (pType === 'Apartment') {
+        APARTMENT_TYPOGRAPHY_GROUPS.forEach(grp => {
+          grp.items.forEach(it => {
+            if (projectAllowedSet.has(it.toLowerCase()) && !allTyposList.includes(it)) {
+              allTyposList.push(it);
+            }
+          });
+        });
+      } else {
+        const opts = TYPOGRAPHY_BY_TYPE[pType] || [];
+        opts.forEach(it => {
+          if (projectAllowedSet.has(it.toLowerCase()) && !allTyposList.includes(it)) {
+            allTyposList.push(it);
+          }
+        });
+      }
+    });
+    // Include any project saved typographies that might not be in standard Apartment/Villa lists
+    projectSavedTypos.forEach(it => {
+      if (!allTyposList.some(at => at.toLowerCase() === it.toLowerCase())) {
+        allTyposList.push(it);
+      }
+    });
+  } else {
+    standardTyposList.forEach(it => allTyposList.push(it));
+  }
+
+  // Any custom project typographies not covered in standard groups
+  const projectExtraTypos = isProjectScoped
+    ? projectSavedTypos.filter(pst => !standardTyposList.some(st => st.toLowerCase() === pst.toLowerCase()))
+    : [];
+
+  // Collect any previously selected legacy/custom values not in standard/project list
   const legacySelected = selectedTypos.filter(
     st => !allTyposList.some(at => at.toLowerCase() === st.toLowerCase())
   );
@@ -271,24 +333,38 @@ const LeadTypographyDropdownMenu = ({
   activeTypes.forEach(pType => {
     if (pType === 'Apartment') {
       APARTMENT_TYPOGRAPHY_GROUPS.forEach(grp => {
+        const availableItems = isProjectScoped
+          ? grp.items.filter(it => projectAllowedSet.has(it.toLowerCase()))
+          : grp.items;
         if (!query || grp.group.toLowerCase().includes(query)) {
-          grp.items.forEach(it => {
+          availableItems.forEach(it => {
             if (!visibleTyposList.includes(it)) visibleTyposList.push(it);
           });
         } else {
-          grp.items.filter(it => it.toLowerCase().includes(query)).forEach(it => {
+          availableItems.filter(it => it.toLowerCase().includes(query)).forEach(it => {
             if (!visibleTyposList.includes(it)) visibleTyposList.push(it);
           });
         }
       });
     } else {
       const opts = TYPOGRAPHY_BY_TYPE[pType] || [];
-      const matched = query ? opts.filter(it => it.toLowerCase().includes(query)) : opts;
+      const availableItems = isProjectScoped
+        ? opts.filter(it => projectAllowedSet.has(it.toLowerCase()))
+        : opts;
+      const matched = query ? availableItems.filter(it => it.toLowerCase().includes(query)) : availableItems;
       matched.forEach(it => {
         if (!visibleTyposList.includes(it)) visibleTyposList.push(it);
       });
     }
   });
+
+  if (isProjectScoped && projectExtraTypos.length > 0) {
+    const matchedExtra = query ? projectExtraTypos.filter(it => it.toLowerCase().includes(query)) : projectExtraTypos;
+    matchedExtra.forEach(it => {
+      if (!visibleTyposList.includes(it)) visibleTyposList.push(it);
+    });
+  }
+
   if (legacySelected.length > 0) {
     const matchedLegacy = query ? legacySelected.filter(it => it.toLowerCase().includes(query)) : legacySelected;
     matchedLegacy.forEach(it => {
@@ -415,9 +491,12 @@ const LeadTypographyDropdownMenu = ({
 
                 if (pType === 'Apartment') {
                   const filteredGroups = APARTMENT_TYPOGRAPHY_GROUPS.map(grp => {
-                    if (!query) return grp;
-                    if (grp.group.toLowerCase().includes(query)) return grp;
-                    const matched = grp.items.filter(it => it.toLowerCase().includes(query));
+                    const availableItems = isProjectScoped
+                      ? grp.items.filter(it => projectAllowedSet.has(it.toLowerCase()))
+                      : grp.items;
+                    if (!query) return { ...grp, items: availableItems };
+                    if (grp.group.toLowerCase().includes(query)) return { ...grp, items: availableItems };
+                    const matched = availableItems.filter(it => it.toLowerCase().includes(query));
                     return { ...grp, items: matched };
                   }).filter(grp => grp.items.length > 0);
 
@@ -467,9 +546,12 @@ const LeadTypographyDropdownMenu = ({
                 }
 
                 // Non-Apartment (Villa, Plots)
-                const filteredOptions = query
-                  ? options.filter(it => it.toLowerCase().includes(query))
+                const baseOptions = isProjectScoped
+                  ? options.filter(it => projectAllowedSet.has(it.toLowerCase()))
                   : options;
+                const filteredOptions = query
+                  ? baseOptions.filter(it => it.toLowerCase().includes(query))
+                  : baseOptions;
 
                 if (filteredOptions.length === 0) return null;
 
@@ -505,6 +587,41 @@ const LeadTypographyDropdownMenu = ({
                   </div>
                 );
               })}
+
+              {/* Extra Project-specific items not in standard Apartment/Villa lists */}
+              {isProjectScoped && projectExtraTypos.length > 0 && (
+                <div class="border-b border-gray-100 last:border-none py-0.5">
+                  <div class="px-2.5 py-1 text-[9.5px] font-bold text-gray-400 uppercase tracking-wider bg-gray-50/70">
+                    PROJECT TYPOGRAPHY
+                  </div>
+                  {projectExtraTypos
+                    .filter(it => !query || it.toLowerCase().includes(query))
+                    .map(item => {
+                      const isChecked = selectedTypos.some(s => s.toLowerCase() === item.toLowerCase());
+                      return (
+                        <button
+                          key={item}
+                          type="button"
+                          onClick={() => handleToggle(item)}
+                          class={`w-full text-left px-2.5 py-1.5 text-xs font-medium hover:bg-rose-50 hover:text-[#B30E2E] transition flex items-center gap-2 cursor-pointer ${
+                            isChecked ? 'bg-[#FFF0F2] text-[#B30E2E] font-bold' : 'text-gray-700'
+                          }`}
+                        >
+                          <span
+                            class={`w-3.5 h-3.5 rounded flex items-center justify-center border transition shrink-0 ${
+                              isChecked
+                                ? 'bg-[#B30E2E] border-[#B30E2E] text-white'
+                                : 'bg-white border-gray-300'
+                            }`}
+                          >
+                            {isChecked && <i class="fa-solid fa-check text-[8px]"></i>}
+                          </span>
+                          <span class="truncate">{item}</span>
+                        </button>
+                      );
+                    })}
+                </div>
+              )}
 
               {/* Legacy/Custom selected items (e.g. 1 BHK Flat) */}
               {legacySelected.length > 0 && (
@@ -6023,12 +6140,8 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                             let bestTypo = item.typography || '';
                                             if (bestTypo) {
                                               bestTypo = bestTypo.split(',').map(s => s.trim().toLowerCase() === 'studio apartment' ? 'Studio' : s.trim()).join(', ');
-                                            }
-                                            if (matchedProj) {
-                                              const fullTypos = getAutoTypographyForProjectType(projectsList, matchedProj.name, item.projectType);
-                                              if (fullTypos && fullTypos.length > bestTypo.length) {
-                                                bestTypo = fullTypos;
-                                              }
+                                            } else if (matchedProj) {
+                                              bestTypo = getAutoTypographyForProjectType(projectsList, matchedProj.name, item.projectType);
                                             }
                                             const cleanCarpet = (item.carpetArea || '').replace(/\s*sq\.?\s*ft/i, '').trim();
                                             setEditingEnquiry({ ...item, typography: bestTypo, carpetArea: cleanCarpet }); 

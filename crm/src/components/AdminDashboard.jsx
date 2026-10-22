@@ -6027,7 +6027,8 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                                 bestTypo = fullTypos;
                                               }
                                             }
-                                            setEditingEnquiry({ ...item, typography: bestTypo }); 
+                                            const cleanCarpet = (item.carpetArea || '').replace(/\s*sq\.?\s*ft/i, '').trim();
+                                            setEditingEnquiry({ ...item, typography: bestTypo, carpetArea: cleanCarpet }); 
                                             setEditModalSuccessMsg(''); 
                                           }}
                                           class="w-6 h-6 rounded-md bg-amber-100 hover:bg-amber-200 text-amber-800 flex items-center justify-center transition cursor-pointer"
@@ -6969,11 +6970,11 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                 {/* Min Carpet Area & Max Budget */}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">Min Carpet Area</label>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Min Carpet Area (sqft)</label>
                     <input 
                       type="text" 
-                      value={editingEnquiry.carpetArea || ''} 
-                      onChange={(e) => setEditingEnquiry({ ...editingEnquiry, carpetArea: e.target.value })}
+                      value={(editingEnquiry.carpetArea || '').replace(/\s*sq\.?\s*ft/i, '')} 
+                      onChange={(e) => setEditingEnquiry({ ...editingEnquiry, carpetArea: e.target.value.replace(/\s*sq\.?\s*ft/i, '') })}
                       placeholder="Enter min carpet"
                       class="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800"
                     />
@@ -7627,11 +7628,11 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                 {/* 3. Min Carpet Area & Max Budget */}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">Min Carpet Area</label>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Min Carpet Area (sqft)</label>
                     <input 
                       type="text" 
-                      value={newLeadFormData.carpetArea}
-                      onChange={(e) => setNewLeadFormData({ ...newLeadFormData, carpetArea: e.target.value })}
+                      value={(newLeadFormData.carpetArea || '').replace(/\s*sq\.?\s*ft/i, '')}
+                      onChange={(e) => setNewLeadFormData({ ...newLeadFormData, carpetArea: e.target.value.replace(/\s*sq\.?\s*ft/i, '') })}
                       placeholder="Enter min carpet"
                       class="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC]"
                     />

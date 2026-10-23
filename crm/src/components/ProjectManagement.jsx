@@ -995,12 +995,12 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200/80 relative flex-1 flex flex-col min-h-0 overflow-hidden">
         
         {/* Card Header Bar with Search, Type Filter & Action Buttons */}
-        <div className="px-3 sm:px-4 py-2.5 border-b border-gray-100 bg-gray-50/70 rounded-t-2xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3 flex-shrink-0">
+        <div className="px-3 sm:px-4 py-2.5 border-b border-gray-100 bg-gray-50/70 rounded-t-2xl flex-shrink-0">
           
-          {/* Search Box & Type Filter */}
-          <div className="flex items-center gap-2.5 flex-1 max-w-2xl">
-            {/* Search Input */}
-            <div className="relative flex-1">
+          {/* MOBILE VIEW (sm:hidden): 2 Rows - Row 1 Search Bar, Row 2 All Types Dropdown + Action Buttons */}
+          <div className="flex sm:hidden flex-col gap-2.5 w-full">
+            {/* ROW 1: Full-width Search Input */}
+            <div className="relative w-full">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                 <i className="fa-solid fa-magnifying-glass text-xs"></i>
               </div>
@@ -1008,7 +1008,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                 type="text" 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search project by name, developer, area, rera, location..."
+                placeholder="Search project by name, developer, area..."
                 className="w-full pl-9 pr-7 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-xs bg-white font-medium shadow-xs"
               />
               {searchQuery && (
@@ -1016,54 +1016,131 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                   type="button" 
                   onClick={() => setSearchQuery('')}
                   className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-gray-400 hover:text-gray-600 text-xs cursor-pointer"
+                  title="Clear search"
                 >
                   <i className="fa-solid fa-circle-xmark"></i>
                 </button>
               )}
             </div>
 
-            {/* Type Filter Select */}
-            <div className="w-36 flex-shrink-0 relative">
-              <select
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-xs bg-white hover:bg-gray-50 font-bold text-gray-700 cursor-pointer shadow-xs"
-              >
-                <option value="All">All Types</option>
-                {PROJECT_TYPES.map(t => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
+            {/* ROW 2: All Types Dropdown (Left) + Action Buttons (Right) */}
+            <div className="flex items-center justify-between gap-2 w-full">
+              {/* Type Filter Select */}
+              <div className="flex-1 min-w-0 relative">
+                <select
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-xs bg-white hover:bg-gray-50 font-bold text-gray-700 cursor-pointer shadow-xs truncate"
+                >
+                  <option value="All">All Types</option>
+                  {PROJECT_TYPES.map(t => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Right: Action Symbol Buttons */}
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                {/* Column Configuration Button */}
+                <button 
+                  type="button"
+                  onClick={() => setShowProjectColumnConfigModal(true)}
+                  className="w-8 h-8 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white flex items-center justify-center transition shadow-sm border border-rose-900/40 cursor-pointer flex-shrink-0 transform active:scale-95"
+                  title="Column Configuration"
+                >
+                  <i className="fa-solid fa-sliders text-xs"></i>
+                </button>
+
+                {/* Create Project Button */}
+                {canManage && (
+                  <button 
+                    type="button" 
+                    onClick={handleOpenCreateModal}
+                    className="w-8 h-8 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white flex items-center justify-center transition shadow-sm border border-rose-900/40 cursor-pointer flex-shrink-0 transform active:scale-95"
+                    title="Create New Project"
+                  >
+                    <div className="relative inline-flex items-center justify-center">
+                      <i className="fa-solid fa-building text-xs"></i>
+                      <span className="absolute -top-1.5 -right-2 bg-white text-[#B30E2E] font-black text-[9px] w-3 h-3 rounded-full flex items-center justify-center border border-[#8A0B22] leading-none">+</span>
+                    </div>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Right: Action Symbol Buttons (Exact Lead Table style) */}
-          <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
-            {/* Column Configuration Button */}
-            <button 
-              type="button"
-              onClick={() => setShowProjectColumnConfigModal(true)}
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white flex items-center justify-center transition shadow-sm border border-rose-900/40 cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
-              title="Column Configuration"
-            >
-              <i className="fa-solid fa-sliders text-xs sm:text-sm"></i>
-            </button>
-
-            {/* Create Project Button (Exact Create Lead Icon Button with + badge) */}
-            {canManage && (
-              <button 
-                type="button" 
-                onClick={handleOpenCreateModal}
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white flex items-center justify-center transition shadow-sm border border-rose-900/40 cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
-                title="Create New Project"
-              >
-                <div className="relative inline-flex items-center justify-center">
-                  <i className="fa-solid fa-building text-xs sm:text-sm"></i>
-                  <span className="absolute -top-1.5 -right-2 bg-white text-[#B30E2E] font-black text-[9px] w-3 h-3 rounded-full flex items-center justify-center border border-[#8A0B22] leading-none">+</span>
+          {/* DESKTOP VIEW (hidden sm:flex): Single Row */}
+          <div className="hidden sm:flex items-center justify-between gap-3 w-full">
+            {/* Search Box & Type Filter */}
+            <div className="flex items-center gap-2.5 flex-1 max-w-2xl">
+              {/* Search Input */}
+              <div className="relative flex-1">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                  <i className="fa-solid fa-magnifying-glass text-xs"></i>
                 </div>
+                <input 
+                  type="text" 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search project by name, developer, area, rera, location..."
+                  className="w-full pl-9 pr-7 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-xs bg-white font-medium shadow-xs"
+                />
+                {searchQuery && (
+                  <button 
+                    type="button" 
+                    onClick={() => setSearchQuery('')}
+                    className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-gray-400 hover:text-gray-600 text-xs cursor-pointer"
+                    title="Clear search"
+                  >
+                    <i className="fa-solid fa-circle-xmark"></i>
+                  </button>
+                )}
+              </div>
+
+              {/* Type Filter Select */}
+              <div className="w-36 flex-shrink-0 relative">
+                <select
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-xs bg-white hover:bg-gray-50 font-bold text-gray-700 cursor-pointer shadow-xs"
+                >
+                  <option value="All">All Types</option>
+                  {PROJECT_TYPES.map(t => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Right: Action Symbol Buttons */}
+            <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
+              {/* Column Configuration Button */}
+              <button 
+                type="button"
+                onClick={() => setShowProjectColumnConfigModal(true)}
+                className="w-9 h-9 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white flex items-center justify-center transition shadow-sm border border-rose-900/40 cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
+                title="Column Configuration"
+              >
+                <i className="fa-solid fa-sliders text-sm"></i>
               </button>
-            )}
+
+              {/* Create Project Button */}
+              {canManage && (
+                <button 
+                  type="button" 
+                  onClick={handleOpenCreateModal}
+                  className="w-9 h-9 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white flex items-center justify-center transition shadow-sm border border-rose-900/40 cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
+                  title="Create New Project"
+                >
+                  <div className="relative inline-flex items-center justify-center">
+                    <i className="fa-solid fa-building text-sm"></i>
+                    <span className="absolute -top-1.5 -right-2 bg-white text-[#B30E2E] font-black text-[9px] w-3 h-3 rounded-full flex items-center justify-center border border-[#8A0B22] leading-none">+</span>
+                  </div>
+                </button>
+              )}
+            </div>
           </div>
+
         </div>
 
         {/* Projects Table Body */}

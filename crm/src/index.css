@@ -166,3 +166,26 @@ body {
 .animate-star-pulse {
   animation: starPulse 1.5s ease-in-out infinite;
 }
+
+
+/* ==========================================================================
+   Prevent iOS Safari auto-zoom on input focus (iPhone & iPad only)
+   When font-size < 16px on iOS, Safari automatically zooms the screen in.
+   This rule forces 16px on iOS touch devices so viewport scale stays fixed.
+   Android devices do NOT support -webkit-touch-callout and remain untouched.
+   ========================================================================== */
+@supports (-webkit-touch-callout: none) {
+  @media screen and (max-width: 1024px) {
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+    textarea,
+    select {
+      font-size: 16px !important;
+    }
+  }
+}
+
+.is-ios input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+.is-ios textarea,
+.is-ios select {
+  font-size: 16px !important;
+}

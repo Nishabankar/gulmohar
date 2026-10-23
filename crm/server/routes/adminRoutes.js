@@ -167,7 +167,7 @@ router.post('/request-password-reset', async (req, res) => {
     otpStore.set(cleanUsername, { otpCode, expiresAt, email: cleanEmail, token: resetToken });
 
     const baseUrl = getPublicBaseUrl(req);
-    const resetLink = `${baseUrl}/?token=${resetToken}&username=${encodeURIComponent(cleanUsername)}&email=${encodeURIComponent(cleanEmail)}`;
+    const resetLink = `${baseUrl}/?token=${resetToken}`;
 
     // Send confirmation email with Username, OTP code, and direct clean Reset Link
     const emailResult = await sendPasswordResetEmail(cleanEmail, adminUser.name || adminUser.username, otpCode, resetLink, adminUser.username);
@@ -865,7 +865,7 @@ router.post('/agents', protectAdmin, async (req, res) => {
     otpStore.set(cleanUsername, { otpCode, expiresAt, email: agentEmail, token: resetToken });
 
     const baseUrl = getPublicBaseUrl(req);
-    const resetLink = `${baseUrl}/?token=${resetToken}&username=${encodeURIComponent(cleanUsername)}&email=${encodeURIComponent(agentEmail)}`;
+    const resetLink = `${baseUrl}/?token=${resetToken}`;
 
     // Send invitation email with password setup link and OTP
     const emailResult = await sendNewUserInviteEmail(agentEmail, name.trim(), otpCode, resetLink, cleanUsername);

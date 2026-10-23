@@ -218,6 +218,20 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
     handleUpdateProjectColumnConfig(DEFAULT_PROJECT_COLUMNS);
   };
 
+  const [projectSortConfig, setProjectSortConfig] = useState({ key: null, direction: 'asc' });
+
+  const handleProjectSort = (colId) => {
+    setProjectSortConfig(prev => {
+      if (prev.key !== colId) {
+        return { key: colId, direction: 'asc' };
+      }
+      if (prev.direction === 'asc') {
+        return { key: colId, direction: 'desc' };
+      }
+      return { key: null, direction: 'asc' };
+    });
+  };
+
   // Modal States
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState('create'); // 'create' | 'edit'
@@ -620,8 +634,53 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
       const typoStr = (Array.isArray(p.typography) ? p.typography.join(' ') : '').toLowerCase();
 
       return name.includes(q) || dev.includes(q) || area.includes(q) || addr.includes(q) || rera.includes(q) || typesStr.includes(q) || typoStr.includes(q);
+    }).sort((a, b) => {
+      if (!projectSortConfig.key) return 0;
+      const sortMultiplier = projectSortConfig.direction === 'asc' ? 1 : -1;
+      switch (projectSortConfig.key) {
+        case 'projectId': {
+          const idA = (a.id || a._id || 0).toString();
+          const idB = (b.id || b._id || 0).toString();
+          const numA = parseInt(idA, 10);
+          const numB = parseInt(idB, 10);
+          if (!isNaN(numA) && !isNaN(numB)) return (numA - numB) * sortMultiplier;
+          return idA.localeCompare(idB) * sortMultiplier;
+        }
+        case 'projectName': {
+          const nameA = (a.name || '').toLowerCase();
+          const nameB = (b.name || '').toLowerCase();
+          return nameA.localeCompare(nameB) * sortMultiplier;
+        }
+        case 'developerName': {
+          const devA = (a.developerName || '').toLowerCase();
+          const devB = (b.developerName || '').toLowerCase();
+          return devA.localeCompare(devB) * sortMultiplier;
+        }
+        case 'projectType': {
+          const typesA = (Array.isArray(a.projectType) ? a.projectType.join(', ') : (a.projectType || '')).toLowerCase();
+          const typesB = (Array.isArray(b.projectType) ? b.projectType.join(', ') : (b.projectType || '')).toLowerCase();
+          return typesA.localeCompare(typesB) * sortMultiplier;
+        }
+        case 'typography': {
+          const typoA = (Array.isArray(a.typography) ? a.typography.join(', ') : (a.typography || '')).toLowerCase();
+          const typoB = (Array.isArray(b.typography) ? b.typography.join(', ') : (b.typography || '')).toLowerCase();
+          return typoA.localeCompare(typoB) * sortMultiplier;
+        }
+        case 'reraNumber': {
+          const reraA = (a.reraNumber || '').toLowerCase();
+          const reraB = (b.reraNumber || '').toLowerCase();
+          return reraA.localeCompare(reraB) * sortMultiplier;
+        }
+        case 'location': {
+          const locA = `${a.area || ''} ${a.address || ''}`.trim().toLowerCase();
+          const locB = `${b.area || ''} ${b.address || ''}`.trim().toLowerCase();
+          return locA.localeCompare(locB) * sortMultiplier;
+        }
+        default:
+          return 0;
+      }
     });
-  }, [projects, searchQuery, typeFilter]);
+  }, [projects, searchQuery, typeFilter, projectSortConfig]);
 
   // Open Create Modal
   const handleOpenCreateModal = () => {
@@ -1038,12 +1097,15 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                 return style;
               };
 
-              const getProjectThClass = (colId, extra = '') => {
+              const getProjectThClass = (colId, isSorted = false, extra = '') => {
                 const pinned = isProjectColPinned(colId);
                 const stickyClass = pinned 
                   ? (colId === 'actions' ? 'sticky top-0 right-0 z-30 bg-gray-100' : 'sticky top-0 z-30 bg-gray-100')
                   : '';
-                return `${stickyClass} py-3 px-3.5 whitespace-nowrap border-b border-gray-200 select-none ${extra}`.trim();
+                const sortBg = isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : '';
+                const isSortable = colId !== 'actions';
+                const cursorClass = isSortable ? 'cursor-pointer select-none group transition-colors hover:bg-gray-200/70' : 'select-none';
+                return `${stickyClass} py-3 px-3.5 whitespace-nowrap border-b border-gray-200 ${cursorClass} ${sortBg} ${extra}`.trim();
               };
 
               const getProjectTdStyle = (colId) => {
@@ -1079,23 +1141,142 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                   <thead className="sticky top-0 z-10 bg-gray-100 shadow-2xs">
                     <tr className="bg-gray-100 border-b border-gray-200 text-[10px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">
                       {visibleProjectCols.map(col => {
+                        const isSorted = projectSortConfig.key === col.id;
+                        const isAsc = isSorted && projectSortConfig.direction === 'asc';
+                        const isDesc = isSorted && projectSortConfig.direction === 'desc';
+
+                        const renderSortIndicator = () => {
+                          if (isAsc) {
+                            return <i className="fa-solid fa-arrow-up text-[#B30E2E] text-[9.5px]"></i>;
+                          }
+                          if (isDesc) {
+                            return <i className="fa-solid fa-arrow-down text-[#B30E2E] text-[9.5px]"></i>;
+                          }
+                          return <i className="fa-solid fa-sort text-gray-300 group-hover:text-gray-500 text-[9px] transition-colors"></i>;
+                        };
+
+                        const getSortTitle = (label) => {
+                          if (!isSorted) return `Click to sort by ${label} (A-Z / Ascending)`;
+                          if (isAsc) return `Sorted Ascending. Click for Descending (Z-A)`;
+                          return `Sorted Descending. Click to reset to default order`;
+                        };
+
                         switch (col.id) {
                           case 'projectId':
-                            return <th key="projectId" className={getProjectThClass('projectId', 'text-center')} style={getProjectThStyle('projectId')}># ID</th>;
+                            return (
+                              <th 
+                                key="projectId" 
+                                onClick={() => handleProjectSort('projectId')}
+                                className={getProjectThClass('projectId', isSorted, 'text-center')} 
+                                style={getProjectThStyle('projectId')}
+                                title={getSortTitle('Project ID')}
+                              >
+                                <div className="flex items-center justify-center gap-1.5">
+                                  <span># ID</span>
+                                  {renderSortIndicator()}
+                                </div>
+                              </th>
+                            );
                           case 'projectName':
-                            return <th key="projectName" className={getProjectThClass('projectName')} style={getProjectThStyle('projectName')}>Project Name</th>;
+                            return (
+                              <th 
+                                key="projectName" 
+                                onClick={() => handleProjectSort('projectName')}
+                                className={getProjectThClass('projectName', isSorted)} 
+                                style={getProjectThStyle('projectName')}
+                                title={getSortTitle('Project Name')}
+                              >
+                                <div className="flex items-center gap-1.5">
+                                  <span>Project Name</span>
+                                  {renderSortIndicator()}
+                                </div>
+                              </th>
+                            );
                           case 'developerName':
-                            return <th key="developerName" className={getProjectThClass('developerName')} style={getProjectThStyle('developerName')}>Developer</th>;
+                            return (
+                              <th 
+                                key="developerName" 
+                                onClick={() => handleProjectSort('developerName')}
+                                className={getProjectThClass('developerName', isSorted)} 
+                                style={getProjectThStyle('developerName')}
+                                title={getSortTitle('Developer')}
+                              >
+                                <div className="flex items-center gap-1.5">
+                                  <span>Developer</span>
+                                  {renderSortIndicator()}
+                                </div>
+                              </th>
+                            );
                           case 'projectType':
-                            return <th key="projectType" className={getProjectThClass('projectType')} style={getProjectThStyle('projectType')}>Project Type</th>;
+                            return (
+                              <th 
+                                key="projectType" 
+                                onClick={() => handleProjectSort('projectType')}
+                                className={getProjectThClass('projectType', isSorted)} 
+                                style={getProjectThStyle('projectType')}
+                                title={getSortTitle('Project Type')}
+                              >
+                                <div className="flex items-center gap-1.5">
+                                  <span>Project Type</span>
+                                  {renderSortIndicator()}
+                                </div>
+                              </th>
+                            );
                           case 'typography':
-                            return <th key="typography" className={getProjectThClass('typography')} style={getProjectThStyle('typography')}>Typography</th>;
+                            return (
+                              <th 
+                                key="typography" 
+                                onClick={() => handleProjectSort('typography')}
+                                className={getProjectThClass('typography', isSorted)} 
+                                style={getProjectThStyle('typography')}
+                                title={getSortTitle('Typography')}
+                              >
+                                <div className="flex items-center gap-1.5">
+                                  <span>Typography</span>
+                                  {renderSortIndicator()}
+                                </div>
+                              </th>
+                            );
                           case 'reraNumber':
-                            return <th key="reraNumber" className={getProjectThClass('reraNumber')} style={getProjectThStyle('reraNumber')}>RERA No</th>;
+                            return (
+                              <th 
+                                key="reraNumber" 
+                                onClick={() => handleProjectSort('reraNumber')}
+                                className={getProjectThClass('reraNumber', isSorted)} 
+                                style={getProjectThStyle('reraNumber')}
+                                title={getSortTitle('RERA Number')}
+                              >
+                                <div className="flex items-center gap-1.5">
+                                  <span>RERA No</span>
+                                  {renderSortIndicator()}
+                                </div>
+                              </th>
+                            );
                           case 'location':
-                            return <th key="location" className={getProjectThClass('location')} style={getProjectThStyle('location')}>Area / Address</th>;
+                            return (
+                              <th 
+                                key="location" 
+                                onClick={() => handleProjectSort('location')}
+                                className={getProjectThClass('location', isSorted)} 
+                                style={getProjectThStyle('location')}
+                                title={getSortTitle('Area / Address')}
+                              >
+                                <div className="flex items-center gap-1.5">
+                                  <span>Area / Address</span>
+                                  {renderSortIndicator()}
+                                </div>
+                              </th>
+                            );
                           case 'actions':
-                            return <th key="actions" className={getProjectThClass('actions', 'text-center')} style={getProjectThStyle('actions')}>Actions</th>;
+                            return (
+                              <th 
+                                key="actions" 
+                                className={getProjectThClass('actions', false, 'text-center')} 
+                                style={getProjectThStyle('actions')}
+                              >
+                                Actions
+                              </th>
+                            );
                           default:
                             return null;
                         }

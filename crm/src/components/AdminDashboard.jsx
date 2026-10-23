@@ -1396,6 +1396,20 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     handleUpdateUserColumnConfig(DEFAULT_USER_COLUMNS);
   };
 
+  const [userSortConfig, setUserSortConfig] = useState({ key: null, direction: 'asc' });
+
+  const handleUserSort = (colId) => {
+    setUserSortConfig(prev => {
+      if (prev.key !== colId) {
+        return { key: colId, direction: 'asc' };
+      }
+      if (prev.direction === 'asc') {
+        return { key: colId, direction: 'desc' };
+      }
+      return { key: null, direction: 'asc' };
+    });
+  };
+
   const statusDropdownRef = useRef(null);
   const mobileStatusDropdownRef = useRef(null);
   const agentDropdownRef = useRef(null);
@@ -4217,6 +4231,27 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
   };
 
   // Filtered registered users by search query (exclude inbuilt accounts like SuperAdmin & SystemAdmin)
+  const getUserAssignedCount = (agent) => {
+    return enquiries.filter(e => {
+      const leadAgent = (e.assignedAgentName || '').toLowerCase().trim();
+      const agentName = (agent.name || '').toLowerCase().trim();
+      const agentUsername = (agent.username || '').toLowerCase().trim();
+      const agentId = (agent.id || agent._id || '').toString().toLowerCase().trim();
+      const assignedTo = (e.assignedTo || '').toString().toLowerCase().trim();
+
+      if (assignedTo && (assignedTo === agentId || assignedTo === agentUsername)) return true;
+      if (!leadAgent) return false;
+
+      return (
+        leadAgent === agentName ||
+        leadAgent === agentUsername ||
+        (agentName.length >= 3 && leadAgent.length >= 3 && (leadAgent.includes(agentName) || agentName.includes(leadAgent))) ||
+        (agentUsername.length >= 3 && leadAgent.length >= 3 && (leadAgent.includes(agentUsername) || agentUsername.includes(leadAgent))) ||
+        (agentName.split(' ')[0] && leadAgent.split(' ')[0] && agentName.split(' ')[0] === leadAgent.split(' ')[0])
+      );
+    }).length;
+  };
+
   const filteredUsers = (registeredAgents || []).filter(agent => {
     if (!agent) return false;
     const r = (agent.role || '').toLowerCase();
@@ -4230,6 +4265,51 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       (agent.email && agent.email.toLowerCase().includes(query)) ||
       (agent.role && agent.role.toLowerCase().includes(query))
     );
+  }).sort((a, b) => {
+    if (!userSortConfig.key) return 0;
+    const sortMultiplier = userSortConfig.direction === 'asc' ? 1 : -1;
+    switch (userSortConfig.key) {
+      case 'userId': {
+        const idA = (a.id || a._id || 0).toString();
+        const idB = (b.id || b._id || 0).toString();
+        const numA = parseInt(idA, 10);
+        const numB = parseInt(idB, 10);
+        if (!isNaN(numA) && !isNaN(numB)) return (numA - numB) * sortMultiplier;
+        return idA.localeCompare(idB) * sortMultiplier;
+      }
+      case 'fullName': {
+        const nameA = (a.name || '').toLowerCase();
+        const nameB = (b.name || '').toLowerCase();
+        return nameA.localeCompare(nameB) * sortMultiplier;
+      }
+      case 'role': {
+        const roleA = (a.role || '').toLowerCase();
+        const roleB = (b.role || '').toLowerCase();
+        return roleA.localeCompare(roleB) * sortMultiplier;
+      }
+      case 'username': {
+        const uA = (a.username || '').toLowerCase();
+        const uB = (b.username || '').toLowerCase();
+        return uA.localeCompare(uB) * sortMultiplier;
+      }
+      case 'phone': {
+        const phoneA = (a.phone || '').replace(/\D/g, '');
+        const phoneB = (b.phone || '').replace(/\D/g, '');
+        return phoneA.localeCompare(phoneB) * sortMultiplier;
+      }
+      case 'email': {
+        const emailA = (a.email || '').toLowerCase();
+        const emailB = (b.email || '').toLowerCase();
+        return emailA.localeCompare(emailB) * sortMultiplier;
+      }
+      case 'assignedLeads': {
+        const countA = getUserAssignedCount(a);
+        const countB = getUserAssignedCount(b);
+        return (countA - countB) * sortMultiplier;
+      }
+      default:
+        return 0;
+    }
   });
 
   // Calculate stats
@@ -6647,12 +6727,15 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                   return style;
                 };
 
-                const getUserThClass = (colId, extra = '') => {
+                const getUserThClass = (colId, isSorted = false, extra = '') => {
                   const pinned = isUserColPinned(colId);
                   const stickyClass = pinned 
                     ? (colId === 'actions' ? 'sticky top-0 right-0 z-30 bg-gray-100' : 'sticky top-0 z-30 bg-gray-100')
                     : '';
-                  return `${stickyClass} py-3 px-3.5 whitespace-nowrap border-b border-gray-200 select-none ${extra}`.trim();
+                  const sortBg = isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : '';
+                  const isSortable = colId !== 'actions';
+                  const cursorClass = isSortable ? 'cursor-pointer select-none group transition-colors hover:bg-gray-200/70' : 'select-none';
+                  return `${stickyClass} py-3 px-3.5 whitespace-nowrap border-b border-gray-200 ${cursorClass} ${sortBg} ${extra}`.trim();
                 };
 
                 const getUserTdStyle = (colId) => {
@@ -6689,23 +6772,142 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                       <thead class="sticky top-0 z-10 bg-gray-100 shadow-2xs">
                         <tr class="bg-gray-100 border-b border-gray-200 text-[10px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">
                           {visibleUserCols.map(col => {
+                            const isSorted = userSortConfig.key === col.id;
+                            const isAsc = isSorted && userSortConfig.direction === 'asc';
+                            const isDesc = isSorted && userSortConfig.direction === 'desc';
+
+                            const renderSortIndicator = () => {
+                              if (isAsc) {
+                                return <i class="fa-solid fa-arrow-up text-[#B30E2E] text-[9.5px]"></i>;
+                              }
+                              if (isDesc) {
+                                return <i class="fa-solid fa-arrow-down text-[#B30E2E] text-[9.5px]"></i>;
+                              }
+                              return <i class="fa-solid fa-sort text-gray-300 group-hover:text-gray-500 text-[9px] transition-colors"></i>;
+                            };
+
+                            const getSortTitle = (label) => {
+                              if (!isSorted) return `Click to sort by ${label} (A-Z / Ascending)`;
+                              if (isAsc) return `Sorted Ascending. Click for Descending (Z-A)`;
+                              return `Sorted Descending. Click to reset to default order`;
+                            };
+
                             switch(col.id) {
                               case 'userId':
-                                return <th key="userId" class={getUserThClass('userId')} style={getUserThStyle('userId')}>User ID</th>;
+                                return (
+                                  <th 
+                                    key="userId" 
+                                    onClick={() => handleUserSort('userId')}
+                                    class={getUserThClass('userId', isSorted)} 
+                                    style={getUserThStyle('userId')}
+                                    title={getSortTitle('User ID')}
+                                  >
+                                    <div class="flex items-center gap-1.5">
+                                      <span>User ID</span>
+                                      {renderSortIndicator()}
+                                    </div>
+                                  </th>
+                                );
                               case 'fullName':
-                                return <th key="fullName" class={getUserThClass('fullName')} style={getUserThStyle('fullName')}>Full Name</th>;
+                                return (
+                                  <th 
+                                    key="fullName" 
+                                    onClick={() => handleUserSort('fullName')}
+                                    class={getUserThClass('fullName', isSorted)} 
+                                    style={getUserThStyle('fullName')}
+                                    title={getSortTitle('Full Name')}
+                                  >
+                                    <div class="flex items-center gap-1.5">
+                                      <span>Full Name</span>
+                                      {renderSortIndicator()}
+                                    </div>
+                                  </th>
+                                );
                               case 'role':
-                                return <th key="role" class={getUserThClass('role')} style={getUserThStyle('role')}>Role</th>;
+                                return (
+                                  <th 
+                                    key="role" 
+                                    onClick={() => handleUserSort('role')}
+                                    class={getUserThClass('role', isSorted)} 
+                                    style={getUserThStyle('role')}
+                                    title={getSortTitle('Role')}
+                                  >
+                                    <div class="flex items-center gap-1.5">
+                                      <span>Role</span>
+                                      {renderSortIndicator()}
+                                    </div>
+                                  </th>
+                                );
                               case 'username':
-                                return <th key="username" class={getUserThClass('username')} style={getUserThStyle('username')}>Username</th>;
+                                return (
+                                  <th 
+                                    key="username" 
+                                    onClick={() => handleUserSort('username')}
+                                    class={getUserThClass('username', isSorted)} 
+                                    style={getUserThStyle('username')}
+                                    title={getSortTitle('Username')}
+                                  >
+                                    <div class="flex items-center gap-1.5">
+                                      <span>Username</span>
+                                      {renderSortIndicator()}
+                                    </div>
+                                  </th>
+                                );
                               case 'phone':
-                                return <th key="phone" class={getUserThClass('phone')} style={getUserThStyle('phone')}>Mobile No</th>;
+                                return (
+                                  <th 
+                                    key="phone" 
+                                    onClick={() => handleUserSort('phone')}
+                                    class={getUserThClass('phone', isSorted)} 
+                                    style={getUserThStyle('phone')}
+                                    title={getSortTitle('Mobile No')}
+                                  >
+                                    <div class="flex items-center gap-1.5">
+                                      <span>Mobile No</span>
+                                      {renderSortIndicator()}
+                                    </div>
+                                  </th>
+                                );
                               case 'email':
-                                return <th key="email" class={getUserThClass('email')} style={getUserThStyle('email')}>Email Address</th>;
+                                return (
+                                  <th 
+                                    key="email" 
+                                    onClick={() => handleUserSort('email')}
+                                    class={getUserThClass('email', isSorted)} 
+                                    style={getUserThStyle('email')}
+                                    title={getSortTitle('Email Address')}
+                                  >
+                                    <div class="flex items-center gap-1.5">
+                                      <span>Email Address</span>
+                                      {renderSortIndicator()}
+                                    </div>
+                                  </th>
+                                );
                               case 'assignedLeads':
-                                return <th key="assignedLeads" class={getUserThClass('assignedLeads')} style={getUserThStyle('assignedLeads')}>Assigned Leads</th>;
+                                return (
+                                  <th 
+                                    key="assignedLeads" 
+                                    onClick={() => handleUserSort('assignedLeads')}
+                                    class={getUserThClass('assignedLeads', isSorted)} 
+                                    style={getUserThStyle('assignedLeads')}
+                                    title={getSortTitle('Assigned Leads')}
+                                  >
+                                    <div class="flex items-center gap-1.5">
+                                      <span>Assigned Leads</span>
+                                      {renderSortIndicator()}
+                                    </div>
+                                  </th>
+                                );
                               case 'actions':
-                                return <th key="actions" class={getUserThClass('actions', 'text-center')} style={getUserThStyle('actions')}>Actions</th>;
+                                return (
+                                  <th 
+                                    key="actions" 
+                                    class={getUserThClass('actions', false, 'text-center')} 
+                                    style={getUserThStyle('actions')}
+                                  >
+                                    Actions
+                                  </th>
+                                );
                               default:
                                 return null;
                             }

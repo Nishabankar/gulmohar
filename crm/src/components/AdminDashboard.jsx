@@ -7125,18 +7125,27 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                     return (
                                       <td key="actions" class={getUserTdClass('actions', 'text-center')} style={getUserTdStyle('actions')}>
                                         <div class="flex items-center justify-center gap-1.5">
-                                          <button
-                                            onClick={() => { 
-                                              setEditingUser({ ...agent }); 
-                                              setEditUserPassword(''); 
-                                              setShowEditPassword(false); 
-                                              setUserEditSuccessMsg(''); 
-                                            }}
-                                            class="w-7 h-7 rounded-lg bg-indigo-100 hover:bg-indigo-200 text-indigo-700 flex items-center justify-center transition cursor-pointer"
-                                            title="Edit User & Change Password"
-                                          >
-                                            <i class="fa-solid fa-pen-to-square text-xs"></i>
-                                          </button>
+                                          {(agent.username || '').toLowerCase() === 'system' ? (
+                                            <span
+                                              class="w-7 h-7 rounded-lg bg-gray-100 text-gray-400 flex items-center justify-center cursor-not-allowed select-none opacity-60"
+                                              title="System reference account cannot be modified"
+                                            >
+                                              <i class="fa-solid fa-lock text-[10px]"></i>
+                                            </span>
+                                          ) : (
+                                            <button
+                                              onClick={() => { 
+                                                setEditingUser({ ...agent }); 
+                                                setEditUserPassword(''); 
+                                                setShowEditPassword(false); 
+                                                setUserEditSuccessMsg(''); 
+                                              }}
+                                              class="w-7 h-7 rounded-lg bg-indigo-100 hover:bg-indigo-200 text-indigo-700 flex items-center justify-center transition cursor-pointer"
+                                              title="Edit User & Change Password"
+                                            >
+                                              <i class="fa-solid fa-pen-to-square text-xs"></i>
+                                            </button>
+                                          )}
                                           {(agent.username || '').toLowerCase() === 'system' ? (
                                             <span
                                               class="w-7 h-7 rounded-lg bg-gray-100 text-gray-400 flex items-center justify-center cursor-not-allowed select-none opacity-60"

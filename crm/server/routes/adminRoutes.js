@@ -93,6 +93,10 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ success: false, message: 'Invalid admin username or password' });
     }
 
+    if ((admin.username || '').toLowerCase().trim() === 'system') {
+      return res.status(403).json({ success: false, message: 'System account is for backend reference only and cannot be used to login.' });
+    }
+
     const isMatch = await bcrypt.compare(password, admin.password);
     if (!isMatch) {
       return res.status(401).json({ success: false, message: 'Invalid admin username or password' });
@@ -150,6 +154,10 @@ router.post('/request-password-reset', async (req, res) => {
 
     if (!rows || rows.length === 0) {
       return res.status(400).json({ success: false, message: 'No account found with this username and email address.' });
+    }
+
+    if (cleanUsername === 'system') {
+      return res.status(403).json({ success: false, message: 'Password reset is not permitted for the System reference account.' });
     }
 
     const adminUser = rows[0];
@@ -1018,8 +1026,8 @@ router.patch('/agents/:id', protectAdmin, async (req, res) => {
     const targetUser = existingRows[0];
     const targetRole = (targetUser.role || '').toLowerCase();
     const targetUsername = (targetUser.username || '').toLowerCase();
-    if (targetRole === 'superadmin' || targetUsername === 'admin') {
-      return res.status(403).json({ success: false, message: 'Super Admin master account cannot be modified via this endpoint.' });
+    if (targetRole === 'superadmin' || targetUsername === 'admin' || targetUsername === 'system') {
+      return res.status(403).json({ success: false, message: 'Inbuilt system accounts cannot be modified.' });
     }
 
     if (username !== undefined && username.trim()) {

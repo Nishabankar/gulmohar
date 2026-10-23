@@ -77,6 +77,11 @@ export default function AdminLogin({ onLoginSuccess, onClose }) {
     e.preventDefault();
     if (!username || !password) return;
 
+    if (username.trim().toLowerCase() === 'system') {
+      setError('System account is for backend reference only and cannot be used to login.');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
@@ -108,6 +113,11 @@ export default function AdminLogin({ onLoginSuccess, onClose }) {
     e.preventDefault();
     if (!forgotUsername || !forgotEmail) {
       setError('Please fill in both username and registered email address.');
+      return;
+    }
+
+    if (forgotUsername.trim().toLowerCase() === 'system') {
+      setError('Password reset is not permitted for the System reference account.');
       return;
     }
 

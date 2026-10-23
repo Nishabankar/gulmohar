@@ -27,10 +27,10 @@ module.exports = {
   DB_USER: process.env.DB_USER || 'u660519083_gulmohar',
   DB_PASSWORD: process.env.DB_PASSWORD || 'Housedeal@123',
   DB_NAME: process.env.DB_NAME || 'u660519083_housedealcrm',
-  SMTP_HOST: process.env.SMTP_HOST || 'smtp.hostinger.com',
+  SMTP_HOST: (process.env.SMTP_HOST || 'smtp.hostinger.com').trim(),
   SMTP_PORT: parseInt(process.env.SMTP_PORT || '465', 10),
-  SMTP_USER: process.env.SMTP_USER || '',
-  SMTP_PASS: process.env.SMTP_PASS || '',
-  SMTP_FROM: process.env.SMTP_FROM || (process.env.SMTP_USER ? `"Gulmohar City Admin" <${process.env.SMTP_USER}>` : '"Gulmohar City Admin" <admin@gulmoharcity.in>'),
+  SMTP_USER: (process.env.SMTP_USER || '').trim(),
+  SMTP_PASS: (process.env.SMTP_PASS || '').trim(),
+  SMTP_FROM: (process.env.SMTP_FROM || '').replace(/^["']|["']$/g, '').trim() || (process.env.SMTP_USER ? `"Gulmohar City Admin" <${process.env.SMTP_USER}>` : '"Gulmohar City Admin" <admin@gulmoharcity.in>'),
   SITE_URL: process.env.SITE_URL || 'https://gulmoharcity.in'
 };

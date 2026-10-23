@@ -6718,49 +6718,108 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
             <div class="bg-white rounded-2xl shadow-sm border border-gray-200/80 relative flex-1 flex flex-col min-h-0 overflow-hidden">
               
               {/* Search Header Bar */}
-              <div class="px-3 sm:px-4 py-2.5 sm:py-3 border-b border-gray-100 bg-gray-50/70 flex items-center justify-between gap-2.5 sm:gap-3">
-                <div class="relative flex-1 max-w-md">
-                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                    <i class="fa-solid fa-magnifying-glass text-xs"></i>
+              <div class="px-3 sm:px-4 py-2.5 sm:py-3 border-b border-gray-100 bg-gray-50/70 flex-shrink-0">
+                
+                {/* MOBILE VIEW (sm:hidden): 2 Rows */}
+                <div class="flex sm:hidden flex-col gap-2.5 w-full">
+                  {/* ROW 1: Full-width Search Input */}
+                  <div class="relative w-full">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                      <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                    </div>
+                    <input 
+                      type="text" 
+                      value={userSearchQuery}
+                      onChange={(e) => setUserSearchQuery(e.target.value)}
+                      placeholder="Search user by name, username, mobile, email..."
+                      class="w-full pl-9 pr-8 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-xs bg-white font-medium shadow-xs"
+                    />
+                    {userSearchQuery && (
+                      <button 
+                        type="button"
+                        onClick={() => setUserSearchQuery('')}
+                        class="absolute inset-y-0 right-0 pr-2.5 flex items-center text-gray-400 hover:text-[#B30E2E] text-xs cursor-pointer"
+                        title="Clear search"
+                      >
+                        <i class="fa-solid fa-circle-xmark"></i>
+                      </button>
+                    )}
                   </div>
-                  <input 
-                    type="text" 
-                    value={userSearchQuery}
-                    onChange={(e) => setUserSearchQuery(e.target.value)}
-                    placeholder="Search user by name, username, mobile, email..."
-                    class="w-full pl-9 pr-7 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-xs bg-white font-medium shadow-xs"
-                  />
-                  {userSearchQuery && (
-                    <button 
-                      onClick={() => setUserSearchQuery('')}
-                      class="absolute inset-y-0 right-0 pr-2.5 flex items-center text-gray-400 hover:text-gray-600 text-xs"
-                    >
-                      <i class="fa-solid fa-circle-xmark"></i>
-                    </button>
-                  )}
-                </div>
 
-                {/* Right Side: Column Config & Create User Buttons */}
-                <div class="flex items-center gap-2 flex-shrink-0">
-                  <button 
-                    type="button"
-                    onClick={() => setShowUserColumnConfigModal(true)}
-                    class="w-9 h-9 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white border border-rose-900/40 font-extrabold flex items-center justify-center transition shadow-sm cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
-                    title="Column Configuration"
-                  >
-                    <i class="fa-solid fa-sliders text-sm"></i>
-                  </button>
-                  {isSuperAdmin && (
+                  {/* ROW 2: Action Buttons on Right */}
+                  <div class="flex items-center justify-end gap-2 w-full">
+                    {/* Column Configuration Button */}
                     <button 
                       type="button"
-                      onClick={() => setShowCreateAgentModal(true)}
-                      class="w-9 h-9 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white border border-rose-900/40 font-extrabold flex items-center justify-center transition shadow-sm cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
-                      title="Create User Account"
+                      onClick={() => setShowUserColumnConfigModal(true)}
+                      class="w-8 h-8 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white border border-rose-900/40 font-extrabold flex items-center justify-center transition shadow-sm cursor-pointer flex-shrink-0 transform active:scale-95"
+                      title="Column Configuration"
                     >
-                      <i class="fa-solid fa-user-plus text-sm"></i>
+                      <i class="fa-solid fa-sliders text-xs"></i>
                     </button>
-                  )}
+
+                    {/* Create User Button (SuperAdmin Only) */}
+                    {isSuperAdmin && (
+                      <button 
+                        type="button"
+                        onClick={() => setShowCreateAgentModal(true)}
+                        class="w-8 h-8 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white border border-rose-900/40 font-extrabold flex items-center justify-center transition shadow-sm cursor-pointer flex-shrink-0 transform active:scale-95"
+                        title="Create User Account"
+                      >
+                        <i class="fa-solid fa-user-plus text-xs"></i>
+                      </button>
+                    )}
+                  </div>
                 </div>
+
+                {/* DESKTOP VIEW (hidden sm:flex): Single Row */}
+                <div class="hidden sm:flex items-center justify-between gap-2.5 sm:gap-3 w-full">
+                  <div class="relative flex-1 max-w-md">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                      <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                    </div>
+                    <input 
+                      type="text" 
+                      value={userSearchQuery}
+                      onChange={(e) => setUserSearchQuery(e.target.value)}
+                      placeholder="Search user by name, username, mobile, email..."
+                      class="w-full pl-9 pr-7 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-xs bg-white font-medium shadow-xs"
+                    />
+                    {userSearchQuery && (
+                      <button 
+                        type="button"
+                        onClick={() => setUserSearchQuery('')}
+                        class="absolute inset-y-0 right-0 pr-2.5 flex items-center text-gray-400 hover:text-gray-600 text-xs cursor-pointer"
+                        title="Clear search"
+                      >
+                        <i class="fa-solid fa-circle-xmark"></i>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Right Side: Column Config & Create User Buttons */}
+                  <div class="flex items-center gap-2 flex-shrink-0">
+                    <button 
+                      type="button"
+                      onClick={() => setShowUserColumnConfigModal(true)}
+                      class="w-9 h-9 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white border border-rose-900/40 font-extrabold flex items-center justify-center transition shadow-sm cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
+                      title="Column Configuration"
+                    >
+                      <i class="fa-solid fa-sliders text-sm"></i>
+                    </button>
+                    {isSuperAdmin && (
+                      <button 
+                        type="button"
+                        onClick={() => setShowCreateAgentModal(true)}
+                        class="w-9 h-9 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white border border-rose-900/40 font-extrabold flex items-center justify-center transition shadow-sm cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
+                        title="Create User Account"
+                      >
+                        <i class="fa-solid fa-user-plus text-sm"></i>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
               </div>
 
               {/* Users Table */}

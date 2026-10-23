@@ -321,12 +321,12 @@ const ProjectFilterDropdown = ({
         </div>
       )}
 
-      {/* Icon-only Dropdown Trigger Button */}
+      {/* Dropdown Trigger Button */}
       <div class="relative inline-block flex-shrink-0">
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          class={`h-6 sm:h-8.5 px-2 sm:px-2.5 rounded-lg sm:rounded-xl border text-[10px] sm:text-xs font-semibold flex items-center gap-1 transition shadow-xs cursor-pointer ${
+          class={`h-6 sm:h-8.5 px-2 sm:px-2.5 rounded-lg sm:rounded-xl border text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-1.5 transition shadow-xs cursor-pointer ${
             isOpen
               ? 'bg-gray-100 border-gray-400 text-gray-900 ring-1 ring-gray-300'
               : !isAll
@@ -336,6 +336,11 @@ const ProjectFilterDropdown = ({
           title="Filter by projects (multi-select)"
         >
           <i class={`fa-solid fa-city text-[9px] sm:text-[11px] ${!isAll ? 'text-[#B30E2E]' : 'text-gray-500'}`}></i>
+          {isAll && (
+            <span class="font-bold text-gray-700 whitespace-nowrap text-[10px] sm:text-xs">
+              All Projects
+            </span>
+          )}
           <i class={`fa-solid fa-chevron-down text-[8px] sm:text-[9px] transition-transform ${isOpen ? 'rotate-180 text-[#B30E2E]' : 'text-gray-400'}`}></i>
         </button>
 

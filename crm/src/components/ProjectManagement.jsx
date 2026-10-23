@@ -116,7 +116,7 @@ const PROJECT_COLUMN_WIDTH_MAP = {
   projectType: 160,
   typography: 150,
   reraNumber: 140,
-  location: 200,
+  location: 280,
   actions: 105
 };
 
@@ -1402,21 +1402,22 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                                 return (
                                   <td key="location" className={getProjectTdClass('location')} style={getProjectTdStyle('location')} title={`${project.area ? project.area + ' - ' : ''}${project.address || ''}`}>
                                     {project.area || project.address ? (
-                                      <div className="flex flex-col gap-0.5">
+                                      <div className="flex items-center gap-1.5 text-xs text-gray-700 truncate max-w-full">
+                                        <i className="fa-solid fa-location-dot text-[#B30E2E] text-[10px] shrink-0"></i>
                                         {project.area && (
-                                          <span className="font-bold text-gray-900 text-xs flex items-center gap-1.5 whitespace-nowrap">
-                                            <i className="fa-solid fa-location-dot text-[#B30E2E] text-[10px]"></i>
-                                            <span>{project.area}</span>
-                                          </span>
+                                          <span className="font-bold text-gray-900 shrink-0">{project.area}</span>
+                                        )}
+                                        {project.area && project.address && (
+                                          <span className="text-gray-400 shrink-0 font-normal">-</span>
                                         )}
                                         {project.address && (
-                                          <span className="text-[11px] text-gray-500 whitespace-nowrap" title={project.address}>
+                                          <span className="text-gray-500 truncate font-normal text-[11px]" title={project.address}>
                                             {project.address}
                                           </span>
                                         )}
                                       </div>
                                     ) : (
-                                      <span className="text-gray-400 italic">—</span>
+                                      <span className="text-gray-400 italic text-xs">—</span>
                                     )}
                                   </td>
                                 );

@@ -3195,6 +3195,21 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     });
   };
 
+  // Helper to get users in chronological order (oldest created first, for consistent permanent User IDs: 01, 02, etc.)
+  const getChronologicalUsers = (allUsers = registeredAgents) => {
+    return [...(allUsers || [])].sort((a, b) => {
+      const numA = parseInt(a.id || a._id || 0, 10);
+      const numB = parseInt(b.id || b._id || 0, 10);
+      if (!isNaN(numA) && !isNaN(numB) && numA > 0 && numB > 0 && numA !== numB) {
+        return numA - numB;
+      }
+      const timeA = new Date(a.created_at || a.createdAt || 0).getTime();
+      const timeB = new Date(b.created_at || b.createdAt || 0).getTime();
+      if (timeA && timeB && timeA !== timeB) return timeA - timeB;
+      return 0;
+    });
+  };
+
   const getAgentUserId = (item, registeredAgentsList = registeredAgents) => {
     if (!item) return '01';
 
@@ -3205,7 +3220,8 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       ? registeredAgentsList 
       : JSON.parse(localStorage.getItem('registeredAgents') || '[]');
 
-    const agentIndex = (agentsList || []).findIndex(agent => {
+    const chronological = getChronologicalUsers(agentsList);
+    const agentIndex = (chronological || []).findIndex(agent => {
       if (!agent) return false;
       const name = (agent.name || '').toLowerCase().trim();
       const username = (agent.username || '').toLowerCase().trim();
@@ -3248,7 +3264,8 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       ? baseList 
       : JSON.parse(localStorage.getItem('registeredAgents') || '[]');
 
-    const agentIndex = (agentsList || []).findIndex(a => {
+    const chronological = getChronologicalUsers(agentsList);
+    const agentIndex = (chronological || []).findIndex(a => {
       if (!a) return false;
       const id = (a.id || a._id || '').toString().toLowerCase().trim();
       const targetId = (agent.id || agent._id || '').toString().toLowerCase().trim();
@@ -4303,50 +4320,68 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       (agent.role && agent.role.toLowerCase().includes(query))
     );
   }).sort((a, b) => {
-    if (!userSortConfig.key) return 0;
-    const sortMultiplier = userSortConfig.direction === 'asc' ? 1 : -1;
-    switch (userSortConfig.key) {
-      case 'userId': {
-        const idA = getUserDisplayId(a);
-        const idB = getUserDisplayId(b);
-        const numA = parseInt(idA, 10);
-        const numB = parseInt(idB, 10);
-        if (!isNaN(numA) && !isNaN(numB)) return (numA - numB) * sortMultiplier;
-        return idA.localeCompare(idB) * sortMultiplier;
+    if (userSortConfig.key) {
+      const sortMultiplier = userSortConfig.direction === 'asc' ? 1 : -1;
+      switch (userSortConfig.key) {
+        case 'userId': {
+          const idA = getUserDisplayId(a);
+          const idB = getUserDisplayId(b);
+          const numA = parseInt(idA, 10);
+          const numB = parseInt(idB, 10);
+          if (!isNaN(numA) && !isNaN(numB)) return (numA - numB) * sortMultiplier;
+          return idA.localeCompare(idB) * sortMultiplier;
+        }
+        case 'fullName': {
+          const nameA = (a.name || '').toLowerCase();
+          const nameB = (b.name || '').toLowerCase();
+          return nameA.localeCompare(nameB) * sortMultiplier;
+        }
+        case 'role': {
+          const roleA = (a.role || '').toLowerCase();
+          const roleB = (b.role || '').toLowerCase();
+          return roleA.localeCompare(roleB) * sortMultiplier;
+        }
+        case 'username': {
+          const uA = (a.username || '').toLowerCase();
+          const uB = (b.username || '').toLowerCase();
+          return uA.localeCompare(uB) * sortMultiplier;
+        }
+        case 'phone': {
+          const phoneA = (a.phone || '').replace(/\D/g, '');
+          const phoneB = (b.phone || '').replace(/\D/g, '');
+          return phoneA.localeCompare(phoneB) * sortMultiplier;
+        }
+        case 'email': {
+          const emailA = (a.email || '').toLowerCase();
+          const emailB = (b.email || '').toLowerCase();
+          return emailA.localeCompare(emailB) * sortMultiplier;
+        }
+        case 'assignedLeads': {
+          const countA = getUserAssignedCount(a);
+          const countB = getUserAssignedCount(b);
+          return (countA - countB) * sortMultiplier;
+        }
+        default:
+          return 0;
       }
-      case 'fullName': {
-        const nameA = (a.name || '').toLowerCase();
-        const nameB = (b.name || '').toLowerCase();
-        return nameA.localeCompare(nameB) * sortMultiplier;
-      }
-      case 'role': {
-        const roleA = (a.role || '').toLowerCase();
-        const roleB = (b.role || '').toLowerCase();
-        return roleA.localeCompare(roleB) * sortMultiplier;
-      }
-      case 'username': {
-        const uA = (a.username || '').toLowerCase();
-        const uB = (b.username || '').toLowerCase();
-        return uA.localeCompare(uB) * sortMultiplier;
-      }
-      case 'phone': {
-        const phoneA = (a.phone || '').replace(/\D/g, '');
-        const phoneB = (b.phone || '').replace(/\D/g, '');
-        return phoneA.localeCompare(phoneB) * sortMultiplier;
-      }
-      case 'email': {
-        const emailA = (a.email || '').toLowerCase();
-        const emailB = (b.email || '').toLowerCase();
-        return emailA.localeCompare(emailB) * sortMultiplier;
-      }
-      case 'assignedLeads': {
-        const countA = getUserAssignedCount(a);
-        const countB = getUserAssignedCount(b);
-        return (countA - countB) * sortMultiplier;
-      }
-      default:
-        return 0;
     }
+
+    // Default: Newest users at the top (exact same as Leads and Projects tables)
+    // 1 then 2 from bottom to top (newest highest ID at top)
+    const idNumA = parseInt(getUserDisplayId(a), 10);
+    const idNumB = parseInt(getUserDisplayId(b), 10);
+    if (!isNaN(idNumA) && !isNaN(idNumB) && idNumA !== idNumB) {
+      return idNumB - idNumA;
+    }
+    const numA = parseInt(a.id || a._id || 0, 10);
+    const numB = parseInt(b.id || b._id || 0, 10);
+    if (!isNaN(numA) && !isNaN(numB) && numA > 0 && numB > 0 && numA !== numB) {
+      return numB - numA;
+    }
+    const timeA = new Date(a.created_at || a.createdAt || 0).getTime();
+    const timeB = new Date(b.created_at || b.createdAt || 0).getTime();
+    if (timeA && timeB && timeA !== timeB) return timeB - timeA;
+    return 0;
   });
 
   // Calculate stats

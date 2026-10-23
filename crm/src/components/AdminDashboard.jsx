@@ -181,45 +181,45 @@ const getAutoTypographyForProjectType = (projectsList, projectName, projectType)
 
 
 const COLUMN_WIDTH_MAP = {
-  leadId: 76,
-  fullName: 175,
-  email: 205,
-  mobile: 130,
-  enquiryDate: 135,
-  status: 120,
-  priority: 110,
-  followupDate: 140,
-  projectName: 170,
-  projectType: 130,
-  typography: 115,
-  carpetArea: 100,
-  budget: 100,
-  plotsCount: 110,
-  assignedAgent: 160,
-  createdBy: 120,
-  notes: 55,
-  actions: 100
+  leadId: 95,
+  fullName: 180,
+  email: 210,
+  mobile: 155,
+  enquiryDate: 160,
+  status: 155,
+  priority: 130,
+  followupDate: 165,
+  projectName: 175,
+  projectType: 150,
+  typography: 140,
+  carpetArea: 130,
+  budget: 130,
+  plotsCount: 130,
+  assignedAgent: 175,
+  createdBy: 150,
+  notes: 75,
+  actions: 110
 };
 
 const COLUMN_CLASS_MAP = {
-  leadId: 'w-[76px] min-w-[76px]',
-  fullName: 'w-[175px] min-w-[175px]',
-  email: 'w-[205px] min-w-[205px]',
-  mobile: 'w-[130px] min-w-[130px]',
-  enquiryDate: 'w-[135px] min-w-[135px]',
-  status: 'w-[120px] min-w-[120px]',
-  priority: 'w-[110px] min-w-[110px]',
-  followupDate: 'w-[140px] min-w-[140px]',
-  projectName: 'w-[170px] min-w-[170px]',
-  projectType: 'w-[130px] min-w-[130px]',
-  typography: 'w-[115px] min-w-[115px]',
-  carpetArea: 'w-[100px] min-w-[100px]',
-  budget: 'w-[100px] min-w-[100px]',
-  plotsCount: 'w-[110px] min-w-[110px]',
-  assignedAgent: 'w-[160px] min-w-[160px]',
-  createdBy: 'w-[120px] min-w-[120px]',
-  notes: 'w-[55px] min-w-[55px]',
-  actions: 'w-[100px] min-w-[100px]'
+  leadId: 'w-[95px] min-w-[95px]',
+  fullName: 'w-[180px] min-w-[180px]',
+  email: 'w-[210px] min-w-[210px]',
+  mobile: 'w-[155px] min-w-[155px]',
+  enquiryDate: 'w-[160px] min-w-[160px]',
+  status: 'w-[155px] min-w-[155px]',
+  priority: 'w-[130px] min-w-[130px]',
+  followupDate: 'w-[165px] min-w-[165px]',
+  projectName: 'w-[175px] min-w-[175px]',
+  projectType: 'w-[150px] min-w-[150px]',
+  typography: 'w-[140px] min-w-[140px]',
+  carpetArea: 'w-[130px] min-w-[130px]',
+  budget: 'w-[130px] min-w-[130px]',
+  plotsCount: 'w-[130px] min-w-[130px]',
+  assignedAgent: 'w-[175px] min-w-[175px]',
+  createdBy: 'w-[150px] min-w-[150px]',
+  notes: 'w-[75px] min-w-[75px]',
+  actions: 'w-[110px] min-w-[110px]'
 };
 
 // Searchable Multi-Select Project Filter Dropdown for Dashboard and Leads views
@@ -5407,12 +5407,12 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
 
                 const getThClass = (colId, isSorted = false, extra = '') => {
                   const pinned = isColPinned(colId);
-                  const widthClass = COLUMN_CLASS_MAP[colId] || 'w-36 min-w-[130px] max-w-[150px]';
+                  const widthClass = COLUMN_CLASS_MAP[colId] || 'w-36 min-w-[140px]';
                   const stickyClass = pinned 
                     ? (colId === 'actions' ? 'sticky top-0 right-0 z-30 bg-gray-100' : 'sticky top-0 z-30 bg-gray-100')
                     : '';
                   const sortBg = isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : '';
-                  return `${stickyClass} border-b border-gray-200 py-2.5 px-3 whitespace-nowrap ${widthClass} cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${sortBg} ${extra}`.trim();
+                  return `${stickyClass} border-b border-gray-200 py-3 px-3.5 whitespace-nowrap ${widthClass} cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${sortBg} ${extra}`.trim();
                 };
 
                 const getThStyle = (colId) => {
@@ -5437,7 +5437,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
 
                 const getTdClass = (colId, currentId, extra = '') => {
                   const pinned = isColPinned(colId);
-                  const widthClass = COLUMN_CLASS_MAP[colId] || 'w-36 min-w-[130px]';
+                  const widthClass = COLUMN_CLASS_MAP[colId] || 'w-36 min-w-[140px]';
                   const isSelected = selectedLeadIds.includes(currentId);
                   const stickyClass = pinned
                     ? (colId === 'actions'
@@ -5445,7 +5445,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                         : `sticky z-20 ${isSelected ? 'bg-[#FFF0F2]' : 'bg-white group-hover:bg-[#FFF5F6]'}`)
                     : '';
                   const wsClass = colId === 'typography' ? 'whitespace-normal' : 'whitespace-nowrap';
-                  return `${stickyClass} py-2.5 px-3 ${wsClass} ${widthClass} transition-colors ${extra}`.trim();
+                  return `${stickyClass} py-2.5 px-3.5 ${wsClass} ${widthClass} transition-colors ${extra}`.trim();
                 };
 
                 const getTdStyle = (colId) => {
@@ -5568,7 +5568,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                     style={getThStyle('email')}
                                     title={getSortTitle('Email Address')}
                                   >
-                                    <div class="flex items-center gap-1.5 truncate">
+                                    <div class="flex items-center gap-1.5 whitespace-nowrap">
                                       <span>Email Address</span>
                                       {renderSortIndicator()}
                                     </div>
@@ -5669,11 +5669,11 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   <th 
                                     key="typography" 
                                     onClick={() => handleSort('typography')}
-                                    class={getThClass('typography', isSorted, 'text-center')}
+                                    class={getThClass('typography', isSorted)}
                                     style={getThStyle('typography')}
                                     title={getSortTitle('Typography')}
                                   >
-                                    <div class="flex items-center justify-center gap-1.5">
+                                    <div class="flex items-center gap-1.5">
                                       <span>Typography</span>
                                       {renderSortIndicator()}
                                     </div>
@@ -5684,11 +5684,11 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   <th 
                                     key="carpetArea" 
                                     onClick={() => handleSort('carpetArea')}
-                                    class={getThClass('carpetArea', isSorted, 'text-center')}
+                                    class={getThClass('carpetArea', isSorted)}
                                     style={getThStyle('carpetArea')}
                                     title={getSortTitle('Carpet Area')}
                                   >
-                                    <div class="flex items-center justify-center gap-1.5">
+                                    <div class="flex items-center gap-1.5">
                                       <span>Carpet</span>
                                       {renderSortIndicator()}
                                     </div>
@@ -5699,11 +5699,11 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   <th 
                                     key="budget" 
                                     onClick={() => handleSort('budget')}
-                                    class={getThClass('budget', isSorted, 'text-center')}
+                                    class={getThClass('budget', isSorted)}
                                     style={getThStyle('budget')}
                                     title={getSortTitle('Budget')}
                                   >
-                                    <div class="flex items-center justify-center gap-1.5">
+                                    <div class="flex items-center gap-1.5">
                                       <span>Budget</span>
                                       {renderSortIndicator()}
                                     </div>
@@ -5758,7 +5758,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 return (
                                   <th 
                                     key="notes" 
-                                    class={`${isColPinned('notes') ? 'sticky top-0 z-30 bg-gray-100' : ''} border-b border-gray-200 py-2.5 px-2 text-center whitespace-nowrap w-[50px] min-w-[50px] max-w-[50px]`}
+                                    class={getThClass('notes', false, 'text-center')}
                                     style={getThStyle('notes')}
                                   >
                                     Notes
@@ -5768,8 +5768,8 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 return (
                                   <th 
                                     key="actions" 
-                                    class={`${isActionsPinned ? 'sticky top-0 right-0 z-30' : ''} bg-gray-100 border-b border-gray-200 py-2.5 px-2 text-center whitespace-nowrap w-[105px] min-w-[105px] max-w-[105px]`}
-                                    style={isActionsPinned ? { right: 0 } : undefined}
+                                    class={getThClass('actions', false, 'text-center')}
+                                    style={getThStyle('actions')}
                                   >
                                     Actions
                                   </th>
@@ -5842,7 +5842,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                         <div class="flex items-center gap-1.5 whitespace-nowrap">
                                           <a 
                                             href={`tel:${item.phone}`} 
-                                            class="text-[#B30E2E] hover:underline font-bold flex items-center gap-1 whitespace-nowrap text-[11.5px] w-[90px] shrink-0"
+                                            class="text-[#B30E2E] hover:underline font-bold flex items-center gap-1 whitespace-nowrap text-[11.5px] shrink-0"
                                             title="Call Lead"
                                           >
                                             <i class="fa-solid fa-phone text-[8.5px] text-[#B30E2E]"></i>
@@ -5926,7 +5926,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                         onClick={(e) => toggleDropdown(e, currentId, 'status')}
                                         class={`px-2 py-0.5 rounded-md border text-[10px] font-bold outline-none cursor-pointer transition flex items-center justify-between gap-1 shadow-2xs w-full custom-dropdown-toggle ${getStatusBadge(currentStatus)}`}
                                       >
-                                        <span class="truncate">{currentStatus}</span>
+                                        <span class="whitespace-nowrap">{currentStatus}</span>
                                         <i class={`fa-solid fa-chevron-down text-[8px] transition-transform ${isStatusOpen ? 'rotate-180' : ''}`}></i>
                                       </button>
 
@@ -5973,7 +5973,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                         class={`px-2 py-0.5 rounded-md border text-[10px] font-bold outline-none cursor-pointer transition flex items-center justify-between gap-1 shadow-2xs w-full custom-dropdown-toggle ${PRIORITY_BADGE[currentPriority] || 'bg-rose-50 border-rose-300 text-[#B30E2E]'}`}
                                         title="Click to set Priority"
                                       >
-                                        <span class="truncate">{currentPriority}</span>
+                                        <span class="whitespace-nowrap">{currentPriority}</span>
                                         <i class={`fa-solid fa-chevron-down text-[8px] transition-transform ${isPriorityOpen ? 'rotate-180' : ''}`}></i>
                                       </button>
 
@@ -6104,8 +6104,8 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                           class="h-[27px] px-2.5 py-0.5 rounded-lg border border-rose-200/90 text-[10.5px] font-bold bg-rose-50/70 hover:bg-rose-100/80 text-rose-950 transition shadow-2xs flex items-center justify-between gap-1.5 w-full cursor-pointer select-none text-left custom-dropdown-toggle"
                                           title={currentTypesList.length > 0 ? `Project Type: ${currentTypesList.join(', ')}` : ''}
                                         >
-                                          <div class="flex items-center gap-1.5 min-w-0 flex-1 truncate">
-                                            <span class="truncate min-w-0">{displayLabel}</span>
+                                          <div class="flex items-center gap-1.5 min-w-0 flex-1 whitespace-nowrap">
+                                            <span class="whitespace-nowrap min-w-0">{displayLabel}</span>
                                           </div>
                                           <i class={`fa-solid fa-chevron-down text-[8px] text-rose-400 shrink-0 transition-transform ${isTypeOpen ? 'rotate-180 text-rose-700' : ''}`}></i>
                                         </button>
@@ -6174,7 +6174,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   const typoList = (rawLeadTypos.length > 0 ? rawLeadTypos : projectTypos).map(t => (typeof t === 'string' && t.trim().toLowerCase() === 'studio apartment') ? 'Studio' : t);
 
                                   return (
-                                    <td key="typography" class={getTdClass('typography', currentId, 'py-2 px-3 text-center')} style={getTdStyle('typography')}>
+                                    <td key="typography" class={getTdClass('typography', currentId)} style={getTdStyle('typography')}>
                                       {typoList.length > 0 ? (
                                         <div class="inline-flex flex-col items-start gap-0.5 text-left" title={typoList.join('\n')}>
                                           {typoList.map((t, i) => (
@@ -6187,7 +6187,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                           ))}
                                         </div>
                                       ) : (
-                                        <div class="w-full flex items-center justify-center py-0.5">
+                                        <div class="w-full flex items-center py-0.5">
                                           <span class="text-gray-400 italic text-[10.5px]">—</span>
                                         </div>
                                       )}
@@ -6200,13 +6200,13 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                     displayCarpet = `${displayCarpet} sqft`;
                                   }
                                   return (
-                                    <td key="carpetArea" class={getTdClass('carpetArea', currentId, 'text-center')} style={getTdStyle('carpetArea')}>
+                                    <td key="carpetArea" class={getTdClass('carpetArea', currentId)} style={getTdStyle('carpetArea')}>
                                       {displayCarpet ? (
-                                        <span class="text-[11px] font-semibold text-gray-800 truncate block text-center" title={displayCarpet}>
+                                        <span class="text-[11px] font-semibold text-gray-800 whitespace-nowrap block" title={displayCarpet}>
                                           {displayCarpet}
                                         </span>
                                       ) : (
-                                        <div class="w-full flex items-center justify-center py-0.5">
+                                        <div class="w-full flex items-center py-0.5">
                                           <span class="text-gray-400 italic text-[10.5px]">—</span>
                                         </div>
                                       )}
@@ -6216,13 +6216,13 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 case 'budget': {
                                   const displayBudget = formatBudgetValue(item.budget);
                                   return (
-                                    <td key="budget" class={getTdClass('budget', currentId, 'text-center')} style={getTdStyle('budget')}>
+                                    <td key="budget" class={getTdClass('budget', currentId)} style={getTdStyle('budget')}>
                                       {displayBudget ? (
-                                        <span class="text-[11px] font-bold text-gray-800 truncate block text-center" title={displayBudget}>
+                                        <span class="text-[11px] font-bold text-gray-800 whitespace-nowrap block" title={displayBudget}>
                                           {displayBudget}
                                         </span>
                                       ) : (
-                                        <div class="w-full flex items-center justify-center py-0.5">
+                                        <div class="w-full flex items-center py-0.5">
                                           <span class="text-gray-400 italic text-[10.5px]">—</span>
                                         </div>
                                       )}
@@ -6247,7 +6247,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                           class="px-1.5 py-0.5 rounded-md border border-amber-300 text-[10px] font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 outline-none cursor-pointer transition shadow-2xs flex items-center justify-between gap-1 w-full custom-dropdown-toggle"
                                           title="Click to edit No. of Guntha"
                                         >
-                                          <span class="truncate">{currentGuntha.replace(' (Bulk / Investment)', '')}</span>
+                                          <span class="whitespace-nowrap">{currentGuntha.replace(' (Bulk / Investment)', '')}</span>
                                           <i class={`fa-solid fa-chevron-down text-[8px] text-amber-700 transition-transform ${isPlotsOpen ? 'rotate-180' : ''}`}></i>
                                         </button>
                                         {item.plotInfo && (
@@ -6373,7 +6373,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   return (
                                     <td 
                                       key="notes" 
-                                      class={`${isColPinned('notes') ? `sticky z-20 ${selectedLeadIds.includes(currentId) ? 'bg-[#FFF0F2]' : 'bg-white group-hover:bg-[#FFF5F6]'}` : ''} py-2.5 px-2 text-center whitespace-nowrap w-[50px] min-w-[50px] max-w-[50px] transition-colors`}
+                                      class={getTdClass('notes', currentId, 'text-center')}
                                       style={getTdStyle('notes')}
                                     >
                                       <button 
@@ -6396,8 +6396,8 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   return (
                                     <td 
                                       key="actions" 
-                                      class={`${isActionsPinned ? `sticky right-0 z-20 ${selectedLeadIds.includes(currentId) ? 'bg-[#FFF0F2]' : 'bg-white group-hover:bg-[#FFF5F6]'}` : ''} py-2.5 px-2 text-center whitespace-nowrap w-[105px] min-w-[105px] max-w-[105px] transition-colors`}
-                                      style={isActionsPinned ? { right: 0 } : undefined}
+                                      class={getTdClass('actions', currentId, 'text-center')}
+                                      style={getTdStyle('actions')}
                                     >
                                       <div class="flex items-center justify-center gap-1">
                                         <button 

@@ -3238,6 +3238,43 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     return String(finalIndex + 1).padStart(2, '0');
   };
 
+  const getUserDisplayId = (agent, baseList = registeredAgents) => {
+    if (!agent) return '01';
+    if (agent.userId) {
+      const clean = String(agent.userId).replace(/^#?USR-?/i, '').trim();
+      if (clean) return clean.padStart(2, '0');
+    }
+    const agentsList = (baseList && baseList.length > 0) 
+      ? baseList 
+      : JSON.parse(localStorage.getItem('registeredAgents') || '[]');
+
+    const agentIndex = (agentsList || []).findIndex(a => {
+      if (!a) return false;
+      const id = (a.id || a._id || '').toString().toLowerCase().trim();
+      const targetId = (agent.id || agent._id || '').toString().toLowerCase().trim();
+      if (id && targetId && id === targetId) return true;
+
+      const username = (a.username || '').toLowerCase().trim();
+      const targetUsername = (agent.username || '').toLowerCase().trim();
+      if (username && targetUsername && username === targetUsername) return true;
+
+      const name = (a.name || '').toLowerCase().trim();
+      const targetName = (agent.name || '').toLowerCase().trim();
+      if (name && targetName && name === targetName) return true;
+
+      return false;
+    });
+
+    if (agentIndex >= 0) {
+      return String(agentIndex + 1).padStart(2, '0');
+    }
+
+    const numId = parseInt(agent.id || agent._id, 10);
+    if (!isNaN(numId) && numId > 0) return String(numId).padStart(2, '0');
+    return '01';
+  };
+
+
   // Export CSV handler
   const handleExportCSV = () => {
     if (filteredEnquiries.length === 0) {
@@ -4270,8 +4307,8 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     const sortMultiplier = userSortConfig.direction === 'asc' ? 1 : -1;
     switch (userSortConfig.key) {
       case 'userId': {
-        const idA = (a.id || a._id || 0).toString();
-        const idB = (b.id || b._id || 0).toString();
+        const idA = getUserDisplayId(a);
+        const idB = getUserDisplayId(b);
         const numA = parseInt(idA, 10);
         const numB = parseInt(idB, 10);
         if (!isNaN(numA) && !isNaN(numB)) return (numA - numB) * sortMultiplier;
@@ -6943,7 +6980,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                     return (
                                       <td key="userId" class={getUserTdClass('userId')} style={getUserTdStyle('userId')}>
                                         <span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-blue-50 text-blue-700 border border-blue-200/80 shadow-xs">
-                                          {String(agentIdx + 1).padStart(2, '0')}
+                                          {getUserDisplayId(agent)}
                                         </span>
                                       </td>
                                     );

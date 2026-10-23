@@ -612,6 +612,25 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
     fetchProjects();
   }, []);
 
+  const getProjectDisplayId = (project, baseList = projects) => {
+    if (!project) return 1;
+    if (project.id) {
+      const num = parseInt(project.id, 10);
+      if (!isNaN(num) && num > 0) return num;
+      return project.id;
+    }
+    if (project._id) {
+      const num = parseInt(project._id, 10);
+      if (!isNaN(num) && num > 0) return num;
+    }
+    const idx = (baseList || []).findIndex(p => 
+      (p.id && p.id === project.id) || 
+      (p._id && p._id === project._id) || 
+      (p.name && p.name === project.name)
+    );
+    return idx >= 0 ? (idx + 1) : 1;
+  };
+
   // Filtered Projects for Table
   const filteredProjects = useMemo(() => {
     return projects.filter(p => {
@@ -639,12 +658,12 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
       const sortMultiplier = projectSortConfig.direction === 'asc' ? 1 : -1;
       switch (projectSortConfig.key) {
         case 'projectId': {
-          const idA = (a.id || a._id || 0).toString();
-          const idB = (b.id || b._id || 0).toString();
+          const idA = getProjectDisplayId(a);
+          const idB = getProjectDisplayId(b);
           const numA = parseInt(idA, 10);
           const numB = parseInt(idB, 10);
           if (!isNaN(numA) && !isNaN(numB)) return (numA - numB) * sortMultiplier;
-          return idA.localeCompare(idB) * sortMultiplier;
+          return String(idA).localeCompare(String(idB)) * sortMultiplier;
         }
         case 'projectName': {
           const nameA = (a.name || '').toLowerCase();
@@ -1310,7 +1329,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                               case 'projectId':
                                 return (
                                   <td key="projectId" className={getProjectTdClass('projectId', 'text-center text-gray-400 font-mono text-[10.5px]')} style={getProjectTdStyle('projectId')}>
-                                    #{project.id || idx + 1}
+                                    #{getProjectDisplayId(project)}
                                   </td>
                                 );
                               case 'projectName':

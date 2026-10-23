@@ -1448,11 +1448,8 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
   const [showEditPassword, setShowEditPassword] = useState(false);
   const [savingUserEdit, setSavingUserEdit] = useState(false);
   const [userEditSuccessMsg, setUserEditSuccessMsg] = useState('');
-  const isEditingAdmin = Boolean(
-    editingUser && (
-      ['admin', 'systemadmin', 'system'].includes((editingUser.username || '').toLowerCase()) ||
-      ['system admin', 'systemadmin', 'admin'].includes((editingUser.role || '').toLowerCase())
-    )
+  const isEditingInbuiltSystem = Boolean(
+    editingUser && ['admin', 'systemadmin', 'system'].includes((editingUser.username || '').toLowerCase())
   );
 
   // State for Create Lead Modal (Homepage 6 Fields)
@@ -2323,7 +2320,10 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     e.preventDefault();
     if (!editingUser) return;
 
-    if (!isEditingAdmin && editingUser.phone && !/^[6-9]\d{9}$/.test(editingUser.phone.trim())) {
+    const cleanedPhone = (editingUser.phone || '').trim();
+    const cleanedEmail = (editingUser.email || '').trim().toLowerCase();
+
+    if (cleanedPhone && !/^[6-9]\d{9}$/.test(cleanedPhone)) {
       setUserEditSuccessMsg('Please enter a valid 10-digit mobile number starting with 6, 7, 8, or 9.');
       return;
     }
@@ -2335,8 +2335,8 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       ...editingUser,
       name: (editingUser.name || '').trim(),
       username: (editingUser.username || '').trim().toLowerCase(),
-      phone: (editingUser.phone || '').trim(),
-      email: (editingUser.email || '').trim()
+      phone: cleanedPhone,
+      email: cleanedEmail
     };
 
     if (!cleanedEditingUser.name) {
@@ -2366,22 +2366,18 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     const targetEditId = editingUser.id || editingUser._id;
     if (!targetEditId || targetEditId.toString().startsWith('agent-')) {
       setSavingUserEdit(false);
-      setUserEditSuccessMsg('Error: This agent was never saved to the database. Delete it and create it again.');
+      setUserEditSuccessMsg('Error: This user was never saved to the database. Delete it and create it again.');
       return;
     }
 
     const cleanUsername = cleanedEditingUser.username;
-    const cleanPhone = isEditingAdmin ? '' : cleanedEditingUser.phone;
-    const cleanEmail = isEditingAdmin ? '' : cleanedEditingUser.email.toLowerCase();
 
     const existingUser = registeredAgents.find(a => {
       const aId = (a.id || a._id || '').toString();
       if (aId === targetEditId.toString() || a.username === editingUser.username) return false;
       if (cleanUsername && a.username && a.username.toLowerCase() === cleanUsername) return true;
-      if (!isEditingAdmin) {
-        if (cleanPhone && a.phone && a.phone.trim() === cleanPhone) return true;
-        if (cleanEmail && a.email && a.email.toLowerCase() === cleanEmail) return true;
-      }
+      if (cleanedPhone && a.phone && a.phone.trim() === cleanedPhone) return true;
+      if (cleanedEmail && a.email && a.email.toLowerCase() === cleanedEmail) return true;
       return false;
     });
 
@@ -2391,24 +2387,25 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
         setUserEditSuccessMsg(`Error: Username '${cleanUsername}' is already taken.`);
         return;
       }
-      if (cleanPhone && existingUser.phone && existingUser.phone.trim() === cleanPhone) {
-        setUserEditSuccessMsg(`Error: Mobile number '${cleanPhone}' is already registered to ${existingUser.name || 'another user'}.`);
+      if (cleanedPhone && existingUser.phone && existingUser.phone.trim() === cleanedPhone) {
+        setUserEditSuccessMsg(`Error: Mobile number '${cleanedPhone}' is already registered to ${existingUser.name || 'another user'}.`);
         return;
       }
-      if (cleanEmail && existingUser.email && existingUser.email.toLowerCase() === cleanEmail) {
-        setUserEditSuccessMsg(`Error: Email address '${cleanEmail}' is already registered to ${existingUser.name || 'another user'}.`);
+      if (cleanedEmail && existingUser.email && existingUser.email.toLowerCase() === cleanedEmail) {
+        setUserEditSuccessMsg(`Error: Email address '${cleanedEmail}' is already registered to ${existingUser.name || 'another user'}.`);
         return;
       }
     }
 
     try {
       const token = localStorage.getItem('adminToken');
+      const cleanRole = ['system admin', 'systemadmin', 'admin'].includes((editingUser.role || '').toLowerCase()) ? 'Admin' : 'SalesExecutive';
       const reqBody = {
         name: cleanedEditingUser.name,
-        phone: isEditingAdmin ? '' : cleanedEditingUser.phone,
-        email: isEditingAdmin ? '' : cleanedEditingUser.email,
+        phone: cleanedPhone,
+        email: cleanedEmail,
         username: cleanedEditingUser.username,
-        role: ['system admin', 'systemadmin', 'admin'].includes((editingUser.role || '').toLowerCase()) ? 'Admin' : 'SalesExecutive'
+        role: cleanRole
       };
       if (editUserPassword && editUserPassword.trim()) {
         reqBody.password = editUserPassword.trim();
@@ -2433,7 +2430,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
         ...cleanedEditingUser,
         ...data.data,
         id: data.data.id,
-        role: data.data.role || editingUser.role || 'SalesExecutive'
+        role: data.data.role || cleanRole
       };
       const updatedAgents = registeredAgents.map(a =>
         ((a.id && a.id.toString() === targetEditId.toString()) || a.username === editingUser.username) ? dbAgent : a
@@ -6931,7 +6928,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
             <div class="bg-gradient-to-r from-[#B30E2E] via-[#8A0B22] to-[#590414] p-5 text-white flex items-center justify-between">
               <div>
                 <h3 class="font-serif font-bold text-base">
-                  {isEditingAdmin ? 'Edit Admin User' : 'Edit User'}
+                  Edit User
                 </h3>
               </div>
               <button 
@@ -6961,211 +6958,152 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                 );
               })()}
 
-              {/* If editing Admin: Full Name, Username, New Password */}
-              {isEditingAdmin ? (
-                <>
-                  {/* 1. Full Name */}
-                  <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">Full Name *</label>
-                    <input 
-                      type="text" 
-                      required 
-                      autoComplete="off"
-                      value={editingUser.name || ''}
-                      onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
-                      placeholder="Enter full name"
-                      class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
-                    />
-                  </div>
+              {/* 1. Full Name */}
+              <div>
+                <label class="block text-xs font-bold text-gray-700 mb-1">Full Name *</label>
+                <input 
+                  type="text" 
+                  required 
+                  autoComplete="off"
+                  value={editingUser.name || ''}
+                  onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
+                  placeholder="Enter full name"
+                  class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
+                />
+              </div>
 
-                  {/* 2. Username */}
-                  <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">Username *</label>
-                    <input 
-                      type="text" 
-                      required 
-                      autoComplete="off"
-                      value={editingUser.username || ''}
-                      onChange={(e) => setEditingUser({ ...editingUser, username: e.target.value })}
-                      placeholder="Enter username"
-                      class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
-                    />
+              {/* 2. Username */}
+              <div>
+                <label class="block text-xs font-bold text-gray-700 mb-1">Username *</label>
+                <div class="relative">
+                  <input 
+                    type="text" 
+                    readOnly
+                    tabIndex={-1}
+                    value={editingUser.username || ''}
+                    placeholder="Username"
+                    class="w-full pl-3 pr-9 py-2 rounded-xl border border-gray-200 bg-gray-100 text-gray-600 text-xs font-semibold cursor-not-allowed select-none focus:outline-none"
+                  />
+                  <div class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                    <i class="fa-solid fa-lock text-xs"></i>
                   </div>
+                </div>
+              </div>
 
-                  {/* 3. New Password */}
-                  <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">New Password</label>
-                    <div class="relative">
-                      <input 
-                        type={showEditPassword ? 'text' : 'password'}
-                        autoComplete="new-password"
-                        value={editUserPassword}
-                        onChange={(e) => setEditUserPassword(e.target.value)}
-                        placeholder="Enter new password"
-                        class="w-full pl-3 pr-10 py-2.5 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowEditPassword(!showEditPassword)}
-                        class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-700 cursor-pointer"
-                        title={showEditPassword ? 'Hide password' : 'Show password'}
-                      >
-                        <i class={`fa-solid ${showEditPassword ? 'fa-eye-slash' : 'fa-eye'} text-xs`}></i>
-                      </button>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <>
-                  {/* 1. Full Name */}
-                  <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">Full Name *</label>
-                    <input 
-                      type="text" 
-                      required 
-                      autoComplete="off"
-                      value={editingUser.name || ''}
-                      onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
-                      placeholder="Enter full name"
-                      class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
-                    />
-                  </div>
+              {/* 3. Mobile Number & 4. Email Address */}
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-bold text-gray-700 mb-1">Mobile Number *</label>
+                  <input 
+                    type="tel" 
+                    required
+                    maxLength={10}
+                    pattern="[6-9][0-9]{9}"
+                    value={editingUser.phone || ''}
+                    onChange={(e) => {
+                      const cleaned = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      setEditingUser({ ...editingUser, phone: cleaned });
+                    }}
+                    placeholder="Enter mobile number"
+                    class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
+                  />
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-gray-700 mb-1">Email Address *</label>
+                  <input 
+                    type="email" 
+                    required
+                    value={editingUser.email || ''}
+                    onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
+                    placeholder="Enter email address"
+                    class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
+                  />
+                </div>
+              </div>
 
-                  {/* 2. Username */}
-                  <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">Username *</label>
-                    <div class="relative">
-                      <input 
-                        type="text" 
-                        readOnly
-                        tabIndex={-1}
-                        value={editingUser.username || ''}
-                        placeholder="Username"
-                        class="w-full pl-3 pr-9 py-2 rounded-xl border border-gray-200 bg-gray-100 text-gray-600 text-xs font-semibold cursor-not-allowed select-none focus:outline-none"
-                      />
-                      <div class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                        <i class="fa-solid fa-lock text-xs"></i>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 3. Mobile Number & 4. Email Address */}
-                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label class="block text-xs font-bold text-gray-700 mb-1">Mobile Number *</label>
-                      <input 
-                        type="tel" 
-                        required
-                        maxLength={10}
-                        pattern="[6-9][0-9]{9}"
-                        value={editingUser.phone || ''}
-                        onChange={(e) => {
-                          const cleaned = e.target.value.replace(/\D/g, '').slice(0, 10);
-                          setEditingUser({ ...editingUser, phone: cleaned });
-                        }}
-                        placeholder="Enter mobile number"
-                        class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
-                      />
-                    </div>
-                    <div>
-                      <label class="block text-xs font-bold text-gray-700 mb-1">Email Address *</label>
-                      <input 
-                        type="email" 
-                        required
-                        value={editingUser.email || ''}
-                        onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
-                        placeholder="Enter email address"
-                        class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
-                      />
-                    </div>
-                  </div>
-
-                  {/* 5. Role Selection */}
-                  <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">Role *</label>
-                    <div class="relative">
-                      <button
-                        type="button"
-                        onClick={() => setIsEditRoleOpen(!isEditRoleOpen)}
-                        class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 hover:border-[#B30E2E] bg-white flex items-center justify-between text-xs font-bold text-gray-800 shadow-xs transition cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#B30E2E]/20 focus:border-[#B30E2E]"
-                      >
-                        <div class="flex items-center gap-2.5">
-                          {['system admin', 'systemadmin', 'admin'].includes((editingUser.role || '').toLowerCase()) ? (
-                            <>
-                              <span class="w-6 h-6 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center text-xs">
-                                <i class="fa-solid fa-shield-halved"></i>
-                              </span>
-                              <span class="text-gray-900 font-bold">Admin</span>
-                            </>
-                          ) : (
-                            <>
-                              <span class="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs">
-                                <i class="fa-solid fa-user-tie"></i>
-                              </span>
-                              <span class="text-gray-900 font-bold">Sales Executive</span>
-                            </>
-                          )}
-                        </div>
-                        <i class={`fa-solid fa-chevron-down text-xs text-gray-400 transition-transform duration-200 ${isEditRoleOpen ? 'rotate-180 text-[#B30E2E]' : ''}`}></i>
-                      </button>
-
-                      {isEditRoleOpen && (
+              {/* 5. Role Selection */}
+              <div>
+                <label class="block text-xs font-bold text-gray-700 mb-1">Role *</label>
+                <div class="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditRoleOpen(!isEditRoleOpen)}
+                    class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 hover:border-[#B30E2E] bg-white flex items-center justify-between text-xs font-bold text-gray-800 shadow-xs transition cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#B30E2E]/20 focus:border-[#B30E2E]"
+                  >
+                    <div class="flex items-center gap-2.5">
+                      {['system admin', 'systemadmin', 'admin'].includes((editingUser.role || '').toLowerCase()) ? (
                         <>
-                          <div class="fixed inset-0 z-10" onClick={() => setIsEditRoleOpen(false)}></div>
-                          <div class="absolute z-20 bottom-full left-0 right-0 mb-1.5 bg-white rounded-2xl border border-gray-200 shadow-xl overflow-hidden p-1.5 space-y-1">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditingUser({ ...editingUser, role: 'Sales Executive' });
-                                setIsEditRoleOpen(false);
-                              }}
-                              class={`w-full px-3 py-2.5 rounded-xl text-left text-xs font-semibold flex items-center justify-between transition cursor-pointer ${
-                                !['system admin', 'systemadmin', 'admin'].includes((editingUser.role || '').toLowerCase())
-                                  ? 'bg-emerald-50 text-emerald-900 font-bold'
-                                  : 'text-gray-700 hover:bg-gray-50'
-                              }`}
-                            >
-                              <div class="flex items-center gap-2.5">
-                                <span class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs">
-                                  <i class="fa-solid fa-user-tie"></i>
-                                </span>
-                                <span class="font-bold text-gray-900">Sales Executive</span>
-                              </div>
-                              {!['system admin', 'systemadmin', 'admin'].includes((editingUser.role || '').toLowerCase()) && (
-                                <i class="fa-solid fa-circle-check text-emerald-600 text-sm"></i>
-                              )}
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditingUser({ ...editingUser, role: 'Admin' });
-                                setIsEditRoleOpen(false);
-                              }}
-                              class={`w-full px-3 py-2.5 rounded-xl text-left text-xs font-semibold flex items-center justify-between transition cursor-pointer ${
-                                ['system admin', 'systemadmin', 'admin'].includes((editingUser.role || '').toLowerCase())
-                                  ? 'bg-blue-50 text-blue-900 font-bold'
-                                  : 'text-gray-700 hover:bg-gray-50'
-                              }`}
-                            >
-                              <div class="flex items-center gap-2.5">
-                                <span class="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center text-xs">
-                                  <i class="fa-solid fa-shield-halved"></i>
-                                </span>
-                                <span class="font-bold text-gray-900">Admin</span>
-                              </div>
-                              {['system admin', 'systemadmin', 'admin'].includes((editingUser.role || '').toLowerCase()) && (
-                                <i class="fa-solid fa-circle-check text-blue-600 text-sm"></i>
-                              )}
-                            </button>
-                          </div>
+                          <span class="w-6 h-6 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center text-xs">
+                            <i class="fa-solid fa-shield-halved"></i>
+                          </span>
+                          <span class="text-gray-900 font-bold">Admin</span>
+                        </>
+                      ) : (
+                        <>
+                          <span class="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs">
+                            <i class="fa-solid fa-user-tie"></i>
+                          </span>
+                          <span class="text-gray-900 font-bold">Sales Executive</span>
                         </>
                       )}
                     </div>
-                  </div>
+                    <i class={`fa-solid fa-chevron-down text-xs text-gray-400 transition-transform duration-200 ${isEditRoleOpen ? 'rotate-180 text-[#B30E2E]' : ''}`}></i>
+                  </button>
 
-                </>
-              )}
+                  {isEditRoleOpen && (
+                    <>
+                      <div class="fixed inset-0 z-10" onClick={() => setIsEditRoleOpen(false)}></div>
+                      <div class="absolute z-20 bottom-full left-0 right-0 mb-1.5 bg-white rounded-2xl border border-gray-200 shadow-xl overflow-hidden p-1.5 space-y-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingUser({ ...editingUser, role: 'Sales Executive' });
+                            setIsEditRoleOpen(false);
+                          }}
+                          class={`w-full px-3 py-2.5 rounded-xl text-left text-xs font-semibold flex items-center justify-between transition cursor-pointer ${
+                            !['system admin', 'systemadmin', 'admin'].includes((editingUser.role || '').toLowerCase())
+                              ? 'bg-emerald-50 text-emerald-900 font-bold'
+                              : 'text-gray-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          <div class="flex items-center gap-2.5">
+                            <span class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs">
+                              <i class="fa-solid fa-user-tie"></i>
+                            </span>
+                            <span class="font-bold text-gray-900">Sales Executive</span>
+                          </div>
+                          {!['system admin', 'systemadmin', 'admin'].includes((editingUser.role || '').toLowerCase()) && (
+                            <i class="fa-solid fa-circle-check text-emerald-600 text-sm"></i>
+                          )}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingUser({ ...editingUser, role: 'Admin' });
+                            setIsEditRoleOpen(false);
+                          }}
+                          class={`w-full px-3 py-2.5 rounded-xl text-left text-xs font-semibold flex items-center justify-between transition cursor-pointer ${
+                            ['system admin', 'systemadmin', 'admin'].includes((editingUser.role || '').toLowerCase())
+                              ? 'bg-blue-50 text-blue-900 font-bold'
+                              : 'text-gray-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          <div class="flex items-center gap-2.5">
+                            <span class="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center text-xs">
+                              <i class="fa-solid fa-shield-halved"></i>
+                            </span>
+                            <span class="font-bold text-gray-900">Admin</span>
+                          </div>
+                          {['system admin', 'systemadmin', 'admin'].includes((editingUser.role || '').toLowerCase()) && (
+                            <i class="fa-solid fa-circle-check text-blue-600 text-sm"></i>
+                          )}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
 
               <div class="pt-2 flex items-center justify-end gap-2 border-t border-gray-100">
                 <button 

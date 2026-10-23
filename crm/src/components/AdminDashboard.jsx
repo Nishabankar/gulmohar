@@ -5284,45 +5284,45 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                 </div>
 
                 {/* ================= MOBILE VIEW TOOLBAR (sm:hidden) ================= */}
-                {/* 3 SEQUENCED ROWS: Row 1 Search Bar, Row 2 Status & Agent Filter, Row 3 Action Buttons */}
+                {/* 2 SEQUENCED ROWS: Row 1 Search Bar + Status Dropdown, Row 2 Agent Filter + 4 Action Buttons */}
                 <div class="flex sm:hidden flex-col gap-2.5 w-full">
 
-                  {/* ROW 1: Search Input Bar (Always visible on mobile, earlier style with clear icon) */}
-                  <div class="relative w-full">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                      <i class="fa-solid fa-magnifying-glass text-xs"></i>
-                    </div>
-                    <input 
-                      type="text" 
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search lead by Lead ID, name, mobile..."
-                      class="w-full pl-9 pr-8 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-xs bg-white font-medium shadow-xs"
-                    />
-                    {searchQuery && (
-                      <button 
-                        type="button"
-                        onClick={() => setSearchQuery('')}
-                        class="absolute inset-y-0 right-0 pr-2.5 flex items-center text-gray-400 hover:text-[#B30E2E] cursor-pointer text-xs transition"
-                        title="Clear search"
-                      >
-                        <i class="fa-solid fa-circle-xmark"></i>
-                      </button>
-                    )}
-                  </div>
-
-                  {/* ROW 2: Status Filter & Agent Dropdown side-by-side */}
+                  {/* ROW 1: Search Input Bar (Left) + Status Filter Dropdown (Right) */}
                   <div class="flex items-center gap-2 w-full">
-                    {/* Left: Status Filter Dropdown / Active Filter Badge */}
+                    {/* Left: Search Input Box */}
+                    <div class="relative flex-1 min-w-0">
+                      <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-gray-400">
+                        <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                      </div>
+                      <input 
+                        type="text" 
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search lead..."
+                        class="w-full pl-8 pr-7 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-xs bg-white font-medium shadow-xs"
+                      />
+                      {searchQuery && (
+                        <button 
+                          type="button"
+                          onClick={() => setSearchQuery('')}
+                          class="absolute inset-y-0 right-0 pr-2 flex items-center text-gray-400 hover:text-[#B30E2E] cursor-pointer text-xs transition"
+                          title="Clear search"
+                        >
+                          <i class="fa-solid fa-circle-xmark"></i>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Right: Status Filter Dropdown / Active Filter Badge */}
                     {isStatusDropdownMode ? (
-                      <div ref={mobileStatusDropdownRef} class="flex-1 min-w-0 relative">
+                      <div ref={mobileStatusDropdownRef} class="w-[125px] xs:w-[135px] shrink-0 relative">
                         <button
                           type="button"
                           onClick={() => {
                             setIsMobileStatusDropdownOpen(!isMobileStatusDropdownOpen);
                             setIsMobileAgentDropdownOpen(false);
                           }}
-                          class="w-full px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-xs bg-white hover:bg-gray-50 font-bold text-gray-700 cursor-pointer shadow-xs flex items-center justify-between gap-1.5"
+                          class="w-full px-2.5 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-xs bg-white hover:bg-gray-50 font-bold text-gray-700 cursor-pointer shadow-xs flex items-center justify-between gap-1"
                           title={
                             selectedStatuses.length === ALL_STATUS_OPTIONS.length
                               ? 'All Statuses'
@@ -5337,15 +5337,15 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                               {selectedStatuses.length === ALL_STATUS_OPTIONS.length
                                 ? 'All'
                                 : selectedStatuses.length === 0
-                                  ? 'Select Status'
+                                  ? 'Status'
                                   : selectedStatuses.join(', ')}
                             </span>
                           </span>
-                          <i class={`fa-solid fa-chevron-down text-xs text-gray-400 transition transform flex-shrink-0 ${isMobileStatusDropdownOpen ? 'rotate-180' : ''}`}></i>
+                          <i class={`fa-solid fa-chevron-down text-[11px] text-gray-400 transition transform flex-shrink-0 ${isMobileStatusDropdownOpen ? 'rotate-180' : ''}`}></i>
                         </button>
 
                         {isMobileStatusDropdownOpen && (
-                          <div class="absolute left-0 mt-1 w-full min-w-[180px] bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-1 max-h-60 overflow-y-auto custom-scrollbar animate-fade-in">
+                          <div class="absolute right-0 mt-1 w-44 bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-1 max-h-60 overflow-y-auto custom-scrollbar animate-fade-in">
                             {['All', ...ALL_STATUS_OPTIONS].map((status) => {
                               const isChecked = status === 'All'
                                 ? selectedStatuses.length === ALL_STATUS_OPTIONS.length
@@ -5383,21 +5383,24 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                       } else if (followupDateFilter !== 'All') {
                         filterLabel = followupDateFilter === 'Today' ? 'Followup: Today' : followupDateFilter === 'Tomorrow' ? 'Followup: Tomorrow' : followupDateFilter === 'ThisWeek' ? 'Followup: This Week' : 'Followup: Scheduled';
                       } else if (statusFilter !== 'All') {
-                        filterLabel = `Status: ${['Miss', 'Missed'].includes(statusFilter) ? 'Missed Followup' : statusFilter}`;
+                        filterLabel = `${['Miss', 'Missed'].includes(statusFilter) ? 'Missed' : statusFilter}`;
                       }
 
                       if (!filterLabel) return null;
 
                       return (
-                        <div class="flex-1 min-w-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-gray-300 text-gray-700 text-xs font-bold shadow-xs animate-fade-in cursor-default select-none truncate" title="Active Filter (Read-Only)">
+                        <div class="w-[125px] xs:w-[135px] shrink-0 inline-flex items-center gap-1.5 px-2.5 py-2 rounded-xl bg-white border border-gray-300 text-gray-700 text-xs font-bold shadow-xs animate-fade-in cursor-default select-none truncate" title="Active Filter (Read-Only)">
                           <span class="w-2 h-2 rounded-full bg-[#B30E2E] flex-shrink-0"></span>
                           <span class="truncate">{filterLabel}</span>
                         </div>
                       );
                     })()}
+                  </div>
 
-                    {/* Right: Agent Filter Custom Dropdown (Admin Only) */}
-                    {isAdmin && (
+                  {/* ROW 2: All Agents Dropdown (Left) + 4 Action Buttons (Right) */}
+                  <div class="flex items-center justify-between gap-2 w-full">
+                    {/* Left: Agent Filter Custom Dropdown (Admin Only) */}
+                    {isAdmin ? (
                       <div ref={mobileAgentDropdownRef} class="flex-1 min-w-0 relative">
                         <button
                           type="button"
@@ -5405,18 +5408,18 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                             setIsMobileAgentDropdownOpen(!isMobileAgentDropdownOpen);
                             setIsMobileStatusDropdownOpen(false);
                           }}
-                          class="w-full px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-xs bg-white hover:bg-gray-50 font-bold text-gray-700 cursor-pointer shadow-xs flex items-center justify-between gap-1.5"
+                          class="w-full px-2.5 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-xs bg-white hover:bg-gray-50 font-bold text-gray-700 cursor-pointer shadow-xs flex items-center justify-between gap-1.5"
                           title="Filter leads by Agent"
                         >
                           <span class="flex items-center gap-1.5 truncate">
                             <i class="fa-solid fa-user-group text-xs text-[#B30E2E] flex-shrink-0"></i>
                             <span class="truncate">{agentFilter === 'All' ? 'All Agents' : agentFilter}</span>
                           </span>
-                          <i class={`fa-solid fa-chevron-down text-xs text-gray-400 transition transform flex-shrink-0 ${isMobileAgentDropdownOpen ? 'rotate-180' : ''}`}></i>
+                          <i class={`fa-solid fa-chevron-down text-[11px] text-gray-400 transition transform flex-shrink-0 ${isMobileAgentDropdownOpen ? 'rotate-180' : ''}`}></i>
                         </button>
 
                         {isMobileAgentDropdownOpen && (
-                          <div class="absolute right-0 mt-1 w-full min-w-[200px] bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-1 max-h-56 overflow-y-auto custom-scrollbar animate-fade-in">
+                          <div class="absolute left-0 mt-1 w-48 sm:w-full min-w-[180px] bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-1 max-h-56 overflow-y-auto custom-scrollbar animate-fade-in">
                             {/* Option 1: All Agents */}
                             <button
                               type="button"
@@ -5462,26 +5465,23 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                           </div>
                         )}
                       </div>
+                    ) : (
+                      <div class="flex-1 min-w-0"></div>
                     )}
-                  </div>
 
-                  {/* ROW 3: All Action Buttons */}
-                  <div class="flex items-center justify-between gap-2 w-full pt-0.5">
-                    {/* Left: Bulk Delete if any selected (Admin) */}
-                    {isAdmin && selectedLeadIds.length > 0 ? (
-                      <div class="flex items-center gap-1.5 animate-fade-in">
-                        <div class="flex items-center gap-1 px-2 py-1 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-[11px] font-bold shadow-2xs">
+                    {/* Bulk Delete if any selected (Admin) */}
+                    {isAdmin && selectedLeadIds.length > 0 && (
+                      <div class="flex items-center gap-1 animate-fade-in flex-shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedLeadIds([])}
+                          class="flex items-center gap-1 px-1.5 py-1 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-[10px] font-bold shadow-2xs cursor-pointer"
+                          title="Deselect all"
+                        >
                           <span class="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse"></span>
-                          <span>{selectedLeadIds.length} Selected</span>
-                          <button
-                            type="button"
-                            onClick={() => setSelectedLeadIds([])}
-                            class="ml-0.5 text-rose-400 hover:text-rose-700 transition cursor-pointer"
-                            title="Deselect all"
-                          >
-                            <i class="fa-solid fa-xmark text-[10px]"></i>
-                          </button>
-                        </div>
+                          <span>{selectedLeadIds.length}</span>
+                          <i class="fa-solid fa-xmark text-[9px] text-rose-400"></i>
+                        </button>
 
                         <button 
                           onClick={openBulkDeleteConfirmation}
@@ -5491,12 +5491,10 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                           <i class="fa-solid fa-trash-can text-xs"></i>
                         </button>
                       </div>
-                    ) : (
-                      <div></div>
                     )}
 
                     {/* Right: Action Symbol Buttons */}
-                    <div class="flex items-center gap-2 flex-shrink-0 ml-auto">
+                    <div class="flex items-center gap-1.5 flex-shrink-0">
                       {/* Create Lead Button */}
                       <button 
                         onClick={handleOpenNewLeadModal}

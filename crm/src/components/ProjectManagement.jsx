@@ -109,11 +109,114 @@ const TYPE_BADGE_STYLE = {
   'Farm House': 'bg-amber-50 text-amber-800 border-amber-200'
 };
 
+const PROJECT_COLUMN_WIDTH_MAP = {
+  projectId: 85,
+  projectName: 195,
+  developerName: 165,
+  projectType: 160,
+  typography: 150,
+  reraNumber: 140,
+  location: 200,
+  actions: 105
+};
+
+const DEFAULT_PROJECT_COLUMNS = [
+  { id: 'projectId', label: '# ID', visible: true, pinned: true },
+  { id: 'projectName', label: 'Project Name', visible: true, pinned: true },
+  { id: 'developerName', label: 'Developer', visible: true, pinned: false },
+  { id: 'projectType', label: 'Project Type', visible: true, pinned: false },
+  { id: 'typography', label: 'Typography', visible: true, pinned: false },
+  { id: 'reraNumber', label: 'RERA No', visible: true, pinned: false },
+  { id: 'location', label: 'Area / Address', visible: true, pinned: false },
+  { id: 'actions', label: 'Actions', visible: true, pinned: true }
+];
+
 export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }) {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState('All');
+
+  // Project Column Configuration State & Persistence
+  const [projectColumnConfig, setProjectColumnConfig] = useState(() => {
+    try {
+      const stored = localStorage.getItem('projectManagementColumnConfig');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const ids = new Set(parsed.map(c => c.id));
+          const missing = DEFAULT_PROJECT_COLUMNS.filter(c => !ids.has(c.id));
+          return [...parsed, ...missing];
+        }
+      }
+    } catch (e) {}
+    return DEFAULT_PROJECT_COLUMNS;
+  });
+  const [showProjectColumnConfigModal, setShowProjectColumnConfigModal] = useState(false);
+  const [draggedProjectColumnIndex, setDraggedProjectColumnIndex] = useState(null);
+  const [isDesktopScreen, setIsDesktopScreen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 768;
+    }
+    return true;
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsDesktopScreen(window.innerWidth >= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const handleUpdateProjectColumnConfig = (newConfig) => {
+    setProjectColumnConfig(newConfig);
+    try {
+      localStorage.setItem('projectManagementColumnConfig', JSON.stringify(newConfig));
+    } catch (e) {}
+  };
+
+  const toggleProjectColumnVisibility = (colId) => {
+    const updated = projectColumnConfig.map(col => 
+      col.id === colId ? { ...col, visible: !col.visible } : col
+    );
+    handleUpdateProjectColumnConfig(updated);
+  };
+
+  const toggleProjectColumnPin = (colId) => {
+    const updated = projectColumnConfig.map(col => {
+      if (col.id === colId) {
+        return { ...col, pinned: !col.pinned };
+      }
+      return col;
+    });
+
+    const actionsCol = updated.find(c => c.id === 'actions');
+    const nonActions = updated.filter(c => c.id !== 'actions');
+    const pinnedNonActions = nonActions.filter(c => c.pinned);
+    const unpinnedNonActions = nonActions.filter(c => !c.pinned);
+    const sorted = [...pinnedNonActions, ...unpinnedNonActions];
+    if (actionsCol) sorted.push(actionsCol);
+
+    handleUpdateProjectColumnConfig(sorted);
+  };
+
+  const unpinAllProjectColumns = () => {
+    const updated = projectColumnConfig.map(col => ({ ...col, pinned: false }));
+    handleUpdateProjectColumnConfig(updated);
+  };
+
+  const moveProjectColumn = (fromIdx, toIdx) => {
+    if (toIdx < 0 || toIdx >= projectColumnConfig.length) return;
+    const updated = [...projectColumnConfig];
+    const [moved] = updated.splice(fromIdx, 1);
+    updated.splice(toIdx, 0, moved);
+    handleUpdateProjectColumnConfig(updated);
+  };
+
+  const resetProjectColumnConfig = () => {
+    handleUpdateProjectColumnConfig(DEFAULT_PROJECT_COLUMNS);
+  };
 
   // Modal States
   const [showModal, setShowModal] = useState(false);
@@ -858,6 +961,16 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
 
           {/* Right: Action Symbol Buttons (Exact Lead Table style) */}
           <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
+            {/* Column Configuration Button */}
+            <button 
+              type="button"
+              onClick={() => setShowProjectColumnConfigModal(true)}
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white flex items-center justify-center transition shadow-sm border border-rose-900/40 cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
+              title="Column Configuration"
+            >
+              <i className="fa-solid fa-sliders text-xs sm:text-sm"></i>
+            </button>
+
             {/* Create Project Button (Exact Create Lead Icon Button with + badge) */}
             {canManage && (
               <button 
@@ -889,177 +1002,258 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
           </div>
         ) : (
           <div className="overflow-x-auto overflow-y-auto flex-1 min-h-0 custom-scrollbar w-full rounded-b-2xl">
-            <table className="w-full min-w-[960px] text-left border-collapse table-fixed">
-              <thead className="sticky top-0 z-10 bg-gray-100 shadow-2xs">
-                <tr className="bg-gray-100 border-b border-gray-200 text-[10px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">
-                  <th className="py-2.5 px-3 text-center whitespace-nowrap" style={{ width: '5%', minWidth: '50px' }}>
-                    # ID
-                  </th>
-                  <th className="py-2.5 px-3 whitespace-nowrap" style={{ width: '16%', minWidth: '140px' }}>
-                    Project Name
-                  </th>
-                  <th className="py-2.5 px-3 whitespace-nowrap" style={{ width: '14%', minWidth: '120px' }}>
-                    Developer
-                  </th>
-                  <th className="py-2.5 px-3 whitespace-nowrap" style={{ width: '14%', minWidth: '120px' }}>
-                    Project Type
-                  </th>
-                  <th className="py-2.5 px-3 whitespace-nowrap" style={{ width: '14%', minWidth: '120px' }}>
-                    Typography
-                  </th>
-                  <th className="py-2.5 px-3 whitespace-nowrap" style={{ width: '12%', minWidth: '100px' }}>
-                    RERA No
-                  </th>
-                  <th className="py-2.5 px-3 whitespace-nowrap" style={{ width: '17%', minWidth: '150px' }}>
-                    Area / Address
-                  </th>
-                  {canManage && (
-                    <th className="py-2.5 px-3 text-center whitespace-nowrap" style={{ width: '8%', minWidth: '75px' }}>
-                      Actions
-                    </th>
-                  )}
-                </tr>
-              </thead><tbody className="divide-y divide-gray-100 text-xs">
-                {filteredProjects.map((project, idx) => {
-                  const types = Array.isArray(project.projectType) ? project.projectType : [project.projectType].filter(Boolean);
-                  let typos = [];
-                  if (Array.isArray(project.typography)) {
-                    typos = project.typography;
-                  } else if (typeof project.typography === 'string') {
-                    try {
-                      const parsed = JSON.parse(project.typography);
-                      if (Array.isArray(parsed)) typos = parsed;
-                      else typos = project.typography.split(',').map(s => s.trim()).filter(Boolean);
-                    } catch (e) {
-                      typos = project.typography.split(',').map(s => s.trim()).filter(Boolean);
-                    }
+            {(() => {
+              const visibleProjectCols = projectColumnConfig.filter(c => c.visible && (c.id !== 'actions' || canManage));
+              const isProjectActionsPinned = isDesktopScreen && (projectColumnConfig.find(c => c.id === 'actions')?.pinned && canManage);
+
+              let projectCurrentLeft = 0;
+              const projectColLeftMap = {};
+              if (isDesktopScreen) {
+                visibleProjectCols.forEach(c => {
+                  if (c.id !== 'actions' && c.pinned) {
+                    projectColLeftMap[c.id] = projectCurrentLeft;
+                    projectCurrentLeft += (PROJECT_COLUMN_WIDTH_MAP[c.id] || 150);
                   }
-                  typos = typos.map(t => (t && t.trim().toLowerCase() === 'studio apartment') ? 'Studio' : t);
-                  const isTypoOpen = activeTableTypoDropdown?.projectId === (project.id || project._id || idx);
+                });
+              }
 
-                  return (
-                    <tr 
-                      key={project.id || project._id || idx}
-                      className="hover:bg-slate-50/80 transition group"
-                    >
-                      {/* ID */}
-                      <td className="py-2.5 px-3 text-center text-gray-400 font-mono text-[10.5px] w-14 min-w-[56px] max-w-[56px]">
-                        #{project.id || idx + 1}
-                      </td>
+              const isProjectColPinned = (colId) => {
+                if (!isDesktopScreen) return false;
+                if (colId === 'actions') return isProjectActionsPinned;
+                return projectColLeftMap[colId] !== undefined;
+              };
 
-                      {/* Project Name */}
-                      <td className="py-2.5 px-3 font-bold text-gray-900 truncate">
-                        <span className="hover:text-[#B30E2E] transition-colors">
-                          {project.name}
-                        </span>
-                      </td>
+              const getProjectThStyle = (colId) => {
+                const width = PROJECT_COLUMN_WIDTH_MAP[colId] || 150;
+                const pinned = isProjectColPinned(colId);
+                const style = { width: `${width}px`, minWidth: `${width}px` };
+                if (pinned) style.maxWidth = `${width}px`;
+                if (colId === 'actions') {
+                  if (isProjectActionsPinned) style.right = 0;
+                  return style;
+                }
+                if (projectColLeftMap[colId] !== undefined) {
+                  style.left = `${projectColLeftMap[colId]}px`;
+                }
+                return style;
+              };
 
-                      {/* Developer Name */}
-                      <td className="py-2.5 px-3 text-gray-700 font-medium truncate">
-                        {project.developerName || <span className="text-gray-400 italic">—</span>}
-                      </td>
+              const getProjectThClass = (colId, extra = '') => {
+                const pinned = isProjectColPinned(colId);
+                const stickyClass = pinned 
+                  ? (colId === 'actions' ? 'sticky top-0 right-0 z-30 bg-gray-100' : 'sticky top-0 z-30 bg-gray-100')
+                  : '';
+                return `${stickyClass} py-3 px-3.5 whitespace-nowrap border-b border-gray-200 select-none ${extra}`.trim();
+              };
 
-                      {/* Project Type */}
-                      <td className="py-2.5 px-3">
-                        {types.length === 0 ? (
-                          <span className="text-gray-400 italic">—</span>
-                        ) : (
-                          <div className="flex flex-wrap gap-1">
-                            {types.map(t => (
-                              <span 
-                                key={t}
-                                className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${TYPE_BADGE_STYLE[t] || 'bg-gray-100 text-gray-700 border-gray-200'}`}
-                              >
-                                {t}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </td>
+              const getProjectTdStyle = (colId) => {
+                const width = PROJECT_COLUMN_WIDTH_MAP[colId] || 150;
+                const pinned = isProjectColPinned(colId);
+                const style = { width: `${width}px`, minWidth: `${width}px` };
+                if (pinned) style.maxWidth = `${width}px`;
+                if (colId === 'actions') {
+                  if (isProjectActionsPinned) style.right = 0;
+                  return style;
+                }
+                if (projectColLeftMap[colId] !== undefined) {
+                  style.left = `${projectColLeftMap[colId]}px`;
+                }
+                return style;
+              };
 
-                      {/* Typography */}
-                      <td className="py-2.5 px-3">
-                        {typos.length > 0 ? (
-                          <div className="flex flex-col gap-0.5" title={typos.join('\n')}>
-                            {typos.map((t, i) => (
-                              <span 
-                                key={i}
-                                className="text-[11px] font-semibold text-gray-800 leading-tight block whitespace-nowrap"
-                              >
-                                {t}
-                              </span>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="w-full flex items-center justify-center py-0.5">
-                            <span className="text-gray-400 italic text-[10.5px]">—</span>
-                          </div>
-                        )}
-                      </td>
+              const getProjectTdClass = (colId, extra = '') => {
+                const pinned = isProjectColPinned(colId);
+                const stickyClass = pinned 
+                  ? (colId === 'actions' ? 'sticky right-0 z-20 bg-white group-hover:bg-slate-50' : 'sticky z-20 bg-white group-hover:bg-slate-50')
+                  : '';
+                return `${stickyClass} py-2.5 px-3.5 whitespace-nowrap transition-colors ${extra}`.trim();
+              };
 
-                      {/* RERA Number */}
-                      <td className="py-2.5 px-3 whitespace-nowrap">
-                        {project.reraNumber ? (
-                          <span className="inline-block px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 font-mono text-[10.5px] font-semibold text-slate-800">
-                            {project.reraNumber}
-                          </span>
-                        ) : (
-                          <span className="text-gray-400 italic">—</span>
-                        )}
-                      </td>
+              const totalProjectTableWidth = visibleProjectCols.reduce((sum, c) => sum + (PROJECT_COLUMN_WIDTH_MAP[c.id] || 150), 0);
 
-                      {/* Location & Area */}
-                      <td className="py-2.5 px-3 max-w-xs" title={`${project.area ? project.area + ' - ' : ''}${project.address || ''}`}>
-                        {project.area || project.address ? (
-                          <div className="flex flex-col gap-0.5">
-                            {project.area && (
-                              <span className="font-bold text-gray-900 text-xs flex items-center gap-1.5">
-                                <i className="fa-solid fa-location-dot text-[#B30E2E] text-[10px]"></i>
-                                <span>{project.area}</span>
-                              </span>
-                            )}
-                            {project.address && (
-                              <span className="text-[11px] text-gray-500 truncate" title={project.address}>
-                                {project.address}
-                              </span>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-gray-400 italic">—</span>
-                        )}
-                      </td>
-
-                      {/* Actions */}
-                      {canManage && (
-                        <td className="py-2.5 px-3 text-center whitespace-nowrap">
-                          <div className="flex items-center justify-center gap-1.5">
-                            {/* Edit Button */}
-                            <button
-                              type="button"
-                              onClick={() => handleOpenEditModal(project)}
-                              className="w-7 h-7 rounded-lg bg-indigo-100 hover:bg-indigo-200 text-indigo-700 flex items-center justify-center transition cursor-pointer"
-                              title="Edit Project"
-                            >
-                              <i className="fa-solid fa-pen-to-square text-xs"></i>
-                            </button>
-
-                            {/* Delete Button */}
-                            <button
-                              type="button"
-                              onClick={() => setDeleteConfirmation({ isOpen: true, project })}
-                              className="w-7 h-7 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700 flex items-center justify-center transition cursor-pointer"
-                              title="Delete Project"
-                            >
-                              <i className="fa-solid fa-trash-can text-xs"></i>
-                            </button>
-                          </div>
-                        </td>
-                      )}
+              return (
+                <table 
+                  className="w-full min-w-full text-left border-collapse table-fixed"
+                  style={{ minWidth: `${totalProjectTableWidth}px` }}
+                >
+                  <thead className="sticky top-0 z-10 bg-gray-100 shadow-2xs">
+                    <tr className="bg-gray-100 border-b border-gray-200 text-[10px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                      {visibleProjectCols.map(col => {
+                        switch (col.id) {
+                          case 'projectId':
+                            return <th key="projectId" className={getProjectThClass('projectId', 'text-center')} style={getProjectThStyle('projectId')}># ID</th>;
+                          case 'projectName':
+                            return <th key="projectName" className={getProjectThClass('projectName')} style={getProjectThStyle('projectName')}>Project Name</th>;
+                          case 'developerName':
+                            return <th key="developerName" className={getProjectThClass('developerName')} style={getProjectThStyle('developerName')}>Developer</th>;
+                          case 'projectType':
+                            return <th key="projectType" className={getProjectThClass('projectType')} style={getProjectThStyle('projectType')}>Project Type</th>;
+                          case 'typography':
+                            return <th key="typography" className={getProjectThClass('typography')} style={getProjectThStyle('typography')}>Typography</th>;
+                          case 'reraNumber':
+                            return <th key="reraNumber" className={getProjectThClass('reraNumber')} style={getProjectThStyle('reraNumber')}>RERA No</th>;
+                          case 'location':
+                            return <th key="location" className={getProjectThClass('location')} style={getProjectThStyle('location')}>Area / Address</th>;
+                          case 'actions':
+                            return <th key="actions" className={getProjectThClass('actions', 'text-center')} style={getProjectThStyle('actions')}>Actions</th>;
+                          default:
+                            return null;
+                        }
+                      })}
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 text-xs">
+                    {filteredProjects.map((project, idx) => {
+                      const types = Array.isArray(project.projectType) ? project.projectType : [project.projectType].filter(Boolean);
+                      let typos = [];
+                      if (Array.isArray(project.typography)) {
+                        typos = project.typography;
+                      } else if (typeof project.typography === 'string') {
+                        try {
+                          const parsed = JSON.parse(project.typography);
+                          if (Array.isArray(parsed)) typos = parsed;
+                          else typos = project.typography.split(',').map(s => s.trim()).filter(Boolean);
+                        } catch (e) {
+                          typos = project.typography.split(',').map(s => s.trim()).filter(Boolean);
+                        }
+                      }
+                      typos = typos.map(t => (t && t.trim().toLowerCase() === 'studio apartment') ? 'Studio' : t);
+
+                      return (
+                        <tr 
+                          key={project.id || project._id || idx}
+                          className="hover:bg-slate-50/80 transition group"
+                        >
+                          {visibleProjectCols.map(col => {
+                            switch(col.id) {
+                              case 'projectId':
+                                return (
+                                  <td key="projectId" className={getProjectTdClass('projectId', 'text-center text-gray-400 font-mono text-[10.5px]')} style={getProjectTdStyle('projectId')}>
+                                    #{project.id || idx + 1}
+                                  </td>
+                                );
+                              case 'projectName':
+                                return (
+                                  <td key="projectName" className={getProjectTdClass('projectName', 'font-bold text-gray-900')} style={getProjectTdStyle('projectName')}>
+                                    <span className="hover:text-[#B30E2E] transition-colors whitespace-nowrap">
+                                      {project.name}
+                                    </span>
+                                  </td>
+                                );
+                              case 'developerName':
+                                return (
+                                  <td key="developerName" className={getProjectTdClass('developerName', 'text-gray-700 font-medium')} style={getProjectTdStyle('developerName')}>
+                                    <span className="whitespace-nowrap">{project.developerName || <span className="text-gray-400 italic">—</span>}</span>
+                                  </td>
+                                );
+                              case 'projectType':
+                                return (
+                                  <td key="projectType" className={getProjectTdClass('projectType')} style={getProjectTdStyle('projectType')}>
+                                    {types.length === 0 ? (
+                                      <span className="text-gray-400 italic">—</span>
+                                    ) : (
+                                      <div className="flex flex-wrap gap-1">
+                                        {types.map(t => (
+                                          <span 
+                                            key={t}
+                                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold border whitespace-nowrap ${TYPE_BADGE_STYLE[t] || 'bg-gray-100 text-gray-700 border-gray-200'}`}
+                                          >
+                                            {t}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </td>
+                                );
+                              case 'typography':
+                                return (
+                                  <td key="typography" className={getProjectTdClass('typography')} style={getProjectTdStyle('typography')}>
+                                    {typos.length > 0 ? (
+                                      <div className="flex flex-col gap-0.5" title={typos.join('\n')}>
+                                        {typos.map((t, i) => (
+                                          <span 
+                                            key={i}
+                                            className="text-[11px] font-semibold text-gray-800 leading-tight block whitespace-nowrap"
+                                          >
+                                            {t}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <div className="w-full flex items-center py-0.5">
+                                        <span className="text-gray-400 italic text-[10.5px]">—</span>
+                                      </div>
+                                    )}
+                                  </td>
+                                );
+                              case 'reraNumber':
+                                return (
+                                  <td key="reraNumber" className={getProjectTdClass('reraNumber')} style={getProjectTdStyle('reraNumber')}>
+                                    {project.reraNumber ? (
+                                      <span className="inline-block px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 font-mono text-[10.5px] font-semibold text-slate-800 whitespace-nowrap">
+                                        {project.reraNumber}
+                                      </span>
+                                    ) : (
+                                      <span className="text-gray-400 italic">—</span>
+                                    )}
+                                  </td>
+                                );
+                              case 'location':
+                                return (
+                                  <td key="location" className={getProjectTdClass('location')} style={getProjectTdStyle('location')} title={`${project.area ? project.area + ' - ' : ''}${project.address || ''}`}>
+                                    {project.area || project.address ? (
+                                      <div className="flex flex-col gap-0.5">
+                                        {project.area && (
+                                          <span className="font-bold text-gray-900 text-xs flex items-center gap-1.5 whitespace-nowrap">
+                                            <i className="fa-solid fa-location-dot text-[#B30E2E] text-[10px]"></i>
+                                            <span>{project.area}</span>
+                                          </span>
+                                        )}
+                                        {project.address && (
+                                          <span className="text-[11px] text-gray-500 whitespace-nowrap" title={project.address}>
+                                            {project.address}
+                                          </span>
+                                        )}
+                                      </div>
+                                    ) : (
+                                      <span className="text-gray-400 italic">—</span>
+                                    )}
+                                  </td>
+                                );
+                              case 'actions':
+                                return (
+                                  <td key="actions" className={getProjectTdClass('actions', 'text-center')} style={getProjectTdStyle('actions')}>
+                                    <div className="flex items-center justify-center gap-1.5">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleOpenEditModal(project)}
+                                        className="w-7 h-7 rounded-lg bg-indigo-100 hover:bg-indigo-200 text-indigo-700 flex items-center justify-center transition cursor-pointer"
+                                        title="Edit Project"
+                                      >
+                                        <i className="fa-solid fa-pen-to-square text-xs"></i>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => setDeleteConfirmation({ isOpen: true, project })}
+                                        className="w-7 h-7 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700 flex items-center justify-center transition cursor-pointer"
+                                        title="Delete Project"
+                                      >
+                                        <i className="fa-solid fa-trash-can text-xs"></i>
+                                      </button>
+                                    </div>
+                                  </td>
+                                );
+                              default:
+                                return null;
+                            }
+                          })}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              );
+            })()}
           </div>
         )}
       </div>
@@ -1706,6 +1900,130 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
           </>
         );
       })()}
+
+      {/* Project Table Column Configuration Modal (Show/Hide & Drag-Drop Reorder) */}
+      {showProjectColumnConfigModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-lg overflow-hidden flex flex-col max-h-[85vh] animate-scale-up">
+            {/* Modal Header */}
+            <div className="px-5 py-3 bg-slate-50 border-b border-gray-200 flex items-center justify-between">
+              <h3 className="font-bold text-slate-800 text-sm sm:text-base">Project Table Columns</h3>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={unpinAllProjectColumns}
+                  className="h-7 px-2 py-1 rounded-lg text-[11px] font-semibold text-slate-600 hover:bg-slate-100 border border-slate-200 transition cursor-pointer flex items-center gap-1 whitespace-nowrap"
+                  title="Unfreeze all columns"
+                >
+                  <i className="fa-solid fa-thumbtack text-[9.5px] text-slate-400"></i>
+                  <span>Unfreeze All</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={resetProjectColumnConfig}
+                  className="h-7 px-2.5 py-1 rounded-lg text-[11px] font-semibold text-rose-700 hover:bg-rose-50 border border-rose-200 transition cursor-pointer whitespace-nowrap flex items-center"
+                  title="Reset to default columns"
+                >
+                  Reset
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowProjectColumnConfigModal(false)}
+                  className="w-7 h-7 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center transition cursor-pointer"
+                >
+                  <i className="fa-solid fa-xmark text-xs"></i>
+                </button>
+              </div>
+            </div>
+
+            {/* Columns List with Drag & Drop + Freeze Button + Arrows + Checkbox */}
+            <div className="p-4 overflow-y-auto custom-scrollbar flex-1 space-y-2">
+              {projectColumnConfig.filter(col => col.id !== 'actions' || canManage).map((col, idx) => (
+                <div
+                  key={col.id}
+                  draggable
+                  onDragStart={() => setDraggedProjectColumnIndex(idx)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={() => {
+                    if (draggedProjectColumnIndex !== null && draggedProjectColumnIndex !== idx) {
+                      moveProjectColumn(draggedProjectColumnIndex, idx);
+                      setDraggedProjectColumnIndex(null);
+                    }
+                  }}
+                  className={`flex items-center justify-between p-2.5 rounded-xl border transition ${
+                    col.visible ? 'bg-white border-gray-200 hover:border-purple-300' : 'bg-gray-50 border-gray-200 opacity-60'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="cursor-grab active:cursor-grabbing text-slate-400 hover:text-slate-600 px-1">
+                      <i className="fa-solid fa-grip-vertical text-xs"></i>
+                    </span>
+                    <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-800 select-none truncate">
+                      <input
+                        type="checkbox"
+                        checked={col.visible}
+                        onChange={() => toggleProjectColumnVisibility(col.id)}
+                        className="w-4 h-4 rounded text-[#B30E2E] focus:ring-[#B30E2E] cursor-pointer accent-[#B30E2E]"
+                      />
+                      <span className="truncate">{col.label}</span>
+                    </label>
+                    {col.pinned && (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9.5px] font-bold bg-blue-50 text-blue-700 border border-blue-200 shrink-0">
+                        <i className="fa-solid fa-thumbtack text-[8px] rotate-45"></i>
+                        <span>Frozen</span>
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => toggleProjectColumnPin(col.id)}
+                      className={`px-2 py-1 rounded-md text-[10.5px] font-semibold flex items-center gap-1 transition cursor-pointer border ${
+                        col.pinned 
+                          ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600 shadow-2xs' 
+                          : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200'
+                      }`}
+                      title={col.pinned ? 'Column is frozen. Click to unfreeze' : 'Click to freeze column while scrolling'}
+                    >
+                      <i className={`fa-solid fa-thumbtack text-[9px] ${col.pinned ? 'rotate-45' : ''}`}></i>
+                      <span>{col.pinned ? 'Frozen' : 'Freeze'}</span>
+                    </button>
+
+                    <button
+                      disabled={idx === 0}
+                      onClick={() => moveProjectColumn(idx, idx - 1)}
+                      className="w-6 h-6 rounded-md bg-slate-100 hover:bg-purple-100 disabled:opacity-30 disabled:hover:bg-slate-100 text-slate-600 hover:text-purple-700 flex items-center justify-center text-[10px] transition cursor-pointer"
+                      title="Move Up"
+                    >
+                      <i className="fa-solid fa-arrow-up"></i>
+                    </button>
+                    <button
+                      disabled={idx === projectColumnConfig.length - 1}
+                      onClick={() => moveProjectColumn(idx, idx + 1)}
+                      className="w-6 h-6 rounded-md bg-slate-100 hover:bg-purple-100 disabled:opacity-30 disabled:hover:bg-slate-100 text-slate-600 hover:text-purple-700 flex items-center justify-center text-[10px] transition cursor-pointer"
+                      title="Move Down"
+                    >
+                      <i className="fa-solid fa-arrow-down"></i>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-5 py-3 bg-slate-50 border-t border-gray-200 flex items-center justify-end">
+              <button
+                type="button"
+                onClick={() => setShowProjectColumnConfigModal(false)}
+                className="px-5 py-1.5 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B2E] text-white text-xs font-bold transition shadow-xs cursor-pointer"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* DELETE CONFIRMATION MODAL */}
       {deleteConfirmation.isOpen && (

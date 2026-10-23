@@ -931,6 +931,28 @@ const withNewDefaultColumns = (cols) => {
   return merged;
 };
 
+const USER_COLUMN_WIDTH_MAP = {
+  userId: 90,
+  fullName: 200,
+  role: 150,
+  username: 150,
+  phone: 155,
+  email: 210,
+  assignedLeads: 150,
+  actions: 105
+};
+
+const DEFAULT_USER_COLUMNS = [
+  { id: 'userId', label: 'User ID', visible: true, pinned: true },
+  { id: 'fullName', label: 'Full Name', visible: true, pinned: true },
+  { id: 'role', label: 'Role', visible: true, pinned: false },
+  { id: 'username', label: 'Username', visible: true, pinned: false },
+  { id: 'phone', label: 'Mobile No', visible: true, pinned: false },
+  { id: 'email', label: 'Email Address', visible: true, pinned: false },
+  { id: 'assignedLeads', label: 'Assigned Leads', visible: true, pinned: false },
+  { id: 'actions', label: 'Actions', visible: true, pinned: true }
+];
+
 const PRIORITY_OPTIONS = ['Hot', 'Cold'];
 export const BUDGET_OPTIONS = (() => {
   const opts = ['25 L'];
@@ -1305,6 +1327,73 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
 
   const resetColumnConfig = () => {
     handleUpdateColumnConfig(DEFAULT_COLUMNS);
+  };
+
+  // User Management Column Configuration State & Persistence
+  const [userColumnConfig, setUserColumnConfig] = useState(() => {
+    try {
+      const stored = localStorage.getItem('userManagementColumnConfig');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const ids = new Set(parsed.map(c => c.id));
+          const missing = DEFAULT_USER_COLUMNS.filter(c => !ids.has(c.id));
+          return [...parsed, ...missing];
+        }
+      }
+    } catch (e) {}
+    return DEFAULT_USER_COLUMNS;
+  });
+  const [showUserColumnConfigModal, setShowUserColumnConfigModal] = useState(false);
+  const [draggedUserColumnIndex, setDraggedUserColumnIndex] = useState(null);
+
+  const handleUpdateUserColumnConfig = (newConfig) => {
+    setUserColumnConfig(newConfig);
+    try {
+      localStorage.setItem('userManagementColumnConfig', JSON.stringify(newConfig));
+    } catch (e) {}
+  };
+
+  const toggleUserColumnVisibility = (colId) => {
+    const updated = userColumnConfig.map(col => 
+      col.id === colId ? { ...col, visible: !col.visible } : col
+    );
+    handleUpdateUserColumnConfig(updated);
+  };
+
+  const toggleUserColumnPin = (colId) => {
+    const updated = userColumnConfig.map(col => {
+      if (col.id === colId) {
+        return { ...col, pinned: !col.pinned };
+      }
+      return col;
+    });
+
+    const actionsCol = updated.find(c => c.id === 'actions');
+    const nonActions = updated.filter(c => c.id !== 'actions');
+    const pinnedNonActions = nonActions.filter(c => c.pinned);
+    const unpinnedNonActions = nonActions.filter(c => !c.pinned);
+    const sorted = [...pinnedNonActions, ...unpinnedNonActions];
+    if (actionsCol) sorted.push(actionsCol);
+
+    handleUpdateUserColumnConfig(sorted);
+  };
+
+  const unpinAllUserColumns = () => {
+    const updated = userColumnConfig.map(col => ({ ...col, pinned: false }));
+    handleUpdateUserColumnConfig(updated);
+  };
+
+  const moveUserColumn = (fromIdx, toIdx) => {
+    if (toIdx < 0 || toIdx >= userColumnConfig.length) return;
+    const updated = [...userColumnConfig];
+    const [moved] = updated.splice(fromIdx, 1);
+    updated.splice(toIdx, 0, moved);
+    handleUpdateUserColumnConfig(updated);
+  };
+
+  const resetUserColumnConfig = () => {
+    handleUpdateUserColumnConfig(DEFAULT_USER_COLUMNS);
   };
 
   const statusDropdownRef = useRef(null);
@@ -6491,18 +6580,27 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                   )}
                 </div>
 
-                {/* Right Side: Create User Icon Button (Super Admin Only) */}
-                {isSuperAdmin && (
-                  <div class="flex items-center gap-2 flex-shrink-0">
+                {/* Right Side: Column Config & Create User Buttons */}
+                <div class="flex items-center gap-2 flex-shrink-0">
+                  <button 
+                    type="button"
+                    onClick={() => setShowUserColumnConfigModal(true)}
+                    class="w-9 h-9 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white border border-rose-900/40 font-extrabold flex items-center justify-center transition shadow-sm cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
+                    title="Column Configuration"
+                  >
+                    <i class="fa-solid fa-sliders text-sm"></i>
+                  </button>
+                  {isSuperAdmin && (
                     <button 
+                      type="button"
                       onClick={() => setShowCreateAgentModal(true)}
                       class="w-9 h-9 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white border border-rose-900/40 font-extrabold flex items-center justify-center transition shadow-sm cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
                       title="Create User Account"
                     >
                       <i class="fa-solid fa-user-plus text-sm"></i>
                     </button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
 
               {/* Users Table */}
@@ -6512,19 +6610,106 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                   <p class="text-sm font-medium text-gray-600">No matching user accounts found.</p>
                   <p class="text-xs text-gray-400">Click "+ Create User" button to create a user.</p>
                 </div>
-              ) : (
-                <div class="overflow-x-auto overflow-y-auto overscroll-contain flex-1 min-h-0 custom-scrollbar w-full rounded-b-2xl">
-                  <table class="w-full min-w-[1210px] text-left border-collapse">
+              ) : (() => {
+                const visibleUserCols = userColumnConfig.filter(c => c.visible);
+                const actionsCol = userColumnConfig.find(c => c.id === 'actions');
+                const isUserActionsPinned = isDesktopScreen && (actionsCol ? !!actionsCol.pinned : false);
+
+                let userCurrentLeft = 0;
+                const userColLeftMap = {};
+                if (isDesktopScreen) {
+                  visibleUserCols.forEach(c => {
+                    if (c.id !== 'actions' && c.pinned) {
+                      userColLeftMap[c.id] = userCurrentLeft;
+                      userCurrentLeft += (USER_COLUMN_WIDTH_MAP[c.id] || 150);
+                    }
+                  });
+                }
+
+                const isUserColPinned = (colId) => {
+                  if (!isDesktopScreen) return false;
+                  if (colId === 'actions') return isUserActionsPinned;
+                  return userColLeftMap[colId] !== undefined;
+                };
+
+                const getUserThStyle = (colId) => {
+                  const width = USER_COLUMN_WIDTH_MAP[colId] || 150;
+                  const pinned = isUserColPinned(colId);
+                  const style = { width: `${width}px`, minWidth: `${width}px` };
+                  if (pinned) style.maxWidth = `${width}px`;
+                  if (colId === 'actions') {
+                    if (isUserActionsPinned) style.right = 0;
+                    return style;
+                  }
+                  if (userColLeftMap[colId] !== undefined) {
+                    style.left = `${userColLeftMap[colId]}px`;
+                  }
+                  return style;
+                };
+
+                const getUserThClass = (colId, extra = '') => {
+                  const pinned = isUserColPinned(colId);
+                  const stickyClass = pinned 
+                    ? (colId === 'actions' ? 'sticky top-0 right-0 z-30 bg-gray-100' : 'sticky top-0 z-30 bg-gray-100')
+                    : '';
+                  return `${stickyClass} py-3 px-3.5 whitespace-nowrap border-b border-gray-200 select-none ${extra}`.trim();
+                };
+
+                const getUserTdStyle = (colId) => {
+                  const width = USER_COLUMN_WIDTH_MAP[colId] || 150;
+                  const pinned = isUserColPinned(colId);
+                  const style = { width: `${width}px`, minWidth: `${width}px` };
+                  if (pinned) style.maxWidth = `${width}px`;
+                  if (colId === 'actions') {
+                    if (isUserActionsPinned) style.right = 0;
+                    return style;
+                  }
+                  if (userColLeftMap[colId] !== undefined) {
+                    style.left = `${userColLeftMap[colId]}px`;
+                  }
+                  return style;
+                };
+
+                const getUserTdClass = (colId, extra = '') => {
+                  const pinned = isUserColPinned(colId);
+                  const stickyClass = pinned 
+                    ? (colId === 'actions' ? 'sticky right-0 z-20 bg-white group-hover:bg-slate-50' : 'sticky z-20 bg-white group-hover:bg-slate-50')
+                    : '';
+                  return `${stickyClass} py-2.5 px-3.5 whitespace-nowrap transition-colors ${extra}`.trim();
+                };
+
+                const totalUserTableWidth = visibleUserCols.reduce((sum, c) => sum + (USER_COLUMN_WIDTH_MAP[c.id] || 150), 0);
+
+                return (
+                  <div class="overflow-x-auto overflow-y-auto overscroll-contain flex-1 min-h-0 custom-scrollbar w-full rounded-b-2xl">
+                    <table 
+                      class="w-full min-w-full text-left border-collapse table-fixed"
+                      style={{ minWidth: `${totalUserTableWidth}px` }}
+                    >
                       <thead class="sticky top-0 z-10 bg-gray-100 shadow-2xs">
                         <tr class="bg-gray-100 border-b border-gray-200 text-[10px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">
-                          <th class="py-3 px-3.5 whitespace-nowrap w-[90px] min-w-[90px]">User ID</th>
-                          <th class="py-3 px-3.5 whitespace-nowrap w-[200px] min-w-[200px]">Full Name</th>
-                          <th class="py-3 px-3.5 whitespace-nowrap w-[150px] min-w-[150px]">Role</th>
-                          <th class="py-3 px-3.5 whitespace-nowrap w-[150px] min-w-[150px]">Username</th>
-                          <th class="py-3 px-3.5 whitespace-nowrap w-[155px] min-w-[155px]">Mobile No</th>
-                          <th class="py-3 px-3.5 whitespace-nowrap w-[210px] min-w-[210px]">Email Address</th>
-                          <th class="py-3 px-3.5 whitespace-nowrap w-[150px] min-w-[150px]">Assigned Leads</th>
-                          <th class="py-3 px-3.5 text-center whitespace-nowrap w-[105px] min-w-[105px]">Actions</th>
+                          {visibleUserCols.map(col => {
+                            switch(col.id) {
+                              case 'userId':
+                                return <th key="userId" class={getUserThClass('userId')} style={getUserThStyle('userId')}>User ID</th>;
+                              case 'fullName':
+                                return <th key="fullName" class={getUserThClass('fullName')} style={getUserThStyle('fullName')}>Full Name</th>;
+                              case 'role':
+                                return <th key="role" class={getUserThClass('role')} style={getUserThStyle('role')}>Role</th>;
+                              case 'username':
+                                return <th key="username" class={getUserThClass('username')} style={getUserThStyle('username')}>Username</th>;
+                              case 'phone':
+                                return <th key="phone" class={getUserThClass('phone')} style={getUserThStyle('phone')}>Mobile No</th>;
+                              case 'email':
+                                return <th key="email" class={getUserThClass('email')} style={getUserThStyle('email')}>Email Address</th>;
+                              case 'assignedLeads':
+                                return <th key="assignedLeads" class={getUserThClass('assignedLeads')} style={getUserThStyle('assignedLeads')}>Assigned Leads</th>;
+                              case 'actions':
+                                return <th key="actions" class={getUserThClass('actions', 'text-center')} style={getUserThStyle('actions')}>Actions</th>;
+                              default:
+                                return null;
+                            }
+                          })}
                         </tr>
                       </thead>
                       <tbody class="divide-y divide-gray-100 text-xs">
@@ -6547,143 +6732,158 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                               (agentName.split(' ')[0] && leadAgent.split(' ')[0] && agentName.split(' ')[0] === leadAgent.split(' ')[0])
                             );
                           }).length;
+
                           return (
-                            <tr key={agent.id || agent.username} class="hover:bg-slate-50/80 transition">
-                              
-                              {/* User ID */}
-                              <td class="py-2.5 px-3.5 whitespace-nowrap w-[90px] min-w-[90px]">
-                                <span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-blue-50 text-blue-700 border border-blue-200/80 shadow-xs">
-                                  {String(agentIdx + 1).padStart(2, '0')}
-                                </span>
-                              </td>
-                              
-                              {/* Full Name */}
-                              <td class="py-2.5 px-3.5 font-bold text-gray-900 whitespace-nowrap w-[200px] min-w-[200px]">
-                                <div class="flex items-center gap-2 whitespace-nowrap">
-                                  {getAgentProfilePhoto(agent) ? (
-                                    <img 
-                                      src={getAgentProfilePhoto(agent)} 
-                                      alt={agent.name} 
-                                      onError={(e) => {
-                                        e.currentTarget.style.display = 'none';
-                                        if (e.currentTarget.nextElementSibling) {
-                                          e.currentTarget.nextElementSibling.style.display = 'flex';
-                                        }
-                                      }}
-                                      class="w-7 h-7 rounded-full object-cover border border-gray-200 shadow-xs flex-shrink-0" 
-                                    />
-                                  ) : null}
-                                  <div 
-                                    style={{ display: getAgentProfilePhoto(agent) ? 'none' : 'flex' }}
-                                    class="w-7 h-7 rounded-full bg-[#B30E2E] text-white font-bold text-xs items-center justify-center flex-shrink-0 shadow-xs"
-                                  >
-                                    {((agent.name || agent.username || 'U').trim()[0] || 'U').toUpperCase()}
-                                  </div>
-                                  <span class="text-xs font-bold text-gray-900 whitespace-nowrap">{agent.name}</span>
-                                </div>
-                              </td>
-
-                              {/* Role */}
-                              <td class="py-2.5 px-3.5 whitespace-nowrap w-[150px] min-w-[150px]">
-                                {(agent.username || '').toLowerCase() === 'system' ? (
-                                  <span class="text-gray-400 italic text-[11px]">—</span>
-                                ) : ['admin', 'systemadmin'].includes((agent.role || '').toLowerCase()) ? (
-                                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200 whitespace-nowrap">
-                                    <i class="fa-solid fa-shield-halved text-[9px]"></i>
-                                    Admin
-                                  </span>
-                                ) : (
-                                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 whitespace-nowrap">
-                                    <i class="fa-solid fa-user-tie text-[9px]"></i>
-                                    Sales Executive
-                                  </span>
-                                )}
-                              </td>
-
-                              {/* Username */}
-                              <td class="py-2.5 px-3.5 font-semibold text-gray-800 whitespace-nowrap w-[150px] min-w-[150px]">
-                                <span class="bg-gray-100 border border-gray-200 px-2 py-0.5 rounded-md text-[11px] font-mono text-gray-800 whitespace-nowrap">
-                                  {agent.username}
-                                </span>
-                              </td>
-
-                              {/* Mobile No */}
-                              <td class="py-2.5 px-3.5 whitespace-nowrap w-[155px] min-w-[155px]">
-                                {((agent.username || '').toLowerCase() === 'system' || !agent.phone) ? (
-                                  <span class="text-gray-400 italic text-[11px]">—</span>
-                                ) : (
-                                  <a href={`tel:${agent.phone}`} class="text-[#B30E2E] font-bold hover:underline flex items-center gap-1 text-xs whitespace-nowrap">
-                                    <i class="fa-solid fa-phone text-[9px]"></i>
-                                    <span class="whitespace-nowrap">{agent.phone}</span>
-                                  </a>
-                                )}
-                              </td>
-
-                              {/* Email Address */}
-                              <td class="py-2.5 px-3.5 whitespace-nowrap w-[210px] min-w-[210px]">
-                                {((agent.username || '').toLowerCase() === 'system' || !agent.email) ? (
-                                  <span class="text-gray-400 italic text-[11px]">—</span>
-                                ) : (
-                                  <a href={`mailto:${agent.email}`} class="text-gray-700 hover:text-[#B30E2E] flex items-center gap-1 text-[11px] whitespace-nowrap" title={agent.email}>
-                                    <i class="fa-solid fa-envelope text-[10px] text-gray-400"></i>
-                                    <span class="whitespace-nowrap">{agent.email}</span>
-                                  </a>
-                                )}
-                              </td>
-
-                              {/* Assigned Leads */}
-                              <td class="py-2.5 px-3.5 whitespace-nowrap w-[150px] min-w-[150px]">
-                                {(agent.username || '').toLowerCase() === 'system' ? (
-                                  <span class="text-gray-400 italic text-[11px]">—</span>
-                                ) : (
-                                  <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 whitespace-nowrap">
-                                    <i class="fa-solid fa-list-check text-[9px]"></i>
-                                    <span class="whitespace-nowrap">{assignedCount} Leads</span>
-                                  </span>
-                                )}
-                              </td>
-
-                              {/* Actions */}
-                              <td class="py-2.5 px-3.5 text-center whitespace-nowrap w-[105px] min-w-[105px]">
-                                <div class="flex items-center justify-center gap-1.5">
-                                  <button
-                                    onClick={() => { 
-                                      setEditingUser({ ...agent }); 
-                                      setEditUserPassword(''); 
-                                      setShowEditPassword(false); 
-                                      setUserEditSuccessMsg(''); 
-                                    }}
-                                    class="w-7 h-7 rounded-lg bg-indigo-100 hover:bg-indigo-200 text-indigo-700 flex items-center justify-center transition cursor-pointer"
-                                    title="Edit User & Change Password"
-                                  >
-                                    <i class="fa-solid fa-pen-to-square text-xs"></i>
-                                  </button>
-                                  {(agent.username || '').toLowerCase() === 'system' ? (
-                                    <span
-                                      class="w-7 h-7 rounded-lg bg-gray-100 text-gray-400 flex items-center justify-center cursor-not-allowed select-none opacity-60"
-                                      title="Inbuilt System account cannot be deleted"
-                                    >
-                                      <i class="fa-solid fa-lock text-[10px]"></i>
-                                    </span>
-                                  ) : (
-                                    <button
-                                      onClick={() => openDeleteAgentConfirmation(agent)}
-                                      class="w-7 h-7 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700 flex items-center justify-center transition cursor-pointer"
-                                      title="Delete User Account"
-                                    >
-                                      <i class="fa-solid fa-trash-can text-xs"></i>
-                                    </button>
-                                  )}
-                                </div>
-                              </td>
-
+                            <tr key={agent.id || agent.username} class="hover:bg-slate-50/80 transition group">
+                              {visibleUserCols.map(col => {
+                                switch(col.id) {
+                                  case 'userId':
+                                    return (
+                                      <td key="userId" class={getUserTdClass('userId')} style={getUserTdStyle('userId')}>
+                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-blue-50 text-blue-700 border border-blue-200/80 shadow-xs">
+                                          {String(agentIdx + 1).padStart(2, '0')}
+                                        </span>
+                                      </td>
+                                    );
+                                  case 'fullName':
+                                    return (
+                                      <td key="fullName" class={getUserTdClass('fullName', 'font-bold text-gray-900')} style={getUserTdStyle('fullName')}>
+                                        <div class="flex items-center gap-2 whitespace-nowrap">
+                                          {getAgentProfilePhoto(agent) ? (
+                                            <img 
+                                              src={getAgentProfilePhoto(agent)} 
+                                              alt={agent.name} 
+                                              onError={(e) => {
+                                                e.currentTarget.style.display = 'none';
+                                                if (e.currentTarget.nextElementSibling) {
+                                                  e.currentTarget.nextElementSibling.style.display = 'flex';
+                                                }
+                                              }}
+                                              class="w-7 h-7 rounded-full object-cover border border-gray-200 shadow-xs flex-shrink-0" 
+                                            />
+                                          ) : null}
+                                          <div 
+                                            style={{ display: getAgentProfilePhoto(agent) ? 'none' : 'flex' }}
+                                            class="w-7 h-7 rounded-full bg-[#B30E2E] text-white font-bold text-xs items-center justify-center flex-shrink-0 shadow-xs"
+                                          >
+                                            {((agent.name || agent.username || 'U').trim()[0] || 'U').toUpperCase()}
+                                          </div>
+                                          <span class="text-xs font-bold text-gray-900 whitespace-nowrap">{agent.name}</span>
+                                        </div>
+                                      </td>
+                                    );
+                                  case 'role':
+                                    return (
+                                      <td key="role" class={getUserTdClass('role')} style={getUserTdStyle('role')}>
+                                        {(agent.username || '').toLowerCase() === 'system' ? (
+                                          <span class="text-gray-400 italic text-[11px]">—</span>
+                                        ) : ['admin', 'systemadmin'].includes((agent.role || '').toLowerCase()) ? (
+                                          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200 whitespace-nowrap">
+                                            <i class="fa-solid fa-shield-halved text-[9px]"></i>
+                                            Admin
+                                          </span>
+                                        ) : (
+                                          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 whitespace-nowrap">
+                                            <i class="fa-solid fa-user-tie text-[9px]"></i>
+                                            Sales Executive
+                                          </span>
+                                        )}
+                                      </td>
+                                    );
+                                  case 'username':
+                                    return (
+                                      <td key="username" class={getUserTdClass('username', 'font-semibold text-gray-800')} style={getUserTdStyle('username')}>
+                                        <span class="bg-gray-100 border border-gray-200 px-2 py-0.5 rounded-md text-[11px] font-mono text-gray-800 whitespace-nowrap">
+                                          {agent.username}
+                                        </span>
+                                      </td>
+                                    );
+                                  case 'phone':
+                                    return (
+                                      <td key="phone" class={getUserTdClass('phone')} style={getUserTdStyle('phone')}>
+                                        {((agent.username || '').toLowerCase() === 'system' || !agent.phone) ? (
+                                          <span class="text-gray-400 italic text-[11px]">—</span>
+                                        ) : (
+                                          <a href={`tel:${agent.phone}`} class="text-[#B30E2E] font-bold hover:underline flex items-center gap-1 text-xs whitespace-nowrap">
+                                            <i class="fa-solid fa-phone text-[9px]"></i>
+                                            <span class="whitespace-nowrap">{agent.phone}</span>
+                                          </a>
+                                        )}
+                                      </td>
+                                    );
+                                  case 'email':
+                                    return (
+                                      <td key="email" class={getUserTdClass('email')} style={getUserTdStyle('email')}>
+                                        {((agent.username || '').toLowerCase() === 'system' || !agent.email) ? (
+                                          <span class="text-gray-400 italic text-[11px]">—</span>
+                                        ) : (
+                                          <a href={`mailto:${agent.email}`} class="text-gray-700 hover:text-[#B30E2E] flex items-center gap-1 text-[11px] whitespace-nowrap" title={agent.email}>
+                                            <i class="fa-solid fa-envelope text-[10px] text-gray-400"></i>
+                                            <span class="whitespace-nowrap">{agent.email}</span>
+                                          </a>
+                                        )}
+                                      </td>
+                                    );
+                                  case 'assignedLeads':
+                                    return (
+                                      <td key="assignedLeads" class={getUserTdClass('assignedLeads')} style={getUserTdStyle('assignedLeads')}>
+                                        {(agent.username || '').toLowerCase() === 'system' ? (
+                                          <span class="text-gray-400 italic text-[11px]">—</span>
+                                        ) : (
+                                          <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 whitespace-nowrap">
+                                            <i class="fa-solid fa-list-check text-[9px]"></i>
+                                            <span class="whitespace-nowrap">{assignedCount} Leads</span>
+                                          </span>
+                                        )}
+                                      </td>
+                                    );
+                                  case 'actions':
+                                    return (
+                                      <td key="actions" class={getUserTdClass('actions', 'text-center')} style={getUserTdStyle('actions')}>
+                                        <div class="flex items-center justify-center gap-1.5">
+                                          <button
+                                            onClick={() => { 
+                                              setEditingUser({ ...agent }); 
+                                              setEditUserPassword(''); 
+                                              setShowEditPassword(false); 
+                                              setUserEditSuccessMsg(''); 
+                                            }}
+                                            class="w-7 h-7 rounded-lg bg-indigo-100 hover:bg-indigo-200 text-indigo-700 flex items-center justify-center transition cursor-pointer"
+                                            title="Edit User & Change Password"
+                                          >
+                                            <i class="fa-solid fa-pen-to-square text-xs"></i>
+                                          </button>
+                                          {(agent.username || '').toLowerCase() === 'system' ? (
+                                            <span
+                                              class="w-7 h-7 rounded-lg bg-gray-100 text-gray-400 flex items-center justify-center cursor-not-allowed select-none opacity-60"
+                                              title="Inbuilt System account cannot be deleted"
+                                            >
+                                              <i class="fa-solid fa-lock text-[10px]"></i>
+                                            </span>
+                                          ) : (
+                                            <button
+                                              onClick={() => openDeleteAgentConfirmation(agent)}
+                                              class="w-7 h-7 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700 flex items-center justify-center transition cursor-pointer"
+                                              title="Delete User Account"
+                                            >
+                                              <i class="fa-solid fa-trash-can text-xs"></i>
+                                            </button>
+                                          )}
+                                        </div>
+                                      </td>
+                                    );
+                                  default:
+                                    return null;
+                                }
+                              })}
                             </tr>
                           );
                         })}
                       </tbody>
                     </table>
                   </div>
-                )}
+                );
+              })()}
 
             </div>
           </div>
@@ -8554,6 +8754,130 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
               <button
                 type="button"
                 onClick={() => setShowColumnConfigModal(false)}
+                class="px-5 py-1.5 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B2E] text-white text-xs font-bold transition shadow-xs cursor-pointer"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* User Table Column Configuration Modal (Show/Hide & Drag-Drop Reorder) */}
+      {showUserColumnConfigModal && (
+        <div class="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-fade-in">
+          <div class="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-lg overflow-hidden flex flex-col max-h-[85vh] animate-scale-up">
+            {/* Modal Header */}
+            <div class="px-5 py-3 bg-slate-50 border-b border-gray-200 flex items-center justify-between">
+              <h3 class="font-bold text-slate-800 text-sm sm:text-base">User Table Columns</h3>
+              <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={unpinAllUserColumns}
+                  class="h-7 px-2 py-1 rounded-lg text-[11px] font-semibold text-slate-600 hover:bg-slate-100 border border-slate-200 transition cursor-pointer flex items-center gap-1 whitespace-nowrap"
+                  title="Unfreeze all columns"
+                >
+                  <i class="fa-solid fa-thumbtack text-[9.5px] text-slate-400"></i>
+                  <span>Unfreeze All</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={resetUserColumnConfig}
+                  class="h-7 px-2.5 py-1 rounded-lg text-[11px] font-semibold text-rose-700 hover:bg-rose-50 border border-rose-200 transition cursor-pointer whitespace-nowrap flex items-center"
+                  title="Reset to default columns"
+                >
+                  Reset
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowUserColumnConfigModal(false)}
+                  class="w-7 h-7 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center transition cursor-pointer"
+                >
+                  <i class="fa-solid fa-xmark text-xs"></i>
+                </button>
+              </div>
+            </div>
+
+            {/* Columns List with Drag & Drop + Freeze Button + Arrows + Checkbox */}
+            <div class="p-4 overflow-y-auto custom-scrollbar flex-1 space-y-2">
+              {userColumnConfig.map((col, idx) => (
+                <div
+                  key={col.id}
+                  draggable
+                  onDragStart={() => setDraggedUserColumnIndex(idx)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={() => {
+                    if (draggedUserColumnIndex !== null && draggedUserColumnIndex !== idx) {
+                      moveUserColumn(draggedUserColumnIndex, idx);
+                      setDraggedUserColumnIndex(null);
+                    }
+                  }}
+                  class={`flex items-center justify-between p-2.5 rounded-xl border transition ${
+                    col.visible ? 'bg-white border-gray-200 hover:border-purple-300' : 'bg-gray-50 border-gray-200 opacity-60'
+                  }`}
+                >
+                  <div class="flex items-center gap-2.5 min-w-0">
+                    <span class="cursor-grab active:cursor-grabbing text-slate-400 hover:text-slate-600 px-1">
+                      <i class="fa-solid fa-grip-vertical text-xs"></i>
+                    </span>
+                    <label class="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-800 select-none truncate">
+                      <input
+                        type="checkbox"
+                        checked={col.visible}
+                        onChange={() => toggleUserColumnVisibility(col.id)}
+                        class="w-4 h-4 rounded text-[#B30E2E] focus:ring-[#B30E2E] cursor-pointer accent-[#B30E2E]"
+                      />
+                      <span class="truncate">{col.label}</span>
+                    </label>
+                    {col.pinned && (
+                      <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9.5px] font-bold bg-blue-50 text-blue-700 border border-blue-200 shrink-0">
+                        <i class="fa-solid fa-thumbtack text-[8px] rotate-45"></i>
+                        <span>Frozen</span>
+                      </span>
+                    )}
+                  </div>
+
+                  <div class="flex items-center gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => toggleUserColumnPin(col.id)}
+                      class={`px-2 py-1 rounded-md text-[10.5px] font-semibold flex items-center gap-1 transition cursor-pointer border ${
+                        col.pinned 
+                          ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600 shadow-2xs' 
+                          : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200'
+                      }`}
+                      title={col.pinned ? 'Column is frozen. Click to unfreeze' : 'Click to freeze column while scrolling'}
+                    >
+                      <i class={`fa-solid fa-thumbtack text-[9px] ${col.pinned ? 'rotate-45' : ''}`}></i>
+                      <span>{col.pinned ? 'Frozen' : 'Freeze'}</span>
+                    </button>
+
+                    <button
+                      disabled={idx === 0}
+                      onClick={() => moveUserColumn(idx, idx - 1)}
+                      class="w-6 h-6 rounded-md bg-slate-100 hover:bg-purple-100 disabled:opacity-30 disabled:hover:bg-slate-100 text-slate-600 hover:text-purple-700 flex items-center justify-center text-[10px] transition cursor-pointer"
+                      title="Move Up"
+                    >
+                      <i class="fa-solid fa-arrow-up"></i>
+                    </button>
+                    <button
+                      disabled={idx === userColumnConfig.length - 1}
+                      onClick={() => moveUserColumn(idx, idx + 1)}
+                      class="w-6 h-6 rounded-md bg-slate-100 hover:bg-purple-100 disabled:opacity-30 disabled:hover:bg-slate-100 text-slate-600 hover:text-purple-700 flex items-center justify-center text-[10px] transition cursor-pointer"
+                      title="Move Down"
+                    >
+                      <i class="fa-solid fa-arrow-down"></i>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Modal Footer */}
+            <div class="px-5 py-3 bg-slate-50 border-t border-gray-200 flex items-center justify-end">
+              <button
+                type="button"
+                onClick={() => setShowUserColumnConfigModal(false)}
                 class="px-5 py-1.5 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B2E] text-white text-xs font-bold transition shadow-xs cursor-pointer"
               >
                 Done

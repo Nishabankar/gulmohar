@@ -10,16 +10,23 @@ const { sendPasswordResetEmail, sendPasswordChangedConfirmation, sendNewUserInvi
 const { parseAnyDate } = require('../utils/parseAnyDate');
 const { STATUS_OPTIONS, PRIORITY_OPTIONS, matchOption } = require('../utils/leadOptions');
 
-// Helper function to resolve public base URL for emails (always uses https://gulmoharcity.in for recipient links)
+// Helper function to resolve public base URL for emails (resolves exact CRM origin of the caller, e.g. Staging or Production)
 const getPublicBaseUrl = (req) => {
+  if (req) {
+    const rawOrigin = req.headers.origin || req.headers.referer || '';
+    if (rawOrigin) {
+      try {
+        const parsed = new URL(rawOrigin);
+        if (!parsed.hostname.includes('localhost') && !parsed.hostname.includes('127.0.0.1')) {
+          return `${parsed.protocol}//${parsed.host}`;
+        }
+      } catch (e) {}
+    }
+  }
   if (SITE_URL && SITE_URL.trim()) {
     return SITE_URL.trim().replace(/\/+$/, '');
   }
-  const origin = (req && (req.headers.origin || req.headers.referer) || '').replace(/\/+$/, '');
-  if (!origin || origin.includes('localhost') || origin.includes('127.0.0.1')) {
-    return 'https://gulmoharcity.in';
-  }
-  return origin;
+  return 'https://crm.house-deal.com';
 };
 
 // OTP & Token Store Maps in memory
@@ -160,7 +167,7 @@ router.post('/request-password-reset', async (req, res) => {
     otpStore.set(cleanUsername, { otpCode, expiresAt, email: cleanEmail, token: resetToken });
 
     const baseUrl = getPublicBaseUrl(req);
-    const resetLink = `${baseUrl}/?token=${resetToken}`;
+    const resetLink = `${baseUrl}/?token=${resetToken}&username=${encodeURIComponent(cleanUsername)}&email=${encodeURIComponent(cleanEmail)}`;
 
     // Send confirmation email with Username, OTP code, and direct clean Reset Link
     const emailResult = await sendPasswordResetEmail(cleanEmail, adminUser.name || adminUser.username, otpCode, resetLink, adminUser.username);
@@ -858,7 +865,7 @@ router.post('/agents', protectAdmin, async (req, res) => {
     otpStore.set(cleanUsername, { otpCode, expiresAt, email: agentEmail, token: resetToken });
 
     const baseUrl = getPublicBaseUrl(req);
-    const resetLink = `${baseUrl}/?token=${resetToken}`;
+    const resetLink = `${baseUrl}/?token=${resetToken}&username=${encodeURIComponent(cleanUsername)}&email=${encodeURIComponent(agentEmail)}`;
 
     // Send invitation email with password setup link and OTP
     const emailResult = await sendNewUserInviteEmail(agentEmail, name.trim(), otpCode, resetLink, cleanUsername);

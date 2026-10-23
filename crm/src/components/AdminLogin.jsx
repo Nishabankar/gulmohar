@@ -2,27 +2,56 @@ import React, { useState, useEffect } from 'react';
 import { API_BASE_URL } from '../config';
 
 export default function AdminLogin({ onLoginSuccess, onClose }) {
-  const [isForgotPassword, setIsForgotPassword] = useState(false);
-  const [forgotStep, setForgotStep] = useState(1); // 1: Request OTP Email, 2: Enter OTP & New Password
+  const getInitialParams = () => {
+    try {
+      const search = window.location.search || (window.location.hash.includes('?') ? window.location.hash.substring(window.location.hash.indexOf('?')) : '');
+      const params = new URLSearchParams(search);
+      const token = params.get('token');
+      const resetParam = params.get('resetPassword');
+      const otp = params.get('otp');
+      const u = params.get('username') || '';
+      const em = params.get('email') || '';
+      const isReset = !!(token || resetParam === 'true' || otp);
+      return {
+        isReset,
+        token: token || '',
+        otp: otp || '',
+        username: u,
+        email: em
+      };
+    } catch (e) {
+      return { isReset: false, token: '', otp: '', username: '', email: '' };
+    }
+  };
 
-  const [username, setUsername] = useState('');
+  const initialParams = getInitialParams();
+
+  const [isForgotPassword, setIsForgotPassword] = useState(initialParams.isReset);
+  const [forgotStep, setForgotStep] = useState(initialParams.isReset ? 2 : 1); // 1: Request OTP Email, 2: Enter OTP & New Password
+
+  const [username, setUsername] = useState(initialParams.username);
   const [password, setPassword] = useState('');
 
   // Forgot password state
-  const [forgotUsername, setForgotUsername] = useState('');
-  const [forgotEmail, setForgotEmail] = useState('');
-  const [resetToken, setResetToken] = useState('');
-  const [otpCode, setOtpCode] = useState('');
+  const [forgotUsername, setForgotUsername] = useState(initialParams.username);
+  const [forgotEmail, setForgotEmail] = useState(initialParams.email);
+  const [resetToken, setResetToken] = useState(initialParams.token);
+  const [otpCode, setOtpCode] = useState(initialParams.otp);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState(
+    initialParams.isReset
+      ? 'Email link verified! Please enter the 6-digit OTP received in your email and set your new password.'
+      : ''
+  );
 
-  // Auto-detect reset link parameters from URL query string
+  // Auto-detect reset link parameters from URL query string or hash
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
+    const search = window.location.search || (window.location.hash.includes('?') ? window.location.hash.substring(window.location.hash.indexOf('?')) : '');
+    const params = new URLSearchParams(search);
     const resetParam = params.get('resetPassword');
     const paramUsername = params.get('username');
     const paramEmail = params.get('email');
@@ -33,19 +62,14 @@ export default function AdminLogin({ onLoginSuccess, onClose }) {
       setIsForgotPassword(true);
       setForgotStep(2);
       if (paramToken) setResetToken(paramToken);
-      if (paramUsername) setForgotUsername(paramUsername);
+      if (paramUsername) {
+        setForgotUsername(paramUsername);
+        setUsername(paramUsername);
+      }
       if (paramEmail) setForgotEmail(paramEmail);
       if (paramOtp) setOtpCode(paramOtp);
 
-      setSuccessMsg(
-        paramToken
-          ? 'Please enter the 6-digit OTP received in your email and set your new password.'
-          : 'Email link verified! Please set your account password below.'
-      );
-
-      // Clean query string from browser URL without page reload
-      const newUrl = window.location.pathname;
-      window.history.replaceState({}, document.title, newUrl);
+      setSuccessMsg('Email link verified! Please enter the 6-digit OTP received in your email and set your new password.');
     }
   }, []);
 
@@ -280,6 +304,17 @@ export default function AdminLogin({ onLoginSuccess, onClose }) {
                 )}
               </button>
             </div>
+
+            <div class="pt-3 mt-1 text-center border-t border-gray-100">
+              <button
+                type="button"
+                onClick={() => { setIsForgotPassword(true); setForgotStep(2); setError(''); setSuccessMsg('Please enter your 6-digit OTP code to set your password.'); }}
+                class="text-xs font-semibold text-slate-600 hover:text-[#B30E2E] transition cursor-pointer inline-flex items-center gap-1.5"
+              >
+                <i class="fa-solid fa-key text-[11px] text-[#B30E2E]"></i>
+                <span>Have an Invitation OTP? Set Password</span>
+              </button>
+            </div>
           </form>
         ) : forgotStep === 1 ? (
           /* STEP 1: REQUEST OTP EMAIL */
@@ -368,6 +403,25 @@ export default function AdminLogin({ onLoginSuccess, onClose }) {
               </div>
             )}
 
+            {forgotUsername ? (
+              <div class="px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs flex items-center justify-between">
+                <span class="text-slate-500 font-medium">Account Username:</span>
+                <span class="font-bold text-[#B30E2E]">{forgotUsername}</span>
+              </div>
+            ) : !resetToken ? (
+              <div>
+                <label class="block text-xs font-bold text-gray-700 mb-1">Username *</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={forgotUsername}
+                  onChange={(e) => setForgotUsername(e.target.value)}
+                  placeholder="Enter your account username"
+                  class="w-full px-3.5 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] text-xs bg-gray-50 focus:bg-white font-medium"
+                />
+              </div>
+            ) : null}
+
             <div>
               <label class="block text-xs font-bold text-gray-700 mb-1">Enter 6-Digit Email OTP *</label>
               <input 
@@ -408,10 +462,10 @@ export default function AdminLogin({ onLoginSuccess, onClose }) {
             <div class="pt-2 flex items-center justify-between gap-3">
               <button 
                 type="button"
-                onClick={() => { setForgotStep(1); setError(''); setSuccessMsg(''); }}
+                onClick={() => { setIsForgotPassword(false); setForgotStep(1); setError(''); setSuccessMsg(''); }}
                 class="w-1/2 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition cursor-pointer text-xs"
               >
-                Back to Step 1
+                Back to Login
               </button>
 
               <button 

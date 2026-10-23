@@ -6,7 +6,16 @@ import { SITE_URL } from './config';
 // HouseDeal CRM: login screen until a token exists, then the dashboard.
 // Password-reset email links (?resetPassword / ?otp / ?token) land here and are handled by AdminLogin.
 export default function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem('adminToken'));
+  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    try {
+      const search = window.location.search || (window.location.hash.includes('?') ? window.location.hash.substring(window.location.hash.indexOf('?')) : '');
+      const p = new URLSearchParams(search);
+      if (p.get('token') || p.get('resetPassword') || p.get('otp')) {
+        return false; // Force AdminLogin in password setup mode when link is opened
+      }
+    } catch (e) {}
+    return !!localStorage.getItem('adminToken');
+  });
 
   const handleLoginSuccess = () => {
     localStorage.removeItem('lms_dashboard_nav_state');

@@ -94,7 +94,9 @@ router.post('/login', async (req, res) => {
     }
 
     if ((admin.username || '').toLowerCase().trim() === 'system') {
-      return res.status(403).json({ success: false, message: 'System account is for backend reference only and cannot be used to login.' });
+      if (!admin.password) {
+        return res.status(403).json({ success: false, message: 'System account does not have a password set.' });
+      }
     }
 
     const isMatch = await bcrypt.compare(password, admin.password);
@@ -1026,8 +1028,25 @@ router.patch('/agents/:id', protectAdmin, async (req, res) => {
     const targetUser = existingRows[0];
     const targetRole = (targetUser.role || '').toLowerCase();
     const targetUsername = (targetUser.username || '').toLowerCase();
-    if (targetRole === 'superadmin' || targetUsername === 'admin' || targetUsername === 'system') {
-      return res.status(403).json({ success: false, message: 'Inbuilt system accounts cannot be modified.' });
+    if (targetRole === 'superadmin' || targetUsername === 'admin') {
+      return res.status(403).json({ success: false, message: 'Super Admin master account cannot be modified via this endpoint.' });
+    }
+
+    if (targetUsername === 'system') {
+      if (!password || !password.trim()) {
+        return res.status(400).json({ success: false, message: 'Password is required to set for the System account.' });
+      }
+      if (password.trim().length < 4) {
+        return res.status(400).json({ success: false, message: 'Password must be at least 4 characters long.' });
+      }
+      const hashedPassword = await bcrypt.hash(password.trim(), 10);
+      await query('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, agentId]);
+      const [updatedRows] = await query('SELECT id, name, username, role, phone, email FROM users WHERE id = ?', [agentId]);
+      return res.json({
+        success: true,
+        message: 'System account password set successfully',
+        data: updatedRows[0]
+      });
     }
 
     if (username !== undefined && username.trim()) {

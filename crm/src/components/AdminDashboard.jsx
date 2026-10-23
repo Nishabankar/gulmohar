@@ -2444,6 +2444,19 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     setSavingUserEdit(true);
     setUserEditSuccessMsg('');
 
+    if (isEditingInbuiltSystem) {
+      if (!editUserPassword || !editUserPassword.trim()) {
+        setSavingUserEdit(false);
+        setUserEditSuccessMsg('Error: Please enter a password to set for the System account.');
+        return;
+      }
+      if (editUserPassword.trim().length < 4) {
+        setSavingUserEdit(false);
+        setUserEditSuccessMsg('Error: Password must be at least 4 characters long.');
+        return;
+      }
+    }
+
     const cleanedEditingUser = {
       ...editingUser,
       name: (editingUser.name || '').trim(),
@@ -7182,27 +7195,18 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                     return (
                                       <td key="actions" class={getUserTdClass('actions', 'text-center')} style={getUserTdStyle('actions')}>
                                         <div class="flex items-center justify-center gap-1.5">
-                                          {(agent.username || '').toLowerCase() === 'system' ? (
-                                            <span
-                                              class="w-7 h-7 rounded-lg bg-gray-100 text-gray-400 flex items-center justify-center cursor-not-allowed select-none opacity-60"
-                                              title="System reference account cannot be modified"
-                                            >
-                                              <i class="fa-solid fa-lock text-[10px]"></i>
-                                            </span>
-                                          ) : (
-                                            <button
-                                              onClick={() => { 
-                                                setEditingUser({ ...agent }); 
-                                                setEditUserPassword(''); 
-                                                setShowEditPassword(false); 
-                                                setUserEditSuccessMsg(''); 
-                                              }}
-                                              class="w-7 h-7 rounded-lg bg-indigo-100 hover:bg-indigo-200 text-indigo-700 flex items-center justify-center transition cursor-pointer"
-                                              title="Edit User & Change Password"
-                                            >
-                                              <i class="fa-solid fa-pen-to-square text-xs"></i>
-                                            </button>
-                                          )}
+                                          <button
+                                            onClick={() => { 
+                                              setEditingUser({ ...agent }); 
+                                              setEditUserPassword(''); 
+                                              setShowEditPassword(false); 
+                                              setUserEditSuccessMsg(''); 
+                                            }}
+                                            class="w-7 h-7 rounded-lg bg-indigo-100 hover:bg-indigo-200 text-indigo-700 flex items-center justify-center transition cursor-pointer"
+                                            title={(agent.username || '').toLowerCase() === 'system' ? "Set System Password" : "Edit User & Change Password"}
+                                          >
+                                            <i class="fa-solid fa-pen-to-square text-xs"></i>
+                                          </button>
                                           {(agent.username || '').toLowerCase() === 'system' ? (
                                             <span
                                               class="w-7 h-7 rounded-lg bg-gray-100 text-gray-400 flex items-center justify-center cursor-not-allowed select-none opacity-60"
@@ -7480,7 +7484,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
             <div class="bg-gradient-to-r from-[#B30E2E] via-[#8A0B22] to-[#590414] p-5 text-white flex items-center justify-between">
               <div>
                 <h3 class="font-serif font-bold text-base">
-                  {isEditingInbuiltSystem ? 'Edit Admin User' : 'Edit User'}
+                  {isEditingInbuiltSystem ? 'Set System Account Password' : 'Edit User'}
                 </h3>
               </div>
               <button 
@@ -7512,42 +7516,32 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
 
               {isEditingInbuiltSystem ? (
                 <>
-                  {/* Inbuilt System Account: Full Name, Username, New Password */}
-                  <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">Full Name *</label>
-                    <input 
-                      type="text" 
-                      required 
-                      autoComplete="off"
-                      value={editingUser.name || ''}
-                      onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
-                      placeholder="Enter full name"
-                      class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
-                    />
+                  {/* System Account: Fixed System info + Only Password editable */}
+                  <div class="bg-gray-50 border border-gray-200 rounded-2xl p-3.5 text-xs space-y-2">
+                    <div class="flex items-center justify-between">
+                      <span class="text-gray-500 font-medium">Account Name:</span>
+                      <span class="font-bold text-gray-800">System</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                      <span class="text-gray-500 font-medium">Username:</span>
+                      <span class="font-mono font-bold text-gray-800 bg-gray-200 px-2 py-0.5 rounded-md text-[11px]">system</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                      <span class="text-gray-500 font-medium">Account Role:</span>
+                      <span class="font-bold text-rose-800 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md text-[11px]">Backend System Reference</span>
+                    </div>
                   </div>
 
                   <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">Username *</label>
-                    <input 
-                      type="text" 
-                      required 
-                      autoComplete="off"
-                      value={editingUser.username || ''}
-                      onChange={(e) => setEditingUser({ ...editingUser, username: e.target.value })}
-                      placeholder="Enter username"
-                      class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
-                    />
-                  </div>
-
-                  <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">New Password</label>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Set Password *</label>
                     <div class="relative">
                       <input 
                         type={showEditPassword ? 'text' : 'password'}
+                        required
                         autoComplete="new-password"
                         value={editUserPassword}
                         onChange={(e) => setEditUserPassword(e.target.value)}
-                        placeholder="Enter new password"
+                        placeholder="Enter password for System account"
                         class="w-full pl-3 pr-10 py-2.5 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
                       />
                       <button
@@ -7559,6 +7553,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                         <i class={`fa-solid ${showEditPassword ? 'fa-eye-slash' : 'fa-eye'} text-xs`}></i>
                       </button>
                     </div>
+                    <p class="text-[11px] text-gray-400 mt-1">Set or update the password for System account.</p>
                   </div>
                 </>
               ) : (
@@ -7727,7 +7722,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                       <i class="fa-solid fa-spinner fa-spin text-xs"></i> Saving...
                     </>
                   ) : (
-                    <span>Save</span>
+                    <span>{isEditingInbuiltSystem ? 'Set Password' : 'Save'}</span>
                   )}
                 </button>
               </div>

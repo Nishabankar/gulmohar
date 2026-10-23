@@ -322,9 +322,7 @@ const ProjectFilterDropdown = ({
       ) : (
         /* When All Projects is selected: show pill badge like project pill but WITHOUT close (x) button */
         <div 
-          onClick={() => setIsOpen(!isOpen)}
-          class="inline-flex items-center gap-1 sm:gap-1.5 h-6 sm:h-8.5 px-2 sm:px-2.5 rounded-lg sm:rounded-xl bg-[#FFF0F2] border border-[#B30E2E] ring-1 ring-[#FCD6DC] text-[10px] sm:text-xs font-semibold text-[#B30E2E] shadow-xs animate-fade-in flex-shrink-0 cursor-pointer hover:bg-rose-50"
-          title="All Projects Selected"
+          class="inline-flex items-center gap-1 sm:gap-1.5 h-6 sm:h-8.5 px-2 sm:px-2.5 rounded-lg sm:rounded-xl bg-[#FFF0F2] border border-[#B30E2E] ring-1 ring-[#FCD6DC] text-[10px] sm:text-xs font-semibold text-[#B30E2E] shadow-xs animate-fade-in flex-shrink-0 select-none"
         >
           <i class="fa-solid fa-globe text-[9px] sm:text-[11px] text-[#B30E2E] flex-shrink-0"></i>
           <span class="font-bold whitespace-nowrap">

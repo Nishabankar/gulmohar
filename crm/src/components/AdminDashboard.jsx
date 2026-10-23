@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { API_BASE_URL } from '../config';
 import PolicyModal from './PolicyModal';
 import ProjectManagement, { APARTMENT_TYPOGRAPHY_GROUPS, TYPOGRAPHY_BY_TYPE } from './ProjectManagement';
@@ -182,46 +182,268 @@ const getAutoTypographyForProjectType = (projectsList, projectName, projectType)
 
 const COLUMN_WIDTH_MAP = {
   leadId: 76,
-  fullName: 160,
-  mobile: 140,
-  email: 155,
-  enquiryDate: 138,
-  status: 125,
-  priority: 92,
-  followupDate: 136,
-  projectName: 150,
-  projectType: 150,
-  typography: 160,
-  carpetArea: 115,
-  budget: 120,
-  plotsCount: 115,
-  assignedAgent: 140,
-  createdBy: 112,
-  notes: 50,
-  actions: 105
+  fullName: 130,
+  email: 135,
+  mobile: 125,
+  enquiryDate: 125,
+  status: 120,
+  priority: 115,
+  followupDate: 130,
+  projectName: 120,
+  projectType: 120,
+  typography: 115,
+  carpetArea: 100,
+  budget: 100,
+  plotsCount: 110,
+  assignedAgent: 125,
+  createdBy: 105,
+  notes: 55,
+  actions: 100
 };
 
 const COLUMN_CLASS_MAP = {
-  leadId: 'w-[76px] min-w-[76px] max-w-[76px]',
-  fullName: 'w-[160px] min-w-[160px] max-w-[160px]',
-  mobile: 'w-36 min-w-[135px] max-w-[140px]',
-  email: 'w-40 min-w-[145px] max-w-[155px]',
-  enquiryDate: 'w-36 min-w-[134px] max-w-[138px]',
-  status: 'w-32 min-w-[120px] max-w-[125px]',
-  priority: 'w-24 min-w-[88px] max-w-[92px]',
-  followupDate: 'w-36 min-w-[132px] max-w-[136px]',
-  projectName: 'w-36 min-w-[130px] max-w-[150px]',
-  projectType: 'w-40 min-w-[130px] max-w-[180px]',
-  typography: 'w-44 min-w-[130px] max-w-[180px]',
-  carpetArea: 'w-28 min-w-[105px] max-w-[125px]',
-  budget: 'w-28 min-w-[110px] max-w-[130px]',
-  plotsCount: 'w-28 min-w-[110px] max-w-[115px]',
-  assignedAgent: 'w-36 min-w-[136px] max-w-[140px]',
-  createdBy: 'w-28 min-w-[108px] max-w-[112px]',
-  notes: 'w-12 min-w-[50px] max-w-[50px]',
-  actions: 'w-[105px] min-w-[105px] max-w-[105px]'
+  leadId: 'w-[76px] min-w-[76px]',
+  fullName: 'w-[130px] min-w-[130px]',
+  email: 'w-[135px] min-w-[135px]',
+  mobile: 'w-[125px] min-w-[125px]',
+  enquiryDate: 'w-[125px] min-w-[125px]',
+  status: 'w-[120px] min-w-[120px]',
+  priority: 'w-[115px] min-w-[115px]',
+  followupDate: 'w-[130px] min-w-[130px]',
+  projectName: 'w-[120px] min-w-[120px]',
+  projectType: 'w-[120px] min-w-[120px]',
+  typography: 'w-[115px] min-w-[115px]',
+  carpetArea: 'w-[100px] min-w-[100px]',
+  budget: 'w-[100px] min-w-[100px]',
+  plotsCount: 'w-[110px] min-w-[110px]',
+  assignedAgent: 'w-[125px] min-w-[125px]',
+  createdBy: 'w-[105px] min-w-[105px]',
+  notes: 'w-[55px] min-w-[55px]',
+  actions: 'w-[100px] min-w-[100px]'
 };
 
+// Searchable Multi-Select Project Filter Dropdown for Dashboard and Leads views
+const ProjectFilterDropdown = ({
+  projectsList = [],
+  scopedEnquiries = [],
+  selectedProject = [],
+  onSelectProject,
+  className = ''
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const dropdownRef = useRef(null);
+
+  // Normalize selected projects into an array
+  const selectedList = useMemo(() => {
+    if (!selectedProject || selectedProject === 'All') return [];
+    if (Array.isArray(selectedProject)) return selectedProject;
+    return [selectedProject];
+  }, [selectedProject]);
+
+  const isAll = selectedList.length === 0;
+
+  // Close on outside click
+  useEffect(() => {
+    const handleOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setIsOpen(false);
+        setSearch('');
+      }
+    };
+    document.addEventListener('mousedown', handleOutside);
+    document.addEventListener('touchstart', handleOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleOutside);
+      document.removeEventListener('touchstart', handleOutside);
+    };
+  }, []);
+
+  // Filter projects by search query
+  const query = search.trim().toLowerCase();
+  const filteredProjects = useMemo(() => {
+    if (!query) return projectsList;
+    return (projectsList || []).filter(p => (p.name || '').toLowerCase().includes(query));
+  }, [projectsList, query]);
+
+  // Toggle single project in selection
+  const handleToggleProject = (pName) => {
+    const lower = (pName || '').trim().toLowerCase();
+    const exists = selectedList.some(item => (item || '').trim().toLowerCase() === lower);
+    let next;
+    if (exists) {
+      next = selectedList.filter(item => (item || '').trim().toLowerCase() !== lower);
+    } else {
+      next = [...selectedList, pName];
+    }
+    if (onSelectProject) {
+      onSelectProject(next);
+    }
+  };
+
+  // Remove one project pill
+  const handleRemoveProject = (pName) => {
+    const lower = (pName || '').trim().toLowerCase();
+    const next = selectedList.filter(item => (item || '').trim().toLowerCase() !== lower);
+    if (onSelectProject) {
+      onSelectProject(next);
+    }
+  };
+
+  return (
+    <div ref={dropdownRef} class={`relative inline-flex items-center gap-1 sm:gap-1.5 flex-nowrap ${className}`}>
+
+      {/* Selected Project Pills â€” rendered to the LEFT of the icon button */}
+      {!isAll && (
+        <div class="inline-flex items-center gap-1 max-w-[170px] sm:max-w-none overflow-x-auto no-scrollbar flex-nowrap py-0.5">
+          {selectedList.map((pName) => (
+            <div
+              key={pName}
+              class="inline-flex items-center gap-1 sm:gap-1.5 h-6 sm:h-8.5 px-1.5 sm:px-2.5 rounded-lg sm:rounded-xl bg-[#FFF0F2] border border-[#B30E2E] ring-1 ring-[#FCD6DC] text-[10px] sm:text-xs font-semibold text-[#B30E2E] shadow-xs animate-fade-in flex-shrink-0"
+            >
+              <i class="fa-solid fa-building text-[9px] sm:text-[11px] text-[#B30E2E] flex-shrink-0"></i>
+              <span class="font-bold truncate max-w-[55px] sm:max-w-[130px]" title={pName}>
+                {pName}
+              </span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRemoveProject(pName);
+                }}
+                class="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-0.5 rounded-full hover:bg-rose-200 text-[#B30E2E] flex items-center justify-center transition cursor-pointer flex-shrink-0"
+                title={`Remove ${pName}`}
+              >
+                <i class="fa-solid fa-xmark text-[8px] sm:text-[9px]"></i>
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Icon-only Dropdown Trigger Button */}
+      <div class="relative inline-block flex-shrink-0">
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          class={`h-6 sm:h-8.5 px-2 sm:px-2.5 rounded-lg sm:rounded-xl border text-[10px] sm:text-xs font-semibold flex items-center gap-1 transition shadow-xs cursor-pointer ${
+            isOpen
+              ? 'bg-gray-100 border-gray-400 text-gray-900 ring-1 ring-gray-300'
+              : !isAll
+              ? 'bg-[#FFF0F2] border-[#B30E2E]/40 text-[#B30E2E] hover:bg-rose-50'
+              : 'bg-white border-gray-300 hover:border-gray-400 text-gray-700 hover:bg-gray-50'
+          }`}
+          title="Filter by projects (multi-select)"
+        >
+          <i class={`fa-solid fa-city text-[9px] sm:text-[11px] ${!isAll ? 'text-[#B30E2E]' : 'text-gray-500'}`}></i>
+          <i class={`fa-solid fa-chevron-down text-[8px] sm:text-[9px] transition-transform ${isOpen ? 'rotate-180 text-[#B30E2E]' : 'text-gray-400'}`}></i>
+        </button>
+
+        {/* Popover Menu positioned right-aligned */}
+        {isOpen && (
+          <div class="absolute right-0 mt-1.5 w-64 sm:w-72 bg-white border border-gray-200 rounded-xl shadow-2xl z-[9999] overflow-hidden flex flex-col animate-fade-in text-left">
+            {/* Header & Sticky Search Bar */}
+            <div class="p-2 border-b border-gray-100 bg-gray-50 space-y-1.5">
+              <div class="flex items-center justify-between px-1">
+                <span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                  Select Projects {selectedList.length > 0 ? `(${selectedList.length} selected)` : `(${projectsList.length})`}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => { setIsOpen(false); setSearch(''); }}
+                  class="w-4 h-4 rounded-full hover:bg-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 transition cursor-pointer text-xs"
+                >
+                  <i class="fa-solid fa-xmark text-[10px]"></i>
+                </button>
+              </div>
+
+              <div class="relative flex items-center">
+                <i class="fa-solid fa-magnifying-glass text-gray-400 text-[10px] absolute left-2.5 pointer-events-none"></i>
+                <input
+                  type="text"
+                  autoFocus
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search projects..."
+                  class="w-full pl-7 pr-6 py-1 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#B30E2E]"
+                />
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() => setSearch('')}
+                    class="absolute right-2 text-gray-400 hover:text-gray-600 text-[10px] w-4 h-4 flex items-center justify-center cursor-pointer"
+                  >
+                    <i class="fa-solid fa-xmark"></i>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* All Projects Option */}
+            {(!query || 'all projects'.includes(query)) && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (onSelectProject) onSelectProject([]);
+                  setSearch('');
+                }}
+                class={`w-full text-left px-3 py-2 text-xs font-semibold hover:bg-rose-50 hover:text-[#B30E2E] transition flex items-center justify-between border-b border-gray-100 cursor-pointer group ${
+                  isAll ? 'bg-[#FFF0F2] text-[#B30E2E] font-bold' : 'text-gray-700'
+                }`}
+              >
+                <div class="flex items-center gap-2 truncate">
+                  <div class={`w-3.5 h-3.5 sm:w-4 sm:h-4 rounded border flex items-center justify-center transition flex-shrink-0 ${
+                    isAll ? 'bg-[#B30E2E] border-[#B30E2E] text-white' : 'border-gray-300 bg-white group-hover:border-gray-400'
+                  }`}>
+                    {isAll && <i class="fa-solid fa-check text-[8px] sm:text-[9px] text-white"></i>}
+                  </div>
+                  <i class={`fa-solid fa-globe text-[11px] ${isAll ? 'text-[#B30E2E]' : 'text-gray-400'}`}></i>
+                  <span class="truncate">All Projects</span>
+                </div>
+              </button>
+            )}
+
+            {/* Scrollable Project List with Checkboxes */}
+            <div class="overflow-y-auto max-h-56 custom-scrollbar py-1">
+              {filteredProjects.length === 0 ? (
+                <div class="py-5 px-3 text-center text-gray-400 text-xs">
+                  No projects found
+                </div>
+              ) : (
+                filteredProjects.map((p) => {
+                  const pName = p.name || '';
+                  const isSelected = selectedList.some(item => (item || '').trim().toLowerCase() === pName.trim().toLowerCase());
+
+                  return (
+                    <button
+                      key={p.id || p._id || pName}
+                      type="button"
+                      onClick={() => handleToggleProject(pName)}
+                      class={`w-full text-left px-3 py-1.5 text-xs font-semibold hover:bg-rose-50 hover:text-[#B30E2E] transition flex items-center justify-between cursor-pointer group ${
+                        isSelected ? 'bg-[#FFF0F2] text-[#B30E2E] font-bold' : 'text-gray-700'
+                      }`}
+                    >
+                      <div class="flex items-center gap-2 truncate">
+                        <div class={`w-3.5 h-3.5 sm:w-4 sm:h-4 rounded border flex items-center justify-center transition flex-shrink-0 ${
+                          isSelected ? 'bg-[#B30E2E] border-[#B30E2E] text-white' : 'border-gray-300 bg-white group-hover:border-gray-400'
+                        }`}>
+                          {isSelected && <i class="fa-solid fa-check text-[8px] sm:text-[9px] text-white"></i>}
+                        </div>
+                        <i class={`fa-solid fa-building text-[10.5px] ${isSelected ? 'text-[#B30E2E]' : 'text-gray-400'}`}></i>
+                        <span class="truncate">{pName}</span>
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+    </div>
+  );
+};
 const LeadTypographyDropdownMenu = ({
   currentTypography,
   projectName,
@@ -326,6 +548,10 @@ const LeadTypographyDropdownMenu = ({
     st => !allTyposList.some(at => at.toLowerCase() === st.toLowerCase())
   );
 
+  const projectSelectedCount = isProjectScoped
+    ? selectedTypos.filter(st => allTyposList.some(at => at.toLowerCase() === st.toLowerCase())).length
+    : selectedTypos.length;
+
   const query = search.trim().toLowerCase();
 
   // Compute visible items when searching
@@ -365,7 +591,7 @@ const LeadTypographyDropdownMenu = ({
     });
   }
 
-  if (legacySelected.length > 0) {
+  if (!isProjectScoped && legacySelected.length > 0) {
     const matchedLegacy = query ? legacySelected.filter(it => it.toLowerCase().includes(query)) : legacySelected;
     matchedLegacy.forEach(it => {
       if (!visibleTyposList.includes(it)) visibleTyposList.push(it);
@@ -429,7 +655,7 @@ const LeadTypographyDropdownMenu = ({
           <div class="flex items-center gap-1.5">
             <span class="text-[11px] font-bold text-gray-700">Project Typography</span>
             <span class="text-[10px] bg-rose-100 text-[#B30E2E] px-1.5 py-0.5 rounded-full font-bold">
-              {selectedTypos.length}
+              {projectSelectedCount}
             </span>
           </div>
           <button
@@ -465,7 +691,7 @@ const LeadTypographyDropdownMenu = ({
 
           <div class="flex items-center justify-between px-0.5">
             <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-              {selectedTypos.length} OF {allTyposList.length}
+              {projectSelectedCount} OF {allTyposList.length}
             </span>
             <button
               type="button"
@@ -624,7 +850,7 @@ const LeadTypographyDropdownMenu = ({
               )}
 
               {/* Legacy/Custom selected items (e.g. 1 BHK Flat) */}
-              {legacySelected.length > 0 && (
+              {!isProjectScoped && legacySelected.length > 0 && (
                 <div class="border-b border-gray-100 last:border-none py-0.5">
                   <div class="px-2.5 py-1 text-[9.5px] font-bold text-gray-400 uppercase tracking-wider bg-gray-50/70">
                     CUSTOM / PREVIOUS
@@ -653,7 +879,7 @@ const LeadTypographyDropdownMenu = ({
         {/* Footer */}
         <div class="px-2.5 py-1.5 border-t border-gray-100 bg-gray-50 flex items-center justify-between shrink-0">
           <span class="text-[11px] font-semibold text-gray-500">
-            {selectedTypos.length} selected
+            {projectSelectedCount} selected
           </span>
           <button
             type="button"
@@ -877,6 +1103,13 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     });
   };
   const [agentFilter, setAgentFilter] = useState(() => savedNavState.agentFilter || 'All');
+  const [selectedProjectFilter, setSelectedProjectFilter] = useState(() => {
+    const saved = savedNavState.selectedProjectFilter;
+    // Migrate old 'All' string → []
+    if (!saved || saved === 'All') return [];
+    if (Array.isArray(saved)) return saved;
+    return [saved]; // migrate old single string
+  });
   const [visitDateFilter, setVisitDateFilter] = useState(() => savedNavState.visitDateFilter || 'All'); // 'All' | 'Today' | 'Tomorrow' | 'ThisWeek'
   const [followupDateFilter, setFollowupDateFilter] = useState(() => savedNavState.followupDateFilter || 'All'); // 'All' | 'Today' | 'Tomorrow' | 'ThisWeek'
   const [isAgentDropdownOpen, setIsAgentDropdownOpen] = useState(false);
@@ -1204,10 +1437,11 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
         agentFilter,
         visitDateFilter,
         followupDateFilter,
-        sortConfig
+        sortConfig,
+        selectedProjectFilter
       }));
     } catch (e) {}
-  }, [activeTab, activeView, statusFilter, selectedStatuses, isStatusDropdownMode, agentFilter, visitDateFilter, followupDateFilter, sortConfig]);
+  }, [activeTab, activeView, statusFilter, selectedStatuses, isStatusDropdownMode, agentFilter, visitDateFilter, followupDateFilter, sortConfig, selectedProjectFilter]);
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [editingUser, setEditingUser] = useState(null);
   const [editUserPassword, setEditUserPassword] = useState('');
@@ -1243,6 +1477,56 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
   });
   const [submittingLead, setSubmittingLead] = useState(false);
   const [createLeadMsg, setCreateLeadMsg] = useState('');
+
+  const handleOpenNewLeadModal = () => {
+    const singleProject = Array.isArray(selectedProjectFilter) && selectedProjectFilter.length === 1
+      ? selectedProjectFilter[0]
+      : null;
+    if (singleProject) {
+      const availableTypes = getProjectTypesForProject(projectsList, singleProject);
+      const newType = availableTypes.length > 0 ? availableTypes.join(', ') : '';
+      const newTypo = getAutoTypographyForProjectType(projectsList, singleProject, newType);
+      setNewLeadFormData({
+        firstName: '',
+        lastName: '',
+        phone: '',
+        email: '',
+        projectName: singleProject,
+        projectType: newType,
+        typography: newTypo,
+        carpetArea: '',
+        budget: '',
+        plotsCount: '',
+        visitDate: '',
+        visitTime: '',
+        followupDate: '',
+        priority: 'Hot',
+        notes: '',
+        assignedAgentName: 'auto'
+      });
+    } else {
+      setNewLeadFormData({
+        firstName: '',
+        lastName: '',
+        phone: '',
+        email: '',
+        projectName: '',
+        projectType: '',
+        typography: '',
+        carpetArea: '',
+        budget: '',
+        plotsCount: '',
+        visitDate: '',
+        visitTime: '',
+        followupDate: '',
+        priority: 'Hot',
+        notes: '',
+        assignedAgentName: 'auto'
+      });
+    }
+    setCreateLeadMsg('');
+    setShowCreateLeadModal(true);
+  };
 
   // State for Create User Modal (SuperAdmin Only)
   const [showCreateAgentModal, setShowCreateAgentModal] = useState(false);
@@ -2949,6 +3233,18 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     return false;
   });
 
+  // Filter scopedEnquiries by selected projects (Dashboard & Leads overview)
+  const projectScopedEnquiries = useMemo(() => {
+    if (!selectedProjectFilter || !Array.isArray(selectedProjectFilter) || selectedProjectFilter.length === 0) {
+      return scopedEnquiries || [];
+    }
+    const filterSet = new Set(selectedProjectFilter.map(n => n.trim().toLowerCase()));
+    return (scopedEnquiries || []).filter(item => {
+      const pName = (item.projectName || '').trim().toLowerCase();
+      return filterSet.has(pName);
+    });
+  }, [scopedEnquiries, selectedProjectFilter]);
+
   // Date Helpers for Visit Filtering
   const formatDateToYYYYMMDD = (d) => {
     const year = d.getFullYear();
@@ -3350,7 +3646,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
         {/* Time Selector Row */}
         <div class="flex items-center justify-between px-2.5 py-1.5 bg-gray-50/90 rounded-xl border border-gray-200/80 mb-2">
           <div class="flex items-center gap-1.5 text-[11px] font-bold text-gray-700">
-            <i class="fa-regular fa-clock text-[#B30E2E]"></i>
+            <i class="fa-solid fa-clock text-[#B30E2E]"></i>
             <span>Time:</span>
           </div>
 
@@ -3475,8 +3771,8 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     return !isNew && !isCompletedOrClosed && !hasFollowupDate;
   };
 
-  // Filtered enquiries by Search, Status, Agent & Visit Date
-  const filteredEnquiries = (scopedEnquiries || []).filter(item => {
+  // Filtered enquiries by Search, Status, Agent, Project & Visit Date
+  const filteredEnquiries = (projectScopedEnquiries || []).filter(item => {
     if (!item) return false;
     const firstName = item.firstName || '';
     const lastName = item.lastName || '';
@@ -3849,22 +4145,22 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
   });
 
   // Calculate stats
-  const totalLeads = scopedEnquiries.length;
-  const newLeadsCount = scopedEnquiries.filter(e => isNewLead(e)).length;
-  const todaysFollowupCount = scopedEnquiries.filter(e => isFollowupStatus(e.status) && e.followupDate === getTodayString()).length;
-  const tomorrowsFollowupCount = scopedEnquiries.filter(e => isFollowupStatus(e.status) && e.followupDate === getTomorrowString()).length;
-  const thisWeekFollowupCount = scopedEnquiries.filter(e => isFollowupStatus(e.status) && isDateInThisWeek(e.followupDate)).length;
-  const allFollowupsCount = scopedEnquiries.filter(e => isFollowupStatus(e.status) && !!e.followupDate && e.followupDate.trim() !== '').length;
+  const totalLeads = projectScopedEnquiries.length;
+  const newLeadsCount = projectScopedEnquiries.filter(e => isNewLead(e)).length;
+  const todaysFollowupCount = projectScopedEnquiries.filter(e => isFollowupStatus(e.status) && e.followupDate === getTodayString()).length;
+  const tomorrowsFollowupCount = projectScopedEnquiries.filter(e => isFollowupStatus(e.status) && e.followupDate === getTomorrowString()).length;
+  const thisWeekFollowupCount = projectScopedEnquiries.filter(e => isFollowupStatus(e.status) && isDateInThisWeek(e.followupDate)).length;
+  const allFollowupsCount = projectScopedEnquiries.filter(e => isFollowupStatus(e.status) && !!e.followupDate && e.followupDate.trim() !== '').length;
 
-  const missedLeadsCount = scopedEnquiries.filter(e => isMissedLead(e)).length;
-  const siteVisitDoneCount = scopedEnquiries.filter(e => e.status === 'Site Visit Done').length;
-  const wonDealsCount = scopedEnquiries.filter(e => e.status === 'Won' || e.status === 'Closed').length;
-  const lostDealsCount = scopedEnquiries.filter(e => e.status === 'Lost' || e.status === 'Not Interested').length;
+  const missedLeadsCount = projectScopedEnquiries.filter(e => isMissedLead(e)).length;
+  const siteVisitDoneCount = projectScopedEnquiries.filter(e => e.status === 'Site Visit Done').length;
+  const wonDealsCount = projectScopedEnquiries.filter(e => e.status === 'Won' || e.status === 'Closed').length;
+  const lostDealsCount = projectScopedEnquiries.filter(e => e.status === 'Lost' || e.status === 'Not Interested').length;
 
-  const siteVisitsCount = scopedEnquiries.filter(e => isPendingVisitStatus(e.status) && !!e.followupDate && e.followupDate.trim() !== '').length;
-  const todayVisitsCount = scopedEnquiries.filter(e => isPendingVisitStatus(e.status) && !!e.followupDate && e.followupDate === getTodayString()).length;
-  const tomorrowVisitsCount = scopedEnquiries.filter(e => isPendingVisitStatus(e.status) && !!e.followupDate && e.followupDate === getTomorrowString()).length;
-  const thisWeekVisitsCount = scopedEnquiries.filter(e => isPendingVisitStatus(e.status) && !!e.followupDate && isDateInThisWeek(e.followupDate)).length;
+  const siteVisitsCount = projectScopedEnquiries.filter(e => isPendingVisitStatus(e.status) && !!e.followupDate && e.followupDate.trim() !== '').length;
+  const todayVisitsCount = projectScopedEnquiries.filter(e => isPendingVisitStatus(e.status) && !!e.followupDate && e.followupDate === getTodayString()).length;
+  const tomorrowVisitsCount = projectScopedEnquiries.filter(e => isPendingVisitStatus(e.status) && !!e.followupDate && e.followupDate === getTomorrowString()).length;
+  const thisWeekVisitsCount = projectScopedEnquiries.filter(e => isPendingVisitStatus(e.status) && !!e.followupDate && isDateInThisWeek(e.followupDate)).length;
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -4113,7 +4409,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
 
       {/* Main Dashboard Container */}
       {/* Main Dashboard Container */}
-      <main class="w-full px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5 flex-1 flex flex-col min-h-0 overflow-hidden space-y-2 sm:space-y-3">
+      <main class="w-full px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 flex-1 flex flex-col min-h-0 overflow-hidden space-y-1.5 sm:space-y-2">
         
         {activeTab === 'projects' ? (
           <ProjectManagement 
@@ -4125,23 +4421,31 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
           <>
             {/* Dashboard View Tab: 3 Distinct Sections (Aligned to Red Line Level) */}
             {activeView === 'dashboard' && (
-              <div class="space-y-2.5 sm:space-y-5 animate-fade-in flex flex-col overflow-y-auto overscroll-contain custom-scrollbar py-1 pb-3 flex-1 min-h-0">
+              <div class="space-y-2 sm:space-y-3 lg:space-y-3.5 animate-fade-in flex flex-col overflow-y-auto overscroll-contain no-scrollbar py-0.5 pb-1 flex-1 min-h-0">
                 
                 {/* SECTION 1: Status */}
                 <div class="space-y-1 sm:space-y-2">
-                  <div class="flex items-center gap-1.5 border-b border-gray-200/80 pb-0.5 sm:pb-1">
-                    <div class="w-1.5 h-3.5 sm:w-2 sm:h-4.5 rounded-full bg-[#B30E2E]"></div>
-                    <h2 class="text-xs sm:text-base font-serif font-bold text-gray-900 tracking-wide">
-                      Status
-                    </h2>
+                  <div class="flex items-center justify-between border-b border-gray-200/80 pb-1 sm:pb-1.5 gap-2">
+                    <div class="flex items-center gap-1.5">
+                      <div class="w-1.5 h-3.5 sm:w-2 sm:h-4.5 rounded-full bg-[#B30E2E]"></div>
+                      <h2 class="text-xs sm:text-base font-serif font-bold text-gray-900 tracking-wide">
+                        Status Overview
+                      </h2>
+                    </div>
+                    <ProjectFilterDropdown
+                      projectsList={projectsList}
+                      scopedEnquiries={scopedEnquiries}
+                      selectedProject={selectedProjectFilter}
+                      onSelectProject={(pName) => setSelectedProjectFilter(pName)}
+                    />
                   </div>
 
-                  <div class="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-5 gap-1.5 sm:gap-3">
+                  <div class="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-5 gap-1.5 sm:gap-2.5">
                     
                     {/* Card 1: New */}
                     <div 
                       onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('New'); setSelectedStatuses(['New']); setVisitDateFilter('All'); setFollowupDateFilter('All'); setIsStatusDropdownMode(true); }}
-                      class="bg-white rounded-lg sm:rounded-xl p-3.5 sm:p-4 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-amber-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      class="bg-white rounded-lg sm:rounded-xl p-2.5 sm:p-3 lg:p-3.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-amber-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view New leads"
                     >
                       <div class="min-w-0 flex-1 pr-1 sm:pr-2">
@@ -4157,7 +4461,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                     {/* Card 2: Missed Followup */}
                     <div 
                       onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Missed'); setVisitDateFilter('All'); setFollowupDateFilter('All'); setIsStatusDropdownMode(false); }}
-                      class="bg-white rounded-lg sm:rounded-xl p-3.5 sm:p-4 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-purple-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      class="bg-white rounded-lg sm:rounded-xl p-2.5 sm:p-3 lg:p-3.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-purple-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view Missed Followup leads (Followup not scheduled)"
                     >
                       <div class="min-w-0 flex-1 pr-1 sm:pr-2">
@@ -4173,7 +4477,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                     {/* Card 4: Site Visit Done */}
                     <div 
                       onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Site Visit Done'); setVisitDateFilter('All'); setFollowupDateFilter('All'); setIsStatusDropdownMode(false); }}
-                      class="bg-white rounded-lg sm:rounded-xl p-3.5 sm:p-4 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-sky-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      class="bg-white rounded-lg sm:rounded-xl p-2.5 sm:p-3 lg:p-3.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-sky-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view Completed Visits"
                     >
                       <div class="min-w-0 flex-1 pr-1 sm:pr-2">
@@ -4189,7 +4493,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                     {/* Card 5: Won */}
                     <div 
                       onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Won'); setVisitDateFilter('All'); setFollowupDateFilter('All'); setIsStatusDropdownMode(false); }}
-                      class="bg-white rounded-lg sm:rounded-xl p-3.5 sm:p-4 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-emerald-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      class="bg-white rounded-lg sm:rounded-xl p-2.5 sm:p-3 lg:p-3.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-emerald-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view Won/Booked deals"
                     >
                       <div class="min-w-0 flex-1 pr-1 sm:pr-2">
@@ -4205,7 +4509,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                     {/* Card 6: Lost */}
                     <div 
                       onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Lost'); setVisitDateFilter('All'); setFollowupDateFilter('All'); setIsStatusDropdownMode(false); }}
-                      class="bg-white rounded-lg sm:rounded-xl p-3.5 sm:p-4 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-rose-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      class="bg-white rounded-lg sm:rounded-xl p-2.5 sm:p-3 lg:p-3.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-rose-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view Lost leads"
                     >
                       <div class="min-w-0 flex-1 pr-1 sm:pr-2">
@@ -4230,12 +4534,12 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                     </h2>
                   </div>
 
-                  <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+                  <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-1.5 sm:gap-2.5">
                     
                     {/* Card 1: All Followup Scheduled */}
                     <div 
                       onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setVisitDateFilter('All'); setFollowupDateFilter('AllScheduled'); setIsStatusDropdownMode(false); }}
-                      class="bg-white rounded-lg sm:rounded-xl p-3.5 sm:p-4 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-teal-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      class="bg-white rounded-lg sm:rounded-xl p-2.5 sm:p-3 lg:p-3.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-teal-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view all scheduled follow-ups"
                     >
                       <div class="min-w-0 flex-1 pr-1 sm:pr-2">
@@ -4251,7 +4555,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                     {/* Card 2: Today's Followup */}
                     <div 
                       onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setVisitDateFilter('All'); setFollowupDateFilter('Today'); setIsStatusDropdownMode(false); }}
-                      class="bg-white rounded-lg sm:rounded-xl p-3.5 sm:p-4 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-blue-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      class="bg-white rounded-lg sm:rounded-xl p-2.5 sm:p-3 lg:p-3.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-blue-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view today's scheduled follow-ups"
                     >
                       <div class="min-w-0 flex-1 pr-1 sm:pr-2">
@@ -4267,7 +4571,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                     {/* Card 3: Tomorrow's Followup */}
                     <div 
                       onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setVisitDateFilter('All'); setFollowupDateFilter('Tomorrow'); setIsStatusDropdownMode(false); }}
-                      class="bg-white rounded-lg sm:rounded-xl p-3.5 sm:p-4 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-cyan-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      class="bg-white rounded-lg sm:rounded-xl p-2.5 sm:p-3 lg:p-3.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-cyan-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view tomorrow's scheduled follow-ups"
                     >
                       <div class="min-w-0 flex-1 pr-1 sm:pr-2">
@@ -4283,7 +4587,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                     {/* Card 4: This Week's Followup */}
                     <div 
                       onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('All'); setVisitDateFilter('All'); setFollowupDateFilter('ThisWeek'); setIsStatusDropdownMode(false); }}
-                      class="bg-white rounded-lg sm:rounded-xl p-3.5 sm:p-4 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-emerald-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      class="bg-white rounded-lg sm:rounded-xl p-2.5 sm:p-3 lg:p-3.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-emerald-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view this week's scheduled follow-ups"
                     >
                       <div class="min-w-0 flex-1 pr-1 sm:pr-2">
@@ -4313,7 +4617,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                     {/* Card 1: All Site Visit Scheduled */}
                     <div 
                       onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Site Visit Scheduled'); setFollowupDateFilter('All'); setVisitDateFilter('AllScheduled'); setIsStatusDropdownMode(false); }}
-                      class="bg-white rounded-lg sm:rounded-xl p-3.5 sm:p-4 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-indigo-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      class="bg-white rounded-lg sm:rounded-xl p-2.5 sm:p-3 lg:p-3.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-indigo-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view all scheduled site visits"
                     >
                       <div class="min-w-0 flex-1 pr-1 sm:pr-2">
@@ -4329,7 +4633,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                     {/* Card 2: Today's Visit */}
                     <div 
                       onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Site Visit Scheduled'); setFollowupDateFilter('All'); setVisitDateFilter('Today'); setIsStatusDropdownMode(false); }}
-                      class="bg-white rounded-lg sm:rounded-xl p-3.5 sm:p-4 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-purple-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      class="bg-white rounded-lg sm:rounded-xl p-2.5 sm:p-3 lg:p-3.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-purple-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view today's scheduled visits"
                     >
                       <div class="min-w-0 flex-1 pr-1 sm:pr-2">
@@ -4345,7 +4649,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                     {/* Card 3: Tomorrow's Visit */}
                     <div 
                       onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Site Visit Scheduled'); setFollowupDateFilter('All'); setVisitDateFilter('Tomorrow'); setIsStatusDropdownMode(false); }}
-                      class="bg-white rounded-lg sm:rounded-xl p-3.5 sm:p-4 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-blue-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      class="bg-white rounded-lg sm:rounded-xl p-2.5 sm:p-3 lg:p-3.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-blue-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view tomorrow's scheduled visits"
                     >
                       <div class="min-w-0 flex-1 pr-1 sm:pr-2">
@@ -4361,7 +4665,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                     {/* Card 4: This Week's Visit */}
                     <div 
                       onClick={() => { setActiveTab('enquiries'); setActiveView('leads'); setStatusFilter('Site Visit Scheduled'); setFollowupDateFilter('All'); setVisitDateFilter('ThisWeek'); setIsStatusDropdownMode(false); }}
-                      class="bg-white rounded-lg sm:rounded-xl p-3.5 sm:p-4 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-[#B30E2E]/30 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
+                      class="bg-white rounded-lg sm:rounded-xl p-2.5 sm:p-3 lg:p-3.5 shadow-xs border border-gray-200/80 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-[#B30E2E]/30 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
                       title="Click to view this week's scheduled visits"
                     >
                       <div class="min-w-0 flex-1 pr-1 sm:pr-2">
@@ -4480,7 +4784,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   {/* Section Header: Date & User */}
                                   <div class="bg-gray-50/90 border-b border-gray-200/80 px-3.5 py-2 flex items-center justify-between gap-2 text-xs">
                                     <span class="inline-flex items-center gap-1.5 font-medium text-gray-500">
-                                      <i class="fa-regular fa-calendar-check text-[#B30E2E]"></i>
+                                      <i class="fa-solid fa-calendar-check text-[#B30E2E]"></i>
                                       <span>{modDate}{modTime ? `, ${modTime}` : ''}</span>
                                     </span>
                                     <span class="inline-flex items-center gap-1.5 font-bold text-gray-800">
@@ -4529,10 +4833,20 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
               ) : (
                 <div class="space-y-3 animate-fade-in flex-1 flex flex-col min-h-0 overflow-hidden">
                   {/* Leads Title Section */}
-                  <div class="flex-shrink-0">
-                    <h2 class="text-base sm:text-lg font-serif font-bold text-gray-900 tracking-wide">
-                      Leads
-                    </h2>
+                  <div class="flex-shrink-0 flex items-center justify-between flex-wrap gap-2 pb-0.5">
+                    <div class="flex items-center gap-2.5 sm:gap-3">
+                      <h2 class="text-base sm:text-lg font-serif font-bold text-gray-900 tracking-wide">
+                        Leads
+                      </h2>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <ProjectFilterDropdown
+                        projectsList={projectsList}
+                        scopedEnquiries={scopedEnquiries}
+                        selectedProject={selectedProjectFilter}
+                        onSelectProject={(pName) => setSelectedProjectFilter(pName)}
+                      />
+                    </div>
                   </div>
 
             {/* Leads Table Container */}
@@ -4924,7 +5238,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                           class="w-8 h-8 rounded-xl bg-rose-600 hover:bg-rose-700 text-white flex items-center justify-center transition shadow-sm border border-rose-500/40 cursor-pointer flex-shrink-0"
                           title={`Delete ${selectedLeadIds.length} selected leads`}
                         >
-                          <i class="fa-regular fa-trash-can text-xs"></i>
+                          <i class="fa-solid fa-trash-can text-xs"></i>
                         </button>
                       </div>
                     ) : (
@@ -4935,7 +5249,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                     <div class="flex items-center gap-2 flex-shrink-0 ml-auto">
                       {/* Create Lead Button */}
                       <button 
-                        onClick={() => setShowCreateLeadModal(true)}
+                        onClick={handleOpenNewLeadModal}
                         class="w-8 h-8 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white flex items-center justify-center transition shadow-sm border border-rose-900/40 cursor-pointer flex-shrink-0 transform active:scale-95"
                         title="New Lead"
                       >
@@ -5004,20 +5318,20 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                         class="w-9 h-9 rounded-xl bg-rose-600 hover:bg-rose-700 text-white flex items-center justify-center transition shadow-sm border border-rose-500/40 cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
                         title={`Delete ${selectedLeadIds.length} selected leads`}
                       >
-                        <i class="fa-regular fa-trash-can text-sm"></i>
+                        <i class="fa-solid fa-trash-can text-sm"></i>
                       </button>
                     </div>
                   )}
 
                   {/* Create Lead Icon Button */}
                   <button 
-                    onClick={() => setShowCreateLeadModal(true)}
+                    onClick={handleOpenNewLeadModal}
                     class="w-9 h-9 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white flex items-center justify-center transition shadow-sm border border-rose-900/40 cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
                     title="New Lead"
                   >
                     <div class="relative inline-flex items-center justify-center">
                       <i class="fa-solid fa-address-book text-sm"></i>
-                      <span class="absolute -top-1.5 -right-2 bg-white text-[#B30E2E] font-black text-[9px] w-3.5 h-3.5 rounded-full flex items-center justify-center border border-[#8A0B22] leading-none shadow-sm">+</span>
+                      <span class="absolute -top-1.5 -right-2 bg-white text-[#B30E2E] font-black text-[9px] w-3 h-3 rounded-full flex items-center justify-center border border-[#8A0B22] leading-none">+</span>
                     </div>
                   </button>
 
@@ -5099,16 +5413,19 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                     ? (colId === 'actions' ? 'sticky top-0 right-0 z-30 bg-gray-100' : 'sticky top-0 z-30 bg-gray-100')
                     : '';
                   const sortBg = isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : '';
-                  return `${stickyClass} border-b border-gray-200 py-2.5 px-2.5 whitespace-nowrap ${widthClass} cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${sortBg} ${extra}`.trim();
+                  return `${stickyClass} border-b border-gray-200 py-2.5 px-3 whitespace-nowrap ${widthClass} cursor-pointer select-none group transition-colors hover:bg-gray-200/70 ${sortBg} ${extra}`.trim();
                 };
 
                 const getThStyle = (colId) => {
                   const width = COLUMN_WIDTH_MAP[colId] || 140;
+                  const pinned = isColPinned(colId);
                   const style = {
                     width: `${width}px`,
-                    minWidth: `${width}px`,
-                    maxWidth: `${width}px`
+                    minWidth: `${width}px`
                   };
+                  if (pinned) {
+                    style.maxWidth = `${width}px`;
+                  }
                   if (colId === 'actions') {
                     if (isActionsPinned) style.right = 0;
                     return style;
@@ -5121,7 +5438,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
 
                 const getTdClass = (colId, currentId, extra = '') => {
                   const pinned = isColPinned(colId);
-                  const widthClass = COLUMN_CLASS_MAP[colId] || 'w-36 min-w-[130px] max-w-[150px]';
+                  const widthClass = COLUMN_CLASS_MAP[colId] || 'w-36 min-w-[130px]';
                   const isSelected = selectedLeadIds.includes(currentId);
                   const stickyClass = pinned
                     ? (colId === 'actions'
@@ -5129,16 +5446,19 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                         : `sticky z-20 ${isSelected ? 'bg-[#FFF0F2]' : 'bg-white group-hover:bg-[#FFF5F6]'}`)
                     : '';
                   const wsClass = colId === 'typography' ? 'whitespace-normal' : 'whitespace-nowrap';
-                  return `${stickyClass} py-2.5 px-2.5 ${wsClass} ${widthClass} transition-colors ${extra}`.trim();
+                  return `${stickyClass} py-2.5 px-3 ${wsClass} ${widthClass} transition-colors ${extra}`.trim();
                 };
 
                 const getTdStyle = (colId) => {
                   const width = COLUMN_WIDTH_MAP[colId] || 140;
+                  const pinned = isColPinned(colId);
                   const style = {
                     width: `${width}px`,
-                    minWidth: `${width}px`,
-                    maxWidth: `${width}px`
+                    minWidth: `${width}px`
                   };
+                  if (pinned) {
+                    style.maxWidth = `${width}px`;
+                  }
                   if (colId === 'actions') {
                     if (isActionsPinned) style.right = 0;
                     return style;
@@ -5154,8 +5474,8 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                 return (
                   <div class="overflow-x-auto overflow-y-auto flex-1 min-h-0 custom-scrollbar w-full rounded-b-2xl">
                     <table 
-                      class="min-w-full text-left border-collapse table-fixed"
-                      style={{ minWidth: `${totalTableWidth}px`, width: `${totalTableWidth}px` }}
+                      class="w-full min-w-full text-left border-collapse table-fixed"
+                      style={{ minWidth: `${totalTableWidth}px` }}
                     >
                       <thead class="sticky top-0 z-10 bg-gray-100 shadow-2xs">
                         <tr class="bg-gray-100 border-b border-gray-200 text-[10px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">
@@ -5506,7 +5826,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                       class={getTdClass('fullName', currentId, 'font-bold text-gray-800')}
                                       style={getTdStyle('fullName')}
                                     >
-                                      <div class="flex items-center gap-1.5 truncate max-w-[150px]">
+                                      <div class="flex items-center gap-1.5 truncate">
                                         <div class="w-5 h-5 rounded-full bg-[#FCD6DC] text-[#B30E2E] font-bold text-[10px] flex items-center justify-center flex-shrink-0 border border-[#FCD6DC]">
                                           {(item.firstName || 'C')[0].toUpperCase()}
                                         </div>
@@ -5554,7 +5874,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                                 class="w-5 h-5 rounded-full bg-emerald-100 hover:bg-emerald-600 text-emerald-600 hover:text-white flex items-center justify-center transition-colors shadow-2xs border border-emerald-200 cursor-pointer shrink-0"
                                                 title={`Chat on WhatsApp with ${customerName}`}
                                               >
-                                                <i class="fa-brands fa-whatsapp text-[11px]"></i>
+                                                <svg class="w-2.5 h-2.5 fill-current" viewBox="0 0 448 512" aria-hidden="true"><path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/></svg>
                                               </a>
                                             );
                                           })()}
@@ -5573,7 +5893,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                           class="text-gray-600 hover:text-[#B30E2E] flex items-center gap-1 text-[10.5px] truncate max-w-[145px]"
                                           title={item.email}
                                         >
-                                          <i class="fa-regular fa-envelope text-[9.5px] text-gray-400 shrink-0"></i>
+                                          <i class="fa-solid fa-envelope text-[9.5px] text-gray-400 shrink-0"></i>
                                           <span class="truncate">{item.email}</span>
                                         </a>
                                       ) : (
@@ -5585,7 +5905,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   return (
                                     <td key="enquiryDate" class={getTdClass('enquiryDate', currentId)} style={getTdStyle('enquiryDate')}>
                                       <div class="font-semibold text-gray-800 text-[10px] whitespace-nowrap">
-                                        <i class="fa-regular fa-clock text-[8.5px] text-gray-400 mr-0.5"></i>
+                                        <i class="fa-solid fa-clock text-[8.5px] text-gray-400 mr-0.5"></i>
                                         {new Date(item.createdAt || Date.now()).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' })}
                                         <span class="text-[9px] text-gray-400 ml-1 font-normal">
                                           {new Date(item.createdAt || Date.now()).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' })}
@@ -5728,7 +6048,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                             dd-mm-yy hh:mm
                                           </span>
                                         )}
-                                        <i class={`fa-regular fa-calendar-days text-[9px] transition-colors ml-0.5 ${isPickerOpen ? 'text-[#B30E2E]' : 'text-gray-400 group-hover:text-[#B30E2E]'}`}></i>
+                                        <i class={`fa-solid fa-calendar-days text-[9px] transition-colors ml-0.5 ${isPickerOpen ? 'text-[#B30E2E]' : 'text-gray-400 group-hover:text-[#B30E2E]'}`}></i>
                                       </button>
 
                                       {/* Integrated Date & Time Dropdown Picker */}
@@ -5751,70 +6071,17 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   );
                                 }
                                 case 'projectName': {
-                                  const isProjectOpen = activeDropdown?.rowId === currentId && activeDropdown?.field === 'projectName';
                                   const matchedProject = (projectsList || []).find(p => (p.name || '').trim().toLowerCase() === (item.projectName || '').trim().toLowerCase());
-                                  const currentProjName = matchedProject ? matchedProject.name : '';
+                                  const currentProjName = matchedProject ? matchedProject.name : (item.projectName || '');
 
                                   return (
-                                    <td key="projectName" class={getTdClass('projectName', currentId, `relative ${isProjectOpen ? '!z-50' : ''}`)} style={getTdStyle('projectName')}>
-                                      <button
-                                        type="button"
-                                        onClick={(e) => toggleDropdown(e, currentId, 'projectName')}
-                                        class="px-2 py-0.5 rounded-lg border border-slate-200 text-[10.5px] font-bold text-slate-800 bg-slate-50 hover:bg-slate-100 outline-none cursor-pointer transition shadow-2xs flex items-center justify-between gap-1 w-full custom-dropdown-toggle"
-                                        title="Click to select Project Name"
-                                      >
-                                        <span class="truncate flex items-center gap-1">
-                                          <i class="fa-solid fa-building text-[8.5px] text-[#B30E2E]"></i>
-                                          <span class="truncate">{currentProjName || <span class="text-gray-400 font-normal italic">Select Project</span>}</span>
+                                    <td key="projectName" class={getTdClass('projectName', currentId)} style={getTdStyle('projectName')}>
+                                      <div class="flex items-center gap-1.5 truncate" title={currentProjName || '-'}>
+                                        <i class="fa-solid fa-building text-[9px] text-[#B30E2E] flex-shrink-0"></i>
+                                        <span class="font-bold text-gray-800 text-xs truncate">
+                                          {currentProjName || <span class="text-gray-400 font-normal italic">-</span>}
                                         </span>
-                                        <i class={`fa-solid fa-chevron-down text-[8px] text-gray-500 transition-transform ${isProjectOpen ? 'rotate-180' : ''}`}></i>
-                                      </button>
-
-                                      {isProjectOpen && (
-                                        <div 
-                                          class="fixed z-[9999] min-w-[160px] max-h-60 overflow-y-auto custom-scrollbar overscroll-contain bg-white rounded-xl shadow-2xl border border-gray-200 py-1 text-xs animate-fade-in custom-dropdown-menu"
-                                          style={{
-                                            top: activeDropdown?.coords ? `${activeDropdown.coords.top}px` : undefined,
-                                            left: activeDropdown?.coords ? `${activeDropdown.coords.left}px` : undefined,
-                                            minWidth: activeDropdown?.coords ? `${Math.max(160, activeDropdown.coords.width)}px` : '160px',
-                                            maxHeight: activeDropdown?.coords?.maxHeight ? `${activeDropdown.coords.maxHeight}px` : '240px'
-                                          }}
-                                        >
-                                          {projectsList.length === 0 ? (
-                                            <div class="px-3 py-2 text-[11px] text-gray-400 italic">No projects found. Create one in Projects tab.</div>
-                                          ) : (
-                                            projectsList.map((p) => {
-                                              const isSelected = currentProjName.toLowerCase() === (p.name || '').toLowerCase();
-                                              return (
-                                                <button
-                                                  key={p.id || p.name}
-                                                  type="button"
-                                                  onClick={() => {
-                                                    const newProjName = p.name;
-                                                    const availableTypes = getProjectTypesForProject(projectsList, newProjName);
-                                                    const newType = availableTypes.length > 0 ? availableTypes.join(', ') : '';
-                                                    const newTypo = getAutoTypographyForProjectType(projectsList, newProjName, newType);
-                                                    handleInlineFieldChange(currentId, 'projectName', newProjName, {
-                                                      projectType: newType,
-                                                      typography: newTypo
-                                                    });
-                                                    setActiveDropdown(null);
-                                                  }}
-                                                  class={`w-full px-3 py-1.5 text-left text-[11px] font-medium flex items-center justify-between hover:bg-slate-100 transition ${
-                                                    isSelected ? 'bg-slate-100 text-[#B30E2E] font-bold' : 'text-slate-700'
-                                                  }`}
-                                                >
-                                                  <span class="truncate flex items-center gap-1.5">
-                                                    <i class="fa-solid fa-building text-[9px] text-[#B30E2E]/80"></i>
-                                                    <span class="truncate">{p.name}</span>
-                                                  </span>
-                                                  {isSelected && <i class="fa-solid fa-check text-[10px] text-[#B30E2E]"></i>}
-                                                </button>
-                                              );
-                                            })
-                                          )}
-                                        </div>
-                                      )}
+                                      </div>
                                     </td>
                                   );
                                 }
@@ -6165,7 +6432,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                             class="w-6 h-6 rounded-md bg-rose-100 hover:bg-rose-200 text-rose-700 flex items-center justify-center transition cursor-pointer"
                                             title="Delete Lead"
                                           >
-                                            <i class="fa-regular fa-trash-can text-[10.5px]"></i>
+                                            <i class="fa-solid fa-trash-can text-[10.5px]"></i>
                                           </button>
                                         )}
                                       </div>
@@ -6319,8 +6586,13 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
 
                               {/* Role */}
                               <td class="py-2.5 px-3 whitespace-nowrap">
-                                {['admin', 'systemadmin', 'system'].includes((agent.username || '').toLowerCase()) || ['system admin', 'systemadmin', 'admin'].includes((agent.role || '').toLowerCase()) ? (
+                                {(agent.username || '').toLowerCase() === 'system' ? (
                                   <span class="text-gray-400 italic text-[11px]">—</span>
+                                ) : ['admin', 'systemadmin'].includes((agent.role || '').toLowerCase()) ? (
+                                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
+                                    <i class="fa-solid fa-shield-halved text-[9px]"></i>
+                                    Admin
+                                  </span>
                                 ) : (
                                   <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
                                     <i class="fa-solid fa-user-tie text-[9px]"></i>
@@ -6338,7 +6610,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
 
                               {/* Mobile No */}
                               <td class="py-2.5 px-3 whitespace-nowrap">
-                                {((agent.username || '').toLowerCase() === 'system' || ['system admin', 'systemadmin', 'admin'].includes((agent.role || '').toLowerCase()) || !agent.phone) ? (
+                                {((agent.username || '').toLowerCase() === 'system' || !agent.phone) ? (
                                   <span class="text-gray-400 italic text-[11px]">—</span>
                                 ) : (
                                   <a href={`tel:${agent.phone}`} class="text-[#B30E2E] font-bold hover:underline flex items-center gap-1 text-xs">
@@ -6350,11 +6622,11 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
 
                               {/* Email Address */}
                               <td class="py-2.5 px-3 whitespace-nowrap">
-                                {((agent.username || '').toLowerCase() === 'system' || ['system admin', 'systemadmin', 'admin'].includes((agent.role || '').toLowerCase()) || !agent.email) ? (
+                                {((agent.username || '').toLowerCase() === 'system' || !agent.email) ? (
                                   <span class="text-gray-400 italic text-[11px]">—</span>
                                 ) : (
                                   <a href={`mailto:${agent.email}`} class="text-gray-700 hover:text-[#B30E2E] flex items-center gap-1 text-[11px]">
-                                    <i class="fa-regular fa-envelope text-[10px] text-gray-400"></i>
+                                    <i class="fa-solid fa-envelope text-[10px] text-gray-400"></i>
                                     <span>{agent.email}</span>
                                   </a>
                                 )}
@@ -6362,7 +6634,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
 
                               {/* Assigned Leads */}
                               <td class="py-2.5 px-3 whitespace-nowrap">
-                                {['system admin', 'systemadmin', 'admin'].includes((agent.role || '').toLowerCase()) ? (
+                                {(agent.username || '').toLowerCase() === 'system' ? (
                                   <span class="text-gray-400 italic text-[11px]">—</span>
                                 ) : (
                                   <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
@@ -6387,10 +6659,10 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   >
                                     <i class="fa-solid fa-pen-to-square text-xs"></i>
                                   </button>
-                                  {['admin', 'systemadmin', 'system'].includes((agent.username || '').toLowerCase()) || ['system admin', 'systemadmin', 'admin'].includes((agent.role || '').toLowerCase()) ? (
+                                  {(agent.username || '').toLowerCase() === 'system' ? (
                                     <span
                                       class="w-7 h-7 rounded-lg bg-gray-100 text-gray-400 flex items-center justify-center cursor-not-allowed select-none opacity-60"
-                                      title="Inbuilt Admin account cannot be deleted"
+                                      title="Inbuilt System account cannot be deleted"
                                     >
                                       <i class="fa-solid fa-lock text-[10px]"></i>
                                     </span>
@@ -6400,7 +6672,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                       class="w-7 h-7 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700 flex items-center justify-center transition cursor-pointer"
                                       title="Delete User Account"
                                     >
-                                      <i class="fa-regular fa-trash-can text-xs"></i>
+                                      <i class="fa-solid fa-trash-can text-xs"></i>
                                     </button>
                                   )}
                                 </div>
@@ -7265,7 +7537,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                         title="Click to set Followup / Visit Date & Time"
                       >
                         <div class="flex items-center gap-2 truncate">
-                          <i class="fa-regular fa-calendar-days text-[#B30E2E] text-xs shrink-0"></i>
+                          <i class="fa-solid fa-calendar-days text-[#B30E2E] text-xs shrink-0"></i>
                           <span class={editingEnquiry.followupDate ? 'font-bold text-gray-800 truncate' : 'text-gray-400 truncate'}>
                             {editingEnquiry.followupDate
                               ? `${formatDateShortMonth(editingEnquiry.followupDate)}${editingEnquiry.visitTime ? ` at ${formatTime12Hour(editingEnquiry.visitTime)}` : ''}`
@@ -7922,7 +8194,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                         title="Click to set Followup Date & Time"
                       >
                         <div class="flex items-center gap-2 truncate">
-                          <i class="fa-regular fa-calendar-days text-[#B30E2E] text-xs shrink-0"></i>
+                          <i class="fa-solid fa-calendar-days text-[#B30E2E] text-xs shrink-0"></i>
                           <span class={newLeadFormData.followupDate ? 'font-bold text-gray-800 truncate' : 'text-gray-400 truncate'}>
                             {newLeadFormData.followupDate
                               ? `${formatDateShortMonth(newLeadFormData.followupDate)}${newLeadFormData.visitTime ? ` at ${formatTime12Hour(newLeadFormData.visitTime)}` : ''}`
@@ -8106,7 +8378,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                       <div key={log._id || nIdx} class="p-2.5 rounded-xl bg-white border border-rose-200/80 text-xs text-slate-800 space-y-1.5 shadow-2xs">
                         <div class="flex items-center justify-between text-[10px] text-gray-500 font-medium">
                           <span class="flex items-center gap-1 font-mono text-slate-600 font-semibold">
-                            <i class="fa-regular fa-clock text-[9.5px] text-[#B30E2E]"></i>
+                            <i class="fa-solid fa-clock text-[9.5px] text-[#B30E2E]"></i>
                             <span>{nDate ? `${nDate}${nTime ? `, ${nTime}` : ''}` : 'Initial Note'}</span>
                           </span>
                           <span class="px-1.5 py-0.5 rounded-md bg-rose-50 text-[#B30E2E] font-bold text-[9.5px] border border-rose-100">
@@ -8123,7 +8395,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                   return (
                     <div class="my-auto text-center py-6 px-2 space-y-2">
                       <div class="w-10 h-10 rounded-full bg-amber-50 border border-amber-200/80 flex items-center justify-center mx-auto text-amber-600">
-                        <i class="fa-regular fa-note-sticky text-base"></i>
+                        <i class="fa-solid fa-note-sticky text-base"></i>
                       </div>
                       <h4 class="text-xs font-bold text-gray-800">No Note Added Yet</h4>
                       <p class="text-[10.5px] text-gray-400 leading-normal">
@@ -8343,7 +8615,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                   </>
                 ) : (
                   <>
-                    <i class="fa-regular fa-trash-can text-[11px]"></i>
+                    <i class="fa-solid fa-trash-can text-[11px]"></i>
                     <span>Delete</span>
                   </>
                 )}

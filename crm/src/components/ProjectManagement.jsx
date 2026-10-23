@@ -863,12 +863,12 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
               <button 
                 type="button" 
                 onClick={handleOpenCreateModal}
-                className="w-9 h-9 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white flex items-center justify-center transition shadow-sm border border-rose-900/40 cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white flex items-center justify-center transition shadow-sm border border-rose-900/40 cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
                 title="Create New Project"
               >
                 <div className="relative inline-flex items-center justify-center">
                   <i className="fa-solid fa-building text-xs sm:text-sm"></i>
-                  <span className="absolute -top-1.5 -right-2 bg-white text-[#B30E2E] font-black text-[9px] w-3.5 h-3.5 rounded-full flex items-center justify-center border border-[#8A0B22] leading-none shadow-sm">+</span>
+                  <span className="absolute -top-1.5 -right-2 bg-white text-[#B30E2E] font-black text-[9px] w-3 h-3 rounded-full flex items-center justify-center border border-[#8A0B22] leading-none">+</span>
                 </div>
               </button>
             )}
@@ -889,28 +889,37 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
           </div>
         ) : (
           <div className="overflow-x-auto overflow-y-auto flex-1 min-h-0 custom-scrollbar w-full rounded-b-2xl">
-            <table className="w-full min-w-full text-left border-collapse">
+            <table className="w-full min-w-[960px] text-left border-collapse table-fixed">
               <thead className="sticky top-0 z-10 bg-gray-100 shadow-2xs">
                 <tr className="bg-gray-100 border-b border-gray-200 text-[10px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">
-                  <th className="py-2.5 px-3 text-center whitespace-nowrap w-14 min-w-[56px] max-w-[56px]">
+                  <th className="py-2.5 px-3 text-center whitespace-nowrap" style={{ width: '5%', minWidth: '50px' }}>
                     # ID
                   </th>
-                  <th className="py-2.5 px-3 whitespace-nowrap min-w-[150px] max-w-[160px]">
+                  <th className="py-2.5 px-3 whitespace-nowrap" style={{ width: '16%', minWidth: '140px' }}>
                     Project Name
                   </th>
-                  <th className="py-2.5 px-3 whitespace-nowrap min-w-[130px]">Developer</th>
-                  <th className="py-2.5 px-3 whitespace-nowrap min-w-[130px]">Project Type</th>
-                  <th className="py-2.5 px-3 whitespace-nowrap min-w-[180px]">Typography</th>
-                  <th className="py-2.5 px-3 whitespace-nowrap min-w-[120px]">RERA No</th>
-                  <th className="py-2.5 px-3 whitespace-nowrap min-w-[170px]">Area / Address</th>
+                  <th className="py-2.5 px-3 whitespace-nowrap" style={{ width: '14%', minWidth: '120px' }}>
+                    Developer
+                  </th>
+                  <th className="py-2.5 px-3 whitespace-nowrap" style={{ width: '14%', minWidth: '120px' }}>
+                    Project Type
+                  </th>
+                  <th className="py-2.5 px-3 whitespace-nowrap" style={{ width: '14%', minWidth: '120px' }}>
+                    Typography
+                  </th>
+                  <th className="py-2.5 px-3 whitespace-nowrap" style={{ width: '12%', minWidth: '100px' }}>
+                    RERA No
+                  </th>
+                  <th className="py-2.5 px-3 whitespace-nowrap" style={{ width: '17%', minWidth: '150px' }}>
+                    Area / Address
+                  </th>
                   {canManage && (
-                    <th className="py-2.5 px-3 text-center whitespace-nowrap w-20 min-w-[80px] max-w-[80px]">
+                    <th className="py-2.5 px-3 text-center whitespace-nowrap" style={{ width: '8%', minWidth: '75px' }}>
                       Actions
                     </th>
                   )}
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 text-xs">
+              </thead><tbody className="divide-y divide-gray-100 text-xs">
                 {filteredProjects.map((project, idx) => {
                   const types = Array.isArray(project.projectType) ? project.projectType : [project.projectType].filter(Boolean);
                   let typos = [];
@@ -939,14 +948,14 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                       </td>
 
                       {/* Project Name */}
-                      <td className="py-2.5 px-3 font-bold text-gray-900 whitespace-nowrap min-w-[150px] max-w-[160px]">
+                      <td className="py-2.5 px-3 font-bold text-gray-900 truncate">
                         <span className="hover:text-[#B30E2E] transition-colors">
                           {project.name}
                         </span>
                       </td>
 
                       {/* Developer Name */}
-                      <td className="py-2.5 px-3 text-gray-700 whitespace-nowrap font-medium">
+                      <td className="py-2.5 px-3 text-gray-700 font-medium truncate">
                         {project.developerName || <span className="text-gray-400 italic">—</span>}
                       </td>
 
@@ -969,7 +978,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                       </td>
 
                       {/* Typography */}
-                      <td className="py-2.5 px-4 w-52 min-w-[150px] max-w-[220px]">
+                      <td className="py-2.5 px-3">
                         {typos.length > 0 ? (
                           <div className="flex flex-col gap-0.5" title={typos.join('\n')}>
                             {typos.map((t, i) => (
@@ -1022,7 +1031,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
 
                       {/* Actions */}
                       {canManage && (
-                        <td className="py-2.5 px-3 text-center whitespace-nowrap w-20 min-w-[80px] max-w-[80px]">
+                        <td className="py-2.5 px-3 text-center whitespace-nowrap">
                           <div className="flex items-center justify-center gap-1.5">
                             {/* Edit Button */}
                             <button
@@ -1041,7 +1050,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                               className="w-7 h-7 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700 flex items-center justify-center transition cursor-pointer"
                               title="Delete Project"
                             >
-                              <i className="fa-regular fa-trash-can text-xs"></i>
+                              <i className="fa-solid fa-trash-can text-xs"></i>
                             </button>
                           </div>
                         </td>

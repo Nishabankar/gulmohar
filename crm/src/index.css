@@ -48,6 +48,15 @@ body {
   background: #b30e2e;
 }
 
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* Infinite Smooth Logo Marquee Animation */
 @keyframes marquee {
   0% {

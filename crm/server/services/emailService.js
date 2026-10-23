@@ -15,6 +15,9 @@ const getTransporter = async () => {
       auth: {
         user: env.SMTP_USER,
         pass: env.SMTP_PASS
+      },
+      tls: {
+        rejectUnauthorized: false
       }
     });
     console.log(`📧 SMTP Email Transporter configured via ${env.SMTP_HOST}`);
@@ -84,8 +87,9 @@ const sendPasswordResetEmail = async (toEmail, userName, otpCode, resetLink = ''
       </div>
     `;
 
+    const fromAddress = env.SMTP_FROM || (env.SMTP_USER ? `"Gulmohar City Admin" <${env.SMTP_USER}>` : '"Gulmohar City Admin" <admin@gulmoharcity.in>');
     const mailOptions = {
-      from: env.SMTP_FROM || '"Gulmohar City Admin" <noreply@gulmoharcity.com>',
+      from: fromAddress,
       to: toEmail,
       subject: `🔑 Gulmohar City - Password Reset Link & Verification Code [${otpCode}]`,
       html: htmlContent
@@ -138,8 +142,9 @@ const sendPasswordChangedConfirmation = async (toEmail, userName) => {
       </div>
     `;
 
+    const fromAddress = env.SMTP_FROM || (env.SMTP_USER ? `"Gulmohar City Admin" <${env.SMTP_USER}>` : '"Gulmohar City Admin" <admin@gulmoharcity.in>');
     const mailOptions = {
-      from: env.SMTP_FROM || '"Gulmohar City Admin" <noreply@gulmoharcity.com>',
+      from: fromAddress,
       to: toEmail,
       subject: '✅ Security Alert: Gulmohar City Password Changed',
       html: htmlContent
@@ -204,8 +209,9 @@ const sendNewUserInviteEmail = async (toEmail, userName, otpCode, resetLink = ''
       </div>
     `;
 
+    const fromAddress = env.SMTP_FROM || (env.SMTP_USER ? `"Gulmohar City Admin" <${env.SMTP_USER}>` : '"Gulmohar City Admin" <admin@gulmoharcity.in>');
     const mailOptions = {
-      from: env.SMTP_FROM || '"Gulmohar City Admin" <noreply@gulmoharcity.com>',
+      from: fromAddress,
       to: toEmail,
       subject: `🎉 Welcome to Gulmohar City - Set Your Account Password [${otpCode}]`,
       html: htmlContent
@@ -235,6 +241,7 @@ const sendNewUserInviteEmail = async (toEmail, userName, otpCode, resetLink = ''
 };
 
 module.exports = {
+  getTransporter,
   sendPasswordResetEmail,
   sendPasswordChangedConfirmation,
   sendNewUserInviteEmail

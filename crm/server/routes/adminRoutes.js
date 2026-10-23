@@ -749,6 +749,44 @@ router.get('/agents', protectAdmin, async (req, res) => {
   }
 });
 
+// @route   GET /api/admin/test-smtp
+// @desc    Test SMTP connection and check configuration
+// @access  Protected (SuperAdmin Only)
+router.get('/test-smtp', protectAdmin, async (req, res) => {
+  try {
+    const isConfigured = Boolean(env.SMTP_USER && env.SMTP_PASS);
+    if (!isConfigured) {
+      return res.json({
+        success: false,
+        isConfigured: false,
+        message: 'SMTP credentials (SMTP_USER / SMTP_PASS) are not set in the server environment.'
+      });
+    }
+
+    const { getTransporter } = require('../services/emailService');
+    const mailer = await getTransporter();
+    if (!mailer) {
+      return res.status(500).json({ success: false, message: 'Could not initialize SMTP transporter.' });
+    }
+
+    await mailer.verify();
+    return res.json({
+      success: true,
+      isConfigured: true,
+      host: env.SMTP_HOST,
+      port: env.SMTP_PORT,
+      user: env.SMTP_USER,
+      message: 'SMTP server verified successfully! Ready to send emails.'
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      isConfigured: Boolean(env.SMTP_USER && env.SMTP_PASS),
+      error: error.message
+    });
+  }
+});
+
 // @route   POST /api/admin/agents
 // @desc    Create new user (Admin or Sales Agent) in MySQL database & send password setup email
 // @access  Protected (SuperAdmin Only)
@@ -828,7 +866,9 @@ router.post('/agents', protectAdmin, async (req, res) => {
     const roleTitle = ['Admin', 'SystemAdmin'].includes(cleanRole) ? 'Admin' : 'Sales Executive';
     let msg = `${roleTitle} account created! An invitation email with password setup link has been sent to ${agentEmail}.`;
     if (!emailResult.isConfigured) {
-      msg = `${roleTitle} account created! Password setup link sent to ${agentEmail}. [Test OTP: ${otpCode}]`;
+      msg = `${roleTitle} account created! (Note: Server SMTP is not configured in .env on host. Test OTP: ${otpCode})`;
+    } else if (!emailResult.success) {
+      msg = `${roleTitle} account created! (Note: Email sending failed: ${emailResult.error || 'SMTP delivery error'}. Setup OTP: ${otpCode})`;
     }
 
     return res.json({

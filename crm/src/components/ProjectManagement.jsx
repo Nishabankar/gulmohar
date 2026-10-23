@@ -250,6 +250,10 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
   const typeDropdownRef = useRef(null);
   const typoDropdownRef = useRef(null);
   const areaDropdownRef = useRef(null);
+  const [isMobileTypeDropdownOpen, setIsMobileTypeDropdownOpen] = useState(false);
+  const [isDesktopTypeDropdownOpen, setIsDesktopTypeDropdownOpen] = useState(false);
+  const mobileFilterTypeDropdownRef = useRef(null);
+  const desktopFilterTypeDropdownRef = useRef(null);
 
   // Form State
   const initialFormState = {
@@ -493,6 +497,18 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
       ) {
         setIsAreaDropdownOpen(false);
         setAreaSearch('');
+      }
+      if (
+        mobileFilterTypeDropdownRef.current &&
+        !mobileFilterTypeDropdownRef.current.contains(event.target)
+      ) {
+        setIsMobileTypeDropdownOpen(false);
+      }
+      if (
+        desktopFilterTypeDropdownRef.current &&
+        !desktopFilterTypeDropdownRef.current.contains(event.target)
+      ) {
+        setIsDesktopTypeDropdownOpen(false);
       }
       if (
         !event.target.closest('.custom-table-typo-menu') &&
@@ -1025,18 +1041,66 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
 
             {/* ROW 2: All Types Dropdown (Left) + Action Buttons (Right) */}
             <div className="flex items-center justify-between gap-2 w-full">
-              {/* Type Filter Select */}
-              <div className="flex-1 min-w-0 relative">
-                <select
-                  value={typeFilter}
-                  onChange={(e) => setTypeFilter(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-xs bg-white hover:bg-gray-50 font-bold text-gray-700 cursor-pointer shadow-xs truncate"
+              {/* Type Filter Custom Dropdown */}
+              <div ref={mobileFilterTypeDropdownRef} className="flex-1 min-w-0 relative">
+                <button
+                  type="button"
+                  onClick={() => setIsMobileTypeDropdownOpen(!isMobileTypeDropdownOpen)}
+                  className="w-full px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-xs bg-white hover:bg-gray-50 font-bold text-gray-700 cursor-pointer shadow-xs flex items-center justify-between gap-1.5"
+                  title="Filter projects by Type"
                 >
-                  <option value="All">All Types</option>
-                  {PROJECT_TYPES.map(t => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                </select>
+                  <span className="flex items-center gap-1.5 truncate">
+                    <span className="w-2 h-2 rounded-full bg-[#B30E2E] flex-shrink-0"></span>
+                    <span className="truncate">{typeFilter === 'All' ? 'All Types' : typeFilter}</span>
+                  </span>
+                  <i className={`fa-solid fa-chevron-down text-[11px] text-gray-400 transition transform flex-shrink-0 ${isMobileTypeDropdownOpen ? 'rotate-180' : ''}`}></i>
+                </button>
+
+                {isMobileTypeDropdownOpen && (
+                  <div className="absolute left-0 mt-1 w-full min-w-[170px] bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-1 max-h-56 overflow-y-auto custom-scrollbar animate-fade-in">
+                    {/* Option: All Types */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTypeFilter('All');
+                        setIsMobileTypeDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 text-xs font-semibold hover:bg-rose-50 hover:text-[#B30E2E] transition flex items-center justify-between cursor-pointer ${
+                        typeFilter === 'All' ? 'bg-[#FFF0F2] text-[#B30E2E] font-bold' : 'text-gray-700'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2 truncate">
+                        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${typeFilter === 'All' ? 'bg-[#B30E2E]' : 'bg-gray-300'}`}></span>
+                        <span>All Types</span>
+                      </span>
+                      {typeFilter === 'All' && <i className="fa-solid fa-check text-xs text-[#B30E2E]"></i>}
+                    </button>
+
+                    {/* Dynamic Project Types */}
+                    {PROJECT_TYPES.map((type) => {
+                      const isSelected = typeFilter === type;
+                      return (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() => {
+                            setTypeFilter(type);
+                            setIsMobileTypeDropdownOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 text-xs font-semibold hover:bg-rose-50 hover:text-[#B30E2E] transition flex items-center justify-between cursor-pointer ${
+                            isSelected ? 'bg-[#FFF0F2] text-[#B30E2E] font-bold' : 'text-gray-700'
+                          }`}
+                        >
+                          <span className="flex items-center gap-2 truncate">
+                            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${isSelected ? 'bg-[#B30E2E]' : 'bg-gray-300'}`}></span>
+                            <span className="truncate">{type}</span>
+                          </span>
+                          {isSelected && <i className="fa-solid fa-check text-xs text-[#B30E2E]"></i>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* Right: Action Symbol Buttons */}
@@ -1097,18 +1161,66 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                 )}
               </div>
 
-              {/* Type Filter Select */}
-              <div className="w-36 flex-shrink-0 relative">
-                <select
-                  value={typeFilter}
-                  onChange={(e) => setTypeFilter(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-xs bg-white hover:bg-gray-50 font-bold text-gray-700 cursor-pointer shadow-xs"
+              {/* Type Filter Custom Dropdown */}
+              <div ref={desktopFilterTypeDropdownRef} className="w-36 flex-shrink-0 relative">
+                <button
+                  type="button"
+                  onClick={() => setIsDesktopTypeDropdownOpen(!isDesktopTypeDropdownOpen)}
+                  className="w-full px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-xs bg-white hover:bg-gray-50 font-bold text-gray-700 cursor-pointer shadow-xs flex items-center justify-between gap-1.5"
+                  title="Filter projects by Type"
                 >
-                  <option value="All">All Types</option>
-                  {PROJECT_TYPES.map(t => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                </select>
+                  <span className="flex items-center gap-1.5 truncate">
+                    <span className="w-2 h-2 rounded-full bg-[#B30E2E] flex-shrink-0"></span>
+                    <span className="truncate">{typeFilter === 'All' ? 'All Types' : typeFilter}</span>
+                  </span>
+                  <i className={`fa-solid fa-chevron-down text-[11px] text-gray-400 transition transform flex-shrink-0 ${isDesktopTypeDropdownOpen ? 'rotate-180' : ''}`}></i>
+                </button>
+
+                {isDesktopTypeDropdownOpen && (
+                  <div className="absolute left-0 mt-1 w-full min-w-[160px] bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-1 max-h-56 overflow-y-auto custom-scrollbar animate-fade-in">
+                    {/* Option: All Types */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTypeFilter('All');
+                        setIsDesktopTypeDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 text-xs font-semibold hover:bg-rose-50 hover:text-[#B30E2E] transition flex items-center justify-between cursor-pointer ${
+                        typeFilter === 'All' ? 'bg-[#FFF0F2] text-[#B30E2E] font-bold' : 'text-gray-700'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2 truncate">
+                        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${typeFilter === 'All' ? 'bg-[#B30E2E]' : 'bg-gray-300'}`}></span>
+                        <span>All Types</span>
+                      </span>
+                      {typeFilter === 'All' && <i className="fa-solid fa-check text-xs text-[#B30E2E]"></i>}
+                    </button>
+
+                    {/* Dynamic Project Types */}
+                    {PROJECT_TYPES.map((type) => {
+                      const isSelected = typeFilter === type;
+                      return (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() => {
+                            setTypeFilter(type);
+                            setIsDesktopTypeDropdownOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 text-xs font-semibold hover:bg-rose-50 hover:text-[#B30E2E] transition flex items-center justify-between cursor-pointer ${
+                            isSelected ? 'bg-[#FFF0F2] text-[#B30E2E] font-bold' : 'text-gray-700'
+                          }`}
+                        >
+                          <span className="flex items-center gap-2 truncate">
+                            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${isSelected ? 'bg-[#B30E2E]' : 'bg-gray-300'}`}></span>
+                            <span className="truncate">{type}</span>
+                          </span>
+                          {isSelected && <i className="fa-solid fa-check text-xs text-[#B30E2E]"></i>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
 

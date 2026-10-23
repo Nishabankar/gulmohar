@@ -182,42 +182,42 @@ const getAutoTypographyForProjectType = (projectsList, projectName, projectType)
 
 const COLUMN_WIDTH_MAP = {
   leadId: 76,
-  fullName: 130,
-  email: 135,
-  mobile: 125,
-  enquiryDate: 125,
+  fullName: 175,
+  email: 205,
+  mobile: 130,
+  enquiryDate: 135,
   status: 120,
-  priority: 115,
-  followupDate: 130,
-  projectName: 120,
-  projectType: 120,
+  priority: 110,
+  followupDate: 140,
+  projectName: 170,
+  projectType: 130,
   typography: 115,
   carpetArea: 100,
   budget: 100,
   plotsCount: 110,
-  assignedAgent: 125,
-  createdBy: 105,
+  assignedAgent: 160,
+  createdBy: 120,
   notes: 55,
   actions: 100
 };
 
 const COLUMN_CLASS_MAP = {
   leadId: 'w-[76px] min-w-[76px]',
-  fullName: 'w-[130px] min-w-[130px]',
-  email: 'w-[135px] min-w-[135px]',
-  mobile: 'w-[125px] min-w-[125px]',
-  enquiryDate: 'w-[125px] min-w-[125px]',
+  fullName: 'w-[175px] min-w-[175px]',
+  email: 'w-[205px] min-w-[205px]',
+  mobile: 'w-[130px] min-w-[130px]',
+  enquiryDate: 'w-[135px] min-w-[135px]',
   status: 'w-[120px] min-w-[120px]',
-  priority: 'w-[115px] min-w-[115px]',
-  followupDate: 'w-[130px] min-w-[130px]',
-  projectName: 'w-[120px] min-w-[120px]',
-  projectType: 'w-[120px] min-w-[120px]',
+  priority: 'w-[110px] min-w-[110px]',
+  followupDate: 'w-[140px] min-w-[140px]',
+  projectName: 'w-[170px] min-w-[170px]',
+  projectType: 'w-[130px] min-w-[130px]',
   typography: 'w-[115px] min-w-[115px]',
   carpetArea: 'w-[100px] min-w-[100px]',
   budget: 'w-[100px] min-w-[100px]',
   plotsCount: 'w-[110px] min-w-[110px]',
-  assignedAgent: 'w-[125px] min-w-[125px]',
-  createdBy: 'w-[105px] min-w-[105px]',
+  assignedAgent: 'w-[160px] min-w-[160px]',
+  createdBy: 'w-[120px] min-w-[120px]',
   notes: 'w-[55px] min-w-[55px]',
   actions: 'w-[100px] min-w-[100px]'
 };
@@ -5825,11 +5825,11 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                       class={getTdClass('fullName', currentId, 'font-bold text-gray-800')}
                                       style={getTdStyle('fullName')}
                                     >
-                                      <div class="flex items-center gap-1.5 truncate">
+                                      <div class="flex items-center gap-1.5 whitespace-nowrap">
                                         <div class="w-5 h-5 rounded-full bg-[#FCD6DC] text-[#B30E2E] font-bold text-[10px] flex items-center justify-center flex-shrink-0 border border-[#FCD6DC]">
                                           {(item.firstName || 'C')[0].toUpperCase()}
                                         </div>
-                                        <span class="capitalize text-[11.5px] text-gray-900 font-bold whitespace-nowrap truncate" title={`${item.firstName || ''} ${item.lastName || ''}`}>
+                                        <span class="capitalize text-[11.5px] text-gray-900 font-bold whitespace-nowrap" title={`${item.firstName || ''} ${item.lastName || ''}`}>
                                           {item.firstName || ''} {item.lastName || ''}
                                         </span>
                                       </div>
@@ -5889,11 +5889,11 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                       {item.email ? (
                                         <a 
                                           href={`mailto:${item.email}`}
-                                          class="text-gray-600 hover:text-[#B30E2E] flex items-center gap-1 text-[10.5px] truncate max-w-[145px]"
+                                          class="text-gray-600 hover:text-[#B30E2E] flex items-center gap-1 text-[10.5px] whitespace-nowrap"
                                           title={item.email}
                                         >
                                           <i class="fa-solid fa-envelope text-[9.5px] text-gray-400 shrink-0"></i>
-                                          <span class="truncate">{item.email}</span>
+                                          <span class="whitespace-nowrap">{item.email}</span>
                                         </a>
                                       ) : (
                                         <span class="text-gray-400 italic text-[10px]">Optional / None</span>
@@ -6075,9 +6075,9 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
 
                                   return (
                                     <td key="projectName" class={getTdClass('projectName', currentId)} style={getTdStyle('projectName')}>
-                                      <div class="flex items-center gap-1.5 truncate" title={currentProjName || '-'}>
+                                      <div class="flex items-center gap-1.5 whitespace-nowrap" title={currentProjName || '-'}>
                                         <i class="fa-solid fa-building text-[9px] text-[#B30E2E] flex-shrink-0"></i>
-                                        <span class="font-bold text-gray-800 text-xs truncate">
+                                        <span class="font-bold text-gray-800 text-xs whitespace-nowrap">
                                           {currentProjName || <span class="text-gray-400 font-normal italic">-</span>}
                                         </span>
                                       </div>
@@ -6302,9 +6302,9 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                             class="px-1.5 py-0.5 rounded-lg border border-emerald-300 text-[10px] font-bold text-emerald-900 bg-emerald-50 hover:bg-emerald-100 outline-none cursor-pointer transition shadow-2xs flex items-center justify-between gap-1 w-full custom-dropdown-toggle"
                                             title="Re-assign lead to salesperson"
                                           >
-                                            <span class="flex items-center gap-1 truncate">
-                                              <i class="fa-solid fa-user-check text-[8.5px] text-emerald-600"></i>
-                                              <span class="truncate">{currentAgent}</span>
+                                            <span class="flex items-center gap-1 min-w-0">
+                                              <i class="fa-solid fa-user-check text-[8.5px] text-emerald-600 shrink-0"></i>
+                                              <span class="whitespace-nowrap">{currentAgent}</span>
                                             </span>
                                             <i class={`fa-solid fa-chevron-down text-[8px] text-emerald-700 transition-transform ${isAgentOpen ? 'rotate-180' : ''}`}></i>
                                           </button>

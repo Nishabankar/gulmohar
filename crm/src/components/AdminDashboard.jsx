@@ -293,8 +293,8 @@ const ProjectFilterDropdown = ({
   return (
     <div ref={dropdownRef} class={`relative inline-flex items-center gap-1 sm:gap-1.5 flex-nowrap ${className}`}>
 
-      {/* Selected Project Pills â€” rendered to the LEFT of the icon button */}
-      {!isAll && (
+      {/* Project Pills (rendered to the LEFT of the icon button) */}
+      {!isAll ? (
         <div class="inline-flex items-center gap-1 max-w-[170px] sm:max-w-none overflow-x-auto no-scrollbar flex-nowrap py-0.5">
           {selectedList.map((pName) => (
             <div
@@ -319,14 +319,26 @@ const ProjectFilterDropdown = ({
             </div>
           ))}
         </div>
+      ) : (
+        /* When All Projects is selected: show pill badge like project pill but WITHOUT close (x) button */
+        <div 
+          onClick={() => setIsOpen(!isOpen)}
+          class="inline-flex items-center gap-1 sm:gap-1.5 h-6 sm:h-8.5 px-2 sm:px-2.5 rounded-lg sm:rounded-xl bg-[#FFF0F2] border border-[#B30E2E] ring-1 ring-[#FCD6DC] text-[10px] sm:text-xs font-semibold text-[#B30E2E] shadow-xs animate-fade-in flex-shrink-0 cursor-pointer hover:bg-rose-50"
+          title="All Projects Selected"
+        >
+          <i class="fa-solid fa-globe text-[9px] sm:text-[11px] text-[#B30E2E] flex-shrink-0"></i>
+          <span class="font-bold whitespace-nowrap">
+            All Projects
+          </span>
+        </div>
       )}
 
-      {/* Dropdown Trigger Button */}
+      {/* Icon-only Dropdown Trigger Button */}
       <div class="relative inline-block flex-shrink-0">
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          class={`h-6 sm:h-8.5 px-2 sm:px-2.5 rounded-lg sm:rounded-xl border text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-1.5 transition shadow-xs cursor-pointer ${
+          class={`h-6 sm:h-8.5 px-2 sm:px-2.5 rounded-lg sm:rounded-xl border text-[10px] sm:text-xs font-semibold flex items-center gap-1 transition shadow-xs cursor-pointer ${
             isOpen
               ? 'bg-gray-100 border-gray-400 text-gray-900 ring-1 ring-gray-300'
               : !isAll
@@ -336,11 +348,6 @@ const ProjectFilterDropdown = ({
           title="Filter by projects (multi-select)"
         >
           <i class={`fa-solid fa-city text-[9px] sm:text-[11px] ${!isAll ? 'text-[#B30E2E]' : 'text-gray-500'}`}></i>
-          {isAll && (
-            <span class="font-bold text-gray-700 whitespace-nowrap text-[10px] sm:text-xs">
-              All Projects
-            </span>
-          )}
           <i class={`fa-solid fa-chevron-down text-[8px] sm:text-[9px] transition-transform ${isOpen ? 'rotate-180 text-[#B30E2E]' : 'text-gray-400'}`}></i>
         </button>
 

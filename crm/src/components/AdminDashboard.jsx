@@ -2445,12 +2445,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     setUserEditSuccessMsg('');
 
     if (isEditingInbuiltSystem) {
-      if (!editUserPassword || !editUserPassword.trim()) {
-        setSavingUserEdit(false);
-        setUserEditSuccessMsg('Error: Please enter a password to set for the System account.');
-        return;
-      }
-      if (editUserPassword.trim().length < 4) {
+      if (editUserPassword && editUserPassword.trim() && editUserPassword.trim().length < 4) {
         setSavingUserEdit(false);
         setUserEditSuccessMsg('Error: Password must be at least 4 characters long.');
         return;
@@ -7484,7 +7479,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
             <div class="bg-gradient-to-r from-[#B30E2E] via-[#8A0B22] to-[#590414] p-5 text-white flex items-center justify-between">
               <div>
                 <h3 class="font-serif font-bold text-base">
-                  {isEditingInbuiltSystem ? 'Set System Account Password' : 'Edit User'}
+                  {isEditingInbuiltSystem ? 'Edit System User' : 'Edit User'}
                 </h3>
               </div>
               <button 
@@ -7516,32 +7511,42 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
 
               {isEditingInbuiltSystem ? (
                 <>
-                  {/* System Account: Fixed System info + Only Password editable */}
-                  <div class="bg-gray-50 border border-gray-200 rounded-2xl p-3.5 text-xs space-y-2">
-                    <div class="flex items-center justify-between">
-                      <span class="text-gray-500 font-medium">Account Name:</span>
-                      <span class="font-bold text-gray-800">System</span>
-                    </div>
-                    <div class="flex items-center justify-between">
-                      <span class="text-gray-500 font-medium">Username:</span>
-                      <span class="font-mono font-bold text-gray-800 bg-gray-200 px-2 py-0.5 rounded-md text-[11px]">system</span>
-                    </div>
-                    <div class="flex items-center justify-between">
-                      <span class="text-gray-500 font-medium">Account Role:</span>
-                      <span class="font-bold text-rose-800 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md text-[11px]">Backend System Reference</span>
-                    </div>
+                  {/* System Account: Full Name, Username, and Password fields */}
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Full Name *</label>
+                    <input 
+                      type="text" 
+                      required 
+                      autoComplete="off"
+                      value={editingUser.name || ''}
+                      onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
+                      placeholder="Enter full name"
+                      class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
+                    />
                   </div>
 
                   <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">Set Password *</label>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Username *</label>
+                    <input 
+                      type="text" 
+                      required 
+                      autoComplete="off"
+                      value={editingUser.username || ''}
+                      onChange={(e) => setEditingUser({ ...editingUser, username: e.target.value })}
+                      placeholder="Enter username"
+                      class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
+                    />
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Password</label>
                     <div class="relative">
                       <input 
                         type={showEditPassword ? 'text' : 'password'}
-                        required
                         autoComplete="new-password"
                         value={editUserPassword}
                         onChange={(e) => setEditUserPassword(e.target.value)}
-                        placeholder="Enter password for System account"
+                        placeholder="Enter new password (optional)"
                         class="w-full pl-3 pr-10 py-2.5 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
                       />
                       <button
@@ -7553,7 +7558,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                         <i class={`fa-solid ${showEditPassword ? 'fa-eye-slash' : 'fa-eye'} text-xs`}></i>
                       </button>
                     </div>
-                    <p class="text-[11px] text-gray-400 mt-1">Set or update the password for System account.</p>
+                    <p class="text-[11px] text-gray-400 mt-1">Leave blank to keep existing password, or enter to update.</p>
                   </div>
                 </>
               ) : (
@@ -7722,7 +7727,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                       <i class="fa-solid fa-spinner fa-spin text-xs"></i> Saving...
                     </>
                   ) : (
-                    <span>{isEditingInbuiltSystem ? 'Set Password' : 'Save'}</span>
+                    <span>Save</span>
                   )}
                 </button>
               </div>

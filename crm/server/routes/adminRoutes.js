@@ -1033,19 +1033,50 @@ router.patch('/agents/:id', protectAdmin, async (req, res) => {
     }
 
     if (targetUsername === 'system') {
-      if (!password || !password.trim()) {
-        return res.status(400).json({ success: false, message: 'Password is required to set for the System account.' });
+      let updateCols = [];
+      let updateVals = [];
+      if (name !== undefined && name.trim()) {
+        updateCols.push('name = ?');
+        updateVals.push(name.trim());
       }
-      if (password.trim().length < 4) {
-        return res.status(400).json({ success: false, message: 'Password must be at least 4 characters long.' });
+      if (username !== undefined && username.trim()) {
+        const cleanUsername = username.toLowerCase().trim();
+        if (cleanUsername === 'admin') {
+          return res.status(400).json({ success: false, message: "Username 'admin' is reserved for Super Admin." });
+        }
+        const [taken] = await query('SELECT id FROM users WHERE LOWER(username) = ? AND id != ?', [cleanUsername, agentId]);
+        if (taken.length > 0) return res.status(400).json({ success: false, message: `Username '${cleanUsername}' is already taken.` });
+        updateCols.push('username = ?');
+        updateVals.push(cleanUsername);
       }
-      const hashedPassword = await bcrypt.hash(password.trim(), 10);
-      await query('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, agentId]);
-      const [updatedRows] = await query('SELECT id, name, username, role, phone, email FROM users WHERE id = ?', [agentId]);
+      if (password && password.trim() && !password.includes('•••')) {
+        if (password.trim().length < 4) {
+          return res.status(400).json({ success: false, message: 'Password must be at least 4 characters long.' });
+        }
+        const hashedPassword = await bcrypt.hash(password.trim(), 10);
+        updateCols.push('password = ?');
+        updateVals.push(hashedPassword);
+      }
+
+      if (updateCols.length > 0) {
+        updateVals.push(agentId);
+        await query(`UPDATE users SET ${updateCols.join(', ')} WHERE id = ?`, updateVals);
+      }
+
+      const [updatedRows] = await query('SELECT id, name, username, email, phone, role FROM users WHERE id = ?', [agentId]);
+      const agent = updatedRows[0];
       return res.json({
         success: true,
-        message: 'System account password set successfully',
-        data: updatedRows[0]
+        message: 'System user updated successfully',
+        data: {
+          _id: agent.id.toString(),
+          id: agent.id,
+          name: agent.name,
+          username: agent.username,
+          email: agent.email || '',
+          phone: agent.phone || '',
+          role: agent.role || 'Admin'
+        }
       });
     }
 

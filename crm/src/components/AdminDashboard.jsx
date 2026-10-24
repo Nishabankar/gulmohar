@@ -7539,14 +7539,14 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                   </div>
 
                   <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">Password</label>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">New Password</label>
                     <div class="relative">
                       <input 
                         type={showEditPassword ? 'text' : 'password'}
                         autoComplete="new-password"
                         value={editUserPassword}
                         onChange={(e) => setEditUserPassword(e.target.value)}
-                        placeholder="Enter new password (optional)"
+                        placeholder="Enter new password"
                         class="w-full pl-3 pr-10 py-2.5 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
                       />
                       <button
@@ -7558,7 +7558,6 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                         <i class={`fa-solid ${showEditPassword ? 'fa-eye-slash' : 'fa-eye'} text-xs`}></i>
                       </button>
                     </div>
-                    <p class="text-[11px] text-gray-400 mt-1">Leave blank to keep existing password, or enter to update.</p>
                   </div>
                 </>
               ) : (

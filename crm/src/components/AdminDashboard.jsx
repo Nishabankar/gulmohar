@@ -182,7 +182,7 @@ const getAutoTypographyForProjectType = (projectsList, projectName, projectType)
 
 const COLUMN_WIDTH_MAP = {
   leadId: 95,
-  fullName: 180,
+  fullName: 200,
   email: 210,
   mobile: 155,
   enquiryDate: 160,
@@ -203,7 +203,7 @@ const COLUMN_WIDTH_MAP = {
 
 const COLUMN_CLASS_MAP = {
   leadId: 'w-[95px] min-w-[95px]',
-  fullName: 'w-[180px] min-w-[180px]',
+  fullName: 'w-[200px] min-w-[200px]',
   email: 'w-[210px] min-w-[210px]',
   mobile: 'w-[155px] min-w-[155px]',
   enquiryDate: 'w-[160px] min-w-[160px]',
@@ -6183,14 +6183,14 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   return (
                                     <td 
                                       key="fullName" 
-                                      class={getTdClass('fullName', currentId, 'font-bold text-gray-800')}
+                                      class={getTdClass('fullName', currentId, 'font-bold text-gray-800 overflow-hidden')}
                                       style={getTdStyle('fullName')}
                                     >
-                                      <div class="flex items-center gap-1.5 whitespace-nowrap">
+                                      <div class="flex items-center gap-1.5 whitespace-nowrap min-w-0 max-w-full overflow-hidden">
                                         <div class="w-5 h-5 rounded-full bg-[#FCD6DC] text-[#B30E2E] font-bold text-[10px] flex items-center justify-center flex-shrink-0 border border-[#FCD6DC]">
                                           {(item.firstName || 'C')[0].toUpperCase()}
                                         </div>
-                                        <span class="capitalize text-[11.5px] text-gray-900 font-bold whitespace-nowrap" title={`${item.firstName || ''} ${item.lastName || ''}`}>
+                                        <span class="capitalize text-[11.5px] text-gray-900 font-bold truncate block min-w-0 flex-1" title={`${item.firstName || ''} ${item.lastName || ''}`}>
                                           {item.firstName || ''} {item.lastName || ''}
                                         </span>
                                       </div>
@@ -6203,7 +6203,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                         <div class="flex items-center gap-1.5 whitespace-nowrap">
                                           <a 
                                             href={`tel:${item.phone}`} 
-                                            class="text-[#B30E2E] hover:underline font-bold flex items-center gap-1 whitespace-nowrap text-[11.5px] shrink-0"
+                                            class="text-[#B30E2E] hover:underline font-bold flex items-center gap-1.5 whitespace-nowrap text-[11.5px] w-[94px] shrink-0"
                                             title="Call Lead"
                                           >
                                             <i class="fa-solid fa-phone text-[8.5px] text-[#B30E2E]"></i>

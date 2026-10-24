@@ -4054,7 +4054,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       } else if (followupDateFilter === 'Tomorrow') {
         matchesFollowupDate = isStatusMatched && item.followupDate === getTomorrowString();
       } else if (followupDateFilter === 'ThisWeek') {
-        matchesFollowupDate = isStatusMatched && isDateInThisWeek(item.followupDate);
+        matchesFollowupDate = isStatusMatched && isDateInThisWeek(item.followupDate) && !!item.followupDate && item.followupDate >= getTodayString();
       } else if (followupDateFilter === 'AllScheduled') {
         matchesFollowupDate = isStatusMatched && !!item.followupDate && item.followupDate.trim() !== '' && item.followupDate >= getTodayString();
       }
@@ -4450,7 +4450,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
   const newLeadsCount = projectScopedEnquiries.filter(e => isNewLead(e)).length;
   const todaysFollowupCount = projectScopedEnquiries.filter(e => isFollowupStatus(e.status) && e.followupDate === getTodayString()).length;
   const tomorrowsFollowupCount = projectScopedEnquiries.filter(e => isFollowupStatus(e.status) && e.followupDate === getTomorrowString()).length;
-  const thisWeekFollowupCount = projectScopedEnquiries.filter(e => isFollowupStatus(e.status) && isDateInThisWeek(e.followupDate)).length;
+  const thisWeekFollowupCount = projectScopedEnquiries.filter(e => isFollowupStatus(e.status) && isDateInThisWeek(e.followupDate) && !!e.followupDate && e.followupDate >= getTodayString()).length;
   const allFollowupsCount = projectScopedEnquiries.filter(e => isFollowupStatus(e.status) && !!e.followupDate && e.followupDate.trim() !== '' && e.followupDate >= getTodayString()).length;
 
   const missedLeadsCount = projectScopedEnquiries.filter(e => isMissedLead(e)).length;

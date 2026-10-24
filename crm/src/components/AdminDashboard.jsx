@@ -2418,8 +2418,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       const synced = [...registeredAgents.filter(a => a.username !== dbAgent.username), dbAgent];
       setRegisteredAgents(synced);
       localStorage.setItem('registeredAgents', JSON.stringify(synced));
-      const roleDisplayName = ['system admin', 'systemadmin', 'admin'].includes((dbAgent.role || '').toLowerCase()) ? 'Admin' : 'Sales Executive';
-      setAgentCreateMsg(data.message || `${roleDisplayName} created! Password setup link has been sent to user email.`);
+      setAgentCreateMsg('User created successfully!');
       setNewAgentData({ name: '', phone: '', email: '', username: '', role: 'Sales Executive' });
       setIsCreatingAgent(false);
       setTimeout(() => {

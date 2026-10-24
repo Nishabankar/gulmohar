@@ -888,12 +888,11 @@ router.post('/agents', protectAdmin, async (req, res) => {
     // Send invitation email with password setup link and OTP
     const emailResult = await sendNewUserInviteEmail(agentEmail, name.trim(), otpCode, resetLink, cleanUsername);
 
-    const roleTitle = ['Admin', 'SystemAdmin'].includes(cleanRole) ? 'Admin' : 'Sales Executive';
-    let msg = `${roleTitle} account created! An invitation email with password setup link has been sent to ${agentEmail}.`;
+    const msg = 'User created successfully!';
     if (!emailResult.isConfigured) {
-      msg = `${roleTitle} account created! (Note: Server SMTP is not configured in .env on host. Test OTP: ${otpCode})`;
+      console.log(`[New User] Server SMTP not configured. Test OTP for ${cleanUsername}: ${otpCode}`);
     } else if (!emailResult.success) {
-      msg = `${roleTitle} account created! (Note: Email sending failed: ${emailResult.error || 'SMTP delivery error'}. Setup OTP: ${otpCode})`;
+      console.warn(`[New User] Email sending failed: ${emailResult.error}. Setup OTP: ${otpCode}`);
     }
 
     return res.json({

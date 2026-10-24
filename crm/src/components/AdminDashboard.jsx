@@ -3376,7 +3376,6 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
 
     const headers = [
       'Lead ID',
-      'User ID',
       'Full Name',
       'Mobile No',
       'Email Address',
@@ -3385,8 +3384,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       'Typography',
       'Carpet Area',
       'Budget',
-      'Number of Guntha',
-      'Selected Plot',
+      'Followup Date',
       'Submitted Date',
       'Status',
       'Priority',
@@ -3403,7 +3401,6 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
 
     const rows = targetList.map((item, idx) => {
       const displayLeadId = getLeadDisplayId(item, idx, enquiries);
-      const displayUserId = getCustomerUserId(item, enquiries);
       const fullName = `${item.firstName || ''} ${item.lastName || ''}`.trim() || item.name || '';
       const rawDate = item.createdAt || item.created_at;
       let dateStr = '';
@@ -3414,7 +3411,6 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
 
       return [
         escapeCSV(displayLeadId),
-        escapeCSV(displayUserId),
         escapeCSV(fullName),
         escapeCSV(item.phone || ''),
         escapeCSV(item.email || ''),
@@ -3423,8 +3419,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
         escapeCSV(item.typography || ''),
         escapeCSV(item.carpetArea || ''),
         escapeCSV(item.budget || ''),
-        escapeCSV(item.plotsCount || '1 Guntha'),
-        escapeCSV(item.plotInfo || ''),
+        escapeCSV(item.followupDate || ''),
         escapeCSV(dateStr),
         escapeCSV(item.status || 'New'),
         escapeCSV((item.priority === 'Cold' || item.priority === 'Low') ? 'Cold' : 'Hot'),

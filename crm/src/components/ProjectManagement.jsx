@@ -981,7 +981,8 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
     }
   };
 
-  const canManage = isSuperAdmin || isAdmin;
+  const canManage = true; // SuperAdmin, Admin, and Sales Executive can create & edit projects
+  const canDelete = isSuperAdmin || isAdmin; // Only SuperAdmin and Admin can delete projects
 
   return (
     <div className="space-y-3 animate-fade-in flex-1 flex flex-col min-h-0 overflow-hidden">
@@ -1622,14 +1623,16 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                                       >
                                         <i className="fa-solid fa-pen-to-square text-xs"></i>
                                       </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => setDeleteConfirmation({ isOpen: true, project })}
-                                        className="w-7 h-7 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700 flex items-center justify-center transition cursor-pointer"
-                                        title="Delete Project"
-                                      >
-                                        <i className="fa-solid fa-trash-can text-xs"></i>
-                                      </button>
+                                      {canDelete && (
+                                        <button
+                                          type="button"
+                                          onClick={() => setDeleteConfirmation({ isOpen: true, project })}
+                                          className="w-7 h-7 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700 flex items-center justify-center transition cursor-pointer"
+                                          title="Delete Project"
+                                        >
+                                          <i className="fa-solid fa-trash-can text-xs"></i>
+                                        </button>
+                                      )}
                                     </div>
                                   </td>
                                 );

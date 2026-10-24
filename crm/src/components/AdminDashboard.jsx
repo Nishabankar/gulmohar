@@ -6756,16 +6756,6 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
 
                   {/* ROW 2: Action Buttons on Right */}
                   <div class="flex items-center justify-end gap-2 w-full">
-                    {/* Column Configuration Button */}
-                    <button 
-                      type="button"
-                      onClick={() => setShowUserColumnConfigModal(true)}
-                      class="w-8 h-8 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white border border-rose-900/40 font-extrabold flex items-center justify-center transition shadow-sm cursor-pointer flex-shrink-0 transform active:scale-95"
-                      title="Column Configuration"
-                    >
-                      <i class="fa-solid fa-sliders text-xs"></i>
-                    </button>
-
                     {/* Create User Button (SuperAdmin Only) */}
                     {isSuperAdmin && (
                       <button 
@@ -6777,6 +6767,16 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                         <i class="fa-solid fa-user-plus text-xs"></i>
                       </button>
                     )}
+
+                    {/* Column Configuration Button */}
+                    <button 
+                      type="button"
+                      onClick={() => setShowUserColumnConfigModal(true)}
+                      class="w-8 h-8 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white border border-rose-900/40 font-extrabold flex items-center justify-center transition shadow-sm cursor-pointer flex-shrink-0 transform active:scale-95"
+                      title="Column Configuration"
+                    >
+                      <i class="fa-solid fa-sliders text-xs"></i>
+                    </button>
                   </div>
                 </div>
 
@@ -6805,16 +6805,8 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                     )}
                   </div>
 
-                  {/* Right Side: Column Config & Create User Buttons */}
+                  {/* Right Side: Create User & Column Config Buttons */}
                   <div class="flex items-center gap-2 flex-shrink-0">
-                    <button 
-                      type="button"
-                      onClick={() => setShowUserColumnConfigModal(true)}
-                      class="w-9 h-9 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white border border-rose-900/40 font-extrabold flex items-center justify-center transition shadow-sm cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
-                      title="Column Configuration"
-                    >
-                      <i class="fa-solid fa-sliders text-sm"></i>
-                    </button>
                     {isSuperAdmin && (
                       <button 
                         type="button"
@@ -6825,6 +6817,14 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                         <i class="fa-solid fa-user-plus text-sm"></i>
                       </button>
                     )}
+                    <button 
+                      type="button"
+                      onClick={() => setShowUserColumnConfigModal(true)}
+                      class="w-9 h-9 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white border border-rose-900/40 font-extrabold flex items-center justify-center transition shadow-sm cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
+                      title="Column Configuration"
+                    >
+                      <i class="fa-solid fa-sliders text-sm"></i>
+                    </button>
                   </div>
                 </div>
 

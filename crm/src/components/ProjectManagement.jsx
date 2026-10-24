@@ -1105,16 +1105,6 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
 
               {/* Right: Action Symbol Buttons */}
               <div className="flex items-center gap-1.5 flex-shrink-0">
-                {/* Column Configuration Button */}
-                <button 
-                  type="button"
-                  onClick={() => setShowProjectColumnConfigModal(true)}
-                  className="w-8 h-8 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white flex items-center justify-center transition shadow-sm border border-rose-900/40 cursor-pointer flex-shrink-0 transform active:scale-95"
-                  title="Column Configuration"
-                >
-                  <i className="fa-solid fa-sliders text-xs"></i>
-                </button>
-
                 {/* Create Project Button */}
                 {canManage && (
                   <button 
@@ -1129,6 +1119,16 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                     </div>
                   </button>
                 )}
+
+                {/* Column Configuration Button */}
+                <button 
+                  type="button"
+                  onClick={() => setShowProjectColumnConfigModal(true)}
+                  className="w-8 h-8 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white flex items-center justify-center transition shadow-sm border border-rose-900/40 cursor-pointer flex-shrink-0 transform active:scale-95"
+                  title="Column Configuration"
+                >
+                  <i className="fa-solid fa-sliders text-xs"></i>
+                </button>
               </div>
             </div>
           </div>
@@ -1226,16 +1226,6 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
 
             {/* Right: Action Symbol Buttons */}
             <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
-              {/* Column Configuration Button */}
-              <button 
-                type="button"
-                onClick={() => setShowProjectColumnConfigModal(true)}
-                className="w-9 h-9 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white flex items-center justify-center transition shadow-sm border border-rose-900/40 cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
-                title="Column Configuration"
-              >
-                <i className="fa-solid fa-sliders text-sm"></i>
-              </button>
-
               {/* Create Project Button */}
               {canManage && (
                 <button 
@@ -1250,6 +1240,16 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                   </div>
                 </button>
               )}
+
+              {/* Column Configuration Button */}
+              <button 
+                type="button"
+                onClick={() => setShowProjectColumnConfigModal(true)}
+                className="w-9 h-9 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white flex items-center justify-center transition shadow-sm border border-rose-900/40 cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
+                title="Column Configuration"
+              >
+                <i className="fa-solid fa-sliders text-sm"></i>
+              </button>
             </div>
           </div>
 

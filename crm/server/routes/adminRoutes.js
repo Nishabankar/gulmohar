@@ -44,7 +44,7 @@ const formatEnquiryRow = (row, historyEntries = []) => {
     phone: row.phone || '',
     email: row.email || '',
     plotInfo: row.plot_info || '',
-    plotsCount: row.plots_count || '1 Plot',
+    plotsCount: '',
     visitDate: row.visit_date || '',
     visitTime: row.visit_time || '',
     followupDate: row.followup_date || '',
@@ -1277,13 +1277,16 @@ router.post('/enquiries/import', protectAdmin, async (req, res) => {
       const firstName = str(lead.firstName) || 'Customer';
       const lastName = str(lead.lastName);
       const email = str(lead.email).toLowerCase();
-      const plotsCount = str(lead.plotsCount) || '1 Guntha';
       const plotInfo = str(lead.plotInfo);
       const notes = str(lead.notes);
       const projectName = str(lead.projectName);
       const projectType = str(lead.projectType);
       const typography = str(lead.typography);
-      const carpetArea = str(lead.carpetArea);
+      let carpetArea = str(lead.carpetArea);
+      if (!carpetArea && str(lead.plotsCount)) {
+        const m = str(lead.plotsCount).match(/(\d+)/);
+        carpetArea = m ? `${parseInt(m[1], 10) * 1000} sqft` : str(lead.plotsCount);
+      }
       const budget = str(lead.budget);
       const createdBy = str(lead.createdBy) || performer || 'System';
 
@@ -1339,9 +1342,9 @@ router.post('/enquiries/import', protectAdmin, async (req, res) => {
       // Insert into MySQL leads table
       const [insertResult] = await query(
         `INSERT INTO leads 
-         (first_name, last_name, phone, email, plot_info, plots_count, project_name, project_type, typography, carpet_area, budget, visit_date, visit_time, followup_date, status, priority, notes, assigned_to, assigned_agent_name, created_by, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?, COALESCE(?, UTC_TIMESTAMP()))`,
-        [firstName, lastName, cleanPhone, email, plotInfo, plotsCount, projectName, projectType, typography, carpetArea, budget, visitDate, followupDate, status, priority, notes, assignedTo, assignedAgentName, createdBy, created ? created.utc : null]
+         (first_name, last_name, phone, email, plot_info, project_name, project_type, typography, carpet_area, budget, visit_date, visit_time, followup_date, status, priority, notes, assigned_to, assigned_agent_name, created_by, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?, COALESCE(?, UTC_TIMESTAMP()))`,
+        [firstName, lastName, cleanPhone, email, plotInfo, projectName, projectType, typography, carpetArea, budget, visitDate, followupDate, status, priority, notes, assignedTo, assignedAgentName, createdBy, created ? created.utc : null]
       );
 
       const newId = insertResult.insertId;

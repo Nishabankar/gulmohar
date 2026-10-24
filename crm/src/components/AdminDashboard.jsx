@@ -194,7 +194,6 @@ const COLUMN_WIDTH_MAP = {
   typography: 140,
   carpetArea: 130,
   budget: 130,
-  plotsCount: 130,
   assignedAgent: 175,
   createdBy: 150,
   notes: 75,
@@ -215,7 +214,6 @@ const COLUMN_CLASS_MAP = {
   typography: 'w-[140px] min-w-[140px]',
   carpetArea: 'w-[130px] min-w-[130px]',
   budget: 'w-[130px] min-w-[130px]',
-  plotsCount: 'w-[130px] min-w-[130px]',
   assignedAgent: 'w-[175px] min-w-[175px]',
   createdBy: 'w-[150px] min-w-[150px]',
   notes: 'w-[75px] min-w-[75px]',
@@ -3143,12 +3141,15 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
         lastName: lastName,
         phone,
         email: cell(row, emailIdx),
-        plotsCount: cell(row, plotsCountIdx) || '1 Guntha',
         plotInfo: cell(row, plotInfoIdx),
         projectName: cell(row, projectNameIdx),
         projectType: cell(row, projectTypeIdx),
         typography: cell(row, typographyIdx),
-        carpetArea: cell(row, carpetAreaIdx),
+        carpetArea: cell(row, carpetAreaIdx) || (() => {
+          const rawG = cell(row, plotsCountIdx);
+          const m = rawG ? rawG.match(/(\d+)/) : null;
+          return m ? `${parseInt(m[1], 10) * 1000} sqft` : (rawG || '');
+        })(),
         budget: cell(row, budgetIdx),
         status: cell(row, statusIdx) || 'New',
         priority: cell(row, priorityIdx) || 'Hot',

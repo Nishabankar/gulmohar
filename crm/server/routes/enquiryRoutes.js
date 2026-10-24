@@ -108,18 +108,24 @@ router.post('/', async (req, res) => {
     const noteAuthor = finalCreatedBy !== 'System' ? finalCreatedBy : (createdBy || modifiedBy || 'Client');
     const initialNotes = notes ? notes.trim() : '';
 
+    // Auto-convert plotsCount (Guntha) to carpetArea if carpetArea not explicitly provided
+    let finalCarpetArea = (carpetArea || '').trim();
+    if (!finalCarpetArea && plotsCount) {
+      const match = String(plotsCount).match(/(\d+)/);
+      finalCarpetArea = match ? `${parseInt(match[1], 10) * 1000} sqft` : String(plotsCount).trim();
+    }
+
     // Insert into leads table
     const [result] = await query(
       `INSERT INTO leads 
-        (first_name, last_name, phone, email, plot_info, plots_count, visit_date, visit_time, followup_date, status, priority, project_name, project_type, typography, carpet_area, budget, notes, assigned_agent_name, assigned_to, created_by) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'New', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        (first_name, last_name, phone, email, plot_info, visit_date, visit_time, followup_date, status, priority, project_name, project_type, typography, carpet_area, budget, notes, assigned_agent_name, assigned_to, created_by) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'New', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         firstName.trim(),
         (lastName || '').trim(),
         cleanPhone,
         cleanEmail,
         (plotInfo || '').trim(),
-        plotsCount || '1 Guntha',
         visitDate || '',
         (visitTime && visitTime.trim()) ? visitTime.trim() : (followupDate ? '11:00' : ''),
         followupDate || '',
@@ -127,7 +133,7 @@ router.post('/', async (req, res) => {
         (projectName || '').trim(),
         (projectType || '').trim(),
         (typography || '').trim(),
-        (carpetArea || '').trim(),
+        finalCarpetArea,
         (budget || '').trim(),
         initialNotes,
         finalAssignedAgentName,
@@ -163,7 +169,7 @@ router.post('/', async (req, res) => {
       phone: cleanPhone,
       email: cleanEmail || '',
       plotInfo: plotInfo || '',
-      plotsCount: plotsCount || '1 Guntha',
+      carpetArea: finalCarpetArea,
       visitDate: visitDate || '',
       visitTime: visitTime || '',
       followupDate: followupDate || '',

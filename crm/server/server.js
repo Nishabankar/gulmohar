@@ -64,6 +64,27 @@ const seedAdminUser = async () => {
       // Ignore if not permitted
     }
 
+    // Auto-migrate any existing plots_count data into carpet_area before dropping plots_count
+    try {
+      const [leadsToMigrate] = await query("SELECT id, plots_count, carpet_area FROM leads WHERE (carpet_area IS NULL OR TRIM(carpet_area) = '' OR carpet_area = '-') AND plots_count IS NOT NULL AND TRIM(plots_count) != ''");
+      for (const lead of leadsToMigrate || []) {
+        if (lead.plots_count) {
+          const match = String(lead.plots_count).match(/(\d+)/);
+          const sqft = match ? `${parseInt(match[1], 10) * 1000} sqft` : String(lead.plots_count);
+          await query("UPDATE leads SET carpet_area = ? WHERE id = ?", [sqft, lead.id]);
+        }
+      }
+    } catch (e) {
+      // Column may not exist or already migrated
+    }
+
+    // Safely drop plots_count column from MySQL leads table
+    try {
+      await query("ALTER TABLE leads DROP COLUMN plots_count");
+    } catch (e) {
+      // Column already dropped or not present
+    }
+
     // Auto-repair any existing leads whose typography was truncated by the 255-char limit
     try {
       const [projects] = await query("SELECT name, typography FROM projects WHERE typography IS NOT NULL AND typography != ''");

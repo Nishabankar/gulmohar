@@ -29,8 +29,11 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
 
     setSubmitting(true);
 
+    const gunthaMatch = String(formData.plotsCount || '').match(/(\d+)/);
+    const calculatedCarpet = gunthaMatch ? `${parseInt(gunthaMatch[1], 10) * 1000} sqft` : (formData.plotsCount || '');
     const submissionPayload = {
-      ...formData
+      ...formData,
+      carpetArea: calculatedCarpet
     };
 
     try {

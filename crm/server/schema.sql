@@ -43,7 +43,6 @@ CREATE TABLE `leads` (
   `phone` VARCHAR(50) NOT NULL UNIQUE,
   `email` VARCHAR(255) DEFAULT NULL UNIQUE,
   `plot_info` TEXT DEFAULT NULL,
-  `plots_count` VARCHAR(100) NOT NULL DEFAULT '1 Plot',
   `visit_date` VARCHAR(100) NOT NULL DEFAULT '',
   `visit_time` VARCHAR(20) NOT NULL DEFAULT '',
   `followup_date` VARCHAR(100) NOT NULL DEFAULT '',

@@ -3983,7 +3983,9 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     const isCompletedOrClosed = ['Site Visit Done', 'Won', 'Closed', 'Lost', 'Not Interested'].includes(e.status);
     const isNew = e.status === 'New';
     const hasFollowupDate = !!e.followupDate && e.followupDate.trim() !== '';
-    return !isNew && !isCompletedOrClosed && !hasFollowupDate;
+    const noFollowupSet = !isNew && !isCompletedOrClosed && !hasFollowupDate;
+    const isOverdue = isFollowupStatus(e.status) && hasFollowupDate && e.followupDate < getTodayString();
+    return noFollowupSet || isOverdue;
   };
 
   // Filtered enquiries by Search, Status, Agent, Project & Visit Date
@@ -4054,7 +4056,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       } else if (followupDateFilter === 'ThisWeek') {
         matchesFollowupDate = isStatusMatched && isDateInThisWeek(item.followupDate);
       } else if (followupDateFilter === 'AllScheduled') {
-        matchesFollowupDate = isStatusMatched && !!item.followupDate && item.followupDate.trim() !== '';
+        matchesFollowupDate = isStatusMatched && !!item.followupDate && item.followupDate.trim() !== '' && item.followupDate >= getTodayString();
       }
     }
 
@@ -4449,7 +4451,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
   const todaysFollowupCount = projectScopedEnquiries.filter(e => isFollowupStatus(e.status) && e.followupDate === getTodayString()).length;
   const tomorrowsFollowupCount = projectScopedEnquiries.filter(e => isFollowupStatus(e.status) && e.followupDate === getTomorrowString()).length;
   const thisWeekFollowupCount = projectScopedEnquiries.filter(e => isFollowupStatus(e.status) && isDateInThisWeek(e.followupDate)).length;
-  const allFollowupsCount = projectScopedEnquiries.filter(e => isFollowupStatus(e.status) && !!e.followupDate && e.followupDate.trim() !== '').length;
+  const allFollowupsCount = projectScopedEnquiries.filter(e => isFollowupStatus(e.status) && !!e.followupDate && e.followupDate.trim() !== '' && e.followupDate >= getTodayString()).length;
 
   const missedLeadsCount = projectScopedEnquiries.filter(e => isMissedLead(e)).length;
   const siteVisitDoneCount = projectScopedEnquiries.filter(e => e.status === 'Site Visit Done').length;
@@ -4766,7 +4768,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                       <div class="min-w-0 flex-1 pr-1 sm:pr-2">
                         <p class="text-[9px] sm:text-[10px] font-bold text-purple-600 uppercase tracking-wider truncate">Missed Followup</p>
                         <h3 class="text-base sm:text-xl font-bold text-gray-900 mt-0.5">{missedLeadsCount}</h3>
-                        <p class="hidden sm:block text-[9.5px] text-gray-500 mt-0.5 truncate">Followup not set</p>
+                        <p class="hidden sm:block text-[9.5px] text-gray-500 mt-0.5 truncate">Overdue / Not set</p>
                       </div>
                       <div class="w-7.5 h-7.5 sm:w-8.5 sm:h-8.5 rounded-md sm:rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors flex-shrink-0">
                         <i class="fa-solid fa-clock-rotate-left text-xs sm:text-sm"></i>

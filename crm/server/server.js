@@ -34,7 +34,6 @@ const seedAdminUser = async () => {
     // Ensure project details columns exist in leads table
     const leadColumns = [
       { name: 'project_name', type: "VARCHAR(255) NOT NULL DEFAULT ''" },
-      { name: 'project_type', type: "TEXT DEFAULT NULL" },
       { name: 'typography', type: "TEXT DEFAULT NULL" },
       { name: 'carpet_area', type: "TEXT DEFAULT NULL" },
       { name: 'budget', type: "VARCHAR(100) NOT NULL DEFAULT ''" }
@@ -53,11 +52,7 @@ const seedAdminUser = async () => {
     } catch (e) {
       // Ignore if not permitted
     }
-    try {
-      await query("ALTER TABLE leads MODIFY COLUMN project_type TEXT DEFAULT NULL");
-    } catch (e) {
-      // Ignore if not permitted
-    }
+
     try {
       await query("ALTER TABLE leads MODIFY COLUMN carpet_area TEXT DEFAULT NULL");
     } catch (e) {
@@ -81,6 +76,13 @@ const seedAdminUser = async () => {
     // Safely drop plots_count column from MySQL leads table
     try {
       await query("ALTER TABLE leads DROP COLUMN plots_count");
+    } catch (e) {
+      // Column already dropped or not present
+    }
+
+    // Safely drop project_type column from MySQL leads table
+    try {
+      await query("ALTER TABLE leads DROP COLUMN project_type");
     } catch (e) {
       // Column already dropped or not present
     }

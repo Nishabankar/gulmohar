@@ -118,8 +118,8 @@ router.post('/', async (req, res) => {
     // Insert into leads table
     const [result] = await query(
       `INSERT INTO leads 
-        (first_name, last_name, phone, email, plot_info, visit_date, visit_time, followup_date, status, priority, project_name, project_type, typography, carpet_area, budget, notes, assigned_agent_name, assigned_to, created_by) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'New', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        (first_name, last_name, phone, email, plot_info, visit_date, visit_time, followup_date, status, priority, project_name, typography, carpet_area, budget, notes, assigned_agent_name, assigned_to, created_by) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'New', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         firstName.trim(),
         (lastName || '').trim(),
@@ -131,7 +131,6 @@ router.post('/', async (req, res) => {
         followupDate || '',
         priority,
         (projectName || '').trim(),
-        (projectType || '').trim(),
         (typography || '').trim(),
         finalCarpetArea,
         (budget || '').trim(),

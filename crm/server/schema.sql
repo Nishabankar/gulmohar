@@ -49,7 +49,6 @@ CREATE TABLE `leads` (
   `status` VARCHAR(50) NOT NULL DEFAULT 'New',
   `priority` VARCHAR(20) NOT NULL DEFAULT 'Hot' COMMENT 'Hot | Cold',
   `project_name` VARCHAR(255) NOT NULL DEFAULT '',
-  `project_type` TEXT DEFAULT NULL,
   `typography` TEXT DEFAULT NULL,
   `carpet_area` TEXT DEFAULT NULL,
   `budget` VARCHAR(100) NOT NULL DEFAULT '',

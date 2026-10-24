@@ -2624,16 +2624,13 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     }
 
     setSavingUserEdit(false);
-    const successMsg = isEditingAdmin
-      ? (editUserPassword && editUserPassword.trim() ? 'Admin Details & Password Updated Successfully!' : 'Admin Details Updated Successfully!')
-      : (editUserPassword && editUserPassword.trim() ? 'User Details & Password Updated Successfully!' : 'User Details Updated Successfully!');
-    setUserEditSuccessMsg(successMsg);
+    setUserEditSuccessMsg('User updated successfully!');
     setTimeout(() => {
       setEditingUser(null);
       setEditUserPassword('');
       setShowEditPassword(false);
       setUserEditSuccessMsg('');
-    }, 1500);
+    }, 1800);
   };
 
   // Handler: Reassign Lead to Agent (Admin Only)

@@ -1675,11 +1675,27 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
 
   // State for Create User Modal (SuperAdmin Only)
   const [showCreateAgentModal, setShowCreateAgentModal] = useState(false);
+  const [isCreatingAgent, setIsCreatingAgent] = useState(false);
   const [showAgentsListModal, setShowAgentsListModal] = useState(false);
   const [newAgentData, setNewAgentData] = useState({ name: '', phone: '', email: '', username: '', role: 'Sales Executive' });
   const [agentCreateMsg, setAgentCreateMsg] = useState('');
   const [isCreateRoleOpen, setIsCreateRoleOpen] = useState(false);
   const [isEditRoleOpen, setIsEditRoleOpen] = useState(false);
+
+  const openCreateAgentModal = () => {
+    setNewAgentData({ name: '', phone: '', email: '', username: '', role: 'Sales Executive' });
+    setAgentCreateMsg('');
+    setIsCreatingAgent(false);
+    setIsCreateRoleOpen(false);
+    setShowCreateAgentModal(true);
+  };
+
+  const closeCreateAgentModal = () => {
+    setShowCreateAgentModal(false);
+    setAgentCreateMsg('');
+    setIsCreatingAgent(false);
+    setIsCreateRoleOpen(false);
+  };
 
   // State for Full Lead Edit Modal & Floating Note Popover
   const [editingEnquiry, setEditingEnquiry] = useState(null);
@@ -2332,6 +2348,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
   // Handler: Create New Agent (Admin Only) - Saves directly to MySQL and sends setup link
   const handleCreateAgentSubmit = async (e) => {
     e.preventDefault();
+    if (isCreatingAgent) return;
     if (!newAgentData.name || !newAgentData.username || !newAgentData.phone || !newAgentData.email) return;
 
     if (!/^[6-9]\d{9}$/.test(newAgentData.phone.trim())) {
@@ -2364,6 +2381,9 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       }
     }
 
+    setIsCreatingAgent(true);
+    setAgentCreateMsg('');
+
     // Save to MySQL first; the agent only appears once the database has it
     try {
       const token = localStorage.getItem('adminToken');
@@ -2384,6 +2404,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.success || !data.data) {
         setAgentCreateMsg(`Error: ${data.message || `Could not save user (HTTP ${res.status})`}`);
+        setIsCreatingAgent(false);
         return;
       }
       const dbAgent = {
@@ -2400,12 +2421,13 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       const roleDisplayName = ['system admin', 'systemadmin', 'admin'].includes((dbAgent.role || '').toLowerCase()) ? 'Admin' : 'Sales Executive';
       setAgentCreateMsg(data.message || `${roleDisplayName} created! Password setup link has been sent to user email.`);
       setNewAgentData({ name: '', phone: '', email: '', username: '', role: 'Sales Executive' });
+      setIsCreatingAgent(false);
       setTimeout(() => {
-        setShowCreateAgentModal(false);
-        setAgentCreateMsg('');
+        closeCreateAgentModal();
       }, 2500);
     } catch (err) {
       setAgentCreateMsg(`Error: Could not reach the server (${err.message})`);
+      setIsCreatingAgent(false);
       return;
     }
   };
@@ -6808,7 +6830,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                     {isSuperAdmin && (
                       <button 
                         type="button"
-                        onClick={() => setShowCreateAgentModal(true)}
+                        onClick={openCreateAgentModal}
                         class="w-8 h-8 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white border border-rose-900/40 font-extrabold flex items-center justify-center transition shadow-sm cursor-pointer flex-shrink-0 transform active:scale-95"
                         title="Create User Account"
                       >
@@ -6858,7 +6880,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                     {isSuperAdmin && (
                       <button 
                         type="button"
-                        onClick={() => setShowCreateAgentModal(true)}
+                        onClick={openCreateAgentModal}
                         class="w-9 h-9 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white border border-rose-900/40 font-extrabold flex items-center justify-center transition shadow-sm cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
                         title="Create User Account"
                       >
@@ -7328,8 +7350,10 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                 <h3 class="font-serif font-bold text-base">Create User</h3>
               </div>
               <button 
-                onClick={() => setShowCreateAgentModal(false)}
-                class="text-white/70 hover:text-white bg-white/10 hover:bg-white/20 w-8 h-8 rounded-full flex items-center justify-center transition cursor-pointer"
+                type="button"
+                disabled={isCreatingAgent}
+                onClick={closeCreateAgentModal}
+                class="text-white/70 hover:text-white bg-white/10 hover:bg-white/20 w-8 h-8 rounded-full flex items-center justify-center transition cursor-pointer disabled:opacity-40"
               >
                 <i class="fa-solid fa-xmark text-sm"></i>
               </button>
@@ -7499,16 +7523,29 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
               <div class="pt-2 flex items-center justify-end gap-2 border-t border-gray-100">
                 <button 
                   type="button" 
-                  onClick={() => setShowCreateAgentModal(false)}
-                  class="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold cursor-pointer"
+                  disabled={isCreatingAgent}
+                  onClick={closeCreateAgentModal}
+                  class={`px-4 py-2 rounded-xl text-xs font-semibold transition ${
+                    isCreatingAgent ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200 text-gray-700 cursor-pointer'
+                  }`}
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit" 
-                  class="px-5 py-2 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white text-xs font-bold flex items-center justify-center shadow cursor-pointer"
+                  disabled={isCreatingAgent}
+                  class={`px-5 py-2 rounded-xl bg-[#B30E2E] text-white text-xs font-bold flex items-center justify-center gap-2 shadow transition ${
+                    isCreatingAgent ? 'opacity-70 cursor-not-allowed pointer-events-none' : 'hover:bg-[#8A0B22] cursor-pointer active:scale-95'
+                  }`}
                 >
-                  <span>Create</span>
+                  {isCreatingAgent ? (
+                    <>
+                      <i class="fa-solid fa-circle-notch fa-spin text-xs"></i>
+                      <span>Creating...</span>
+                    </>
+                  ) : (
+                    <span>Create</span>
+                  )}
                 </button>
               </div>
 

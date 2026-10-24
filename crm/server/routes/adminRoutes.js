@@ -804,10 +804,21 @@ router.get('/test-smtp', protectAdmin, async (req, res) => {
   }
 });
 
+// In-memory active user creation tracker to prevent concurrent duplicate submissions
+const activeUserCreations = new Set();
+
 // @route   POST /api/admin/agents
 // @desc    Create new user (Admin or Sales Agent) in MySQL database & send password setup email
 // @access  Protected (SuperAdmin Only)
 router.post('/agents', protectAdmin, async (req, res) => {
+  const { name, username, password, phone, email, role } = req.body;
+  const cleanUsername = username ? username.toLowerCase().trim() : '';
+
+  if (cleanUsername && activeUserCreations.has(cleanUsername)) {
+    return res.status(409).json({ success: false, message: 'User creation is already in progress. Please wait a moment.' });
+  }
+  if (cleanUsername) activeUserCreations.add(cleanUsername);
+
   try {
     const callerRole = ((req.admin && req.admin.role) || '').toLowerCase();
     const callerUsername = ((req.admin && req.admin.username) || '').toLowerCase();
@@ -815,9 +826,6 @@ router.post('/agents', protectAdmin, async (req, res) => {
     if (!isSuperAdminCaller) {
       return res.status(403).json({ success: false, message: 'Access denied: Only Super Admin can create users.' });
     }
-
-    const { name, username, password, phone, email, role } = req.body;
-    const cleanUsername = username ? username.toLowerCase().trim() : '';
     const cleanPhone = phone ? phone.trim() : '';
     const agentEmail = (email && email.trim()) ? email.toLowerCase().trim() : (cleanUsername ? `${cleanUsername}@gulmoharcity.com` : '');
     const rawRole = (role || '').trim().toLowerCase();
@@ -918,6 +926,8 @@ router.post('/agents', protectAdmin, async (req, res) => {
       return res.status(400).json({ success: false, message: 'A user with this username, mobile number, or email already exists.' });
     }
     return res.status(500).json({ success: false, message: 'Database Error' });
+  } finally {
+    if (cleanUsername) activeUserCreations.delete(cleanUsername);
   }
 });
 

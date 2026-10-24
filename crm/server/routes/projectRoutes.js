@@ -30,6 +30,7 @@ const formatProjectRow = (row) => {
     reraNumber: row.rera_number || '',
     area: row.area || '',
     address: row.address || '',
+    assignedLeadsCount: Number(row.assigned_leads_count || 0),
     createdBy: row.created_by || 'Admin',
     createdAt: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString(),
     updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : new Date().toISOString()
@@ -42,7 +43,9 @@ const formatProjectRow = (row) => {
 router.get('/', protectAdmin, async (req, res) => {
   try {
     const { search = '', type = '' } = req.query;
-    let sql = 'SELECT * FROM projects WHERE 1=1';
+    let sql = `SELECT p.*, 
+      (SELECT COUNT(*) FROM leads l WHERE LOWER(TRIM(l.project_name)) = LOWER(TRIM(p.name))) AS assigned_leads_count
+    FROM projects p WHERE 1=1`;
     const params = [];
 
     if (search && search.trim()) {
@@ -83,7 +86,12 @@ router.get('/', protectAdmin, async (req, res) => {
 router.get('/:id', protectAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const [rows] = await query('SELECT * FROM projects WHERE id = ? LIMIT 1', [id]);
+    const [rows] = await query(
+      `SELECT p.*, 
+        (SELECT COUNT(*) FROM leads l WHERE LOWER(TRIM(l.project_name)) = LOWER(TRIM(p.name))) AS assigned_leads_count
+      FROM projects p WHERE p.id = ? LIMIT 1`,
+      [id]
+    );
     if (!rows || rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Project not found' });
     }
@@ -278,23 +286,25 @@ router.delete('/:id', protectAdmin, async (req, res) => {
 
     const projName = existing[0].name;
 
-    await query('DELETE FROM projects WHERE id = ?', [id]);
+    // Check if any leads are assigned to this project - if yes, prevent deletion
+    const [assignedLeads] = await query(
+      'SELECT COUNT(*) as count FROM leads WHERE LOWER(TRIM(project_name)) = LOWER(TRIM(?))',
+      [projName]
+    );
 
-    // Automatically unassign linked leads when this project is deleted
-    if (projName) {
-      try {
-        await query(
-          'UPDATE leads SET project_name = NULL, project_type = NULL, typography = NULL WHERE LOWER(TRIM(project_name)) = LOWER(TRIM(?))',
-          [projName]
-        );
-      } catch (err) {
-        console.warn('Could not reset leads for deleted project:', err.message);
-      }
+    const leadCount = assignedLeads && assignedLeads[0] ? Number(assignedLeads[0].count || 0) : 0;
+    if (leadCount > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot delete project '${projName}'. ${leadCount} ${leadCount === 1 ? 'lead is' : 'leads are'} assigned to this project. Please reassign the leads first.`
+      });
     }
+
+    await query('DELETE FROM projects WHERE id = ?', [id]);
 
     return res.json({
       success: true,
-      message: `Project '${projName}' deleted successfully and linked leads unassigned.`
+      message: `Project '${projName}' deleted successfully.`
     });
   } catch (error) {
     console.error('Delete Project Error:', error.message);

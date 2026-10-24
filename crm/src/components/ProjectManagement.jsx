@@ -279,6 +279,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
     project: null
   });
   const [deleting, setDeleting] = useState(false);
+  const [deleteErrorMsg, setDeleteErrorMsg] = useState('');
 
   // Toast / Alert Notification State
   const [notification, setNotification] = useState({
@@ -959,6 +960,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
     if (!deleteConfirmation.project) return;
     const pId = deleteConfirmation.project.id || deleteConfirmation.project._id;
     setDeleting(true);
+    setDeleteErrorMsg('');
     try {
       const token = getAuthToken();
       const res = await fetch(`${API_BASE_URL}/api/projects/${pId}`, {
@@ -973,9 +975,11 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
       }
       showToast(data.message || 'Project deleted successfully!');
       setDeleteConfirmation({ isOpen: false, project: null });
+      setDeleteErrorMsg('');
       fetchProjects();
     } catch (err) {
-      showToast(err.message || 'Failed to delete project', 'error');
+      setDeleteErrorMsg(err.message || 'Cannot delete project: Leads are currently assigned to this project.');
+      showToast(err.message || 'Cannot delete project: Leads are currently assigned to this project.', 'error');
     } finally {
       setDeleting(false);
     }
@@ -1626,7 +1630,10 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                                       {canDelete && (
                                         <button
                                           type="button"
-                                          onClick={() => setDeleteConfirmation({ isOpen: true, project })}
+                                          onClick={() => {
+                                            setDeleteErrorMsg('');
+                                            setDeleteConfirmation({ isOpen: true, project });
+                                          }}
                                           className="w-7 h-7 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700 flex items-center justify-center transition cursor-pointer"
                                           title="Delete Project"
                                         >
@@ -2431,24 +2438,46 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                 Are you sure you want to delete project <strong className="text-gray-800">"{deleteConfirmation.project?.name}"</strong>? This action cannot be undone.
               </p>
             </div>
+
+            {deleteErrorMsg && (
+              <div className="p-3 rounded-xl text-xs font-bold bg-rose-50 border border-rose-200 text-rose-800 flex items-start gap-2 text-left animate-fade-in">
+                <i className="fa-solid fa-circle-exclamation text-rose-600 mt-0.5 flex-shrink-0"></i>
+                <span className="leading-relaxed">{deleteErrorMsg}</span>
+              </div>
+            )}
+
+            {deleteConfirmation.project?.assignedLeadsCount > 0 && !deleteErrorMsg && (
+              <div className="p-3 rounded-xl text-xs font-bold bg-amber-50 border border-amber-200 text-amber-900 flex items-start gap-2 text-left animate-fade-in">
+                <i className="fa-solid fa-triangle-exclamation text-amber-600 mt-0.5 flex-shrink-0"></i>
+                <span className="leading-relaxed">
+                  Notice: <strong>{deleteConfirmation.project.assignedLeadsCount}</strong> {deleteConfirmation.project.assignedLeadsCount === 1 ? 'lead is' : 'leads are'} assigned to this project. Delete cannot proceed while leads are assigned.
+                </span>
+              </div>
+            )}
+
             <div className="flex items-center justify-center gap-2.5 pt-2">
               <button
                 type="button"
-                onClick={() => setDeleteConfirmation({ isOpen: false, project: null })}
+                onClick={() => {
+                  setDeleteConfirmation({ isOpen: false, project: null });
+                  setDeleteErrorMsg('');
+                }}
                 disabled={deleting}
                 className="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold cursor-pointer"
               >
-                Cancel
+                {deleteErrorMsg || (deleteConfirmation.project?.assignedLeadsCount > 0) ? 'Close' : 'Cancel'}
               </button>
-              <button
-                type="button"
-                onClick={handleConfirmDelete}
-                disabled={deleting}
-                className="px-5 py-2 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white text-xs font-bold shadow cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
-              >
-                {deleting && <i className="fa-solid fa-spinner fa-spin text-xs"></i>}
-                <span>Delete</span>
-              </button>
+              {!(deleteConfirmation.project?.assignedLeadsCount > 0) && (
+                <button
+                  type="button"
+                  onClick={handleConfirmDelete}
+                  disabled={deleting}
+                  className="px-5 py-2 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white text-xs font-bold shadow cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  {deleting && <i className="fa-solid fa-spinner fa-spin text-xs"></i>}
+                  <span>Delete</span>
+                </button>
+              )}
             </div>
           </div>
         </div>

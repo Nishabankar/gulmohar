@@ -955,22 +955,24 @@ const DEFAULT_COLUMNS = [
   { id: 'actions', label: 'Actions', visible: true, pinned: true }
 ];
 
-// Add columns introduced after a user saved their layout (e.g. Priority), placed where DEFAULT_COLUMNS has them
+// Sync saved column layouts with DEFAULT_COLUMNS sequence while preserving user visibility and pinned states
 const withNewDefaultColumns = (cols) => {
-  const merged = cols.filter(c => c.id !== 'visitDate' && c.id !== 'projectType' && c.id !== 'plotsCount').map(col => {
-    const def = DEFAULT_COLUMNS.find(d => d.id === col.id);
+  const colMap = new Map();
+  (cols || []).forEach(c => {
+    if (c && c.id && c.id !== 'visitDate' && c.id !== 'projectType' && c.id !== 'plotsCount') {
+      colMap.set(c.id, c);
+    }
+  });
+  return DEFAULT_COLUMNS.map(def => {
+    const existing = colMap.get(def.id);
+    if (!existing) return { ...def };
     return {
-      ...col,
-      pinned: col.pinned !== undefined ? col.pinned : (def ? !!def.pinned : false)
+      ...def,
+      label: def.label,
+      visible: existing.visible !== undefined ? existing.visible : def.visible,
+      pinned: existing.pinned !== undefined ? existing.pinned : def.pinned
     };
   });
-  DEFAULT_COLUMNS.forEach((def, i) => {
-    if (merged.some(m => m.id === def.id)) return;
-    const prevId = i > 0 ? DEFAULT_COLUMNS[i - 1].id : null;
-    const at = merged.findIndex(m => m.id === prevId);
-    merged.splice(at === -1 ? merged.length : at + 1, 0, { ...def });
-  });
-  return merged;
 };
 
 const USER_COLUMN_WIDTH_MAP = {
@@ -1290,31 +1292,15 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
         });
         const data = await res.json();
         if (data.success && Array.isArray(data.columnPreferences) && data.columnPreferences.length > 0) {
-          const filteredPrefs = data.columnPreferences.filter(c => c.id !== 'visitDate' && c.id !== 'projectType' && c.id !== 'plotsCount');
-          const merged = filteredPrefs.map(col => {
-            const def = DEFAULT_COLUMNS.find(d => d.id === col.id);
-            return {
-              id: col.id,
-              label: col.label || (def ? def.label : col.id),
-              visible: col.visible !== undefined ? col.visible : true,
-              pinned: col.pinned !== undefined ? col.pinned : (def ? !!def.pinned : false)
-            };
-          });
-          const savedVersion = localStorage.getItem('leadsTableColumnConfig_version');
-          if (savedVersion !== COLUMN_CONFIG_VERSION) {
-            setColumnConfig(DEFAULT_COLUMNS);
-            localStorage.setItem('leadsTableColumnConfig_version', COLUMN_CONFIG_VERSION);
-            localStorage.setItem('leadsTableColumnConfig', JSON.stringify(DEFAULT_COLUMNS));
-            fetch(`${API_BASE_URL}/api/admin/column-preferences`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-              body: JSON.stringify({ columnPreferences: DEFAULT_COLUMNS })
-            }).catch(() => {});
-            return;
-          }
-          const withDefaults = withNewDefaultColumns(merged);
+          const withDefaults = withNewDefaultColumns(data.columnPreferences);
           setColumnConfig(withDefaults);
           localStorage.setItem('leadsTableColumnConfig', JSON.stringify(withDefaults));
+          // Persist the clean canonical order back to server
+          fetch(`${API_BASE_URL}/api/admin/column-preferences`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ columnPreferences: withDefaults })
+          }).catch(() => {});
         }
       } catch (e) {
         console.warn('Could not fetch column preferences from database:', e);

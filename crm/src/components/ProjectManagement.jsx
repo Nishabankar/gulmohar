@@ -2432,53 +2432,70 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
             <div className="w-12 h-12 rounded-full bg-rose-100 text-[#B30E2E] mx-auto flex items-center justify-center text-xl">
               <i className="fa-solid fa-triangle-exclamation"></i>
             </div>
-            <div className="space-y-1">
-              <h3 className="font-serif font-bold text-gray-900 text-base">Delete Project?</h3>
-              <p className="text-xs text-gray-500">
-                Are you sure you want to delete project <strong className="text-gray-800">"{deleteConfirmation.project?.name}"</strong>? This action cannot be undone.
-              </p>
-            </div>
 
-            {deleteErrorMsg && (
-              <div className="p-3 rounded-xl text-xs font-bold bg-rose-50 border border-rose-200 text-rose-800 flex items-start gap-2 text-left animate-fade-in">
-                <i className="fa-solid fa-circle-exclamation text-rose-600 mt-0.5 flex-shrink-0"></i>
-                <span className="leading-relaxed">{deleteErrorMsg}</span>
-              </div>
+            {deleteConfirmation.project?.assignedLeadsCount > 0 ? (
+              <>
+                <div className="space-y-1.5">
+                  <h3 className="font-serif font-bold text-gray-900 text-base">Cannot Delete Project</h3>
+                  <p className="text-xs text-gray-600 leading-relaxed">
+                    This project has <strong className="text-gray-900">{deleteConfirmation.project.assignedLeadsCount} assigned {deleteConfirmation.project.assignedLeadsCount === 1 ? 'lead' : 'leads'}</strong> and cannot be deleted.
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-center pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDeleteConfirmation({ isOpen: false, project: null });
+                      setDeleteErrorMsg('');
+                    }}
+                    className="px-6 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold cursor-pointer transition active:scale-95"
+                  >
+                    Close
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="space-y-1">
+                  <h3 className="font-serif font-bold text-gray-900 text-base">Delete Project?</h3>
+                  <p className="text-xs text-gray-500">
+                    Are you sure you want to delete project <strong className="text-gray-800">"{deleteConfirmation.project?.name}"</strong>? This action cannot be undone.
+                  </p>
+                </div>
+
+                {deleteErrorMsg && (
+                  <div className="p-3 rounded-xl text-xs font-bold bg-rose-50 border border-rose-200 text-rose-800 flex items-start gap-2 text-left animate-fade-in">
+                    <i className="fa-solid fa-circle-exclamation text-rose-600 mt-0.5 flex-shrink-0"></i>
+                    <span className="leading-relaxed">{deleteErrorMsg}</span>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-center gap-2.5 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDeleteConfirmation({ isOpen: false, project: null });
+                      setDeleteErrorMsg('');
+                    }}
+                    disabled={deleting}
+                    className="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleConfirmDelete}
+                    disabled={deleting}
+                    className="px-5 py-2 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white text-xs font-bold shadow cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                  >
+                    {deleting && <i className="fa-solid fa-spinner fa-spin text-xs"></i>}
+                    <span>Delete</span>
+                  </button>
+                </div>
+              </>
             )}
 
-            {deleteConfirmation.project?.assignedLeadsCount > 0 && !deleteErrorMsg && (
-              <div className="p-3 rounded-xl text-xs font-bold bg-amber-50 border border-amber-200 text-amber-900 flex items-start gap-2 text-left animate-fade-in">
-                <i className="fa-solid fa-triangle-exclamation text-amber-600 mt-0.5 flex-shrink-0"></i>
-                <span className="leading-relaxed">
-                  Notice: <strong>{deleteConfirmation.project.assignedLeadsCount}</strong> {deleteConfirmation.project.assignedLeadsCount === 1 ? 'lead is' : 'leads are'} assigned to this project. Delete cannot proceed while leads are assigned.
-                </span>
-              </div>
-            )}
-
-            <div className="flex items-center justify-center gap-2.5 pt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setDeleteConfirmation({ isOpen: false, project: null });
-                  setDeleteErrorMsg('');
-                }}
-                disabled={deleting}
-                className="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold cursor-pointer"
-              >
-                {deleteErrorMsg || (deleteConfirmation.project?.assignedLeadsCount > 0) ? 'Close' : 'Cancel'}
-              </button>
-              {!(deleteConfirmation.project?.assignedLeadsCount > 0) && (
-                <button
-                  type="button"
-                  onClick={handleConfirmDelete}
-                  disabled={deleting}
-                  className="px-5 py-2 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white text-xs font-bold shadow cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
-                >
-                  {deleting && <i className="fa-solid fa-spinner fa-spin text-xs"></i>}
-                  <span>Delete</span>
-                </button>
-              )}
-            </div>
           </div>
         </div>
       )}

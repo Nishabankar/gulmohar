@@ -3095,6 +3095,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       .sort((a, b) => (Number(a.m[2]) || 1) - (Number(b.m[2]) || 1)).map(x => { used.add(x.i); return x.i; });
     const visitIdx = find(['visitarrangeondate', 'visitdate', 'sitevisitdate', 'visit', 'visitscheduled'], ['visit']);
     const agentIdx = find(['callername', 'caller', 'agent', 'assignedagent', 'assignedto', 'agentname', 'telecaller'], ['caller', 'agent']);
+    const createdByIdx = find(['createdby', 'creator', 'source', 'createdbyuser'], ['createdby', 'creator']);
     const createdIdx = find(['createdtime', 'createdat', 'created', 'timestamp', 'date', 'enquirydate', 'submitteddate', 'leaddate'], ['created', 'timestamp']);
     // Specific full name columns checked before firstName/lastName
     const fullNameIdx = find(['fullname', 'customername', 'leadname', 'clientname'], ['fullname', 'customername', 'leadname', 'clientname']);
@@ -3137,6 +3138,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       leads.push({
         row: rowIndex,
         createdTime: cell(row, createdIdx),
+        createdBy: cell(row, createdByIdx) || 'System',
         firstName: firstName || 'Customer',
         lastName: lastName,
         phone,

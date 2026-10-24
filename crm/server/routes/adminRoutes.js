@@ -1285,6 +1285,7 @@ router.post('/enquiries/import', protectAdmin, async (req, res) => {
       const typography = str(lead.typography);
       const carpetArea = str(lead.carpetArea);
       const budget = str(lead.budget);
+      const createdBy = str(lead.createdBy) || performer || 'System';
 
       if (projectName) history.push(['Project Name', '—', projectName]);
       if (projectType) history.push(['Project Type', '—', projectType]);
@@ -1339,8 +1340,8 @@ router.post('/enquiries/import', protectAdmin, async (req, res) => {
       const [insertResult] = await query(
         `INSERT INTO leads 
          (first_name, last_name, phone, email, plot_info, plots_count, project_name, project_type, typography, carpet_area, budget, visit_date, visit_time, followup_date, status, priority, notes, assigned_to, assigned_agent_name, created_by, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, 'System', COALESCE(?, UTC_TIMESTAMP()))`,
-        [firstName, lastName, cleanPhone, email, plotInfo, plotsCount, projectName, projectType, typography, carpetArea, budget, visitDate, followupDate, status, priority, notes, assignedTo, assignedAgentName, created ? created.utc : null]
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?, COALESCE(?, UTC_TIMESTAMP()))`,
+        [firstName, lastName, cleanPhone, email, plotInfo, plotsCount, projectName, projectType, typography, carpetArea, budget, visitDate, followupDate, status, priority, notes, assignedTo, assignedAgentName, createdBy, created ? created.utc : null]
       );
 
       const newId = insertResult.insertId;

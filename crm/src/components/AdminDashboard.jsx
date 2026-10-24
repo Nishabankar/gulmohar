@@ -296,28 +296,31 @@ const ProjectFilterDropdown = ({
       {/* Project Pills (rendered to the LEFT of the icon button) */}
       {!isAll ? (
         <div class="inline-flex items-center gap-1 max-w-[170px] sm:max-w-none overflow-x-auto no-scrollbar flex-nowrap py-0.5">
-          {selectedList.map((pName) => (
-            <div
-              key={pName}
-              class="inline-flex items-center gap-1 sm:gap-1.5 h-6 sm:h-8.5 px-1.5 sm:px-2.5 rounded-lg sm:rounded-xl bg-[#FFF0F2] border border-[#B30E2E] ring-1 ring-[#FCD6DC] text-[10px] sm:text-xs font-semibold text-[#B30E2E] shadow-xs animate-fade-in flex-shrink-0"
-            >
-              <i class="fa-solid fa-building text-[9px] sm:text-[11px] text-[#B30E2E] flex-shrink-0"></i>
-              <span class="font-bold truncate max-w-[55px] sm:max-w-[130px]" title={pName}>
-                {pName}
-              </span>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleRemoveProject(pName);
-                }}
-                class="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-0.5 rounded-full hover:bg-rose-200 text-[#B30E2E] flex items-center justify-center transition cursor-pointer flex-shrink-0"
-                title={`Remove ${pName}`}
+          {selectedList.map((pName) => {
+            const isBlank = (pName || '').trim().toLowerCase() === 'blank project';
+            return (
+              <div
+                key={pName}
+                class="inline-flex items-center gap-1 sm:gap-1.5 h-6 sm:h-8.5 px-1.5 sm:px-2.5 rounded-lg sm:rounded-xl bg-[#FFF0F2] border border-[#B30E2E] ring-1 ring-[#FCD6DC] text-[10px] sm:text-xs font-semibold text-[#B30E2E] shadow-xs animate-fade-in flex-shrink-0"
               >
-                <i class="fa-solid fa-xmark text-[8px] sm:text-[9px]"></i>
-              </button>
-            </div>
-          ))}
+                <i class={`fa-solid ${isBlank ? 'fa-folder-open' : 'fa-building'} text-[9px] sm:text-[11px] text-[#B30E2E] flex-shrink-0`}></i>
+                <span class="font-bold truncate max-w-[70px] sm:max-w-[130px]" title={pName}>
+                  {pName}
+                </span>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRemoveProject(pName);
+                  }}
+                  class="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-0.5 rounded-full hover:bg-rose-200 text-[#B30E2E] flex items-center justify-center transition cursor-pointer flex-shrink-0"
+                  title={`Remove ${pName}`}
+                >
+                  <i class="fa-solid fa-xmark text-[8px] sm:text-[9px]"></i>
+                </button>
+              </div>
+            );
+          })}
         </div>
       ) : (
         /* When All Projects is selected: show pill badge like project pill but WITHOUT close (x) button */
@@ -409,6 +412,37 @@ const ProjectFilterDropdown = ({
                   </div>
                   <i class={`fa-solid fa-globe text-[11px] ${isAll ? 'text-[#B30E2E]' : 'text-gray-400'}`}></i>
                   <span class="truncate">All Projects</span>
+                </div>
+              </button>
+            )}
+
+            {/* Blank Project (Unassigned) Option */}
+            {(!query || 'blank project'.includes(query)) && (
+              <button
+                type="button"
+                onClick={() => handleToggleProject('Blank Project')}
+                class={`w-full text-left px-3 py-2 text-xs font-semibold hover:bg-rose-50 hover:text-[#B30E2E] transition flex items-center justify-between border-b border-gray-100 cursor-pointer group ${
+                  selectedList.some(item => (item || '').trim().toLowerCase() === 'blank project')
+                    ? 'bg-[#FFF0F2] text-[#B30E2E] font-bold'
+                    : 'text-gray-700'
+                }`}
+              >
+                <div class="flex items-center gap-2 truncate">
+                  <div class={`w-3.5 h-3.5 sm:w-4 sm:h-4 rounded border flex items-center justify-center transition flex-shrink-0 ${
+                    selectedList.some(item => (item || '').trim().toLowerCase() === 'blank project')
+                      ? 'bg-[#B30E2E] border-[#B30E2E] text-white'
+                      : 'border-gray-300 bg-white group-hover:border-gray-400'
+                  }`}>
+                    {selectedList.some(item => (item || '').trim().toLowerCase() === 'blank project') && (
+                      <i class="fa-solid fa-check text-[8px] sm:text-[9px] text-white"></i>
+                    )}
+                  </div>
+                  <i class={`fa-solid fa-folder-open text-[11px] ${
+                    selectedList.some(item => (item || '').trim().toLowerCase() === 'blank project')
+                      ? 'text-[#B30E2E]'
+                      : 'text-gray-400'
+                  }`}></i>
+                  <span class="truncate">Blank Project</span>
                 </div>
               </button>
             )}
@@ -1589,9 +1623,10 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
   const [createLeadMsg, setCreateLeadMsg] = useState('');
 
   const handleOpenNewLeadModal = () => {
-    const singleProject = Array.isArray(selectedProjectFilter) && selectedProjectFilter.length === 1
+    let singleProject = Array.isArray(selectedProjectFilter) && selectedProjectFilter.length === 1
       ? selectedProjectFilter[0]
       : null;
+    if (singleProject === 'Blank Project') singleProject = null;
     if (singleProject) {
       const availableTypes = getProjectTypesForProject(projectsList, singleProject);
       const newType = availableTypes.length > 0 ? availableTypes.join(', ') : '';
@@ -3413,8 +3448,14 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       return scopedEnquiries || [];
     }
     const filterSet = new Set(selectedProjectFilter.map(n => n.trim().toLowerCase()));
+    const matchBlank = filterSet.has('blank project');
+
     return (scopedEnquiries || []).filter(item => {
       const pName = (item.projectName || '').trim().toLowerCase();
+      const isBlankProject = !pName || pName === '-' || pName === '—' || pName === 'unassigned';
+      if (isBlankProject) {
+        return matchBlank;
+      }
       return filterSet.has(pName);
     });
   }, [scopedEnquiries, selectedProjectFilter]);

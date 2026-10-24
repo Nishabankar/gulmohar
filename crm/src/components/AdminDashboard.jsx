@@ -6328,16 +6328,21 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                 }
                                 case 'projectName': {
                                   const matchedProject = (projectsList || []).find(p => (p.name || '').trim().toLowerCase() === (item.projectName || '').trim().toLowerCase());
-                                  const currentProjName = matchedProject ? matchedProject.name : (item.projectName || '');
+                                  const currentProjName = (matchedProject ? matchedProject.name : (item.projectName || '')).trim();
+                                  const hasValidProject = Boolean(currentProjName && currentProjName !== '-' && currentProjName !== '—');
 
                                   return (
                                     <td key="projectName" class={getTdClass('projectName', currentId)} style={getTdStyle('projectName')}>
-                                      <div class="flex items-center gap-1.5 whitespace-nowrap" title={currentProjName || '-'}>
-                                        <i class="fa-solid fa-building text-[9px] text-[#B30E2E] flex-shrink-0"></i>
-                                        <span class="font-bold text-gray-800 text-xs whitespace-nowrap">
-                                          {currentProjName || <span class="text-gray-400 font-normal italic">-</span>}
-                                        </span>
-                                      </div>
+                                      {hasValidProject ? (
+                                        <div class="flex items-center gap-1.5 whitespace-nowrap" title={currentProjName}>
+                                          <i class="fa-solid fa-building text-[9px] text-[#B30E2E] flex-shrink-0"></i>
+                                          <span class="font-bold text-gray-800 text-xs whitespace-nowrap">
+                                            {currentProjName}
+                                          </span>
+                                        </div>
+                                      ) : (
+                                        <span class="text-gray-400 font-normal italic text-xs select-none">—</span>
+                                      )}
                                     </td>
                                   );
                                 }

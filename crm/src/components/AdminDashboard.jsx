@@ -3365,7 +3365,11 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
 
   // Export CSV handler (Standard RFC-4180 with UTF-8 BOM for Microsoft Excel compatibility)
   const handleExportCSV = () => {
-    if (!filteredEnquiries || filteredEnquiries.length === 0) {
+    const targetList = (selectedLeadIds && selectedLeadIds.length > 0)
+      ? filteredEnquiries.filter(e => selectedLeadIds.includes(e._id || e.id))
+      : filteredEnquiries;
+
+    if (!targetList || targetList.length === 0) {
       alert('No enquiries available to export.');
       return;
     }
@@ -3397,7 +3401,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       return `"${str.replace(/"/g, '""')}"`;
     };
 
-    const rows = filteredEnquiries.map((item, idx) => {
+    const rows = targetList.map((item, idx) => {
       const displayLeadId = getLeadDisplayId(item, idx, enquiries);
       const displayUserId = getCustomerUserId(item, enquiries);
       const fullName = `${item.firstName || ''} ${item.lastName || ''}`.trim() || item.name || '';

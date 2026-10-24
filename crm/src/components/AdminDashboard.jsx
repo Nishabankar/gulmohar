@@ -3363,42 +3363,84 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
   };
 
 
-  // Export CSV handler
+  // Export CSV handler (Standard RFC-4180 with UTF-8 BOM for Microsoft Excel compatibility)
   const handleExportCSV = () => {
-    if (filteredEnquiries.length === 0) {
+    if (!filteredEnquiries || filteredEnquiries.length === 0) {
       alert('No enquiries available to export.');
       return;
     }
 
-    const headers = ['Lead ID', 'Full Name', 'Mobile No', 'Email Address', 'Project Name', 'Project Type', 'Typography', 'Carpet Area', 'Budget', 'Number of Guntha', 'Selected Plot', 'Submitted Date', 'Status', 'Priority', 'Assigned Agent', 'Created By', 'Notes'];
-    const rows = filteredEnquiries.map((item, idx) => [
-      `"${getLeadDisplayId(item, idx, enquiries)}"`,
-      `"${item.firstName || ''} ${item.lastName || ''}"`,
-      `"${item.phone || ''}"`,
-      `"${item.email || ''}"`,
-      `"${item.projectName || ''}"`,
-      `"${item.projectType || ''}"`,
-      `"${item.typography || ''}"`,
-      `"${item.carpetArea || ''}"`,
-      `"${item.budget || ''}"`,
-      `"${item.plotsCount || '1 Guntha'}"`,
-      `"${item.plotInfo || ''}"`,
-      `"${new Date(item.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}"`,
-      `"${item.status || 'New'}"`,
-      `"${(item.priority === 'Cold' || item.priority === 'Low') ? 'Cold' : 'Hot'}"`,
-      `"${item.assignedAgentName || 'Rahul Patil'}"`,
-      `"${item.createdBy || 'System'}"`,
-      `"${(item.notes || '').replace(/"/g, '""')}"`
-    ]);
+    const headers = [
+      'Lead ID',
+      'User ID',
+      'Full Name',
+      'Mobile No',
+      'Email Address',
+      'Project Name',
+      'Project Type',
+      'Typography',
+      'Carpet Area',
+      'Budget',
+      'Number of Guntha',
+      'Selected Plot',
+      'Submitted Date',
+      'Status',
+      'Priority',
+      'Assigned Agent',
+      'Created By',
+      'Notes'
+    ];
 
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
+    const escapeCSV = (val) => {
+      if (val === null || val === undefined) return '""';
+      const str = String(val);
+      return `"${str.replace(/"/g, '""')}"`;
+    };
+
+    const rows = filteredEnquiries.map((item, idx) => {
+      const displayLeadId = getLeadDisplayId(item, idx, enquiries);
+      const displayUserId = getCustomerUserId(item, enquiries);
+      const fullName = `${item.firstName || ''} ${item.lastName || ''}`.trim() || item.name || '';
+      const rawDate = item.createdAt || item.created_at;
+      let dateStr = '';
+      if (rawDate) {
+        const d = new Date(rawDate);
+        dateStr = isNaN(d.getTime()) ? String(rawDate) : d.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+      }
+
+      return [
+        escapeCSV(displayLeadId),
+        escapeCSV(displayUserId),
+        escapeCSV(fullName),
+        escapeCSV(item.phone || ''),
+        escapeCSV(item.email || ''),
+        escapeCSV(item.projectName || ''),
+        escapeCSV(item.projectType || ''),
+        escapeCSV(item.typography || ''),
+        escapeCSV(item.carpetArea || ''),
+        escapeCSV(item.budget || ''),
+        escapeCSV(item.plotsCount || '1 Guntha'),
+        escapeCSV(item.plotInfo || ''),
+        escapeCSV(dateStr),
+        escapeCSV(item.status || 'New'),
+        escapeCSV((item.priority === 'Cold' || item.priority === 'Low') ? 'Cold' : 'Hot'),
+        escapeCSV(item.assignedAgentName || 'Unassigned'),
+        escapeCSV(item.createdBy || 'System'),
+        escapeCSV(item.notes || '')
+      ].join(',');
+    });
+
+    // \uFEFF is UTF-8 Byte Order Mark (BOM) - required for Excel on Windows to properly open UTF-8 CSVs
+    const csvContent = '\uFEFF' + [headers.map(escapeCSV).join(','), ...rows].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
+    link.href = url;
     link.setAttribute('download', `Gulmohar_City_Leads_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   // Role-based Enquiries Scoping (Exact Current Assigned Agent Ownership)

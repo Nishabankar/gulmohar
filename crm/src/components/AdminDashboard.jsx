@@ -940,18 +940,18 @@ const DEFAULT_COLUMNS = [
   { id: 'leadId', label: 'Lead ID', visible: true, pinned: true },
   { id: 'fullName', label: 'Full Name', visible: true, pinned: true },
   { id: 'mobile', label: 'Mobile No.', visible: true, pinned: false },
-  { id: 'email', label: 'Email Address', visible: true, pinned: false },
-  { id: 'enquiryDate', label: 'Enquiry Date', visible: true, pinned: false },
   { id: 'status', label: 'Status', visible: true, pinned: false },
+  { id: 'followupDate', label: 'Followup / Visit', visible: true, pinned: false },
   { id: 'priority', label: 'Priority', visible: true, pinned: false },
-  { id: 'followupDate', label: 'Followup Date', visible: true, pinned: false },
+  { id: 'notes', label: 'Notes', visible: true, pinned: false },
   { id: 'projectName', label: 'Project Name', visible: true, pinned: false },
   { id: 'typography', label: 'Typography', visible: true, pinned: false },
   { id: 'carpetArea', label: 'Carpet Area', visible: true, pinned: false },
   { id: 'budget', label: 'Budget', visible: true, pinned: false },
   { id: 'assignedAgent', label: 'Assigned Agent', visible: true, pinned: false },
+  { id: 'email', label: 'Email Address', visible: true, pinned: false },
+  { id: 'enquiryDate', label: 'Enquiry Date', visible: true, pinned: false },
   { id: 'createdBy', label: 'Created By', visible: true, pinned: false },
-  { id: 'notes', label: 'Notes', visible: true, pinned: false },
   { id: 'actions', label: 'Actions', visible: true, pinned: true }
 ];
 
@@ -1252,22 +1252,29 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     };
   }, [activeDropdown]);
 
-  // Column Configuration State & Persistence
+  // Column Configuration State & Persistence (Versioned to sync sequence updates)
+  const COLUMN_CONFIG_VERSION = 'v4_seq_20261024';
   const [columnConfig, setColumnConfig] = useState(() => {
     try {
-      const stored = localStorage.getItem('leadsTableColumnConfig');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const filtered = parsed.filter(c => c.id !== 'visitDate' && c.id !== 'projectType' && c.id !== 'plotsCount');
-          if (filtered.length > 0) {
-            const result = withNewDefaultColumns(filtered);
-            try { localStorage.setItem('leadsTableColumnConfig', JSON.stringify(result)); } catch (err) {}
-            return result;
+      const savedVersion = localStorage.getItem('leadsTableColumnConfig_version');
+      if (savedVersion === COLUMN_CONFIG_VERSION) {
+        const stored = localStorage.getItem('leadsTableColumnConfig');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const filtered = parsed.filter(c => c.id !== 'visitDate' && c.id !== 'projectType' && c.id !== 'plotsCount');
+            if (filtered.length > 0) {
+              const result = withNewDefaultColumns(filtered);
+              return result;
+            }
           }
         }
       }
     } catch (e) {}
+    try {
+      localStorage.setItem('leadsTableColumnConfig_version', COLUMN_CONFIG_VERSION);
+      localStorage.setItem('leadsTableColumnConfig', JSON.stringify(DEFAULT_COLUMNS));
+    } catch (err) {}
     return DEFAULT_COLUMNS;
   });
   const [showColumnConfigModal, setShowColumnConfigModal] = useState(false);
@@ -1293,6 +1300,18 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
               pinned: col.pinned !== undefined ? col.pinned : (def ? !!def.pinned : false)
             };
           });
+          const savedVersion = localStorage.getItem('leadsTableColumnConfig_version');
+          if (savedVersion !== COLUMN_CONFIG_VERSION) {
+            setColumnConfig(DEFAULT_COLUMNS);
+            localStorage.setItem('leadsTableColumnConfig_version', COLUMN_CONFIG_VERSION);
+            localStorage.setItem('leadsTableColumnConfig', JSON.stringify(DEFAULT_COLUMNS));
+            fetch(`${API_BASE_URL}/api/admin/column-preferences`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              body: JSON.stringify({ columnPreferences: DEFAULT_COLUMNS })
+            }).catch(() => {});
+            return;
+          }
           const withDefaults = withNewDefaultColumns(merged);
           setColumnConfig(withDefaults);
           localStorage.setItem('leadsTableColumnConfig', JSON.stringify(withDefaults));
@@ -3381,19 +3400,18 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       'Lead ID',
       'Full Name',
       'Mobile No',
-      'Email Address',
+      'Status',
+      'Followup / Visit Date',
+      'Priority',
+      'Notes',
       'Project Name',
-      'Project Type',
       'Typography',
       'Carpet Area',
       'Budget',
-      'Followup Date',
-      'Submitted Date',
-      'Status',
-      'Priority',
       'Assigned Agent',
-      'Created By',
-      'Notes'
+      'Email Address',
+      'Submitted Date',
+      'Created By'
     ];
 
     const escapeCSV = (val) => {
@@ -3416,19 +3434,18 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
         escapeCSV(displayLeadId),
         escapeCSV(fullName),
         escapeCSV(item.phone || ''),
-        escapeCSV(item.email || ''),
+        escapeCSV(item.status || 'New'),
+        escapeCSV(item.followupDate || ''),
+        escapeCSV((item.priority === 'Cold' || item.priority === 'Low') ? 'Cold' : 'Hot'),
+        escapeCSV(item.notes || ''),
         escapeCSV(item.projectName || ''),
-        escapeCSV(item.projectType || ''),
         escapeCSV(item.typography || ''),
         escapeCSV(item.carpetArea || ''),
         escapeCSV(item.budget || ''),
-        escapeCSV(item.followupDate || ''),
-        escapeCSV(dateStr),
-        escapeCSV(item.status || 'New'),
-        escapeCSV((item.priority === 'Cold' || item.priority === 'Low') ? 'Cold' : 'Hot'),
         escapeCSV(item.assignedAgentName || 'Unassigned'),
-        escapeCSV(item.createdBy || 'System'),
-        escapeCSV(item.notes || '')
+        escapeCSV(item.email || ''),
+        escapeCSV(dateStr),
+        escapeCSV(item.createdBy || 'System')
       ].join(',');
     });
 

@@ -87,6 +87,13 @@ const seedAdminUser = async () => {
       // Column already dropped or not present
     }
 
+    // Reset stored column_preferences in users table to null so all users adopt new canonical sequence
+    try {
+      await query("UPDATE users SET column_preferences = NULL WHERE column_preferences IS NOT NULL");
+    } catch (e) {
+      // Ignore if table/column does not exist
+    }
+
     // Auto-repair any existing leads whose typography was truncated by the 255-char limit
     try {
       const [projects] = await query("SELECT name, typography FROM projects WHERE typography IS NOT NULL AND typography != ''");

@@ -195,7 +195,7 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
 
                     {/* Input Email */}
                     <div>
-                      <label class="block text-xs font-bold text-gray-700 mb-1">Email Address</label>
+                      <label class="block text-xs font-bold text-gray-700 mb-1">Email ID</label>
                       <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 text-xs">
                           <i class="fa-solid fa-envelope"></i>
@@ -204,7 +204,7 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
                           type="email" 
                           value={formData.email}
                           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                          placeholder="Enter email address" 
+                          placeholder="Enter email id" 
                           class="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition text-xs bg-gray-50 focus:bg-white"
                         />
                       </div>

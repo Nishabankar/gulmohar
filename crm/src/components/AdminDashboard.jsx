@@ -955,7 +955,7 @@ const DEFAULT_COLUMNS = [
   { id: 'assignedAgent', label: 'Sales Person', visible: true, pinned: false },
   { id: 'location', label: 'Location', visible: true, pinned: false },
   { id: 'source', label: 'Source', visible: true, pinned: false },
-  { id: 'email', label: 'Email Address', visible: true, pinned: false },
+  { id: 'email', label: 'Email ID', visible: true, pinned: false },
   { id: 'enquiryDate', label: 'Enquiry Date', visible: true, pinned: false },
   { id: 'createdBy', label: 'Created By', visible: true, pinned: false },
   { id: 'actions', label: 'Actions', visible: true, pinned: true }
@@ -998,7 +998,7 @@ const DEFAULT_USER_COLUMNS = [
   { id: 'role', label: 'Role', visible: true, pinned: false },
   { id: 'username', label: 'Username', visible: true, pinned: false },
   { id: 'phone', label: 'Mobile No', visible: true, pinned: false },
-  { id: 'email', label: 'Email Address', visible: true, pinned: false },
+  { id: 'email', label: 'Email ID', visible: true, pinned: false },
   { id: 'assignedLeads', label: 'Assigned Leads', visible: true, pinned: false },
   { id: 'actions', label: 'Actions', visible: true, pinned: true }
 ];
@@ -1284,7 +1284,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
   }, [activeDropdown]);
 
   // Column Configuration State & Persistence (Versioned to sync sequence updates)
-  const COLUMN_CONFIG_VERSION = 'v7_location_source_20261026';
+  const COLUMN_CONFIG_VERSION = 'v8_email_id_20261026';
   const [columnConfig, setColumnConfig] = useState(() => {
     try {
       const savedVersion = localStorage.getItem('leadsTableColumnConfig_version');
@@ -3450,7 +3450,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       'Sales Person',
       'Location',
       'Source',
-      'Email Address',
+      'Email ID',
       'Submitted Date',
       'Created By'
     ];
@@ -6036,10 +6036,10 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                     onClick={() => handleSort('email')}
                                     class={getThClass('email', isSorted)}
                                     style={getThStyle('email')}
-                                    title={getSortTitle('Email Address')}
+                                    title={getSortTitle('Email ID')}
                                   >
                                     <div class="flex items-center gap-1.5 whitespace-nowrap">
-                                      <span>Email Address</span>
+                                      <span>Email ID</span>
                                       {renderSortIndicator()}
                                     </div>
                                   </th>
@@ -7301,10 +7301,10 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                     onClick={() => handleUserSort('email')}
                                     class={getUserThClass('email', isSorted)} 
                                     style={getUserThStyle('email')}
-                                    title={getSortTitle('Email Address')}
+                                    title={getSortTitle('Email ID')}
                                   >
                                     <div class="flex items-center gap-1.5">
-                                      <span>Email Address</span>
+                                      <span>Email ID</span>
                                       {renderSortIndicator()}
                                     </div>
                                   </th>
@@ -7633,13 +7633,13 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                   />
                 </div>
                 <div>
-                  <label class="block text-xs font-bold text-gray-700 mb-1">Email Address *</label>
+                  <label class="block text-xs font-bold text-gray-700 mb-1">Email ID *</label>
                   <input 
                     type="email" 
                     required
                     value={newAgentData.email}
                     onChange={(e) => setNewAgentData({ ...newAgentData, email: e.target.value })}
-                    placeholder="Enter email address"
+                    placeholder="Enter email id"
                     class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
                   />
                 </div>
@@ -7905,13 +7905,13 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                       />
                     </div>
                     <div>
-                      <label class="block text-xs font-bold text-gray-700 mb-1">Email Address *</label>
+                      <label class="block text-xs font-bold text-gray-700 mb-1">Email ID *</label>
                       <input 
                         type="email" 
                         required
                         value={editingUser.email || ''}
                         onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
-                        placeholder="Enter email address"
+                        placeholder="Enter email id"
                         class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
                       />
                     </div>
@@ -8111,7 +8111,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                     />
                   </div>
                   <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">Email Address</label>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Email ID</label>
                     <input 
                       type="email" 
                       value={editingEnquiry.email || ''} 
@@ -8633,13 +8633,13 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                   />
                 </div>
                 <div>
-                  <label class="block text-xs font-bold text-gray-700 mb-1">Email Address *</label>
+                  <label class="block text-xs font-bold text-gray-700 mb-1">Email ID *</label>
                   <input 
                     type="email" 
                     required
                     value={profileForm.email}
                     onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
-                    placeholder="Enter email address"
+                    placeholder="Enter email id"
                     class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
                   />
                 </div>
@@ -8800,12 +8800,12 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                     />
                   </div>
                   <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">Email Address</label>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Email ID</label>
                     <input 
                       type="email" 
                       value={newLeadFormData.email}
                       onChange={(e) => setNewLeadFormData({ ...newLeadFormData, email: e.target.value })}
-                      placeholder="Enter email address"
+                      placeholder="Enter email id"
                       class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC]"
                     />
                   </div>

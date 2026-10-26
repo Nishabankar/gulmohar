@@ -641,7 +641,7 @@ router.patch('/enquiries/:id', protectAdmin, async (req, res) => {
       { col: 'first_name', label: 'First Name', incoming: firstName },
       { col: 'last_name', label: 'Last Name', incoming: lastName },
       { col: 'phone', label: 'Mobile No.', incoming: phone },
-      { col: 'email', label: 'Email Address', incoming: email },
+      { col: 'email', label: 'Email ID', incoming: email },
 
       { col: 'plot_info', label: 'Plot Info', incoming: plotInfo },
       { col: 'visit_date', label: 'Visit Date', incoming: visitDate },

@@ -5358,11 +5358,11 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                           setIsAgentDropdownOpen(!isAgentDropdownOpen);
                         }}
                         class="w-full px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-xs bg-white hover:bg-gray-50 font-bold text-gray-700 cursor-pointer shadow-xs flex items-center justify-between"
-                        title="Filter leads by Agent"
+                        title="Filter leads by Sales Person"
                       >
                         <span class="flex items-center gap-1.5 truncate">
                           <i class="fa-solid fa-user-group text-xs text-[#B30E2E]"></i>
-                          <span class="truncate">{agentFilter === 'All' ? 'All Agents' : agentFilter}</span>
+                          <span class="truncate">{agentFilter === 'All' ? 'All Sales Persons' : agentFilter}</span>
                         </span>
                         <i class={`fa-solid fa-chevron-down text-xs text-gray-400 transition transform ${isAgentDropdownOpen ? 'rotate-180' : ''}`}></i>
                       </button>
@@ -5382,7 +5382,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                           >
                             <span class="flex items-center gap-1.5 truncate">
                               <i class="fa-solid fa-users text-xs text-rose-500"></i>
-                              <span>All Agents</span>
+                              <span>All Sales Persons</span>
                             </span>
                             {agentFilter === 'All' && <i class="fa-solid fa-check text-xs"></i>}
                           </button>
@@ -5554,11 +5554,11 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                             setIsMobileStatusDropdownOpen(false);
                           }}
                           class="w-full px-2.5 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-xs bg-white hover:bg-gray-50 font-bold text-gray-700 cursor-pointer shadow-xs flex items-center justify-between gap-1.5"
-                          title="Filter leads by Agent"
+                          title="Filter leads by Sales Person"
                         >
                           <span class="flex items-center gap-1.5 truncate">
                             <i class="fa-solid fa-user-group text-xs text-[#B30E2E] flex-shrink-0"></i>
-                            <span class="truncate">{agentFilter === 'All' ? 'All Agents' : agentFilter}</span>
+                            <span class="truncate">{agentFilter === 'All' ? 'All Sales Persons' : agentFilter}</span>
                           </span>
                           <i class={`fa-solid fa-chevron-down text-[11px] text-gray-400 transition transform flex-shrink-0 ${isMobileAgentDropdownOpen ? 'rotate-180' : ''}`}></i>
                         </button>
@@ -5578,7 +5578,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                             >
                               <span class="flex items-center gap-1.5 truncate">
                                 <i class="fa-solid fa-users text-xs text-rose-500"></i>
-                                <span>All Agents</span>
+                                <span>All Sales Persons</span>
                               </span>
                               {agentFilter === 'All' && <i class="fa-solid fa-check text-xs"></i>}
                             </button>

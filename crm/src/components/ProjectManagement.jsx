@@ -434,6 +434,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
       return idx;
     };
 
+    const idIdx = find(['id', 'projectid', 'srno', 'sno', 'slno', 'serialno', 'serialnumber', 'no', 'row'], ['id', 'projectid']);
     const nameIdx = find(['project', 'projectname', 'name', 'title'], ['project', 'name']);
     const devIdx = find(['developer', 'developername', 'builder', 'company'], ['dev', 'build']);
     const typeIdx = find(['projecttype', 'type', 'types', 'category'], ['type']);
@@ -441,6 +442,10 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
     const reraIdx = find(['reranumber', 'rerano', 'rera', 'registrationno'], ['rera']);
     const areaIdx = find(['area', 'locationarea', 'locality', 'suburb'], ['area', 'loc']);
     const addressIdx = find(['address', 'projectaddress', 'fulladdress', 'siteaddress'], ['address', 'site']);
+    const leadsIdx = find(['assignedleads', 'assignedleadscount', 'leads', 'totalleads', 'leadscount'], ['leads']);
+    const createdByIdx = find(['createdby', 'creator', 'source', 'author', 'user'], ['createdby', 'creator']);
+    const createdAtIdx = find(['createdat', 'createdtime', 'created', 'date', 'creationdate'], ['created', 'date']);
+    const agentIdx = find(['salesperson', 'salespersonname', 'salesman', 'caller', 'agent', 'assignedagent'], ['salesperson', 'sales', 'agent']);
 
     const mappedColumns = [];
     const unmappedColumns = [];
@@ -467,6 +472,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
       let typography = rawTypo ? rawTypo.split(/[,;|]/).map(s => s.trim()).filter(Boolean) : ['2 BHK'];
 
       projectsList.push({
+        id: idIdx !== -1 ? getVal(idIdx) : undefined,
         row: rowIdx,
         name: rawName,
         developerName,

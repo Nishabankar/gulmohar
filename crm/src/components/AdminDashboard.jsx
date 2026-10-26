@@ -1284,7 +1284,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
   }, [activeDropdown]);
 
   // Column Configuration State & Persistence (Versioned to sync sequence updates)
-  const COLUMN_CONFIG_VERSION = 'v5_salesperson_project_20261026';
+  const COLUMN_CONFIG_VERSION = 'v7_location_source_20261026';
   const [columnConfig, setColumnConfig] = useState(() => {
     try {
       const savedVersion = localStorage.getItem('leadsTableColumnConfig_version');
@@ -6852,6 +6852,37 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                           <span>{item.assignedAgentName || currentUser.name}</span>
                                         </span>
                                       )}
+                                    </td>
+                                  );
+                                }
+                                case 'location': {
+                                  const loc = item.location || '—';
+                                  return (
+                                    <td key="location" class={getTdClass('location', currentId)} style={getTdStyle('location')}>
+                                      <div class="flex items-center gap-1.5 text-xs text-gray-700 truncate" title={loc}>
+                                        <i class="fa-solid fa-location-dot text-[#B30E2E] shrink-0 text-[10px]"></i>
+                                        <span class="truncate">{loc}</span>
+                                      </div>
+                                    </td>
+                                  );
+                                }
+                                case 'source': {
+                                  const src = item.source || 'Website';
+                                  const getSourceStyle = (s) => {
+                                    const lower = (s || '').toLowerCase();
+                                    if (lower.includes('website')) return 'bg-sky-50 text-sky-700 border-sky-200';
+                                    if (lower.includes('instagram')) return 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200';
+                                    if (lower.includes('facebook')) return 'bg-blue-50 text-blue-700 border-blue-200';
+                                    if (lower.includes('hoarding') || lower.includes('road')) return 'bg-amber-50 text-amber-700 border-amber-200';
+                                    if (lower.includes('referral')) return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                                    return 'bg-gray-50 text-gray-700 border-gray-200';
+                                  };
+                                  return (
+                                    <td key="source" class={getTdClass('source', currentId)} style={getTdStyle('source')}>
+                                      <span class={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-semibold border shadow-2xs whitespace-nowrap ${getSourceStyle(src)}`}>
+                                        <i class="fa-solid fa-bullhorn text-[8.5px]"></i>
+                                        <span>{src}</span>
+                                      </span>
                                     </td>
                                   );
                                 }

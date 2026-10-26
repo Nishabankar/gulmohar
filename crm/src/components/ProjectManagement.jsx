@@ -1280,8 +1280,8 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
       
       {/* Toast Notification */}
       {notification.show && (
-        <div className="fixed top-4 right-4 z-50 animate-fade-in">
-          <div className={`px-4 py-2.5 rounded-xl shadow-lg border flex items-center gap-2.5 text-xs font-bold ${
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[9999] animate-fade-in pointer-events-none max-w-[90vw]">
+          <div className={`px-5 py-2.5 rounded-2xl shadow-2xl border flex items-center gap-2.5 text-xs sm:text-sm font-bold backdrop-blur-md pointer-events-auto ${
             notification.type === 'success'
               ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
               : 'bg-rose-50 text-rose-800 border-rose-200'

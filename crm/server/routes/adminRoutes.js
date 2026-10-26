@@ -51,10 +51,12 @@ const formatEnquiryRow = (row, historyEntries = []) => {
     status: row.status || 'New',
     notes: row.notes || '',
     assignedAgentName: row.assigned_agent_name || '',
+    salesPerson: row.assigned_agent_name || '',
     assignedTo: row.assigned_to ? row.assigned_to.toString() : '',
     createdBy: row.created_by || 'System',
     priority: (row.priority === 'Cold' || row.priority === 'Low') ? 'Cold' : 'Hot',
     projectName: row.project_name || '',
+    project: row.project_name || '',
     projectType: '',
     typography: row.typography || '',
     carpetArea: row.carpet_area || '',
@@ -565,7 +567,9 @@ router.get('/enquiries/:id', protectAdmin, async (req, res) => {
 // @access  Protected
 router.patch('/enquiries/:id', protectAdmin, async (req, res) => {
   try {
-    const { firstName, lastName, phone, oldPhone, email, plotsCount, plotInfo, visitDate, visitTime, followupDate, status, notes, assignedAgentName, assignedTo, priority, updatedBy, projectName, projectType, typography, carpetArea, budget } = req.body;
+    const { firstName, lastName, phone, oldPhone, email, plotsCount, plotInfo, visitDate, visitTime, followupDate, status, notes, assignedAgentName: rawAgentName, salesPerson, assignedTo, priority, updatedBy, projectName: rawProjectName, project, projectType, typography, carpetArea, budget } = req.body;
+    const assignedAgentName = rawAgentName !== undefined ? rawAgentName : salesPerson;
+    const projectName = rawProjectName !== undefined ? rawProjectName : project;
     
     let enquiryId = parseInt(req.params.id, 10);
     let existing = null;
@@ -643,9 +647,9 @@ router.patch('/enquiries/:id', protectAdmin, async (req, res) => {
       { col: 'followup_date', label: 'Followup Date', incoming: followupDate },
       { col: 'status', label: 'Status', incoming: status },
       { col: 'notes', label: 'Notes', incoming: notes },
-      { col: 'assigned_agent_name', label: 'Assigned Agent', incoming: resolvedAgentName },
+      { col: 'assigned_agent_name', label: 'Sales Person', incoming: resolvedAgentName },
       { col: 'priority', label: 'Priority', incoming: priority === undefined ? undefined : (matchOption(priority, PRIORITY_OPTIONS) || 'Hot') },
-      { col: 'project_name', label: 'Project Name', incoming: projectName },
+      { col: 'project_name', label: 'Project', incoming: projectName },
       { col: 'typography', label: 'Typography', incoming: typography },
       { col: 'carpet_area', label: 'Carpet Area', incoming: carpetArea },
       { col: 'budget', label: 'Budget', incoming: budget }
@@ -985,7 +989,7 @@ router.delete('/agents/:id', protectAdmin, async (req, res) => {
           await conn.query('UPDATE leads SET assigned_to = ?, assigned_agent_name = ? WHERE id = ?', [next ? next.id : null, nextName, leadRows[i].id]);
           await conn.query(
             'INSERT INTO lead_history (lead_id, field_name, old_value, new_value, modified_by, modified_date) VALUES (?, ?, ?, ?, ?, ?)',
-            [leadRows[i].id, 'Assigned Agent', deletedName, `${nextName} (previous agent deleted)`, performer, now]
+            [leadRows[i].id, 'Sales Person', deletedName, `${nextName} (previous agent deleted)`, performer, now]
           );
         }
       }
@@ -1278,7 +1282,7 @@ router.post('/enquiries/import', protectAdmin, async (req, res) => {
       const email = str(lead.email).toLowerCase();
       const plotInfo = str(lead.plotInfo);
       const notes = str(lead.notes);
-      const projectName = str(lead.projectName);
+      const projectName = str(lead.projectName !== undefined ? lead.projectName : lead.project);
       const projectType = str(lead.projectType);
       const typography = str(lead.typography);
       let carpetArea = str(lead.carpetArea);
@@ -1289,7 +1293,7 @@ router.post('/enquiries/import', protectAdmin, async (req, res) => {
       const budget = str(lead.budget);
       const createdBy = str(lead.createdBy) || performer || 'System';
 
-      if (projectName) history.push(['Project Name', '—', projectName]);
+      if (projectName) history.push(['Project', '—', projectName]);
       if (projectType) history.push(['Project Type', '—', projectType]);
       if (typography) history.push(['Typography', '—', typography]);
       if (carpetArea) history.push(['Carpet Area', '—', carpetArea]);
@@ -1321,7 +1325,7 @@ router.post('/enquiries/import', protectAdmin, async (req, res) => {
 
       // Determine Assigned Agent (if sheet provided caller name, search matching agent; else Round-Robin)
       let assignedAgent = null;
-      const searchName = str(lead.assignedAgentName).toLowerCase();
+      const searchName = str(lead.assignedAgentName !== undefined ? lead.assignedAgentName : lead.salesPerson).toLowerCase();
       if (searchName) {
         assignedAgent = agents.find(a =>
           (a.name || '').toLowerCase() === searchName ||

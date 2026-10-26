@@ -17,7 +17,9 @@ const isDashboardRequest = (req) => {
 // @access  Public
 router.post('/', async (req, res) => {
   try {
-    const { firstName, lastName, phone, email, plotInfo, plotsCount, visitDate, visitTime, followupDate, notes, assignedAgentName, assignedTo, createdBy, modifiedBy, projectName, projectType, typography, carpetArea, budget } = req.body;
+    const { firstName, lastName, phone, email, plotInfo, plotsCount, visitDate, visitTime, followupDate, notes, assignedAgentName: rawAgentName, salesPerson, assignedTo, createdBy, modifiedBy, projectName: rawProjName, project, projectType, typography, carpetArea, budget } = req.body;
+    const assignedAgentName = rawAgentName !== undefined ? rawAgentName : salesPerson;
+    const projectName = rawProjName !== undefined ? rawProjName : project;
     // Default priority for new leads is 'Hot'
     const priority = isDashboardRequest(req) ? (matchOption(req.body.priority, PRIORITY_OPTIONS) || 'Hot') : 'Hot';
 

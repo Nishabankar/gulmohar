@@ -944,11 +944,11 @@ const DEFAULT_COLUMNS = [
   { id: 'followupDate', label: 'Followup / Visit', visible: true, pinned: false },
   { id: 'priority', label: 'Priority', visible: true, pinned: false },
   { id: 'notes', label: 'Notes', visible: true, pinned: false },
-  { id: 'projectName', label: 'Project Name', visible: true, pinned: false },
+  { id: 'projectName', label: 'Project', visible: true, pinned: false },
   { id: 'typography', label: 'Typography', visible: true, pinned: false },
   { id: 'carpetArea', label: 'Carpet Area', visible: true, pinned: false },
   { id: 'budget', label: 'Budget', visible: true, pinned: false },
-  { id: 'assignedAgent', label: 'Assigned Agent', visible: true, pinned: false },
+  { id: 'assignedAgent', label: 'Sales Person', visible: true, pinned: false },
   { id: 'email', label: 'Email Address', visible: true, pinned: false },
   { id: 'enquiryDate', label: 'Enquiry Date', visible: true, pinned: false },
   { id: 'createdBy', label: 'Created By', visible: true, pinned: false },
@@ -1255,7 +1255,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
   }, [activeDropdown]);
 
   // Column Configuration State & Persistence (Versioned to sync sequence updates)
-  const COLUMN_CONFIG_VERSION = 'v4_seq_20261024';
+  const COLUMN_CONFIG_VERSION = 'v5_salesperson_project_20261026';
   const [columnConfig, setColumnConfig] = useState(() => {
     try {
       const savedVersion = localStorage.getItem('leadsTableColumnConfig_version');
@@ -3097,7 +3097,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     const followupIdx = keys.map((k, i) => ({ i, m: k.match(/^(next)?followup(\d*)(date)?$/) })).filter(x => x.m)
       .sort((a, b) => (Number(a.m[2]) || 1) - (Number(b.m[2]) || 1)).map(x => { used.add(x.i); return x.i; });
     const visitIdx = find(['visitarrangeondate', 'visitdate', 'sitevisitdate', 'visit', 'visitscheduled'], ['visit']);
-    const agentIdx = find(['callername', 'caller', 'agent', 'assignedagent', 'assignedto', 'agentname', 'telecaller'], ['caller', 'agent']);
+    const agentIdx = find(['salesperson', 'salespersonname', 'salesman', 'callername', 'caller', 'agent', 'assignedagent', 'assignedto', 'agentname', 'telecaller'], ['salesperson', 'sales', 'caller', 'agent']);
     const createdByIdx = find(['createdby', 'creator', 'source', 'createdbyuser'], ['createdby', 'creator']);
     const createdIdx = find(['createdtime', 'createdat', 'created', 'timestamp', 'date', 'enquirydate', 'submitteddate', 'leaddate'], ['created', 'timestamp']);
     // Specific full name columns checked before firstName/lastName
@@ -3112,7 +3112,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     const priorityIdx = find(['priority', 'leadpriority'], ['priority']);
     const plotsCountIdx = find(['plotscount', 'guntha', 'noofguntha', 'plots', 'plotcount', 'gunthacount'], ['guntha']);
     const plotInfoIdx = find(['plotinfo', 'plot', 'plotno', 'plotsinfo', 'property', 'propertyinfo'], ['plotinfo', 'plotno']);
-    const projectNameIdx = find(['projectname', 'project', 'projecttitle'], ['project']);
+    const projectNameIdx = find(['project', 'projectname', 'projecttitle'], ['project']);
     const projectTypeIdx = find(['projecttype', 'propertytype', 'type'], ['type']);
     const typographyIdx = find(['typography', 'configuration', 'config', 'bhk'], ['typography', 'config']);
     const carpetAreaIdx = find(['carpetarea', 'carpet', 'area', 'superbuildup', 'size'], ['carpet', 'area']);
@@ -3390,11 +3390,11 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       'Followup / Visit Date',
       'Priority',
       'Notes',
-      'Project Name',
+      'Project',
       'Typography',
       'Carpet Area',
       'Budget',
-      'Assigned Agent',
+      'Sales Person',
       'Email Address',
       'Submitted Date',
       'Created By'
@@ -6006,10 +6006,10 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                     onClick={() => handleSort('projectName')}
                                     class={getThClass('projectName', isSorted)}
                                     style={getThStyle('projectName')}
-                                    title={getSortTitle('Project Name')}
+                                    title={getSortTitle('Project')}
                                   >
                                     <div class="flex items-center gap-1.5">
-                                      <span>Project Name</span>
+                                      <span>Project</span>
                                       {renderSortIndicator()}
                                     </div>
                                   </th>
@@ -6096,10 +6096,10 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                     onClick={() => handleSort('assignedAgent')}
                                     class={getThClass('assignedAgent', isSorted)}
                                     style={getThStyle('assignedAgent')}
-                                    title={getSortTitle('Assigned Agent')}
+                                    title={getSortTitle('Sales Person')}
                                   >
                                     <div class="flex items-center gap-1.5">
-                                      <span>Assigned Agent</span>
+                                      <span>Sales Person</span>
                                       {renderSortIndicator()}
                                     </div>
                                   </th>
@@ -7959,7 +7959,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                 {/* Project Name & Typography */}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">Project Name</label>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Project</label>
                     <select
                       value={editingEnquiry.projectName || ''}
                       onChange={(e) => {
@@ -8266,7 +8266,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                     </select>
                   </div>
                   <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">Assigned Agent</label>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Sales Person</label>
                     {isAdmin ? (
                       <select 
                         value={editingEnquiry.assignedAgentName || ''} 
@@ -8620,7 +8620,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                 {/* Project Name & Typography */}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">Project Name</label>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Project</label>
                     <select
                       value={newLeadFormData.projectName || ''}
                       onChange={(e) => {
@@ -9618,7 +9618,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                   <div class="flex items-center justify-between text-xs font-bold text-slate-800 px-1">
                     <span>Preview Parsed Leads ({importPreview.length} found)</span>
                     <span class="text-[10px] text-[#B30E2E] font-semibold bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
-                      Auto Alternate Agent Assignment
+                      Auto Alternate Sales Person Assignment
                     </span>
                   </div>
 
@@ -9632,7 +9632,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                           <th class="p-2 border-b">Status</th>
                           <th class="p-2 border-b">Priority</th>
                           <th class="p-2 border-b">Follow ups</th>
-                          <th class="p-2 border-b">Auto Assigned Agent</th>
+                          <th class="p-2 border-b">Auto Assigned Sales Person</th>
                         </tr>
                       </thead>
                       <tbody>

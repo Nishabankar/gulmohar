@@ -122,7 +122,7 @@ const PROJECT_COLUMN_WIDTH_MAP = {
 
 const DEFAULT_PROJECT_COLUMNS = [
   { id: 'projectId', label: '# ID', visible: true, pinned: true },
-  { id: 'projectName', label: 'Project Name', visible: true, pinned: true },
+  { id: 'projectName', label: 'Project', visible: true, pinned: true },
   { id: 'developerName', label: 'Developer', visible: true, pinned: false },
   { id: 'projectType', label: 'Project Type', visible: true, pinned: false },
   { id: 'typography', label: 'Typography', visible: true, pinned: false },
@@ -887,7 +887,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
     setFormMsg('');
 
     if (!formData.name.trim()) {
-      setFormMsg('Project Name is required.');
+      setFormMsg('Project is required.');
       return;
     }
 
@@ -1397,10 +1397,10 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                                 onClick={() => handleProjectSort('projectName')}
                                 className={getProjectThClass('projectName', isSorted)} 
                                 style={getProjectThStyle('projectName')}
-                                title={getSortTitle('Project Name')}
+                                title={getSortTitle('Project')}
                               >
                                 <div className="flex items-center gap-1.5">
-                                  <span>Project Name</span>
+                                  <span>Project</span>
                                   {renderSortIndicator()}
                                 </div>
                               </th>
@@ -1705,7 +1705,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                 {/* 1. Project Name & Developer Name */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">Project Name *</label>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Project *</label>
                     <input 
                       type="text" 
                       required 
@@ -1737,7 +1737,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                           setFormData({ ...formData, name: newName });
                         }
                       }}
-                      placeholder="Enter project name"
+                      placeholder="Enter project"
                       className="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC]"
                     />
                   </div>

@@ -83,7 +83,7 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
   };
 
   return (
-    <section id="contact" class="py-3 sm:py-5 bg-gradient-to-b from-slate-50 via-white to-slate-50 relative">
+    <section id="contact" class="py-3 sm:py-5 bg-gradient-to-b from-slate-50 via-white to-slate-50 relative overflow-hidden">
       
       {/* Background Accent Blurs */}
       <div class="absolute -top-20 -right-20 w-96 h-96 bg-[#FFF0F2] rounded-full blur-3xl pointer-events-none"></div>

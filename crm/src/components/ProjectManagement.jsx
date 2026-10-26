@@ -539,7 +539,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
 
     const token = getAuthToken();
     try {
-      const res = await fetch(`${API_BASE_URL}/api/projects/bulk-import`, {
+      const res = await fetch(`${API_BASE_URL}/api/projects/import`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -553,7 +553,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
       try {
         data = JSON.parse(resText);
       } catch (jsonErr) {
-        throw new Error(`Server returned HTML response (${res.status} ${res.statusText}).`);
+        throw new Error(`Server returned HTML response (${res.status} ${res.statusText}). Please restart Node.js server (npm run dev:api locally or Restart in Hostinger).`);
       }
 
       if (data.success) {

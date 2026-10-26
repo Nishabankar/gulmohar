@@ -105,10 +105,10 @@ router.get('/:id', protectAdmin, async (req, res) => {
   }
 });
 
-// @route   POST /api/projects/bulk-import
+// @route   POST /api/projects/import & POST /api/projects/bulk-import
 // @desc    Bulk import projects from CSV (Exact same logic as Lead Table Import)
 // @access  Protected
-router.post('/bulk-import', protectAdmin, async (req, res) => {
+const handleBulkImportProjects = async (req, res) => {
   try {
     const { projects } = req.body;
     if (!Array.isArray(projects) || projects.length === 0) {
@@ -207,7 +207,10 @@ router.post('/bulk-import', protectAdmin, async (req, res) => {
       error: error.message
     });
   }
-});
+};
+
+router.post('/import', protectAdmin, handleBulkImportProjects);
+router.post('/bulk-import', protectAdmin, handleBulkImportProjects);
 
 // @route   POST /api/projects
 // @desc    Create a new project

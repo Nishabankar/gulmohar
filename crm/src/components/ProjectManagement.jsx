@@ -305,6 +305,9 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
   const [importMsg, setImportMsg] = useState('');
   const [importSheet, setImportSheet] = useState({ headers: [], rows: [] });
   const [importDuplicates, setImportDuplicates] = useState([]);
+  const [unmappedColumns, setUnmappedColumns] = useState([]);
+  const [mappedColumns, setMappedColumns] = useState([]);
+  const [showColumnMappingPopover, setShowColumnMappingPopover] = useState(false);
 
   // Export CSV handler (Standard RFC-4180 with UTF-8 BOM for Microsoft Excel)
   const handleExportProjectCSV = () => {

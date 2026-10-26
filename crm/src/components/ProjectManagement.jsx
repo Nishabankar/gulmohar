@@ -417,10 +417,11 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
     return rows;
   };
 
+  // Map sheet columns to project fields (Exact same logic as Lead Table Import)
   const parseProjectCSVText = (text) => {
     const allRows = parseCSVRows(text);
     if (allRows.length < 2) {
-      return { headers: [], rows: [], validProjects: [], duplicateProjects: [], unmappedColumns: [], mappedColumns: [] };
+      return { headers: [], rows: [], projects: [], unmappedColumns: [], mappedColumns: [] };
     }
     const headers = allRows[0];
     const rows = allRows.slice(1);
@@ -441,30 +442,19 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
     const areaIdx = find(['area', 'locationarea', 'locality', 'suburb'], ['area', 'loc']);
     const addressIdx = find(['address', 'projectaddress', 'fulladdress', 'siteaddress'], ['address', 'site']);
 
-    const mapped = [];
-    const unmapped = [];
+    const mappedColumns = [];
+    const unmappedColumns = [];
     headers.forEach((h, i) => {
-      if (used.has(i)) mapped.push(h);
-      else unmapped.push(h);
+      if (used.has(i)) mappedColumns.push(h);
+      else unmappedColumns.push(h);
     });
 
-    const existingNameSet = new Set(projects.map(p => (p.name || '').toLowerCase().trim()));
-    const seenInFile = new Set();
-    const validProjects = [];
-    const duplicateProjects = [];
+    const projectsList = [];
 
     rows.forEach((row, rowIdx) => {
       const getVal = (idx) => (idx !== -1 && row[idx] !== undefined) ? String(row[idx]).trim() : '';
       const rawName = nameIdx !== -1 ? getVal(nameIdx) : (row[0] || '').trim();
       if (!rawName) return;
-
-      const nameLower = rawName.toLowerCase();
-      // Check duplicate within the same uploaded file
-      if (seenInFile.has(nameLower)) {
-        duplicateProjects.push({ name: rawName, rowIdx: rowIdx + 2, rawRow: row });
-        return;
-      }
-      seenInFile.add(nameLower);
 
       const developerName = devIdx !== -1 ? getVal(devIdx) : '';
       const rawType = typeIdx !== -1 ? getVal(typeIdx) : '';
@@ -476,54 +466,50 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
       let projectType = rawType ? rawType.split(/[,;|]/).map(s => s.trim()).filter(Boolean) : ['Apartment'];
       let typography = rawTypo ? rawTypo.split(/[,;|]/).map(s => s.trim()).filter(Boolean) : ['2 BHK'];
 
-      const isUpdate = existingNameSet.has(nameLower);
-
-      validProjects.push({
+      projectsList.push({
+        row: rowIdx,
         name: rawName,
         developerName,
         projectType,
         typography,
         reraNumber,
         area: area || address || 'Pune',
-        address,
-        isUpdate
+        address
       });
     });
 
-    return { headers, rows, validProjects, duplicateProjects, unmappedColumns: unmapped, mappedColumns: mapped };
+    return { headers, rows, projects: projectsList, unmappedColumns, mappedColumns };
   };
 
   const handleFileSelect = (e) => {
-    const file = e.target.files?.[0];
+    const file = e.target.files[0];
     if (!file) return;
     setImportFile(file);
     setImportMsg('');
     setImportDuplicates([]);
     setUnmappedColumns([]);
     setMappedColumns([]);
+    setShowColumnMappingPopover(false);
 
     const reader = new FileReader();
     reader.onload = (evt) => {
-      const { headers, rows, validProjects, duplicateProjects, unmappedColumns: unmapped, mappedColumns: mapped } = parseProjectCSVText(evt.target.result);
+      const { headers, rows, projects: parsedProjects, unmappedColumns: unmapped, mappedColumns: mapped } = parseProjectCSVText(evt.target.result);
       setImportSheet({ headers, rows });
-      setImportPreview(validProjects);
-      setImportDuplicates(duplicateProjects);
+      setImportPreview(parsedProjects);
       setUnmappedColumns(unmapped || []);
       setMappedColumns(mapped || []);
-      if (validProjects.length === 0 && duplicateProjects.length === 0) {
+      if (parsedProjects.length === 0) {
         setImportMsg('Error: No valid project records found in CSV file.');
-      } else if (validProjects.length === 0 && duplicateProjects.length > 0) {
-        setImportMsg(`All ${duplicateProjects.length} project(s) in this file are duplicates.`);
       }
     };
     reader.readAsText(file);
-    e.target.value = '';
+    e.target.value = ''; // allow picking the same file again via "Change file"
   };
 
-    const handleDownloadDuplicates = () => {
+  // Download the skipped duplicate rows exactly as they were in the uploaded sheet
+  const handleDownloadDuplicates = () => {
     const esc = (v) => `"${(v || '').toString().replace(/"/g, '""')}"`;
-    const duplicateRows = importDuplicates.map(d => d.rawRow).filter(Boolean);
-    const csv = [importSheet.headers, ...duplicateRows].map(r => r.map(esc).join(',')).join('\r\n');
+    const csv = [importSheet.headers, ...importDuplicates].map(r => r.map(esc).join(',')).join('\r\n');
     const url = URL.createObjectURL(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' }));
     const link = document.createElement('a');
     link.href = url;
@@ -562,16 +548,25 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
         body: JSON.stringify({ projects: importPreview })
       });
 
-      const data = await res.json();
+      const resText = await res.text();
+      let data;
+      try {
+        data = JSON.parse(resText);
+      } catch (jsonErr) {
+        throw new Error(`Server returned HTML response (${res.status} ${res.statusText}).`);
+      }
+
       if (data.success) {
         setImportMsg(data.message);
-        if (Array.isArray(data.projects)) {
-          setProjects(data.projects);
+        if (Array.isArray(data.data)) {
+          setProjects(data.data);
         }
-        showToast(data.message, 'success');
+        const duplicates = (data.duplicateRows || []).map(i => importSheet.rows[i]).filter(Boolean);
+        setImportDuplicates(duplicates);
         setImportPreview([]);
-        if (!importDuplicates || importDuplicates.length === 0) {
-          setTimeout(resetImportModal, 1500);
+        // Keep the modal open when there are duplicates to download or unmapped columns to review
+        if (duplicates.length === 0 && (!unmappedColumns || unmappedColumns.length === 0)) {
+          setTimeout(resetImportModal, 1800);
         }
       } else {
         setImportMsg(`Error: ${data.message || 'Import failed'}`);

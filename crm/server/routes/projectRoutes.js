@@ -106,7 +106,7 @@ router.get('/:id', protectAdmin, async (req, res) => {
 });
 
 // @route   POST /api/projects/bulk-import
-// @desc    Bulk import projects from CSV (Insert new projects or update existing ones)
+// @desc    Bulk import projects from CSV (Exact same logic as Lead Table Import)
 // @access  Protected
 router.post('/bulk-import', protectAdmin, async (req, res) => {
   try {
@@ -117,43 +117,41 @@ router.post('/bulk-import', protectAdmin, async (req, res) => {
 
     const createdBy = req.admin?.username || 'Admin';
 
-    // Fetch existing project names from database for duplicate checking / upsert
-    const [existingRows] = await query('SELECT LOWER(TRIM(name)) as name_lower FROM projects');
-    const existingNameSet = new Set(existingRows.map(r => r.name_lower));
+    let importedCount = 0;
+    let invalidCount = 0;
+    const duplicateRows = []; // sheet row indexes (project.row) skipped because project already exists
 
-    const insertedProjects = [];
-    const updatedProjects = [];
-    const duplicateRows = [];
-    const errorRows = [];
-    const processedInBatch = new Set();
+    // Duplicate check on project name (case-insensitive & trimmed)
+    const nameKey = (n) => (n || '').toString().toLowerCase().trim();
+    const [nameRows] = await query('SELECT name FROM projects');
+    const knownNames = new Set(nameRows.map(r => nameKey(r.name)));
 
-    for (let i = 0; i < projects.length; i++) {
-      const p = projects[i];
-      const rawName = (p.name || p.projectName || '').trim();
-      if (!rawName) {
-        errorRows.push({ index: i, reason: 'Missing Project Name' });
+    const str = (v) => (v === null || v === undefined ? '' : String(v)).trim();
+
+    for (const project of projects) {
+      const cleanName = str(project.name !== undefined ? project.name : project.projectName);
+      if (!cleanName) {
+        invalidCount++;
         continue;
       }
 
-      const nameLower = rawName.toLowerCase();
-      // Check for duplicate within the same batch file
-      if (processedInBatch.has(nameLower)) {
-        duplicateRows.push({ index: i, name: rawName, reason: 'Duplicate in uploaded file' });
+      if (knownNames.has(nameKey(cleanName))) {
+        duplicateRows.push(project.row);
         continue;
       }
-      processedInBatch.add(nameLower);
+      knownNames.add(nameKey(cleanName));
 
-      const cleanDeveloper = (p.developerName || p.developer || '').trim();
-      const cleanRera = (p.reraNumber || p.reraNo || p.rera || '').trim();
-      const cleanArea = (p.area || '').trim();
-      const cleanAddress = (p.address || p.location || '').trim();
+      const cleanDeveloper = str(project.developerName !== undefined ? project.developerName : project.developer);
+      const cleanRera = str(project.reraNumber !== undefined ? project.reraNumber : (project.reraNo || project.rera));
+      const cleanArea = str(project.area);
+      const cleanAddress = str(project.address !== undefined ? project.address : project.location);
 
       // Normalize projectType array
       let typeArr = [];
-      if (Array.isArray(p.projectType)) {
-        typeArr = p.projectType.map(t => String(t).trim()).filter(Boolean);
-      } else if (typeof p.projectType === 'string' && p.projectType.trim()) {
-        typeArr = p.projectType.split(/[,;|]/).map(t => t.trim()).filter(Boolean);
+      if (Array.isArray(project.projectType)) {
+        typeArr = project.projectType.map(t => str(t)).filter(Boolean);
+      } else if (typeof project.projectType === 'string' && project.projectType.trim()) {
+        typeArr = project.projectType.split(/[,;|]/).map(t => str(t)).filter(Boolean);
       }
       if (typeArr.length === 0) {
         typeArr = ['Apartment'];
@@ -161,10 +159,10 @@ router.post('/bulk-import', protectAdmin, async (req, res) => {
 
       // Normalize typography array
       let typoArr = [];
-      if (Array.isArray(p.typography)) {
-        typoArr = p.typography.map(t => String(t).trim()).filter(Boolean);
-      } else if (typeof p.typography === 'string' && p.typography.trim()) {
-        typoArr = p.typography.split(/[,;|]/).map(t => t.trim()).filter(Boolean);
+      if (Array.isArray(project.typography)) {
+        typoArr = project.typography.map(t => str(t)).filter(Boolean);
+      } else if (typeof project.typography === 'string' && project.typography.trim()) {
+        typoArr = project.typography.split(/[,;|]/).map(t => str(t)).filter(Boolean);
       }
       if (typoArr.length === 0) {
         typoArr = ['2 BHK'];
@@ -174,27 +172,15 @@ router.post('/bulk-import', protectAdmin, async (req, res) => {
       const typographyJson = JSON.stringify(typoArr);
 
       try {
-        if (existingNameSet.has(nameLower)) {
-          // Update existing project record
-          await query(
-            `UPDATE projects 
-             SET developer_name = ?, project_type = ?, typography = ?, rera_number = ?, area = ?, address = ?
-             WHERE LOWER(TRIM(name)) = ?`,
-            [cleanDeveloper, projectTypeJson, typographyJson, cleanRera, cleanArea || cleanAddress || 'Pune', cleanAddress, nameLower]
-          );
-          updatedProjects.push({ name: rawName });
-        } else {
-          // Insert new project record
-          const [insertRes] = await query(
-            `INSERT INTO projects (name, developer_name, project_type, typography, rera_number, area, address, created_by)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [rawName, cleanDeveloper, projectTypeJson, typographyJson, cleanRera, cleanArea || cleanAddress || 'Pune', cleanAddress, createdBy]
-          );
-          existingNameSet.add(nameLower);
-          insertedProjects.push({ id: insertRes.insertId, name: rawName });
-        }
+        await query(
+          `INSERT INTO projects (name, developer_name, project_type, typography, rera_number, area, address, created_by)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [cleanName, cleanDeveloper, projectTypeJson, typographyJson, cleanRera, cleanArea || cleanAddress || 'Pune', cleanAddress, createdBy]
+        );
+        importedCount++;
       } catch (err) {
-        errorRows.push({ index: i, name: rawName, reason: err.message });
+        console.error('Insert project error:', err.message);
+        invalidCount++;
       }
     }
 
@@ -206,29 +192,12 @@ router.post('/bulk-import', protectAdmin, async (req, res) => {
     `);
     const allFormatted = (allRows || []).map(formatProjectRow);
 
-    let msg = '';
-    if (insertedProjects.length > 0 && updatedProjects.length > 0) {
-      msg = `Successfully imported ${insertedProjects.length} new project(s) and updated ${updatedProjects.length} existing project(s).`;
-    } else if (insertedProjects.length > 0) {
-      msg = `Successfully imported ${insertedProjects.length} new project(s).`;
-    } else if (updatedProjects.length > 0) {
-      msg = `Successfully updated ${updatedProjects.length} existing project(s).`;
-    } else {
-      msg = `No projects were modified.`;
-    }
-
-    if (duplicateRows.length > 0) {
-      msg += ` (${duplicateRows.length} duplicates within file skipped)`;
-    }
-
     return res.json({
       success: true,
-      message: msg,
-      importedCount: insertedProjects.length,
-      updatedCount: updatedProjects.length,
+      message: `${importedCount} ${importedCount === 1 ? 'project' : 'projects'} imported successfully.${duplicateRows.length > 0 ? ` ${duplicateRows.length} ${duplicateRows.length === 1 ? 'duplicate was' : 'duplicates were'} skipped.` : ''}`,
+      importedCount,
       duplicateRows,
-      errorRows,
-      projects: allFormatted
+      data: allFormatted
     });
   } catch (error) {
     console.error('Bulk Import Projects Error:', error.message);

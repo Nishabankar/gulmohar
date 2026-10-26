@@ -1219,6 +1219,20 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     isDeleting: false
   });
 
+  // Toast / Alert Notification State
+  const [notification, setNotification] = useState({
+    show: false,
+    message: '',
+    type: 'success'
+  });
+
+  const showToast = (message, type = 'success') => {
+    setNotification({ show: true, message, type });
+    setTimeout(() => {
+      setNotification({ show: false, message: '', type: 'success' });
+    }, 3500);
+  };
+
   // CSV Import State
   const [showImportModal, setShowImportModal] = useState(false);
   const [importFile, setImportFile] = useState(null);
@@ -2945,6 +2959,9 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
   const processDeleteEnquiry = async (id) => {
     if (!id) return;
     
+    const targetLead = enquiries.find(item => (item._id || item.id) === id);
+    const leadName = targetLead ? `${targetLead.firstName || ''} ${targetLead.lastName || ''}`.trim() || targetLead.name : '';
+
     // Remove from UI state
     setEnquiries(prev => prev.filter(item => (item._id || item.id) !== id));
     setSelectedLeadIds(prev => prev.filter(selectedId => selectedId !== id));
@@ -2959,6 +2976,8 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       deletedIds.push(id);
       localStorage.setItem('deletedEnquiryIds', JSON.stringify(deletedIds));
     }
+
+    showToast(leadName ? `Lead '${leadName}' deleted successfully.` : 'Lead deleted successfully.');
 
     const token = localStorage.getItem('adminToken');
     try {
@@ -3025,6 +3044,9 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     const deletedIds = JSON.parse(localStorage.getItem('deletedEnquiryIds') || '[]');
     const newDeletedIds = Array.from(new Set([...deletedIds, ...idsToDelete]));
     localStorage.setItem('deletedEnquiryIds', JSON.stringify(newDeletedIds));
+
+    const count = idsToDelete.length;
+    showToast(`${count} ${count === 1 ? 'lead' : 'leads'} deleted successfully.`);
 
     const token = localStorage.getItem('adminToken');
     try {
@@ -4566,6 +4588,20 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
   return (
     <div class="fixed inset-0 h-full max-h-full h-[100dvh] bg-gray-50 text-gray-800 font-sans flex flex-col justify-between overflow-hidden w-full max-w-full">
       
+      {/* Toast Notification - Centered at top below header */}
+      {notification.show && (
+        <div class="fixed top-20 left-1/2 -translate-x-1/2 z-[9999] animate-fade-in pointer-events-none max-w-[90vw]">
+          <div class={`px-5 py-2.5 rounded-2xl shadow-2xl border flex items-center gap-2.5 text-xs sm:text-sm font-bold backdrop-blur-md pointer-events-auto ${
+            notification.type === 'success'
+              ? 'bg-emerald-50 text-emerald-800 border-emerald-200 shadow-emerald-500/15'
+              : 'bg-rose-50 text-rose-800 border-rose-200 shadow-rose-500/15'
+          }`}>
+            <i class={`fa-solid ${notification.type === 'success' ? 'fa-circle-check text-emerald-600' : 'fa-circle-exclamation text-rose-600'} text-base flex-shrink-0`}></i>
+            <span class="leading-snug">{notification.message}</span>
+          </div>
+        </div>
+      )}
+
       {/* Admin Top Navbar */}
       <header class="bg-gradient-to-r from-[#B30E2E] via-[#8A0B22] to-[#590414] text-white flex-shrink-0 shadow-xl border-b border-rose-900/40 sticky top-0 z-40">
         <div class="w-full px-2.5 sm:px-6 lg:px-8 flex items-center justify-between h-14 sm:h-16 gap-2 sm:gap-4 relative">

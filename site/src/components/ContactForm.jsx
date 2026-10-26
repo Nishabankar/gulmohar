@@ -83,16 +83,16 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
   };
 
   return (
-    <section id="contact" class="sm:min-h-[calc(100vh-80px)] flex flex-col justify-center py-4 sm:py-6 bg-gradient-to-b from-slate-50 via-white to-slate-50 relative overflow-hidden">
+    <section id="contact" class="py-6 sm:py-10 bg-gradient-to-b from-slate-50 via-white to-slate-50 relative">
       
       {/* Background Accent Blurs */}
       <div class="absolute -top-20 -right-20 w-96 h-96 bg-[#FFF0F2] rounded-full blur-3xl pointer-events-none"></div>
       <div class="absolute -bottom-20 -left-20 w-96 h-96 bg-[#EBF5F0]/70 rounded-full blur-3xl pointer-events-none"></div>
 
-      <div style={{ maxWidth: '1300px' }} class="w-full mx-auto px-4 sm:px-6 lg:px-8 relative z-10 my-auto">
+      <div style={{ maxWidth: '1300px' }} class="w-full mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
         {/* Uniform Section Header Title */}
-        <div class="text-center max-w-3xl mx-auto mb-6 sm:mb-8">
+        <div class="text-center max-w-3xl mx-auto mb-3 sm:mb-4">
           <span class="inline-flex items-center space-x-1.5 text-[#B30E2E] font-bold text-[10px] sm:text-xs uppercase tracking-widest bg-[#FFF0F2] px-2.5 py-0.5 rounded-full border border-[#FCD6DC]">
             <i class="fa-solid fa-envelope-open-text text-[9px]"></i>
             <span>GET IN TOUCH & ENQUIRE</span>
@@ -215,41 +215,43 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
                     </div>
                   </div>
 
-                  {/* Input Location */}
-                  <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">Location</label>
-                    <div class="relative">
-                      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 text-xs">
-                        <i class="fa-solid fa-location-dot text-[#B30E2E]"></i>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {/* Input Location */}
+                    <div>
+                      <label class="block text-xs font-bold text-gray-700 mb-1">Location</label>
+                      <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 text-xs">
+                          <i class="fa-solid fa-location-dot text-[#B30E2E]"></i>
+                        </div>
+                        <input 
+                          type="text" 
+                          value={formData.location}
+                          onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                          placeholder="Enter location" 
+                          class="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition text-xs bg-gray-50 focus:bg-white"
+                        />
                       </div>
-                      <input 
-                        type="text" 
-                        value={formData.location}
-                        onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                        placeholder="Enter location" 
-                        class="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition text-xs bg-gray-50 focus:bg-white"
-                      />
                     </div>
-                  </div>
 
-                  {/* Select Source */}
-                  <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">Source</label>
-                    <div class="relative">
-                      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 text-xs">
-                        <i class="fa-solid fa-bullhorn text-[#B30E2E]"></i>
+                    {/* Select Source */}
+                    <div>
+                      <label class="block text-xs font-bold text-gray-700 mb-1">Source</label>
+                      <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 text-xs">
+                          <i class="fa-solid fa-bullhorn text-[#B30E2E]"></i>
+                        </div>
+                        <select 
+                          value={formData.source || 'Website'}
+                          onChange={(e) => setFormData({ ...formData, source: e.target.value })}
+                          class="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition text-xs bg-gray-50 focus:bg-white text-gray-800"
+                        >
+                          <option value="Website">Website</option>
+                          <option value="Instagram">Instagram</option>
+                          <option value="Facebook">Facebook</option>
+                          <option value="Roadside Hoarding">Roadside Hoarding</option>
+                          <option value="Referral">Referral</option>
+                        </select>
                       </div>
-                      <select 
-                        value={formData.source || 'Website'}
-                        onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-                        class="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition text-xs bg-gray-50 focus:bg-white text-gray-800"
-                      >
-                        <option value="Website">Website</option>
-                        <option value="Instagram">Instagram</option>
-                        <option value="Facebook">Facebook</option>
-                        <option value="Roadside Hoarding">Roadside Hoarding</option>
-                        <option value="Referral">Referral</option>
-                      </select>
                     </div>
                   </div>
 

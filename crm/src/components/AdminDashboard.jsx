@@ -1180,6 +1180,15 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
   const [followupDateFilter, setFollowupDateFilter] = useState(() => savedNavState.followupDateFilter || 'All'); // 'All' | 'Today' | 'Tomorrow' | 'ThisWeek'
   const [isAgentDropdownOpen, setIsAgentDropdownOpen] = useState(false);
 
+  // Clear card active filter badge and reset to 'New' leads
+  const handleClearCardFilter = () => {
+    setStatusFilter('New');
+    setSelectedStatuses(['New']);
+    setVisitDateFilter('All');
+    setFollowupDateFilter('All');
+    setIsStatusDropdownMode(true);
+  };
+
   // Leads Table Column Sorting State & Handler (Persisted across refreshes)
   const [sortConfig, setSortConfig] = useState(() => {
     if (savedNavState.sortConfig && typeof savedNavState.sortConfig === 'object') {
@@ -5323,9 +5332,19 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                     if (!filterLabel) return null;
 
                     return (
-                      <div class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-gray-300 text-gray-700 text-xs font-bold shadow-xs animate-fade-in flex-shrink-0 cursor-default select-none" title="Active Filter (Read-Only)">
-                        <span class="w-2 h-2 rounded-full bg-[#B30E2E]"></span>
-                        <span class="whitespace-nowrap">{filterLabel}</span>
+                      <div class="inline-flex items-center gap-2 pl-3 pr-2 py-2 rounded-xl bg-white border border-gray-300 text-gray-700 text-xs font-bold shadow-xs animate-fade-in flex-shrink-0" title="Active Filter">
+                        <div class="flex items-center gap-1.5 min-w-0">
+                          <span class="w-2 h-2 rounded-full bg-[#B30E2E] flex-shrink-0"></span>
+                          <span class="whitespace-nowrap">{filterLabel}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleClearCardFilter}
+                          class="w-4 h-4 rounded-full hover:bg-rose-100 text-gray-400 hover:text-[#B30E2E] flex items-center justify-center transition cursor-pointer"
+                          title="Close filter and switch to New leads"
+                        >
+                          <i class="fa-solid fa-xmark text-[11px]"></i>
+                        </button>
                       </div>
                     );
                   })()}
@@ -5505,9 +5524,19 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                       if (!filterLabel) return null;
 
                       return (
-                        <div class="w-[125px] xs:w-[135px] shrink-0 inline-flex items-center gap-1.5 px-2.5 py-2 rounded-xl bg-white border border-gray-300 text-gray-700 text-xs font-bold shadow-xs animate-fade-in cursor-default select-none truncate" title="Active Filter (Read-Only)">
-                          <span class="w-2 h-2 rounded-full bg-[#B30E2E] flex-shrink-0"></span>
-                          <span class="truncate">{filterLabel}</span>
+                        <div class="w-[125px] xs:w-[135px] shrink-0 inline-flex items-center justify-between gap-1 pl-2.5 pr-1.5 py-2 rounded-xl bg-white border border-gray-300 text-gray-700 text-xs font-bold shadow-xs animate-fade-in" title="Active Filter">
+                          <div class="flex items-center gap-1.5 min-w-0 truncate">
+                            <span class="w-2 h-2 rounded-full bg-[#B30E2E] flex-shrink-0"></span>
+                            <span class="truncate">{filterLabel}</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleClearCardFilter}
+                            class="w-4 h-4 rounded-full hover:bg-rose-100 text-gray-400 hover:text-[#B30E2E] flex items-center justify-center transition cursor-pointer flex-shrink-0"
+                            title="Close filter and switch to New leads"
+                          >
+                            <i class="fa-solid fa-xmark text-[10px]"></i>
+                          </button>
                         </div>
                       );
                     })()}

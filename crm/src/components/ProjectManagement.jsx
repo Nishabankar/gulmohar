@@ -2968,7 +2968,6 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                     <table className="w-full text-left border-collapse whitespace-nowrap">
                       <thead className="bg-gray-100 text-gray-700 sticky top-0 font-bold z-10">
                         <tr>
-                          <th className="p-2 border-b text-center w-12">#</th>
                           <th className="p-2 border-b">Project</th>
                           <th className="p-2 border-b">Developer</th>
                           <th className="p-2 border-b">Type</th>
@@ -2980,7 +2979,6 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                       <tbody>
                         {importPreview.map((project, idx) => (
                           <tr key={idx} className="border-b hover:bg-slate-50">
-                            <td className="p-2 text-center text-gray-500 font-semibold">{project.id || idx + 1}</td>
                             <td className="p-2 font-medium text-slate-800">{project.name}</td>
                             <td className="p-2 text-slate-600">{project.developerName || '-'}</td>
                             <td className="p-2 text-slate-600">{Array.isArray(project.projectType) ? project.projectType.join(', ') : project.projectType}</td>

@@ -33,8 +33,10 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
     const calculatedCarpet = gunthaMatch ? `${parseInt(gunthaMatch[1], 10) * 1000} sqft` : (formData.plotsCount || '');
     const submissionPayload = {
       ...formData,
+      projectName: 'Gulmohar City',
+      project: 'Gulmohar City',
       carpetArea: calculatedCarpet,
-      source: 'Website',
+      source: 'Gulmohar City',
       location: 'Malthan Village, Shikrapur – Malthan Road, Tal. Shirur, Dist. Pune'
     };
 

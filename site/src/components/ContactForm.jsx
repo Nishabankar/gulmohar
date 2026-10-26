@@ -215,43 +215,41 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
                     </div>
                   </div>
 
-                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {/* Input Location / City */}
-                    <div>
-                      <label class="block text-xs font-bold text-gray-700 mb-1">Your Location / City</label>
-                      <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 text-xs">
-                          <i class="fa-solid fa-location-dot text-[#B30E2E]"></i>
-                        </div>
-                        <input 
-                          type="text" 
-                          value={formData.location}
-                          onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                          placeholder="e.g. Pune, Shikrapur, Mumbai" 
-                          class="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition text-xs bg-gray-50 focus:bg-white"
-                        />
+                  {/* Input Location */}
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Location</label>
+                    <div class="relative">
+                      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 text-xs">
+                        <i class="fa-solid fa-location-dot text-[#B30E2E]"></i>
                       </div>
+                      <input 
+                        type="text" 
+                        value={formData.location}
+                        onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                        placeholder="Enter location" 
+                        class="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition text-xs bg-gray-50 focus:bg-white"
+                      />
                     </div>
+                  </div>
 
-                    {/* How did you hear about us? */}
-                    <div>
-                      <label class="block text-xs font-bold text-gray-700 mb-1">How did you find us?</label>
-                      <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 text-xs">
-                          <i class="fa-solid fa-bullhorn text-[#B30E2E]"></i>
-                        </div>
-                        <select 
-                          value={formData.source || 'Website'}
-                          onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-                          class="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition text-xs bg-gray-50 focus:bg-white text-gray-800"
-                        >
-                          <option value="Website">Website / Google Search</option>
-                          <option value="Instagram / Facebook">Instagram / Facebook</option>
-                          <option value="Hoarding / Banner">Roadside Hoarding / Banner</option>
-                          <option value="Friend / Referral">Friend / Referral</option>
-                          <option value="Other">Other</option>
-                        </select>
+                  {/* Select Source */}
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Source</label>
+                    <div class="relative">
+                      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 text-xs">
+                        <i class="fa-solid fa-bullhorn text-[#B30E2E]"></i>
                       </div>
+                      <select 
+                        value={formData.source || 'Website'}
+                        onChange={(e) => setFormData({ ...formData, source: e.target.value })}
+                        class="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition text-xs bg-gray-50 focus:bg-white text-gray-800"
+                      >
+                        <option value="Website">Website</option>
+                        <option value="Instagram">Instagram</option>
+                        <option value="Facebook">Facebook</option>
+                        <option value="Roadside Hoarding">Roadside Hoarding</option>
+                        <option value="Referral">Referral</option>
+                      </select>
                     </div>
                   </div>
 

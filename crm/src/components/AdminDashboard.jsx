@@ -2475,10 +2475,11 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     });
   };
 
-  // Handler: Delete / Remove Sales Agent (Admin Only) - removed locally only after MySQL confirms
+  // Handler: Delete / Remove User (Admin Only) - removed locally only after MySQL confirms
   const processDeleteAgent = async (agentIdOrUsername) => {
     const agentToDelete = registeredAgents.find(a => a.id === agentIdOrUsername || a.username === agentIdOrUsername);
     const targetAgentId = agentToDelete ? (agentToDelete.id || agentToDelete._id) : null;
+    const userName = agentToDelete ? (agentToDelete.name || agentToDelete.username) : '';
     const removeLocally = () => {
       const updated = registeredAgents.filter(a => (a.id !== agentIdOrUsername && a.username !== agentIdOrUsername));
       setRegisteredAgents(updated);
@@ -2488,6 +2489,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     // Leftover browser-only agent (never saved to MySQL): nothing to delete on the server
     if (!targetAgentId || targetAgentId.toString().startsWith('agent-')) {
       removeLocally();
+      showToast(userName ? `User '${userName}' deleted successfully.` : 'User deleted successfully.');
       return;
     }
 
@@ -2499,14 +2501,14 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.success) {
-        alert(`Could not delete agent: ${data.message || `HTTP ${res.status}`}`);
+        showToast(data.message || `Could not delete user (HTTP ${res.status})`, 'error');
         return;
       }
       removeLocally();
       fetchEnquiries({ silent: true }); // server handed their leads to the remaining agents
-      if (data.reassignedCount) alert(data.message);
+      showToast(userName ? `User '${userName}' deleted successfully.` : 'User deleted successfully.');
     } catch (err) {
-      alert(`Could not delete agent: server not reachable (${err.message})`);
+      showToast(`Could not delete user: server not reachable (${err.message})`, 'error');
     }
   };
 

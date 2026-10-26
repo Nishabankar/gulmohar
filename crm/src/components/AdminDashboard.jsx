@@ -195,6 +195,8 @@ const COLUMN_WIDTH_MAP = {
   carpetArea: 130,
   budget: 130,
   assignedAgent: 175,
+  location: 180,
+  source: 130,
   createdBy: 150,
   notes: 75,
   actions: 110
@@ -215,6 +217,8 @@ const COLUMN_CLASS_MAP = {
   carpetArea: 'w-[130px] min-w-[130px]',
   budget: 'w-[130px] min-w-[130px]',
   assignedAgent: 'w-[175px] min-w-[175px]',
+  location: 'w-[180px] min-w-[180px]',
+  source: 'w-[130px] min-w-[130px]',
   createdBy: 'w-[150px] min-w-[150px]',
   notes: 'w-[75px] min-w-[75px]',
   actions: 'w-[110px] min-w-[110px]'
@@ -949,6 +953,8 @@ const DEFAULT_COLUMNS = [
   { id: 'carpetArea', label: 'Carpet Area', visible: true, pinned: false },
   { id: 'budget', label: 'Budget', visible: true, pinned: false },
   { id: 'assignedAgent', label: 'Sales Person', visible: true, pinned: false },
+  { id: 'location', label: 'Location', visible: true, pinned: false },
+  { id: 'source', label: 'Source', visible: true, pinned: false },
   { id: 'email', label: 'Email Address', visible: true, pinned: false },
   { id: 'enquiryDate', label: 'Enquiry Date', visible: true, pinned: false },
   { id: 'createdBy', label: 'Created By', visible: true, pinned: false },
@@ -1643,7 +1649,9 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     followupDate: '',
     priority: 'Hot',
     notes: '',
-    assignedAgentName: 'auto'
+    assignedAgentName: 'auto',
+    location: '',
+    source: 'Website'
   });
   const [submittingLead, setSubmittingLead] = useState(false);
   const [createLeadMsg, setCreateLeadMsg] = useState('');
@@ -1673,7 +1681,9 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
         followupDate: '',
         priority: 'Hot',
         notes: '',
-        assignedAgentName: 'auto'
+        assignedAgentName: 'auto',
+        location: '',
+        source: 'Website'
       });
     } else {
       setNewLeadFormData({
@@ -1692,7 +1702,9 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
         followupDate: '',
         priority: 'Hot',
         notes: '',
-        assignedAgentName: 'auto'
+        assignedAgentName: 'auto',
+        location: '',
+        source: 'Website'
       });
     }
     setCreateLeadMsg('');
@@ -2336,6 +2348,8 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       priority: newLeadFormData.priority || 'Hot',
       assignedTo: assignedAgentId,
       assignedAgentName: assignedAgentName,
+      location: (newLeadFormData.location || '').trim(),
+      source: (newLeadFormData.source || 'Website').trim(),
       createdBy: creatorName,
       modifiedBy: creatorName
     };
@@ -2358,7 +2372,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
         setTimeout(() => {
           setShowCreateLeadModal(false);
           setCreateLeadMsg('');
-          setNewLeadFormData({ firstName: '', lastName: '', phone: '', email: '', projectName: '', projectType: '', typography: '', carpetArea: '', budget: '', plotsCount: '', visitDate: '', visitTime: '', followupDate: '', priority: 'Hot', notes: '', assignedAgentName: 'auto' });
+          setNewLeadFormData({ firstName: '', lastName: '', phone: '', email: '', projectName: '', projectType: '', typography: '', carpetArea: '', budget: '', plotsCount: '', visitDate: '', visitTime: '', followupDate: '', priority: 'Hot', notes: '', assignedAgentName: 'auto', location: '', source: 'Website' });
         }, 1000);
       } else {
         setSubmittingLead(false);
@@ -2878,6 +2892,8 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
           notes: updatedLead.notes,
           assignedAgentName: updatedLead.assignedAgentName,
           priority: updatedLead.priority || '',
+          location: (updatedLead.location || '').trim(),
+          source: (updatedLead.source || 'Website').trim(),
           updatedBy: currentUser.name || 'Sales Executive'
         })
       });
@@ -3131,7 +3147,9 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       .sort((a, b) => (Number(a.m[2]) || 1) - (Number(b.m[2]) || 1)).map(x => { used.add(x.i); return x.i; });
     const visitIdx = find(['visitarrangeondate', 'visitdate', 'sitevisitdate', 'visit', 'visitscheduled'], ['visit']);
     const agentIdx = find(['salesperson', 'salespersonname', 'salesman', 'callername', 'caller', 'agent', 'assignedagent', 'assignedto', 'agentname', 'telecaller'], ['salesperson', 'sales', 'caller', 'agent']);
-    const createdByIdx = find(['createdby', 'creator', 'source', 'createdbyuser'], ['createdby', 'creator']);
+    const sourceIdx = find(['source', 'leadsource', 'channelsource'], ['source']);
+    const locationIdx = find(['location', 'projectlocation', 'address', 'city'], ['location']);
+    const createdByIdx = find(['createdby', 'creator', 'createdbyuser'], ['createdby', 'creator']);
     const createdIdx = find(['createdtime', 'createdat', 'created', 'timestamp', 'date', 'enquirydate', 'submitteddate', 'leaddate'], ['created', 'timestamp']);
     // Specific full name columns checked before firstName/lastName
     const fullNameIdx = find(['fullname', 'customername', 'leadname', 'clientname'], ['fullname', 'customername', 'leadname', 'clientname']);
@@ -3194,7 +3212,9 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
         notes: cell(row, remarksIdx),
         visitDate: cell(row, visitIdx),
         followups: followupIdx.map(i => cell(row, i)),
-        assignedAgentName: cell(row, agentIdx)
+        assignedAgentName: cell(row, agentIdx),
+        location: cell(row, locationIdx),
+        source: cell(row, sourceIdx) || 'Website'
       });
     });
     return { headers, rows, leads, unmappedColumns, mappedColumns };
@@ -3428,6 +3448,8 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       'Carpet Area',
       'Budget',
       'Sales Person',
+      'Location',
+      'Source',
       'Email Address',
       'Submitted Date',
       'Created By'
@@ -3462,6 +3484,8 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
         escapeCSV(item.carpetArea || ''),
         escapeCSV(item.budget || ''),
         escapeCSV(item.assignedAgentName || 'Unassigned'),
+        escapeCSV(item.location || ''),
+        escapeCSV(item.source || 'Website'),
         escapeCSV(item.email || ''),
         escapeCSV(dateStr),
         escapeCSV(item.createdBy || 'System')
@@ -4111,7 +4135,9 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       (item.typography || '').toLowerCase().includes(query) ||
       (item.carpetArea || '').toLowerCase().includes(query) ||
       (item.budget || '').toLowerCase().includes(query) ||
-      formatBudgetValue(item.budget).toLowerCase().includes(query);
+      formatBudgetValue(item.budget).toLowerCase().includes(query) ||
+      (item.location || '').toLowerCase().includes(query) ||
+      (item.source || '').toLowerCase().includes(query);
 
     const checkSingleStatus = (st) => {
       if (st === 'All') return true;
@@ -4301,6 +4327,18 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
           if (!agentA && agentB) return 1;
           if (agentA && !agentB) return -1;
           comp = agentA.localeCompare(agentB) * sortMultiplier;
+          break;
+        }
+        case 'location': {
+          const locA = (a.location || '').trim().toLowerCase();
+          const locB = (b.location || '').trim().toLowerCase();
+          comp = locA.localeCompare(locB) * sortMultiplier;
+          break;
+        }
+        case 'source': {
+          const srcA = (a.source || '').trim().toLowerCase();
+          const srcB = (b.source || '').trim().toLowerCase();
+          comp = srcA.localeCompare(srcB) * sortMultiplier;
           break;
         }
         case 'createdBy': {
@@ -6167,6 +6205,36 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   >
                                     <div class="flex items-center gap-1.5">
                                       <span>Sales Person</span>
+                                      {renderSortIndicator()}
+                                    </div>
+                                  </th>
+                                );
+                              case 'location':
+                                return (
+                                  <th 
+                                    key="location" 
+                                    onClick={() => handleSort('location')}
+                                    class={getThClass('location', isSorted)}
+                                    style={getThStyle('location')}
+                                    title={getSortTitle('Location')}
+                                  >
+                                    <div class="flex items-center gap-1.5">
+                                      <span>Location</span>
+                                      {renderSortIndicator()}
+                                    </div>
+                                  </th>
+                                );
+                              case 'source':
+                                return (
+                                  <th 
+                                    key="source" 
+                                    onClick={() => handleSort('source')}
+                                    class={getThClass('source', isSorted)}
+                                    style={getThStyle('source')}
+                                    title={getSortTitle('Source')}
+                                  >
+                                    <div class="flex items-center gap-1.5">
+                                      <span>Source</span>
                                       {renderSortIndicator()}
                                     </div>
                                   </th>
@@ -8357,6 +8425,33 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                   </div>
                 </div>
 
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Location</label>
+                    <input 
+                      type="text" 
+                      value={editingEnquiry.location || ''} 
+                      onChange={(e) => setEditingEnquiry({ ...editingEnquiry, location: e.target.value })}
+                      placeholder="Enter location"
+                      class="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Source</label>
+                    <select 
+                      value={editingEnquiry.source || 'Website'} 
+                      onChange={(e) => setEditingEnquiry({ ...editingEnquiry, source: e.target.value })}
+                      class="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E] bg-white text-gray-800"
+                    >
+                      <option value="Website">Website</option>
+                      <option value="Instagram">Instagram</option>
+                      <option value="Facebook">Facebook</option>
+                      <option value="Roadside Hoarding">Roadside Hoarding</option>
+                      <option value="Referral">Referral</option>
+                    </select>
+                  </div>
+                </div>
+
                 <div>
                   <label class="block text-xs font-bold text-gray-700 mb-1">Notes</label>
                   <textarea 
@@ -8986,7 +9081,35 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                   </div>
                 </div>
 
-                {/* 5. Notes */}
+                {/* 5. Location & Source */}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Location</label>
+                    <input 
+                      type="text" 
+                      value={newLeadFormData.location || ''} 
+                      onChange={(e) => setNewLeadFormData({ ...newLeadFormData, location: e.target.value })}
+                      placeholder="Enter location"
+                      class="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC]"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Source</label>
+                    <select 
+                      value={newLeadFormData.source || 'Website'} 
+                      onChange={(e) => setNewLeadFormData({ ...newLeadFormData, source: e.target.value })}
+                      class="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800 bg-white"
+                    >
+                      <option value="Website">Website</option>
+                      <option value="Instagram">Instagram</option>
+                      <option value="Facebook">Facebook</option>
+                      <option value="Roadside Hoarding">Roadside Hoarding</option>
+                      <option value="Referral">Referral</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* 6. Notes */}
                 <div>
                   <label class="block text-xs font-bold text-gray-700 mb-1">Notes</label>
                   <textarea 

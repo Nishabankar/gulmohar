@@ -36,7 +36,9 @@ const seedAdminUser = async () => {
       { name: 'project_name', type: "VARCHAR(255) NOT NULL DEFAULT ''" },
       { name: 'typography', type: "TEXT DEFAULT NULL" },
       { name: 'carpet_area', type: "TEXT DEFAULT NULL" },
-      { name: 'budget', type: "VARCHAR(100) NOT NULL DEFAULT ''" }
+      { name: 'budget', type: "VARCHAR(100) NOT NULL DEFAULT ''" },
+      { name: 'location', type: "VARCHAR(255) NOT NULL DEFAULT ''" },
+      { name: 'source', type: "VARCHAR(100) NOT NULL DEFAULT 'Website'" }
     ];
     for (const col of leadColumns) {
       try {

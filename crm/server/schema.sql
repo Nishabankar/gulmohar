@@ -58,6 +58,8 @@ CREATE TABLE `leads` (
   `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `created_by` VARCHAR(255) NOT NULL DEFAULT 'System',
   `plot_info` TEXT DEFAULT NULL,
+  `location` VARCHAR(255) DEFAULT '',
+  `source` VARCHAR(100) NOT NULL DEFAULT 'Website',
   INDEX `idx_phone` (`phone`),
   INDEX `idx_email` (`email`),
   INDEX `idx_status` (`status`),

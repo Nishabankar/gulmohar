@@ -61,6 +61,8 @@ const formatEnquiryRow = (row, historyEntries = []) => {
     typography: row.typography || '',
     carpetArea: row.carpet_area || '',
     budget: row.budget || '',
+    location: row.location || '',
+    source: row.source || 'Website',
     history: historyEntries
       .filter(h => h.field_name !== 'Import' && h.field_name !== 'Sheet Status')
       .map(h => ({
@@ -567,7 +569,7 @@ router.get('/enquiries/:id', protectAdmin, async (req, res) => {
 // @access  Protected
 router.patch('/enquiries/:id', protectAdmin, async (req, res) => {
   try {
-    const { firstName, lastName, phone, oldPhone, email, plotsCount, plotInfo, visitDate, visitTime, followupDate, status, notes, assignedAgentName: rawAgentName, salesPerson, assignedTo, priority, updatedBy, projectName: rawProjectName, project, projectType, typography, carpetArea, budget } = req.body;
+    const { firstName, lastName, phone, oldPhone, email, plotsCount, plotInfo, visitDate, visitTime, followupDate, status, notes, assignedAgentName: rawAgentName, salesPerson, assignedTo, priority, updatedBy, projectName: rawProjectName, project, projectType, typography, carpetArea, budget, location, source } = req.body;
     const assignedAgentName = rawAgentName !== undefined ? rawAgentName : salesPerson;
     const projectName = rawProjectName !== undefined ? rawProjectName : project;
     
@@ -652,7 +654,9 @@ router.patch('/enquiries/:id', protectAdmin, async (req, res) => {
       { col: 'project_name', label: 'Project', incoming: projectName },
       { col: 'typography', label: 'Typography', incoming: typography },
       { col: 'carpet_area', label: 'Carpet Area', incoming: carpetArea },
-      { col: 'budget', label: 'Budget', incoming: budget }
+      { col: 'budget', label: 'Budget', incoming: budget },
+      { col: 'location', label: 'Location', incoming: location },
+      { col: 'source', label: 'Source', incoming: source }
     ];
 
     let newHistoryEntries = [];
@@ -1291,7 +1295,12 @@ router.post('/enquiries/import', protectAdmin, async (req, res) => {
         carpetArea = m ? `${parseInt(m[1], 10) * 1000} sqft` : str(lead.plotsCount);
       }
       const budget = str(lead.budget);
+      const location = str(lead.location);
+      const source = str(lead.source) || 'Website';
       const createdBy = str(lead.createdBy) || performer || 'System';
+
+      if (location) history.push(['Location', '—', location]);
+      if (source && source !== 'Website') history.push(['Source', '—', source]);
 
       if (projectName) history.push(['Project', '—', projectName]);
       if (projectType) history.push(['Project Type', '—', projectType]);
@@ -1345,9 +1354,9 @@ router.post('/enquiries/import', protectAdmin, async (req, res) => {
       // Insert into MySQL leads table
       const [insertResult] = await query(
         `INSERT INTO leads 
-         (first_name, last_name, phone, email, plot_info, project_name, typography, carpet_area, budget, visit_date, visit_time, followup_date, status, priority, notes, assigned_to, assigned_agent_name, created_by, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?, COALESCE(?, UTC_TIMESTAMP()))`,
-        [firstName, lastName, cleanPhone, email, plotInfo, projectName, typography, carpetArea, budget, visitDate, followupDate, status, priority, notes, assignedTo, assignedAgentName, createdBy, created ? created.utc : null]
+         (first_name, last_name, phone, email, plot_info, project_name, typography, carpet_area, budget, visit_date, visit_time, followup_date, status, priority, notes, assigned_to, assigned_agent_name, created_by, location, source, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, UTC_TIMESTAMP()))`,
+        [firstName, lastName, cleanPhone, email, plotInfo, projectName, typography, carpetArea, budget, visitDate, followupDate, status, priority, notes, assignedTo, assignedAgentName, createdBy, location, source, created ? created.utc : null]
       );
 
       const newId = insertResult.insertId;

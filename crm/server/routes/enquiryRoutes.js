@@ -17,7 +17,9 @@ const isDashboardRequest = (req) => {
 // @access  Public
 router.post('/', async (req, res) => {
   try {
-    const { firstName, lastName, phone, email, plotInfo, plotsCount, visitDate, visitTime, followupDate, notes, assignedAgentName: rawAgentName, salesPerson, assignedTo, createdBy, modifiedBy, projectName: rawProjName, project, projectType, typography, carpetArea, budget } = req.body;
+    const { firstName, lastName, phone, email, plotInfo, plotsCount, visitDate, visitTime, followupDate, notes, assignedAgentName: rawAgentName, salesPerson, assignedTo, createdBy, modifiedBy, projectName: rawProjName, project, projectType, typography, carpetArea, budget, location, source } = req.body;
+    const finalLocation = (location || '').trim();
+    const finalSource = (source || 'Website').trim();
     const assignedAgentName = rawAgentName !== undefined ? rawAgentName : salesPerson;
     const projectName = rawProjName !== undefined ? rawProjName : project;
     // Default priority for new leads is 'Hot'
@@ -120,8 +122,8 @@ router.post('/', async (req, res) => {
     // Insert into leads table
     const [result] = await query(
       `INSERT INTO leads 
-        (first_name, last_name, phone, email, plot_info, visit_date, visit_time, followup_date, status, priority, project_name, typography, carpet_area, budget, notes, assigned_agent_name, assigned_to, created_by) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'New', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        (first_name, last_name, phone, email, plot_info, visit_date, visit_time, followup_date, status, priority, project_name, typography, carpet_area, budget, notes, assigned_agent_name, assigned_to, created_by, location, source) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'New', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         firstName.trim(),
         (lastName || '').trim(),
@@ -139,7 +141,9 @@ router.post('/', async (req, res) => {
         initialNotes,
         finalAssignedAgentName,
         finalAssignedTo,
-        finalCreatedBy
+        finalCreatedBy,
+        finalLocation,
+        finalSource
       ]
     );
 
@@ -181,6 +185,8 @@ router.post('/', async (req, res) => {
       typography: (typography || '').trim(),
       carpetArea: (carpetArea || '').trim(),
       budget: (budget || '').trim(),
+      location: finalLocation,
+      source: finalSource,
       notes: initialNotes,
       assignedAgentName: finalAssignedAgentName,
       assignedTo: finalAssignedTo ? finalAssignedTo.toString() : '',

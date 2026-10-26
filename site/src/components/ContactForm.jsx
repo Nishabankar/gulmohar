@@ -221,7 +221,7 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
                       <select 
                         value={formData.plotsCount}
                         onChange={(e) => setFormData({ ...formData, plotsCount: e.target.value })}
-                        class="w-full pl-9 pr-8 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition text-xs bg-gray-50 focus:bg-white text-gray-800"
+                        class="w-full pl-9 pr-9 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition text-xs bg-gray-50 focus:bg-white text-gray-800 appearance-none cursor-pointer"
                       >
                         <option value="1 Guntha">1 Guntha</option>
                         <option value="2 Guntha">2 Guntha</option>

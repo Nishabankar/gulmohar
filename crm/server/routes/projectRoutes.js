@@ -105,6 +105,109 @@ router.get('/:id', protectAdmin, async (req, res) => {
   }
 });
 
+// @route   POST /api/projects/bulk-import
+// @desc    Bulk import projects from CSV
+// @access  Protected
+router.post('/bulk-import', protectAdmin, async (req, res) => {
+  try {
+    const { projects } = req.body;
+    if (!Array.isArray(projects) || projects.length === 0) {
+      return res.status(400).json({ success: false, message: 'No projects provided for import' });
+    }
+
+    const createdBy = req.admin?.username || 'Admin';
+
+    // Fetch existing project names from database for duplicate checking
+    const [existingRows] = await query('SELECT LOWER(TRIM(name)) as name_lower FROM projects');
+    const existingNameSet = new Set(existingRows.map(r => r.name_lower));
+
+    const insertedProjects = [];
+    const duplicateRows = [];
+    const errorRows = [];
+
+    for (let i = 0; i < projects.length; i++) {
+      const p = projects[i];
+      const rawName = (p.name || p.projectName || '').trim();
+      if (!rawName) {
+        errorRows.push({ index: i, reason: 'Missing Project Name' });
+        continue;
+      }
+
+      const nameLower = rawName.toLowerCase();
+      if (existingNameSet.has(nameLower)) {
+        duplicateRows.push({ index: i, name: rawName, reason: 'Project already exists' });
+        continue;
+      }
+
+      const cleanDeveloper = (p.developerName || p.developer || '').trim();
+      const cleanRera = (p.reraNumber || p.reraNo || p.rera || '').trim();
+      const cleanArea = (p.area || '').trim();
+      const cleanAddress = (p.address || p.location || '').trim();
+
+      // Normalize projectType array
+      let typeArr = [];
+      if (Array.isArray(p.projectType)) {
+        typeArr = p.projectType.map(t => String(t).trim()).filter(Boolean);
+      } else if (typeof p.projectType === 'string' && p.projectType.trim()) {
+        typeArr = p.projectType.split(/[,;|]/).map(t => t.trim()).filter(Boolean);
+      }
+      if (typeArr.length === 0) {
+        typeArr = ['Apartment']; // sensible default if omitted in CSV
+      }
+
+      // Normalize typography array
+      let typoArr = [];
+      if (Array.isArray(p.typography)) {
+        typoArr = p.typography.map(t => String(t).trim()).filter(Boolean);
+      } else if (typeof p.typography === 'string' && p.typography.trim()) {
+        typoArr = p.typography.split(/[,;|]/).map(t => t.trim()).filter(Boolean);
+      }
+      if (typoArr.length === 0) {
+        typoArr = ['2 BHK']; // sensible default if omitted in CSV
+      }
+
+      const projectTypeJson = JSON.stringify(typeArr);
+      const typographyJson = JSON.stringify(typoArr);
+
+      try {
+        const [insertRes] = await query(
+          `INSERT INTO projects (name, developer_name, project_type, typography, rera_number, area, address, created_by)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [rawName, cleanDeveloper, projectTypeJson, typographyJson, cleanRera, cleanArea || cleanAddress || 'Pune', cleanAddress, createdBy]
+        );
+        existingNameSet.add(nameLower);
+        insertedProjects.push({ id: insertRes.insertId, name: rawName });
+      } catch (err) {
+        errorRows.push({ index: i, name: rawName, reason: err.message });
+      }
+    }
+
+    // Fetch all current projects formatted
+    const [allRows] = await query(`
+      SELECT p.*, 
+        (SELECT COUNT(*) FROM leads l WHERE LOWER(TRIM(l.project_name)) = LOWER(TRIM(p.name))) AS assigned_leads_count
+      FROM projects p ORDER BY id DESC
+    `);
+    const allFormatted = (allRows || []).map(formatProjectRow);
+
+    return res.json({
+      success: true,
+      message: `Successfully imported ${insertedProjects.length} project(s).${duplicateRows.length > 0 ? ` (${duplicateRows.length} duplicates skipped)` : ''}`,
+      importedCount: insertedProjects.length,
+      duplicateRows,
+      errorRows,
+      projects: allFormatted
+    });
+  } catch (error) {
+    console.error('Bulk Import Projects Error:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to import projects',
+      error: error.message
+    });
+  }
+});
+
 // @route   POST /api/projects
 // @desc    Create a new project
 // @access  Protected (SuperAdmin, Admin, SystemAdmin, Manager)

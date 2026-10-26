@@ -297,6 +297,257 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
 
   const getAuthToken = () => localStorage.getItem('adminToken') || '';
 
+  // CSV Import State
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importFile, setImportFile] = useState(null);
+  const [importPreview, setImportPreview] = useState([]);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importMsg, setImportMsg] = useState('');
+  const [importSheet, setImportSheet] = useState({ headers: [], rows: [] });
+  const [importDuplicates, setImportDuplicates] = useState([]);
+
+  // Export CSV handler (Standard RFC-4180 with UTF-8 BOM for Microsoft Excel)
+  const handleExportProjectCSV = () => {
+    const targetList = (filteredProjects && filteredProjects.length > 0) ? filteredProjects : projects;
+    if (!targetList || targetList.length === 0) {
+      alert('No projects available to export.');
+      return;
+    }
+
+    const headers = [
+      '# ID',
+      'Project',
+      'Developer',
+      'Project Type',
+      'Typography',
+      'RERA No',
+      'Area',
+      'Address',
+      'Assigned Leads',
+      'Created By',
+      'Created At'
+    ];
+
+    const escapeCell = (val) => {
+      if (val === null || val === undefined) return '""';
+      let str = String(val).replace(/"/g, '""');
+      return `"${str}"`;
+    };
+
+    const rows = targetList.map((project, idx) => {
+      const displayId = getProjectDisplayId(project, projects);
+      const types = Array.isArray(project.projectType) ? project.projectType.join(', ') : (project.projectType || '');
+      const typos = Array.isArray(project.typography) ? project.typography.join(', ') : (project.typography || '');
+      const createdAt = project.createdAt ? new Date(project.createdAt).toLocaleDateString('en-GB') : '';
+
+      return [
+        escapeCell(displayId),
+        escapeCell(project.name || ''),
+        escapeCell(project.developerName || ''),
+        escapeCell(types),
+        escapeCell(typos),
+        escapeCell(project.reraNumber || ''),
+        escapeCell(project.area || ''),
+        escapeCell(project.address || ''),
+        escapeCell(project.assignedLeadsCount || 0),
+        escapeCell(project.createdBy || 'Admin'),
+        escapeCell(createdAt)
+      ].join(',');
+    });
+
+    const csvContent = '\uFEFF' + [headers.map(escapeCell).join(','), ...rows].join('\r\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    const dateStr = new Date().toISOString().split('T')[0];
+    link.download = `Projects_Export_${dateStr}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // Download Sample CSV Template
+  const handleDownloadSampleCSV = () => {
+    const headers = ['Project', 'Developer', 'Project Type', 'Typography', 'RERA No', 'Area', 'Address'];
+    const sampleRows = [
+      ['"Gulmohar City"', '"Gulmohar Group"', '"Apartment"', '"1 BHK, 2 BHK, 3 BHK"', '"P52100012345"', '"Kharadi"', '"Survey No 45, Near IT Park, Kharadi, Pune"'],
+      ['"Greenfield Villas"', '"Apex Builders"', '"Villa"', '"3 BHK, 4 BHK"', '"P52100067890"', '"Wagholi"', '"Gate No 12, Nagar Road, Wagholi, Pune"'],
+      ['"Royal Palms"', '"Shree Developers"', '"Plots"', '"Residential, Non-Agriculture"', '"P52100099887"', '"Shikrapur"', '"Pune-Nagar Highway, Shikrapur"']
+    ];
+    const csvContent = '\uFEFF' + [headers.join(','), ...sampleRows.map(r => r.join(','))].join('\r\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'Projects_Sample_Template.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // CSV/TSV tokenizer: quoted cells, "" escapes, commas and line breaks inside quotes
+  const parseCSVRows = (text) => {
+    text = text.replace(/^\uFEFF/, '').replace(/\r\r\n?/g, '\r\n');
+    const firstLine = text.split('\r\n', 1)[0];
+    const delimiter = firstLine.includes('\t') ? '\t' : (firstLine.includes(';') && !firstLine.includes(',') ? ';' : ',');
+    const rows = [];
+    let row = [], cell = '', inQuotes = false;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (inQuotes) {
+        if (ch === '"' && text[i + 1] === '"') { cell += '"'; i++; }
+        else if (ch === '"') inQuotes = false;
+        else cell += ch;
+      } else if (ch === '"') inQuotes = true;
+      else if (ch === delimiter) { row.push(cell.trim()); cell = ''; }
+      else if (ch === '\r\n') {
+        row.push(cell.trim()); cell = '';
+        if (row.some(c => c !== '')) rows.push(row);
+        row = [];
+      } else cell += ch;
+    }
+    row.push(cell.trim());
+    if (row.some(c => c !== '')) rows.push(row);
+    return rows;
+  };
+
+  const parseProjectCSVText = (text) => {
+    const allRows = parseCSVRows(text);
+    if (allRows.length < 2) {
+      return { headers: [], rows: [], validProjects: [], duplicateProjects: [] };
+    }
+    const headers = allRows[0];
+    const rows = allRows.slice(1);
+    const keys = headers.map(h => (h || '').toLowerCase().replace(/[^a-z0-9]/g, ''));
+    const used = new Set();
+    const find = (exact, partial = []) => {
+      let idx = keys.findIndex((k, i) => !used.has(i) && exact.includes(k));
+      if (idx === -1) idx = keys.findIndex((k, i) => !used.has(i) && partial.some(p => k.includes(p)));
+      if (idx !== -1) used.add(idx);
+      return idx;
+    };
+
+    const nameIdx = find(['project', 'projectname', 'name', 'title'], ['project', 'name']);
+    const devIdx = find(['developer', 'developername', 'builder', 'company'], ['dev', 'build']);
+    const typeIdx = find(['projecttype', 'type', 'types', 'category'], ['type']);
+    const typoIdx = find(['typography', 'typo', 'configuration', 'bhk', 'unit'], ['typo', 'config', 'bhk']);
+    const reraIdx = find(['reranumber', 'rerano', 'rera', 'registrationno'], ['rera']);
+    const areaIdx = find(['area', 'locationarea', 'locality', 'suburb'], ['area', 'loc']);
+    const addressIdx = find(['address', 'projectaddress', 'fulladdress', 'siteaddress'], ['address', 'site']);
+
+    const existingNameSet = new Set(projects.map(p => (p.name || '').toLowerCase().trim()));
+    const seenInFile = new Set();
+    const validProjects = [];
+    const duplicateProjects = [];
+
+    rows.forEach((row, rowIdx) => {
+      const getVal = (idx) => (idx !== -1 && row[idx] !== undefined) ? String(row[idx]).trim() : '';
+      const rawName = nameIdx !== -1 ? getVal(nameIdx) : (row[0] || '').trim();
+      if (!rawName) return;
+
+      const nameLower = rawName.toLowerCase();
+      if (existingNameSet.has(nameLower) || seenInFile.has(nameLower)) {
+        duplicateProjects.push({ name: rawName, rowIdx: rowIdx + 2 });
+        return;
+      }
+      seenInFile.add(nameLower);
+
+      const developerName = devIdx !== -1 ? getVal(devIdx) : '';
+      const rawType = typeIdx !== -1 ? getVal(typeIdx) : '';
+      const rawTypo = typoIdx !== -1 ? getVal(typoIdx) : '';
+      const reraNumber = reraIdx !== -1 ? getVal(reraIdx) : '';
+      const area = areaIdx !== -1 ? getVal(areaIdx) : '';
+      const address = addressIdx !== -1 ? getVal(addressIdx) : '';
+
+      let projectType = rawType ? rawType.split(/[,;|]/).map(s => s.trim()).filter(Boolean) : ['Apartment'];
+      let typography = rawTypo ? rawTypo.split(/[,;|]/).map(s => s.trim()).filter(Boolean) : ['2 BHK'];
+
+      validProjects.push({
+        name: rawName,
+        developerName,
+        projectType,
+        typography,
+        reraNumber,
+        area: area || address || 'Pune',
+        address
+      });
+    });
+
+    return { headers, rows, validProjects, duplicateProjects };
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImportFile(file);
+    setImportMsg('');
+    setImportDuplicates([]);
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const { headers, rows, validProjects, duplicateProjects } = parseProjectCSVText(evt.target.result);
+      setImportSheet({ headers, rows });
+      setImportPreview(validProjects);
+      setImportDuplicates(duplicateProjects);
+      if (validProjects.length === 0 && duplicateProjects.length === 0) {
+        setImportMsg('Error: No valid project records found in CSV file.');
+      } else if (validProjects.length === 0 && duplicateProjects.length > 0) {
+        setImportMsg(`All ${duplicateProjects.length} project(s) in this file already exist in CRM.`);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  const resetImportModal = () => {
+    setShowImportModal(false);
+    setImportFile(null);
+    setImportPreview([]);
+    setImportMsg('');
+    setImportSheet({ headers: [], rows: [] });
+    setImportDuplicates([]);
+  };
+
+  const handleConfirmImportProjects = async () => {
+    if (importPreview.length === 0) return;
+    setIsImporting(true);
+    setImportMsg('');
+
+    const token = getAuthToken();
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/projects/bulk-import`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ projects: importPreview })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setImportMsg(data.message);
+        if (Array.isArray(data.projects)) {
+          setProjects(data.projects);
+        }
+        showToast(data.message, 'success');
+        setImportPreview([]);
+        if (!importDuplicates || importDuplicates.length === 0) {
+          setTimeout(resetImportModal, 1500);
+        }
+      } else {
+        setImportMsg(`Error: ${data.message || 'Import failed'}`);
+      }
+    } catch (err) {
+      setImportMsg(`Error: ${err.message}`);
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   // Toggle Type Dropdown with smart viewport calculation
   const handleToggleTypeDropdown = (e) => {
     e.stopPropagation();
@@ -1134,6 +1385,30 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                 >
                   <i className="fa-solid fa-sliders text-xs"></i>
                 </button>
+
+                {/* Export CSV Button */}
+                {canManage && (
+                  <button 
+                    type="button" 
+                    onClick={handleExportProjectCSV}
+                    className="w-8 h-8 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white flex items-center justify-center transition shadow-sm border border-rose-900/40 cursor-pointer flex-shrink-0 transform active:scale-95"
+                    title="Export"
+                  >
+                    <i className="fa-solid fa-file-excel text-xs"></i>
+                  </button>
+                )}
+
+                {/* Import CSV Button */}
+                {canManage && (
+                  <button 
+                    type="button" 
+                    onClick={() => setShowImportModal(true)}
+                    className="w-8 h-8 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white flex items-center justify-center transition shadow-sm border border-rose-900/40 cursor-pointer flex-shrink-0 transform active:scale-95"
+                    title="Import"
+                  >
+                    <i className="fa-solid fa-file-import text-xs"></i>
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -1255,6 +1530,30 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
               >
                 <i className="fa-solid fa-sliders text-sm"></i>
               </button>
+
+              {/* Export CSV Button */}
+              {canManage && (
+                <button 
+                  type="button" 
+                  onClick={handleExportProjectCSV}
+                  className="w-9 h-9 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white flex items-center justify-center transition shadow-sm border border-rose-900/40 cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
+                  title="Export"
+                >
+                  <i className="fa-solid fa-file-excel text-sm"></i>
+                </button>
+              )}
+
+              {/* Import CSV Button */}
+              {canManage && (
+                <button 
+                  type="button" 
+                  onClick={() => setShowImportModal(true)}
+                  className="w-9 h-9 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white flex items-center justify-center transition shadow-sm border border-rose-900/40 cursor-pointer flex-shrink-0 transform hover:scale-105 active:scale-95"
+                  title="Import"
+                >
+                  <i className="fa-solid fa-file-import text-sm"></i>
+                </button>
+              )}
             </div>
           </div>
 
@@ -1563,7 +1862,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                                 return (
                                   <td key="typography" className={getProjectTdClass('typography')} style={getProjectTdStyle('typography')}>
                                     {typos.length > 0 ? (
-                                      <div className="flex flex-col gap-0.5" title={typos.join('\n')}>
+                                      <div className="flex flex-col gap-0.5" title={typos.join('\r\n')}>
                                         {typos.map((t, i) => (
                                           <span 
                                             key={i}
@@ -2421,6 +2720,164 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                 Done
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* CSV IMPORT MODAL */}
+      {showImportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 max-w-xl w-full flex flex-col max-h-[90vh] overflow-hidden animate-scale-up">
+            
+            {/* Modal Header */}
+            <div className="px-5 py-3.5 bg-slate-50 border-b border-gray-200 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-rose-50 text-[#B30E2E] flex items-center justify-center font-bold text-sm border border-rose-200">
+                  <i className="fa-solid fa-file-import"></i>
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-800 text-sm sm:text-base">Import Projects</h3>
+                  <p className="text-[11px] text-gray-500">Upload CSV file to import multiple projects at once</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={resetImportModal}
+                className="w-7 h-7 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 flex items-center justify-center transition cursor-pointer"
+              >
+                <i className="fa-solid fa-xmark text-xs"></i>
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-4 sm:p-5 overflow-y-auto custom-scrollbar flex-1 space-y-4">
+              
+              {/* Top Action Bar: Sample Template Download */}
+              <div className="flex items-center justify-between p-3 rounded-xl bg-amber-50/70 border border-amber-200/80 text-xs">
+                <div className="flex items-center gap-2 text-amber-900 font-medium">
+                  <i className="fa-solid fa-circle-info text-amber-600 text-sm flex-shrink-0"></i>
+                  <span>Need the correct CSV format? Download our pre-filled template.</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleDownloadSampleCSV}
+                  className="px-2.5 py-1.5 rounded-lg bg-white hover:bg-amber-100 text-amber-900 font-bold border border-amber-300 transition shadow-2xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap text-[11px]"
+                >
+                  <i className="fa-solid fa-file-csv text-emerald-600"></i>
+                  <span>Sample Template</span>
+                </button>
+              </div>
+
+              {/* Upload Drop Area */}
+              <label className="border-2 border-dashed border-gray-300 hover:border-[#B30E2E] rounded-2xl p-6 flex flex-col items-center justify-center gap-2 cursor-pointer transition bg-gray-50/50 hover:bg-rose-50/20 group">
+                <input
+                  type="file"
+                  accept=".csv,text/csv"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+                <div className="w-12 h-12 rounded-full bg-white shadow-xs border border-gray-200 flex items-center justify-center text-gray-400 group-hover:text-[#B30E2E] group-hover:scale-110 transition">
+                  <i className="fa-solid fa-cloud-arrow-up text-xl"></i>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs font-bold text-gray-700 group-hover:text-[#B30E2E]">
+                    {importFile ? importFile.name : 'Click to select or drag & drop CSV file'}
+                  </p>
+                  <p className="text-[11px] text-gray-400 mt-0.5">Supports .csv (UTF-8, Google Sheets, MS Excel)</p>
+                </div>
+              </label>
+
+              {/* Status or Error Message */}
+              {importMsg && (
+                <div className={`p-3 rounded-xl text-xs font-bold flex items-start gap-2 ${
+                  importMsg.startsWith('Error') 
+                    ? 'bg-rose-50 border border-rose-200 text-rose-800' 
+                    : 'bg-emerald-50 border border-emerald-200 text-emerald-800'
+                }`}>
+                  <i className={`mt-0.5 flex-shrink-0 fa-solid ${importMsg.startsWith('Error') ? 'fa-circle-exclamation text-rose-600' : 'fa-circle-check text-emerald-600'}`}></i>
+                  <span>{importMsg}</span>
+                </div>
+              )}
+
+              {/* Duplicate Projects Warning */}
+              {importDuplicates.length > 0 && (
+                <div className="p-3 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-center justify-between gap-3">
+                  <span className="font-semibold flex items-center gap-1.5">
+                    <i className="fa-solid fa-copy text-amber-600"></i>
+                    <span>{importDuplicates.length} duplicate {importDuplicates.length === 1 ? 'project' : 'projects'} found (already exist in CRM).</span>
+                  </span>
+                </div>
+              )}
+
+              {/* Preview of Parsed Projects */}
+              {importPreview.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-800 px-1">
+                    <span>Valid Projects to Import ({importPreview.length})</span>
+                    <span className="text-[11px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                      Ready to create
+                    </span>
+                  </div>
+                  <div className="max-h-52 overflow-y-auto border border-gray-200 rounded-xl">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-gray-50 border-b text-gray-600 sticky top-0 font-bold">
+                        <tr>
+                          <th className="p-2">#</th>
+                          <th className="p-2">Project</th>
+                          <th className="p-2">Developer</th>
+                          <th className="p-2">Type</th>
+                          <th className="p-2">Area</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {importPreview.map((p, idx) => (
+                          <tr key={idx} className="hover:bg-slate-50">
+                            <td className="p-2 text-gray-400 font-mono text-[10.5px]">{idx + 1}</td>
+                            <td className="p-2 font-bold text-gray-900">{p.name}</td>
+                            <td className="p-2 text-gray-600">{p.developerName || '-'}</td>
+                            <td className="p-2 text-gray-600">{Array.isArray(p.projectType) ? p.projectType.join(', ') : p.projectType}</td>
+                            <td className="p-2 text-gray-600">{p.area || p.address || '-'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-5 py-3 bg-slate-50 border-t border-gray-200 flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={resetImportModal}
+                className="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold cursor-pointer"
+              >
+                {importDuplicates.length > 0 || importMsg ? 'Close' : 'Cancel'}
+              </button>
+              {(importPreview.length > 0 || isImporting) && (
+                <button
+                  type="button"
+                  disabled={importPreview.length === 0 || isImporting}
+                  onClick={handleConfirmImportProjects}
+                  className="px-5 py-2 rounded-xl bg-[#B30E2E] hover:bg-[#8A0B22] text-white text-xs font-bold transition shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  {isImporting ? (
+                    <>
+                      <i className="fa-solid fa-circle-notch fa-spin text-xs"></i>
+                      <span>Importing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <i className="fa-solid fa-file-import text-xs"></i>
+                      <span>Import {importPreview.length} Projects</span>
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+
           </div>
         </div>
       )}

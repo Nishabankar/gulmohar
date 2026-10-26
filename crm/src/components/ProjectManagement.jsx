@@ -355,7 +355,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
       ].join(',');
     });
 
-    const csvContent = '\uFEFF' + [headers.map(escapeCell).join(','), ...rows].join('\r\r\n');
+    const csvContent = '\uFEFF' + [headers.map(escapeCell).join(','), ...rows].join('\r\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -376,7 +376,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
       ['"Greenfield Villas"', '"Apex Builders"', '"Villa"', '"3 BHK, 4 BHK"', '"P52100067890"', '"Wagholi"', '"Gate No 12, Nagar Road, Wagholi, Pune"'],
       ['"Royal Palms"', '"Shree Developers"', '"Plots"', '"Residential, Non-Agriculture"', '"P52100099887"', '"Shikrapur"', '"Pune-Nagar Highway, Shikrapur"']
     ];
-    const csvContent = '\uFEFF' + [headers.join(','), ...sampleRows.map(r => r.join(','))].join('\r\r\n');
+    const csvContent = '\uFEFF' + [headers.join(','), ...sampleRows.map(r => r.join(','))].join('\r\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -390,7 +390,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
 
   // CSV/TSV tokenizer: quoted cells, "" escapes, commas and line breaks inside quotes
   const parseCSVRows = (text) => {
-    text = text.replace(/^\uFEFF/, '').replace(/\r\r\n?/g, '\r\n');
+    text = text.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\r\n');
     const firstLine = text.split('\r\n', 1)[0];
     const delimiter = firstLine.includes('\t') ? '\t' : (firstLine.includes(';') && !firstLine.includes(',') ? ';' : ',');
     const rows = [];
@@ -417,7 +417,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
   const parseProjectCSVText = (text) => {
     const allRows = parseCSVRows(text);
     if (allRows.length < 2) {
-      return { headers: [], rows: [], validProjects: [], duplicateProjects: [] };
+      return { headers: [], rows: [], validProjects: [], duplicateProjects: [], unmappedColumns: [], mappedColumns: [] };
     }
     const headers = allRows[0];
     const rows = allRows.slice(1);
@@ -438,6 +438,13 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
     const areaIdx = find(['area', 'locationarea', 'locality', 'suburb'], ['area', 'loc']);
     const addressIdx = find(['address', 'projectaddress', 'fulladdress', 'siteaddress'], ['address', 'site']);
 
+    const mapped = [];
+    const unmapped = [];
+    headers.forEach((h, i) => {
+      if (used.has(i)) mapped.push(h);
+      else unmapped.push(h);
+    });
+
     const existingNameSet = new Set(projects.map(p => (p.name || '').toLowerCase().trim()));
     const seenInFile = new Set();
     const validProjects = [];
@@ -450,7 +457,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
 
       const nameLower = rawName.toLowerCase();
       if (existingNameSet.has(nameLower) || seenInFile.has(nameLower)) {
-        duplicateProjects.push({ name: rawName, rowIdx: rowIdx + 2 });
+        duplicateProjects.push({ name: rawName, rowIdx: rowIdx + 2, rawRow: row });
         return;
       }
       seenInFile.add(nameLower);
@@ -476,7 +483,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
       });
     });
 
-    return { headers, rows, validProjects, duplicateProjects };
+    return { headers, rows, validProjects, duplicateProjects, unmappedColumns: unmapped, mappedColumns: mapped };
   };
 
   const handleFileSelect = (e) => {
@@ -485,13 +492,17 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
     setImportFile(file);
     setImportMsg('');
     setImportDuplicates([]);
+    setUnmappedColumns([]);
+    setMappedColumns([]);
 
     const reader = new FileReader();
     reader.onload = (evt) => {
-      const { headers, rows, validProjects, duplicateProjects } = parseProjectCSVText(evt.target.result);
+      const { headers, rows, validProjects, duplicateProjects, unmappedColumns: unmapped, mappedColumns: mapped } = parseProjectCSVText(evt.target.result);
       setImportSheet({ headers, rows });
       setImportPreview(validProjects);
       setImportDuplicates(duplicateProjects);
+      setUnmappedColumns(unmapped || []);
+      setMappedColumns(mapped || []);
       if (validProjects.length === 0 && duplicateProjects.length === 0) {
         setImportMsg('Error: No valid project records found in CSV file.');
       } else if (validProjects.length === 0 && duplicateProjects.length > 0) {
@@ -502,6 +513,20 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
     e.target.value = '';
   };
 
+  const handleDownloadDuplicates = () => {
+    const esc = (v) => `"${(v || '').toString().replace(/"/g, '""')}"`;
+    const duplicateRows = importDuplicates.map(d => d.rawRow).filter(Boolean);
+    const csv = [importSheet.headers, ...duplicateRows].map(r => r.map(esc).join(',')).join('\r\n');
+    const url = URL.createObjectURL(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Duplicate_Projects_${(importFile?.name || 'import').replace(/\.csv$/i, '')}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const resetImportModal = () => {
     setShowImportModal(false);
     setImportFile(null);
@@ -509,6 +534,9 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
     setImportMsg('');
     setImportSheet({ headers: [], rows: [] });
     setImportDuplicates([]);
+    setUnmappedColumns([]);
+    setMappedColumns([]);
+    setShowColumnMappingPopover(false);
   };
 
   const handleConfirmImportProjects = async () => {
@@ -2724,119 +2752,231 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
         </div>
       )}
 
-      {/* CSV IMPORT MODAL */}
+      {/* Import CSV Projects Modal (Exactly matching Lead Table Import Design) */}
       {showImportModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 max-w-xl w-full flex flex-col max-h-[90vh] overflow-hidden animate-scale-up">
-            
-            {/* Modal Header */}
-            <div className="px-5 py-3.5 bg-slate-50 border-b border-gray-200 flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-rose-50 text-[#B30E2E] flex items-center justify-center font-bold text-sm border border-rose-200">
-                  <i className="fa-solid fa-file-import"></i>
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-800 text-sm sm:text-base">Import Projects</h3>
-                  <p className="text-[11px] text-gray-500">Upload CSV file to import multiple projects at once</p>
-                </div>
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-3 sm:p-4 animate-fade-in"
+          onClick={() => !isImporting && resetImportModal()}
+        >
+          <div 
+            className="bg-white rounded-3xl shadow-2xl border border-gray-100 max-w-lg w-full overflow-hidden flex flex-col relative"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (showColumnMappingPopover) setShowColumnMappingPopover(false);
+            }}
+          >
+            {/* Header: Exact Lead Table Gradient */}
+            <div className="bg-gradient-to-r from-[#B30E2E] via-[#8A0B22] to-[#590414] p-4 sm:p-5 text-white flex items-center justify-between flex-shrink-0">
+              <div className="flex items-center gap-2">
+                <i className="fa-solid fa-file-import text-lg"></i>
+                <h3 className="font-serif font-bold text-base">Import Projects from CSV</h3>
               </div>
-              <button
+              <button 
                 type="button"
                 onClick={resetImportModal}
-                className="w-7 h-7 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 flex items-center justify-center transition cursor-pointer"
+                className="text-white/70 hover:text-white bg-white/10 hover:bg-white/20 w-8 h-8 rounded-full flex items-center justify-center transition cursor-pointer"
               >
-                <i className="fa-solid fa-xmark text-xs"></i>
+                <i className="fa-solid fa-xmark text-sm"></i>
               </button>
             </div>
 
-            {/* Modal Body */}
-            <div className="p-4 sm:p-5 overflow-y-auto custom-scrollbar flex-1 space-y-4">
-              
-              {/* Top Action Bar: Sample Template Download */}
-              <div className="flex items-center justify-between p-3 rounded-xl bg-amber-50/70 border border-amber-200/80 text-xs">
-                <div className="flex items-center gap-2 text-amber-900 font-medium">
-                  <i className="fa-solid fa-circle-info text-amber-600 text-sm flex-shrink-0"></i>
-                  <span>Need the correct CSV format? Download our pre-filled template.</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleDownloadSampleCSV}
-                  className="px-2.5 py-1.5 rounded-lg bg-white hover:bg-amber-100 text-amber-900 font-bold border border-amber-300 transition shadow-2xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap text-[11px]"
-                >
-                  <i className="fa-solid fa-file-csv text-emerald-600"></i>
-                  <span>Sample Template</span>
-                </button>
-              </div>
-
-              {/* Upload Drop Area */}
-              <label className="border-2 border-dashed border-gray-300 hover:border-[#B30E2E] rounded-2xl p-6 flex flex-col items-center justify-center gap-2 cursor-pointer transition bg-gray-50/50 hover:bg-rose-50/20 group">
-                <input
-                  type="file"
-                  accept=".csv,text/csv"
-                  onChange={handleFileSelect}
-                  className="hidden"
-                />
-                <div className="w-12 h-12 rounded-full bg-white shadow-xs border border-gray-200 flex items-center justify-center text-gray-400 group-hover:text-[#B30E2E] group-hover:scale-110 transition">
-                  <i className="fa-solid fa-cloud-arrow-up text-xl"></i>
-                </div>
-                <div className="text-center">
-                  <p className="text-xs font-bold text-gray-700 group-hover:text-[#B30E2E]">
-                    {importFile ? importFile.name : 'Click to select or drag & drop CSV file'}
-                  </p>
-                  <p className="text-[11px] text-gray-400 mt-0.5">Supports .csv (UTF-8, Google Sheets, MS Excel)</p>
-                </div>
-              </label>
-
-              {/* Status or Error Message */}
+            <div className={`p-5 space-y-4 overflow-y-auto max-h-[75vh] ${showColumnMappingPopover ? 'min-h-[220px]' : ''}`}>
               {importMsg && (
-                <div className={`p-3 rounded-xl text-xs font-bold flex items-start gap-2 ${
-                  importMsg.startsWith('Error') 
-                    ? 'bg-rose-50 border border-rose-200 text-rose-800' 
-                    : 'bg-emerald-50 border border-emerald-200 text-emerald-800'
+                <div className={`p-3 rounded-xl text-xs font-bold flex items-center gap-2 ${
+                  importMsg.includes('Error') ? 'bg-rose-100 border border-rose-300 text-rose-900' : 'bg-emerald-100 border border-emerald-300 text-emerald-900'
                 }`}>
-                  <i className={`mt-0.5 flex-shrink-0 fa-solid ${importMsg.startsWith('Error') ? 'fa-circle-exclamation text-rose-600' : 'fa-circle-check text-emerald-600'}`}></i>
+                  <i className={`fa-solid ${importMsg.includes('Error') ? 'fa-triangle-exclamation text-rose-600' : 'fa-circle-check text-emerald-600'}`}></i>
                   <span>{importMsg}</span>
                 </div>
               )}
 
-              {/* Duplicate Projects Warning */}
-              {importDuplicates.length > 0 && (
-                <div className="p-3 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-center justify-between gap-3">
-                  <span className="font-semibold flex items-center gap-1.5">
-                    <i className="fa-solid fa-copy text-amber-600"></i>
-                    <span>{importDuplicates.length} duplicate {importDuplicates.length === 1 ? 'project' : 'projects'} found (already exist in CRM).</span>
-                  </span>
+              {importFile ? (
+                // File loaded: compact file row with Red/Green column mapping symbol & floating popover
+                <div className="relative">
+                  <div className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border border-rose-200 bg-rose-50/40">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <i className="fa-solid fa-file-csv text-[#B30E2E] text-base"></i>
+                      <span className="text-xs font-bold text-slate-800 truncate" title={importFile.name}>{importFile.name}</span>
+                    </div>
+                    <div className="flex items-center gap-2.5 flex-shrink-0">
+                      {importSheet.headers.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowColumnMappingPopover(prev => !prev);
+                          }}
+                          title={
+                            unmappedColumns.length > 0
+                              ? `${unmappedColumns.length} unmapped column(s) — Click to view details`
+                              : 'All CSV columns mapped — Click to view details'
+                          }
+                          className={`relative inline-flex items-center justify-center w-7 h-7 rounded-full border transition cursor-pointer shadow-xs ${
+                            unmappedColumns.length > 0
+                              ? 'bg-rose-100 hover:bg-rose-200 border-rose-300 text-rose-600 ring-2 ring-rose-200/70'
+                              : 'bg-emerald-100 hover:bg-emerald-200 border-emerald-300 text-emerald-600 ring-2 ring-emerald-200/70'
+                          }`}
+                        >
+                          <i className={`fa-solid ${unmappedColumns.length > 0 ? 'fa-triangle-exclamation' : 'fa-circle-check'} text-xs`}></i>
+                          {unmappedColumns.length > 0 && (
+                            <span className="absolute -top-1 -right-1 min-w-[15px] h-[15px] px-1 rounded-full bg-rose-600 text-white text-[9px] font-extrabold flex items-center justify-center leading-none shadow-xs">
+                              {unmappedColumns.length}
+                            </span>
+                          )}
+                        </button>
+                      )}
+                      {!isImporting && (
+                        <label className="text-[11px] font-bold text-[#B30E2E] hover:underline cursor-pointer whitespace-nowrap">
+                          Change file
+                          <input type="file" accept=".csv" onChange={handleFileSelect} className="hidden" />
+                        </label>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Floating Popover Message on Symbol Click */}
+                  {showColumnMappingPopover && importSheet.headers.length > 0 && (
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      className={`absolute left-0 right-0 top-full mt-1.5 z-30 px-3 py-2.5 rounded-xl border text-xs shadow-xl animate-fade-in ${
+                        unmappedColumns.length > 0
+                          ? 'bg-rose-50 border-rose-300 text-rose-900'
+                          : 'bg-emerald-50 border-emerald-300 text-emerald-900'
+                      }`}
+                    >
+                      {unmappedColumns.length > 0 ? (
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-start gap-2 flex-1">
+                            <i className="fa-solid fa-triangle-exclamation text-rose-600 mt-0.5 text-xs flex-shrink-0"></i>
+                            <div className="flex-1 space-y-1">
+                              <p className="font-bold text-rose-800 text-xs leading-snug">
+                                Following {unmappedColumns.length === 1 ? 'field' : 'fields'} cannot be imported:
+                              </p>
+                              <div className="flex flex-wrap gap-1.5 pt-0.5">
+                                {unmappedColumns.map((col, idx) => (
+                                  <span
+                                    key={idx}
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white border border-rose-300 text-rose-800 font-bold text-[11px] shadow-xs"
+                                  >
+                                    <i className="fa-solid fa-circle-xmark text-[10px] text-rose-600"></i>
+                                    {col}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setShowColumnMappingPopover(false)}
+                            className="text-rose-500 hover:text-rose-800 w-5 h-5 rounded-full hover:bg-rose-100 flex items-center justify-center transition cursor-pointer flex-shrink-0"
+                            title="Close"
+                          >
+                            <i className="fa-solid fa-xmark text-xs"></i>
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-start gap-2 flex-1">
+                            <i className="fa-solid fa-circle-check text-emerald-600 mt-0.5 text-xs flex-shrink-0"></i>
+                            <div className="flex-1 space-y-1">
+                              <p className="font-bold text-emerald-800 text-xs leading-snug">
+                                All fields will be imported:
+                              </p>
+                              {mappedColumns.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5 pt-0.5">
+                                  {mappedColumns.map((col, idx) => (
+                                    <span
+                                      key={idx}
+                                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white border border-emerald-300 text-emerald-800 font-bold text-[11px] shadow-xs"
+                                    >
+                                      <i className="fa-solid fa-circle-check text-[10px] text-emerald-600"></i>
+                                      {col}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setShowColumnMappingPopover(false)}
+                            className="text-emerald-600 hover:text-emerald-900 w-5 h-5 rounded-full hover:bg-emerald-100 flex items-center justify-center transition cursor-pointer flex-shrink-0"
+                            title="Close"
+                          >
+                            <i className="fa-solid fa-xmark text-xs"></i>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* Exact Lead Table Dropzone */
+                <div className="border-2 border-dashed border-rose-300 hover:border-[#B30E2E] rounded-2xl p-6 text-center bg-rose-50/40 hover:bg-rose-50 transition cursor-pointer relative">
+                  <input
+                    type="file"
+                    accept=".csv"
+                    onChange={handleFileSelect}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  <div className="space-y-2">
+                    <div className="w-12 h-12 rounded-2xl bg-[#FFF0F2] text-[#B30E2E] border border-[#FCD6DC] flex items-center justify-center mx-auto text-xl shadow-xs">
+                      <i className="fa-solid fa-cloud-arrow-up"></i>
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-800">Click or Drag CSV File Here</p>
+                      <p className="text-[10px] text-gray-500 mt-0.5">
+                        Supports Google Sheets export (.csv)
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
 
-              {/* Preview of Parsed Projects */}
+              {importDuplicates.length > 0 && (
+                <div className="p-3 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-center justify-between gap-3">
+                  <span className="font-semibold">
+                    <i className="fa-solid fa-copy mr-1.5 text-amber-600"></i>
+                    {importDuplicates.length} duplicate {importDuplicates.length === 1 ? 'row was' : 'rows were'} skipped (project name already exists)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleDownloadDuplicates}
+                    className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-bold whitespace-nowrap flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <i className="fa-solid fa-download text-[10px]"></i>
+                    Download CSV
+                  </button>
+                </div>
+              )}
+
               {importPreview.length > 0 && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-xs font-bold text-slate-800 px-1">
-                    <span>Valid Projects to Import ({importPreview.length})</span>
-                    <span className="text-[11px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                      Ready to create
-                    </span>
+                    <span>Preview Parsed Projects ({importPreview.length} found)</span>
                   </div>
-                  <div className="max-h-52 overflow-y-auto border border-gray-200 rounded-xl">
-                    <table className="w-full text-left text-xs">
-                      <thead className="bg-gray-50 border-b text-gray-600 sticky top-0 font-bold">
+
+                  <div className="border border-gray-200 rounded-xl overflow-x-auto overflow-y-auto max-h-48 custom-scrollbar text-[11px]">
+                    <table className="w-full text-left border-collapse whitespace-nowrap">
+                      <thead className="bg-gray-100 text-gray-700 sticky top-0 font-bold z-10">
                         <tr>
-                          <th className="p-2">#</th>
-                          <th className="p-2">Project</th>
-                          <th className="p-2">Developer</th>
-                          <th className="p-2">Type</th>
-                          <th className="p-2">Area</th>
+                          <th className="p-2 border-b">Project</th>
+                          <th className="p-2 border-b">Developer</th>
+                          <th className="p-2 border-b">Type</th>
+                          <th className="p-2 border-b">Typography</th>
+                          <th className="p-2 border-b">Area</th>
+                          <th className="p-2 border-b">RERA No</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-100">
-                        {importPreview.map((p, idx) => (
-                          <tr key={idx} className="hover:bg-slate-50">
-                            <td className="p-2 text-gray-400 font-mono text-[10.5px]">{idx + 1}</td>
-                            <td className="p-2 font-bold text-gray-900">{p.name}</td>
-                            <td className="p-2 text-gray-600">{p.developerName || '-'}</td>
-                            <td className="p-2 text-gray-600">{Array.isArray(p.projectType) ? p.projectType.join(', ') : p.projectType}</td>
-                            <td className="p-2 text-gray-600">{p.area || p.address || '-'}</td>
+                      <tbody>
+                        {importPreview.map((project, idx) => (
+                          <tr key={idx} className="border-b hover:bg-slate-50">
+                            <td className="p-2 font-medium text-slate-800">{project.name}</td>
+                            <td className="p-2 text-slate-600">{project.developerName || '-'}</td>
+                            <td className="p-2 text-slate-600">{Array.isArray(project.projectType) ? project.projectType.join(', ') : project.projectType}</td>
+                            <td className="p-2 text-slate-600">{Array.isArray(project.typography) ? project.typography.join(', ') : project.typography}</td>
+                            <td className="p-2 text-slate-600">{project.area || project.address || '-'}</td>
+                            <td className="p-2 text-slate-500">{project.reraNumber || '-'}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -2844,11 +2984,10 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                   </div>
                 </div>
               )}
-
             </div>
 
-            {/* Modal Footer */}
-            <div className="px-5 py-3 bg-slate-50 border-t border-gray-200 flex items-center justify-end gap-2.5">
+            {/* Exact Lead Table Footer */}
+            <div className="px-5 py-3.5 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
               <button
                 type="button"
                 onClick={resetImportModal}
@@ -2877,7 +3016,6 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                 </button>
               )}
             </div>
-
           </div>
         </div>
       )}

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { API_BASE_URL, CONTACT_PHONE, CONTACT_PHONE_DISPLAY, CONTACT_EMAIL, WHATSAPP_URL } from '../config';
 
 export default function ContactForm({ selectedPlotForEnquiry }) {
-  const [formData, setFormData] = useState({ firstName: '', lastName: '', phone: '', email: '', plotInfo: '', plotsCount: '1 Guntha' });
+  const [formData, setFormData] = useState({ firstName: '', lastName: '', phone: '', email: '', location: '', source: 'Website', plotInfo: '', plotsCount: '1 Guntha' });
   const [submitting, setSubmitting] = useState(false);
   const [statusMsg, setStatusMsg] = useState(null);
 
@@ -52,7 +52,7 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
           text: 'Enquiry Submitted Successfully!',
           type: 'success'
         });
-        setFormData({ firstName: '', lastName: '', phone: '', email: '', plotInfo: '', plotsCount: '1 Guntha' });
+        setFormData({ firstName: '', lastName: '', phone: '', email: '', location: '', source: 'Website', plotInfo: '', plotsCount: '1 Guntha' });
       } else {
         setStatusMsg({
           text: data.message || `Could not save enquiry. Please call us directly at ${CONTACT_PHONE_DISPLAY}.`,
@@ -75,7 +75,7 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
         text: 'Enquiry Submitted Successfully!',
         type: 'success'
       });
-      setFormData({ firstName: '', lastName: '', phone: '', email: '', plotInfo: '', plotsCount: '1 Guntha' });
+      setFormData({ firstName: '', lastName: '', phone: '', email: '', location: '', source: 'Website', plotInfo: '', plotsCount: '1 Guntha' });
     } finally {
       setSubmitting(false);
       setTimeout(() => setStatusMsg(null), 8000);
@@ -211,6 +211,46 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
                           placeholder="Enter email address" 
                           class="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition text-xs bg-gray-50 focus:bg-white"
                         />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {/* Input Location / City */}
+                    <div>
+                      <label class="block text-xs font-bold text-gray-700 mb-1">Your Location / City</label>
+                      <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 text-xs">
+                          <i class="fa-solid fa-location-dot text-[#B30E2E]"></i>
+                        </div>
+                        <input 
+                          type="text" 
+                          value={formData.location}
+                          onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                          placeholder="e.g. Pune, Shikrapur, Mumbai" 
+                          class="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition text-xs bg-gray-50 focus:bg-white"
+                        />
+                      </div>
+                    </div>
+
+                    {/* How did you hear about us? */}
+                    <div>
+                      <label class="block text-xs font-bold text-gray-700 mb-1">How did you find us?</label>
+                      <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 text-xs">
+                          <i class="fa-solid fa-bullhorn text-[#B30E2E]"></i>
+                        </div>
+                        <select 
+                          value={formData.source || 'Website'}
+                          onChange={(e) => setFormData({ ...formData, source: e.target.value })}
+                          class="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition text-xs bg-gray-50 focus:bg-white text-gray-800"
+                        >
+                          <option value="Website">Website / Google Search</option>
+                          <option value="Instagram / Facebook">Instagram / Facebook</option>
+                          <option value="Hoarding / Banner">Roadside Hoarding / Banner</option>
+                          <option value="Friend / Referral">Friend / Referral</option>
+                          <option value="Other">Other</option>
+                        </select>
                       </div>
                     </div>
                   </div>

@@ -393,8 +393,8 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
 
   // CSV/TSV tokenizer: quoted cells, "" escapes, commas and line breaks inside quotes
   const parseCSVRows = (text) => {
-    text = text.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\r\n');
-    const firstLine = text.split('\r\n', 1)[0];
+    text = text.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
+    const firstLine = text.split('\n', 1)[0];
     const delimiter = firstLine.includes('\t') ? '\t' : (firstLine.includes(';') && !firstLine.includes(',') ? ';' : ',');
     const rows = [];
     let row = [], cell = '', inQuotes = false;
@@ -406,11 +406,11 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
         else cell += ch;
       } else if (ch === '"') inQuotes = true;
       else if (ch === delimiter) { row.push(cell.trim()); cell = ''; }
-      else if (ch === '\r\n') {
+      else if (ch === '\n') {
         row.push(cell.trim()); cell = '';
         if (row.some(c => c !== '')) rows.push(row);
         row = [];
-      } else cell += ch;
+      } else if (ch !== '\r') cell += ch;
     }
     row.push(cell.trim());
     if (row.some(c => c !== '')) rows.push(row);
@@ -459,7 +459,8 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
       if (!rawName) return;
 
       const nameLower = rawName.toLowerCase();
-      if (existingNameSet.has(nameLower) || seenInFile.has(nameLower)) {
+      // Check duplicate within the same uploaded file
+      if (seenInFile.has(nameLower)) {
         duplicateProjects.push({ name: rawName, rowIdx: rowIdx + 2, rawRow: row });
         return;
       }
@@ -475,6 +476,8 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
       let projectType = rawType ? rawType.split(/[,;|]/).map(s => s.trim()).filter(Boolean) : ['Apartment'];
       let typography = rawTypo ? rawTypo.split(/[,;|]/).map(s => s.trim()).filter(Boolean) : ['2 BHK'];
 
+      const isUpdate = existingNameSet.has(nameLower);
+
       validProjects.push({
         name: rawName,
         developerName,
@@ -482,7 +485,8 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
         typography,
         reraNumber,
         area: area || address || 'Pune',
-        address
+        address,
+        isUpdate
       });
     });
 
@@ -509,14 +513,14 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
       if (validProjects.length === 0 && duplicateProjects.length === 0) {
         setImportMsg('Error: No valid project records found in CSV file.');
       } else if (validProjects.length === 0 && duplicateProjects.length > 0) {
-        setImportMsg(`All ${duplicateProjects.length} project(s) in this file already exist in CRM.`);
+        setImportMsg(`All ${duplicateProjects.length} project(s) in this file are duplicates.`);
       }
     };
     reader.readAsText(file);
     e.target.value = '';
   };
 
-  const handleDownloadDuplicates = () => {
+    const handleDownloadDuplicates = () => {
     const esc = (v) => `"${(v || '').toString().replace(/"/g, '""')}"`;
     const duplicateRows = importDuplicates.map(d => d.rawRow).filter(Boolean);
     const csv = [importSheet.headers, ...duplicateRows].map(r => r.map(esc).join(',')).join('\r\n');
@@ -2963,6 +2967,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                     <table className="w-full text-left border-collapse whitespace-nowrap">
                       <thead className="bg-gray-100 text-gray-700 sticky top-0 font-bold z-10">
                         <tr>
+                          <th className="p-2 border-b">Status</th>
                           <th className="p-2 border-b">Project</th>
                           <th className="p-2 border-b">Developer</th>
                           <th className="p-2 border-b">Type</th>
@@ -2974,6 +2979,17 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                       <tbody>
                         {importPreview.map((project, idx) => (
                           <tr key={idx} className="border-b hover:bg-slate-50">
+                            <td className="p-2">
+                              {project.isUpdate ? (
+                                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                  Update
+                                </span>
+                              ) : (
+                                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                  New
+                                </span>
+                              )}
+                            </td>
                             <td className="p-2 font-medium text-slate-800">{project.name}</td>
                             <td className="p-2 text-slate-600">{project.developerName || '-'}</td>
                             <td className="p-2 text-slate-600">{Array.isArray(project.projectType) ? project.projectType.join(', ') : project.projectType}</td>

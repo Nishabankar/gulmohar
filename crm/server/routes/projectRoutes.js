@@ -106,7 +106,7 @@ router.get('/:id', protectAdmin, async (req, res) => {
 });
 
 // @route   POST /api/projects/bulk-import
-// @desc    Bulk import projects from CSV
+// @desc    Bulk import projects from CSV (Insert new projects or update existing ones)
 // @access  Protected
 router.post('/bulk-import', protectAdmin, async (req, res) => {
   try {
@@ -117,13 +117,15 @@ router.post('/bulk-import', protectAdmin, async (req, res) => {
 
     const createdBy = req.admin?.username || 'Admin';
 
-    // Fetch existing project names from database for duplicate checking
+    // Fetch existing project names from database for duplicate checking / upsert
     const [existingRows] = await query('SELECT LOWER(TRIM(name)) as name_lower FROM projects');
     const existingNameSet = new Set(existingRows.map(r => r.name_lower));
 
     const insertedProjects = [];
+    const updatedProjects = [];
     const duplicateRows = [];
     const errorRows = [];
+    const processedInBatch = new Set();
 
     for (let i = 0; i < projects.length; i++) {
       const p = projects[i];
@@ -134,10 +136,12 @@ router.post('/bulk-import', protectAdmin, async (req, res) => {
       }
 
       const nameLower = rawName.toLowerCase();
-      if (existingNameSet.has(nameLower)) {
-        duplicateRows.push({ index: i, name: rawName, reason: 'Project already exists' });
+      // Check for duplicate within the same batch file
+      if (processedInBatch.has(nameLower)) {
+        duplicateRows.push({ index: i, name: rawName, reason: 'Duplicate in uploaded file' });
         continue;
       }
+      processedInBatch.add(nameLower);
 
       const cleanDeveloper = (p.developerName || p.developer || '').trim();
       const cleanRera = (p.reraNumber || p.reraNo || p.rera || '').trim();
@@ -152,7 +156,7 @@ router.post('/bulk-import', protectAdmin, async (req, res) => {
         typeArr = p.projectType.split(/[,;|]/).map(t => t.trim()).filter(Boolean);
       }
       if (typeArr.length === 0) {
-        typeArr = ['Apartment']; // sensible default if omitted in CSV
+        typeArr = ['Apartment'];
       }
 
       // Normalize typography array
@@ -163,20 +167,32 @@ router.post('/bulk-import', protectAdmin, async (req, res) => {
         typoArr = p.typography.split(/[,;|]/).map(t => t.trim()).filter(Boolean);
       }
       if (typoArr.length === 0) {
-        typoArr = ['2 BHK']; // sensible default if omitted in CSV
+        typoArr = ['2 BHK'];
       }
 
       const projectTypeJson = JSON.stringify(typeArr);
       const typographyJson = JSON.stringify(typoArr);
 
       try {
-        const [insertRes] = await query(
-          `INSERT INTO projects (name, developer_name, project_type, typography, rera_number, area, address, created_by)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          [rawName, cleanDeveloper, projectTypeJson, typographyJson, cleanRera, cleanArea || cleanAddress || 'Pune', cleanAddress, createdBy]
-        );
-        existingNameSet.add(nameLower);
-        insertedProjects.push({ id: insertRes.insertId, name: rawName });
+        if (existingNameSet.has(nameLower)) {
+          // Update existing project record
+          await query(
+            `UPDATE projects 
+             SET developer_name = ?, project_type = ?, typography = ?, rera_number = ?, area = ?, address = ?
+             WHERE LOWER(TRIM(name)) = ?`,
+            [cleanDeveloper, projectTypeJson, typographyJson, cleanRera, cleanArea || cleanAddress || 'Pune', cleanAddress, nameLower]
+          );
+          updatedProjects.push({ name: rawName });
+        } else {
+          // Insert new project record
+          const [insertRes] = await query(
+            `INSERT INTO projects (name, developer_name, project_type, typography, rera_number, area, address, created_by)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [rawName, cleanDeveloper, projectTypeJson, typographyJson, cleanRera, cleanArea || cleanAddress || 'Pune', cleanAddress, createdBy]
+          );
+          existingNameSet.add(nameLower);
+          insertedProjects.push({ id: insertRes.insertId, name: rawName });
+        }
       } catch (err) {
         errorRows.push({ index: i, name: rawName, reason: err.message });
       }
@@ -190,10 +206,26 @@ router.post('/bulk-import', protectAdmin, async (req, res) => {
     `);
     const allFormatted = (allRows || []).map(formatProjectRow);
 
+    let msg = '';
+    if (insertedProjects.length > 0 && updatedProjects.length > 0) {
+      msg = `Successfully imported ${insertedProjects.length} new project(s) and updated ${updatedProjects.length} existing project(s).`;
+    } else if (insertedProjects.length > 0) {
+      msg = `Successfully imported ${insertedProjects.length} new project(s).`;
+    } else if (updatedProjects.length > 0) {
+      msg = `Successfully updated ${updatedProjects.length} existing project(s).`;
+    } else {
+      msg = `No projects were modified.`;
+    }
+
+    if (duplicateRows.length > 0) {
+      msg += ` (${duplicateRows.length} duplicates within file skipped)`;
+    }
+
     return res.json({
       success: true,
-      message: `Successfully imported ${insertedProjects.length} project(s).${duplicateRows.length > 0 ? ` (${duplicateRows.length} duplicates skipped)` : ''}`,
+      message: msg,
       importedCount: insertedProjects.length,
+      updatedCount: updatedProjects.length,
       duplicateRows,
       errorRows,
       projects: allFormatted

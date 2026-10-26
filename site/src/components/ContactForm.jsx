@@ -119,9 +119,6 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
                   <h3 class="text-sm sm:text-base font-serif font-bold text-gray-900 text-center">
                     Enquiry Form
                   </h3>
-                  <p class="text-gray-500 text-[11px] mt-0.5">
-                    Share your requirements, our project expert will call you shortly.
-                  </p>
                 </div>
 
                 {statusMsg && (
@@ -226,16 +223,16 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
                         onChange={(e) => setFormData({ ...formData, plotsCount: e.target.value })}
                         class="w-full pl-9 pr-8 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition text-xs bg-gray-50 focus:bg-white text-gray-800"
                       >
-                        <option value="1 Guntha">1 Guntha (~ 1,000 Sq.Ft)</option>
-                        <option value="2 Guntha">2 Guntha (~ 2,000 Sq.Ft)</option>
-                        <option value="3 Guntha">3 Guntha (~ 3,000 Sq.Ft)</option>
-                        <option value="4 Guntha">4 Guntha (~ 4,000 Sq.Ft)</option>
-                        <option value="5 Guntha">5 Guntha (~ 5,000 Sq.Ft)</option>
-                        <option value="6 Guntha">6 Guntha (~ 6,000 Sq.Ft)</option>
-                        <option value="7 Guntha">7 Guntha (~ 7,000 Sq.Ft)</option>
-                        <option value="8 Guntha">8 Guntha (~ 8,000 Sq.Ft)</option>
-                        <option value="9 Guntha">9 Guntha (~ 9,000 Sq.Ft)</option>
-                        <option value="10 Guntha">10 Guntha (~ 10,000 Sq.Ft)</option>
+                        <option value="1 Guntha">1 Guntha</option>
+                        <option value="2 Guntha">2 Guntha</option>
+                        <option value="3 Guntha">3 Guntha</option>
+                        <option value="4 Guntha">4 Guntha</option>
+                        <option value="5 Guntha">5 Guntha</option>
+                        <option value="6 Guntha">6 Guntha</option>
+                        <option value="7 Guntha">7 Guntha</option>
+                        <option value="8 Guntha">8 Guntha</option>
+                        <option value="9 Guntha">9 Guntha</option>
+                        <option value="10 Guntha">10 Guntha</option>
                         <option value="11+ Guntha (Bulk / Investment)">11+ Guntha (Bulk / Investment)</option>
                       </select>
                       <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400 text-xs">
@@ -268,7 +265,7 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
                       class="w-full bg-[#B30E2E] hover:bg-[#8A0B22] text-white py-2 rounded-xl font-bold transition duration-300 shadow-md hover:shadow-lg flex items-center justify-center space-x-2 text-xs tracking-wide disabled:opacity-70 disabled:cursor-not-allowed group cursor-pointer"
                     >
                       <span>{submitting ? 'Submitting Details...' : 'Submit Enquiry'}</span>
-                      <i class={`fa-solid ${submitting ? 'fa-spinner fa-spin' : 'fa-paper-plane group-hover:translate-x-1'} transition-transform text-xs`}></i>
+                      {submitting && <i class="fa-solid fa-spinner fa-spin text-xs"></i>}
                     </button>
                   </div>
 

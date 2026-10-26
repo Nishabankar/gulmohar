@@ -83,7 +83,7 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
   };
 
   return (
-    <section id="contact" class="py-6 sm:py-10 bg-gradient-to-b from-slate-50 via-white to-slate-50 relative">
+    <section id="contact" class="py-3 sm:py-5 bg-gradient-to-b from-slate-50 via-white to-slate-50 relative">
       
       {/* Background Accent Blurs */}
       <div class="absolute -top-20 -right-20 w-96 h-96 bg-[#FFF0F2] rounded-full blur-3xl pointer-events-none"></div>
@@ -92,26 +92,26 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
       <div style={{ maxWidth: '1300px' }} class="w-full mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
         {/* Uniform Section Header Title */}
-        <div class="text-center max-w-3xl mx-auto mb-3 sm:mb-4">
+        <div class="text-center max-w-3xl mx-auto mb-2 sm:mb-2.5">
           <span class="inline-flex items-center space-x-1.5 text-[#B30E2E] font-bold text-[10px] sm:text-xs uppercase tracking-widest bg-[#FFF0F2] px-2.5 py-0.5 rounded-full border border-[#FCD6DC]">
             <i class="fa-solid fa-envelope-open-text text-[9px]"></i>
             <span>GET IN TOUCH & ENQUIRE</span>
           </span>
-          <h2 class="text-lg sm:text-xl lg:text-2xl font-serif font-bold text-gray-900 mt-1 leading-tight sm:whitespace-nowrap">
+          <h2 class="text-base sm:text-lg lg:text-xl font-serif font-bold text-gray-900 mt-0.5 leading-tight sm:whitespace-nowrap">
             Book Your Dream Plot
           </h2>
           <div class="w-12 h-1 bg-[#B30E2E] rounded-full mx-auto mt-1"></div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-stretch">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 lg:gap-4 items-stretch">
           
           {/* Enquiry Form: TOP on Mobile, RIGHT on Desktop */}
           <div class="lg:col-span-6 flex flex-col order-1 lg:order-2">
-            <div class="bg-white p-3.5 sm:p-4 lg:p-5 rounded-2xl border border-gray-200/90 shadow-md space-y-2.5 flex-1 flex flex-col justify-between">
+            <div class="bg-white p-3 sm:p-3.5 rounded-2xl border border-gray-200/90 shadow-sm flex-1 flex flex-col justify-between">
               
               <div>
                 {/* Form Card Header */}
-                <div class="border-b border-gray-100 pb-2 mb-2.5 text-center">
+                <div class="border-b border-gray-100 pb-1 mb-1.5 text-center">
                   <h3 class="text-sm sm:text-base font-serif font-bold text-gray-900 text-center">
                     Enquiry Form
                   </h3>
@@ -133,13 +133,13 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
                   </div>
                 )}
 
-                <form onSubmit={handleSubmit} class="space-y-2.5">
+                <form onSubmit={handleSubmit} class="space-y-1.5 sm:space-y-2">
                   
                   {/* 2-Column Grid Row: First Name & Last Name */}
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {/* Input First Name */}
                     <div>
-                      <label class="block text-xs font-bold text-gray-700 mb-1">First Name *</label>
+                      <label class="block text-xs font-bold text-gray-700 mb-0.5">First Name *</label>
                       <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 text-xs">
                           <i class="fa-solid fa-user"></i>
@@ -150,14 +150,14 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
                           value={formData.firstName}
                           onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                           placeholder="Enter first name" 
-                          class="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition text-xs bg-gray-50 focus:bg-white"
+                          class="w-full pl-9 pr-3 py-1.5 rounded-lg border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition text-xs bg-gray-50 focus:bg-white"
                         />
                       </div>
                     </div>
 
                     {/* Input Last Name */}
                     <div>
-                      <label class="block text-xs font-bold text-gray-700 mb-1">Last Name</label>
+                      <label class="block text-xs font-bold text-gray-700 mb-0.5">Last Name</label>
                       <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 text-xs">
                           <i class="fa-solid fa-user"></i>
@@ -167,7 +167,7 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
                           value={formData.lastName}
                           onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                           placeholder="Enter last name" 
-                          class="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition text-xs bg-gray-50 focus:bg-white"
+                          class="w-full pl-9 pr-3 py-1.5 rounded-lg border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition text-xs bg-gray-50 focus:bg-white"
                         />
                       </div>
                     </div>
@@ -176,7 +176,7 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {/* Input Phone Number */}
                     <div>
-                      <label class="block text-xs font-bold text-gray-700 mb-1">Mobile Number *</label>
+                      <label class="block text-xs font-bold text-gray-700 mb-0.5">Mobile Number *</label>
                       <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 text-xs">
                           <i class="fa-solid fa-phone"></i>
@@ -192,14 +192,14 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
                             setFormData({ ...formData, phone: cleaned });
                           }}
                           placeholder="Enter mobile number" 
-                          class="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition text-xs bg-gray-50 focus:bg-white"
+                          class="w-full pl-9 pr-3 py-1.5 rounded-lg border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition text-xs bg-gray-50 focus:bg-white"
                         />
                       </div>
                     </div>
 
                     {/* Input Email Address */}
                     <div>
-                      <label class="block text-xs font-bold text-gray-700 mb-1">Email Address</label>
+                      <label class="block text-xs font-bold text-gray-700 mb-0.5">Email Address</label>
                       <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 text-xs">
                           <i class="fa-solid fa-envelope"></i>
@@ -209,7 +209,7 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
                           value={formData.email}
                           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                           placeholder="Enter email address" 
-                          class="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition text-xs bg-gray-50 focus:bg-white"
+                          class="w-full pl-9 pr-3 py-1.5 rounded-lg border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition text-xs bg-gray-50 focus:bg-white"
                         />
                       </div>
                     </div>
@@ -218,7 +218,7 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {/* Input Location */}
                     <div>
-                      <label class="block text-xs font-bold text-gray-700 mb-1">Location</label>
+                      <label class="block text-xs font-bold text-gray-700 mb-0.5">Location</label>
                       <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 text-xs">
                           <i class="fa-solid fa-location-dot text-[#B30E2E]"></i>
@@ -228,14 +228,14 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
                           value={formData.location}
                           onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                           placeholder="Enter location" 
-                          class="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition text-xs bg-gray-50 focus:bg-white"
+                          class="w-full pl-9 pr-3 py-1.5 rounded-lg border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition text-xs bg-gray-50 focus:bg-white"
                         />
                       </div>
                     </div>
 
                     {/* Select Source */}
                     <div>
-                      <label class="block text-xs font-bold text-gray-700 mb-1">Source</label>
+                      <label class="block text-xs font-bold text-gray-700 mb-0.5">Source</label>
                       <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 text-xs">
                           <i class="fa-solid fa-bullhorn text-[#B30E2E]"></i>
@@ -243,7 +243,7 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
                         <select 
                           value={formData.source || 'Website'}
                           onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-                          class="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition text-xs bg-gray-50 focus:bg-white text-gray-800"
+                          class="w-full pl-9 pr-3 py-1.5 rounded-lg border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition text-xs bg-gray-50 focus:bg-white text-gray-800"
                         >
                           <option value="Website">Website</option>
                           <option value="Instagram">Instagram</option>
@@ -257,7 +257,7 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
 
                   {/* Number of Guntha */}
                   <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">Number of Guntha</label>
+                    <label class="block text-xs font-bold text-gray-700 mb-0.5">Number of Guntha</label>
                     <div class="relative">
                       <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 text-xs">
                         <i class="fa-solid fa-shapes text-[#B30E2E]"></i>
@@ -265,7 +265,7 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
                       <select 
                         value={formData.plotsCount || '1 Guntha'}
                         onChange={(e) => setFormData({ ...formData, plotsCount: e.target.value })}
-                        class="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition text-xs bg-gray-50 focus:bg-white text-gray-800"
+                        class="w-full pl-9 pr-3 py-1.5 rounded-lg border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition text-xs bg-gray-50 focus:bg-white text-gray-800"
                       >
                         <option value="1 Guntha">1 Guntha</option>
                         <option value="2 Guntha">2 Guntha</option>
@@ -283,11 +283,11 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
                   </div>
 
                   {/* Submit Button */}
-                  <div class="pt-1.5 flex justify-center">
+                  <div class="pt-1 flex justify-center">
                     <button 
                       type="submit" 
                       disabled={submitting}
-                      class="w-full sm:w-auto px-8 py-2 sm:py-2.5 flex items-center justify-center space-x-2 bg-[#B30E2E] hover:bg-[#8A0B22] text-white font-bold rounded-full shadow-md hover:shadow-lg transition transform active:scale-95 disabled:opacity-75 cursor-pointer text-xs sm:text-sm"
+                      class="w-full sm:w-auto px-7 py-1.5 sm:py-2 flex items-center justify-center space-x-2 bg-[#B30E2E] hover:bg-[#8A0B22] text-white font-bold rounded-full shadow-md hover:shadow-lg transition transform active:scale-95 disabled:opacity-75 cursor-pointer text-xs"
                     >
                       {submitting ? (
                         <>
@@ -320,20 +320,20 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
           <div class="lg:col-span-6 flex flex-col order-2 lg:order-1">
             
             {/* Contact Details Card */}
-            <div class="bg-white p-3.5 sm:p-4 lg:p-5 rounded-2xl border border-gray-200/90 shadow-md space-y-2.5 flex-1 flex flex-col justify-between">
+            <div class="bg-white p-3 sm:p-3.5 rounded-2xl border border-gray-200/90 shadow-sm flex-1 flex flex-col justify-between">
               <div>
-                <div class="flex items-center justify-between border-b border-gray-100 pb-2 mb-2.5">
+                <div class="flex items-center justify-between border-b border-gray-100 pb-1 mb-1.5">
                   <h3 class="font-serif font-bold text-gray-900 text-xs sm:text-sm flex items-center gap-1.5">
                     <i class="fa-solid fa-headset text-[#B30E2E]"></i>
                     <span>Contact Sales Team</span>
                   </h3>
                 </div>
 
-                <div class="space-y-2 text-xs">
+                <div class="space-y-1.5 text-xs">
                   
                   {/* Phone */}
-                  <a href={`tel:+${CONTACT_PHONE}`} class="flex items-center space-x-2.5 p-2 sm:p-2.5 rounded-xl bg-[#FFF0F2] border border-[#FCD6DC] hover:border-[#B30E2E] transition group">
-                    <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#B30E2E] text-white flex items-center justify-center flex-shrink-0 text-xs group-hover:scale-105 transition">
+                  <a href={`tel:+${CONTACT_PHONE}`} class="flex items-center space-x-2.5 p-1.5 sm:p-2 rounded-xl bg-[#FFF0F2] border border-[#FCD6DC] hover:border-[#B30E2E] transition group">
+                    <div class="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-[#B30E2E] text-white flex items-center justify-center flex-shrink-0 text-xs group-hover:scale-105 transition">
                       <i class="fa-solid fa-phone"></i>
                     </div>
                     <div>
@@ -343,8 +343,8 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
                   </a>
 
                   {/* WhatsApp */}
-                  <a href={WHATSAPP_URL("Hi, I am interested in Gulmohar City Plots")} target="_blank" rel="noreferrer" class="flex items-center space-x-2.5 p-2 sm:p-2.5 rounded-xl bg-[#EBF5F0] border border-emerald-200 hover:border-[#0D5235] transition group">
-                    <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#25D366] text-white flex items-center justify-center flex-shrink-0 text-xs group-hover:scale-110 transition shadow-sm">
+                  <a href={WHATSAPP_URL("Hi, I am interested in Gulmohar City Plots")} target="_blank" rel="noreferrer" class="flex items-center space-x-2.5 p-1.5 sm:p-2 rounded-xl bg-[#EBF5F0] border border-emerald-200 hover:border-[#0D5235] transition group">
+                    <div class="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-[#25D366] text-white flex items-center justify-center flex-shrink-0 text-xs group-hover:scale-110 transition shadow-sm">
                       <i class="fa-brands fa-whatsapp text-sm sm:text-base"></i>
                     </div>
                     <div>
@@ -354,8 +354,8 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
                   </a>
 
                   {/* Email */}
-                  <a href={`https://mail.google.com/mail/?view=cm&fs=1&to=${CONTACT_EMAIL}`} target="_blank" rel="noreferrer" class="flex items-center space-x-2.5 p-2 sm:p-2.5 rounded-xl bg-gray-50 border border-gray-200 hover:border-gray-400 transition group">
-                    <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gray-800 text-white flex items-center justify-center flex-shrink-0 text-xs group-hover:scale-105 transition">
+                  <a href={`https://mail.google.com/mail/?view=cm&fs=1&to=${CONTACT_EMAIL}`} target="_blank" rel="noreferrer" class="flex items-center space-x-2.5 p-1.5 sm:p-2 rounded-xl bg-gray-50 border border-gray-200 hover:border-gray-400 transition group">
+                    <div class="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-gray-800 text-white flex items-center justify-center flex-shrink-0 text-xs group-hover:scale-105 transition">
                       <i class="fa-solid fa-envelope"></i>
                     </div>
                     <div>
@@ -365,8 +365,8 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
                   </a>
 
                   {/* Address */}
-                  <div class="flex items-center space-x-2.5 p-2 sm:p-2.5 rounded-xl bg-gray-50 border border-gray-200">
-                    <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center flex-shrink-0 text-xs">
+                  <div class="flex items-center space-x-2.5 p-1.5 sm:p-2 rounded-xl bg-gray-50 border border-gray-200">
+                    <div class="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-amber-500 text-white flex items-center justify-center flex-shrink-0 text-xs">
                       <i class="fa-solid fa-location-dot"></i>
                     </div>
                     <div>

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { API_BASE_URL, CONTACT_PHONE, CONTACT_PHONE_DISPLAY, CONTACT_EMAIL, WHATSAPP_URL } from '../config';
 
 export default function ContactForm({ selectedPlotForEnquiry }) {
-  const [formData, setFormData] = useState({ firstName: '', lastName: '', phone: '', email: '', location: '', source: 'Website', plotInfo: '', plotsCount: '1 Guntha' });
+  const [formData, setFormData] = useState({ firstName: '', lastName: '', phone: '', email: '', plotInfo: '', plotsCount: '1 Guntha' });
   const [submitting, setSubmitting] = useState(false);
   const [statusMsg, setStatusMsg] = useState(null);
 
@@ -33,7 +33,9 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
     const calculatedCarpet = gunthaMatch ? `${parseInt(gunthaMatch[1], 10) * 1000} sqft` : (formData.plotsCount || '');
     const submissionPayload = {
       ...formData,
-      carpetArea: calculatedCarpet
+      carpetArea: calculatedCarpet,
+      source: 'Website',
+      location: 'Malthan Village, Shikrapur – Malthan Road, Tal. Shirur, Dist. Pune'
     };
 
     try {
@@ -52,7 +54,7 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
           text: 'Enquiry Submitted Successfully!',
           type: 'success'
         });
-        setFormData({ firstName: '', lastName: '', phone: '', email: '', location: '', source: 'Website', plotInfo: '', plotsCount: '1 Guntha' });
+        setFormData({ firstName: '', lastName: '', phone: '', email: '', plotInfo: '', plotsCount: '1 Guntha' });
       } else {
         setStatusMsg({
           text: data.message || `Could not save enquiry. Please call us directly at ${CONTACT_PHONE_DISPLAY}.`,
@@ -75,7 +77,7 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
         text: 'Enquiry Submitted Successfully!',
         type: 'success'
       });
-      setFormData({ firstName: '', lastName: '', phone: '', email: '', location: '', source: 'Website', plotInfo: '', plotsCount: '1 Guntha' });
+      setFormData({ firstName: '', lastName: '', phone: '', email: '', plotInfo: '', plotsCount: '1 Guntha' });
     } finally {
       setSubmitting(false);
       setTimeout(() => setStatusMsg(null), 8000);
@@ -211,46 +213,6 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
                           placeholder="Enter email address" 
                           class="w-full pl-9 pr-3 py-1.5 rounded-lg border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition text-xs bg-gray-50 focus:bg-white"
                         />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {/* Input Location */}
-                    <div>
-                      <label class="block text-xs font-bold text-gray-700 mb-0.5">Location</label>
-                      <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 text-xs">
-                          <i class="fa-solid fa-location-dot text-[#B30E2E]"></i>
-                        </div>
-                        <input 
-                          type="text" 
-                          value={formData.location}
-                          onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                          placeholder="Enter location" 
-                          class="w-full pl-9 pr-3 py-1.5 rounded-lg border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition text-xs bg-gray-50 focus:bg-white"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Select Source */}
-                    <div>
-                      <label class="block text-xs font-bold text-gray-700 mb-0.5">Source</label>
-                      <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 text-xs">
-                          <i class="fa-solid fa-bullhorn text-[#B30E2E]"></i>
-                        </div>
-                        <select 
-                          value={formData.source || 'Website'}
-                          onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-                          class="w-full pl-9 pr-3 py-1.5 rounded-lg border border-gray-300 focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] transition text-xs bg-gray-50 focus:bg-white text-gray-800"
-                        >
-                          <option value="Website">Website</option>
-                          <option value="Instagram">Instagram</option>
-                          <option value="Facebook">Facebook</option>
-                          <option value="Roadside Hoarding">Roadside Hoarding</option>
-                          <option value="Referral">Referral</option>
-                        </select>
                       </div>
                     </div>
                   </div>

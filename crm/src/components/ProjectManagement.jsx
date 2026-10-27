@@ -130,7 +130,7 @@ const PROJECT_COLUMN_WIDTH_MAP = {
   floors: 100,
   reraNumber: 140,
   projectUrl: 140,
-  location: 260,
+  location: 280,
   actions: 105
 };
 

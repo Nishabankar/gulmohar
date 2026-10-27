@@ -2287,7 +2287,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
       {/* CREATE / EDIT PROJECT MODAL */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-3 sm:p-4 animate-fade-in">
-          <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 max-w-2xl w-full max-h-[88vh] flex flex-col overflow-hidden relative">
+          <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 max-w-lg w-full max-h-[85vh] flex flex-col overflow-hidden relative">
             
             {/* Header (Exact Lead Modal Gradient) */}
             <div className="bg-gradient-to-r from-[#B30E2E] via-[#8A0B22] to-[#590414] p-4 sm:p-5 text-white flex items-center justify-between flex-shrink-0">

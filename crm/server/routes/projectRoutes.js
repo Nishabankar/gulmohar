@@ -28,7 +28,7 @@ const formatProjectRow = (row) => {
     projectType: parseList(row.project_type),
     typography: parseList(row.typography),
     reraNumber: row.rera_number || '',
-    projectStatus: row.project_status || 'Under Construction',
+    projectStatus: row.project_status || '',
     landArea: row.land_area || '',
     targetPossession: row.target_possession || '',
     reraPossession: row.rera_possession || '',
@@ -180,7 +180,7 @@ const handleBulkImportProjects = async (req, res) => {
       const typographyJson = JSON.stringify(typoArr);
 
       try {
-        const cleanStatus = str(project.projectStatus !== undefined ? project.projectStatus : (project.status || 'Under Construction'));
+        const cleanStatus = str(project.projectStatus !== undefined ? project.projectStatus : (project.status || ''));
         const cleanLandArea = str(project.landArea !== undefined ? project.landArea : (project.land || project.plotArea));
         const cleanTargetPoss = str(project.targetPossession !== undefined ? project.targetPossession : project.possession);
         const cleanReraPoss = str(project.reraPossession !== undefined ? project.reraPossession : project.reraPoss);
@@ -239,7 +239,7 @@ router.post('/', protectAdmin, async (req, res) => {
       name, 
       developerName = '', 
       projectType = [], 
-      projectStatus = 'Under Construction', 
+      projectStatus = '', 
       typography = [], 
       landArea = '', 
       reraNumber = '', 
@@ -303,7 +303,7 @@ router.post('/', protectAdmin, async (req, res) => {
     const typographyJson = JSON.stringify(typographyArray);
     const createdBy = req.admin?.username || 'Admin';
 
-    const cleanStatus = projectStatus ? projectStatus.trim() : 'Under Construction';
+    const cleanStatus = projectStatus ? projectStatus.trim() : '';
     const cleanLandArea = landArea ? landArea.trim() : '';
     const cleanTargetPoss = targetPossession ? targetPossession.trim() : '';
     const cleanReraPoss = reraPossession ? reraPossession.trim() : '';
@@ -365,7 +365,7 @@ router.put('/:id', protectAdmin, async (req, res) => {
       name, 
       developerName = '', 
       projectType = [], 
-      projectStatus = 'Under Construction', 
+      projectStatus = '', 
       typography = [], 
       landArea = '', 
       reraNumber = '', 
@@ -434,7 +434,7 @@ router.put('/:id', protectAdmin, async (req, res) => {
     const projectTypeJson = JSON.stringify(projectTypeArray);
     const typographyJson = JSON.stringify(typographyArray);
 
-    const cleanStatus = projectStatus ? projectStatus.trim() : 'Under Construction';
+    const cleanStatus = projectStatus ? projectStatus.trim() : '';
     const cleanLandArea = landArea ? landArea.trim() : '';
     const cleanTargetPoss = targetPossession ? targetPossession.trim() : '';
     const cleanReraPoss = reraPossession ? reraPossession.trim() : '';

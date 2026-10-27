@@ -129,7 +129,7 @@ const PROJECT_COLUMN_WIDTH_MAP = {
   towers: 100,
   floors: 100,
   reraNumber: 140,
-  projectUrl: 130,
+  projectUrl: 140,
   location: 260,
   actions: 105
 };
@@ -289,7 +289,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
     name: '',
     developerName: '',
     projectType: [],
-    projectStatus: 'Under Construction',
+    projectStatus: '',
     typography: [],
     landArea: '',
     reraNumber: '',
@@ -393,7 +393,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
         escapeCell(project.name || ''),
         escapeCell(project.developerName || ''),
         escapeCell(types),
-        escapeCell(project.projectStatus || 'Under Construction'),
+        escapeCell(project.projectStatus || ''),
         escapeCell(typos),
         escapeCell(project.landArea || ''),
         escapeCell(project.reraNumber || ''),
@@ -538,7 +538,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
         name: rawName,
         developerName,
         projectType,
-        projectStatus: statusIdx !== -1 ? getVal(statusIdx) : 'Under Construction',
+        projectStatus: statusIdx !== -1 ? getVal(statusIdx) : '',
         typography,
         landArea: landIdx !== -1 ? getVal(landIdx) : '',
         reraNumber,
@@ -1151,7 +1151,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
       name: project.name || '',
       developerName: project.developerName || '',
       projectType: mainTypes,
-      projectStatus: project.projectStatus || 'Under Construction',
+      projectStatus: project.projectStatus || '',
       typography: initialTypos,
       landArea: project.landArea || '',
       reraNumber: project.reraNumber || '',
@@ -1313,7 +1313,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
         name: formData.name.trim(),
         developerName: formData.developerName.trim(),
         projectType: formData.projectType,
-        projectStatus: formData.projectStatus || 'Under Construction',
+        projectStatus: formData.projectStatus || '',
         typography: formData.typography,
         landArea: (formData.landArea || '').trim(),
         reraNumber: (formData.reraNumber || '').trim(),
@@ -1990,7 +1990,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                                 title={getSortTitle('Project URL')}
                               >
                                 <div className="flex items-center justify-center gap-1.5">
-                                  <span>Website URL</span>
+                                  <span>Project URL</span>
                                   {renderSortIndicator()}
                                 </div>
                               </th>
@@ -2141,7 +2141,14 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                                   </td>
                                 );
                               case 'projectStatus': {
-                                const st = project.projectStatus || 'Under Construction';
+                                const st = project.projectStatus || '';
+                                if (!st) {
+                                  return (
+                                    <td key="projectStatus" className={getProjectTdClass('projectStatus')} style={getProjectTdStyle('projectStatus')}>
+                                      <span className="text-gray-400 italic text-[11px]">—</span>
+                                    </td>
+                                  );
+                                }
                                 const getBadge = (s) => {
                                   const l = s.toLowerCase();
                                   if (l.includes('ready')) return 'bg-emerald-50 text-emerald-800 border-emerald-200';
@@ -2489,6 +2496,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                       onChange={(e) => setFormData({ ...formData, projectStatus: e.target.value })}
                       className="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] bg-white text-gray-800"
                     >
+                      <option value="">Select Status</option>
                       {PROJECT_STATUSES.map(st => (
                         <option key={st} value={st}>{st}</option>
                       ))}
@@ -2533,12 +2541,12 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                 {/* 6. Towers & Floors */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">Towers / Wings</label>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Towers</label>
                     <input 
                       type="text" 
                       value={formData.towers}
                       onChange={(e) => setFormData({ ...formData, towers: e.target.value })}
-                      placeholder="Enter towers / wings"
+                      placeholder="Enter towers"
                       className="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800"
                     />
                   </div>
@@ -2567,7 +2575,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">Project Website / URL</label>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Project URL</label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                         <i className="fa-solid fa-link text-xs"></i>
@@ -2576,7 +2584,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                         type="url" 
                         value={formData.projectUrl}
                         onChange={(e) => setFormData({ ...formData, projectUrl: e.target.value })}
-                        placeholder="Enter project website / URL"
+                        placeholder="Enter project URL"
                         className="w-full h-[38px] pl-8 pr-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800 font-mono"
                       />
                     </div>
@@ -3370,7 +3378,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                           <th className="p-2 border-b">RERA Possession</th>
                           <th className="p-2 border-b">Towers</th>
                           <th className="p-2 border-b">Floors</th>
-                          <th className="p-2 border-b">URL</th>
+                          <th className="p-2 border-b">Project URL</th>
                           <th className="p-2 border-b">Area</th>
                           <th className="p-2 border-b">RERA No</th>
                         </tr>

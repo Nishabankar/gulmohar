@@ -383,7 +383,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
     };
 
     const rows = targetList.map((project, idx) => {
-      const displayId = getProjectDisplayId(project, projects);
+      const displayId = getProjectDisplayId(project);
       const types = Array.isArray(project.projectType) ? project.projectType.join(', ') : (project.projectType || '');
       const typos = Array.isArray(project.typography) ? project.typography.join(', ') : (project.typography || '');
       const createdAt = project.createdAt ? new Date(project.createdAt).toLocaleDateString('en-GB') : '';
@@ -985,23 +985,38 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
     fetchProjects();
   }, []);
 
-  const getProjectDisplayId = (project, baseList = projects) => {
+  // Continuous Serial Number (#1, #2, #3 ... #N) based on creation order
+  const projectDisplayIdMap = useMemo(() => {
+    const list = Array.isArray(projects) ? projects : [];
+    const sorted = [...list].sort((a, b) => {
+      const numA = parseInt(a.id || a._id, 10) || 0;
+      const numB = parseInt(b.id || b._id, 10) || 0;
+      return numA - numB;
+    });
+    const map = new Map();
+    sorted.forEach((p, idx) => {
+      const idKey = p.id !== undefined && p.id !== null ? String(p.id) : null;
+      const _idKey = p._id !== undefined && p._id !== null ? String(p._id) : null;
+      const nameKey = p.name ? String(p.name).trim().toLowerCase() : null;
+      if (idKey) map.set(idKey, idx + 1);
+      if (_idKey) map.set(_idKey, idx + 1);
+      if (nameKey) map.set(nameKey, idx + 1);
+    });
+    return map;
+  }, [projects]);
+
+  const getProjectDisplayId = (project) => {
     if (!project) return 1;
-    if (project.id) {
-      const num = parseInt(project.id, 10);
-      if (!isNaN(num) && num > 0) return num;
-      return project.id;
+    if (project.id && projectDisplayIdMap.has(String(project.id))) {
+      return projectDisplayIdMap.get(String(project.id));
     }
-    if (project._id) {
-      const num = parseInt(project._id, 10);
-      if (!isNaN(num) && num > 0) return num;
+    if (project._id && projectDisplayIdMap.has(String(project._id))) {
+      return projectDisplayIdMap.get(String(project._id));
     }
-    const idx = (baseList || []).findIndex(p => 
-      (p.id && p.id === project.id) || 
-      (p._id && p._id === project._id) || 
-      (p.name && p.name === project.name)
-    );
-    return idx >= 0 ? (idx + 1) : 1;
+    if (project.name && projectDisplayIdMap.has(String(project.name).trim().toLowerCase())) {
+      return projectDisplayIdMap.get(String(project.name).trim().toLowerCase());
+    }
+    return 1;
   };
 
   // Filtered Projects for Table

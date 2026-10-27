@@ -6856,12 +6856,24 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   );
                                 }
                                 case 'location': {
-                                  const loc = item.location || '—';
+                                  const loc = (item.location || '').trim();
+                                  if (!loc) {
+                                    return (
+                                      <td key="location" class={getTdClass('location', currentId)} style={getTdStyle('location')}>
+                                        <span class="text-gray-400 italic text-xs">—</span>
+                                      </td>
+                                    );
+                                  }
+                                  const parts = loc.split(' - ');
+                                  const areaPart = parts.length > 1 ? parts[0] : '';
+                                  const addrPart = parts.length > 1 ? parts.slice(1).join(' - ') : loc;
                                   return (
                                     <td key="location" class={getTdClass('location', currentId)} style={getTdStyle('location')}>
-                                      <div class="flex items-center gap-1.5 text-xs text-gray-700 truncate" title={loc}>
+                                      <div class="flex items-center gap-1.5 text-xs text-gray-700 truncate max-w-full" title={loc}>
                                         <i class="fa-solid fa-location-dot text-[#B30E2E] shrink-0 text-[10px]"></i>
-                                        <span class="truncate">{loc}</span>
+                                        {areaPart && <span class="font-bold text-gray-900 shrink-0">{areaPart}</span>}
+                                        {areaPart && addrPart && <span class="text-gray-400 shrink-0 font-normal">-</span>}
+                                        <span class="truncate text-gray-600 font-normal">{addrPart}</span>
                                       </div>
                                     </td>
                                   );
@@ -8133,11 +8145,14 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                         const availableTypes = getProjectTypesForProject(projectsList, newProjName);
                         const newType = availableTypes.length > 0 ? availableTypes.join(', ') : '';
                         const newTypo = getAutoTypographyForProjectType(projectsList, newProjName, newType);
+                        const matchedProj = (projectsList || []).find(p => (p.name || '').trim().toLowerCase() === (newProjName || '').trim().toLowerCase());
+                        const autoLoc = matchedProj ? [matchedProj.area, matchedProj.address].filter(Boolean).join(' - ') : (editingEnquiry.location || '');
                         setEditingEnquiry({
                           ...editingEnquiry,
                           projectName: newProjName,
                           projectType: newType,
-                          typography: newTypo
+                          typography: newTypo,
+                          location: autoLoc
                         });
                       }}
                       class="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800 bg-white"
@@ -8821,11 +8836,14 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                         const availableTypes = getProjectTypesForProject(projectsList, newProjName);
                         const newType = availableTypes.length > 0 ? availableTypes.join(', ') : '';
                         const newTypo = getAutoTypographyForProjectType(projectsList, newProjName, newType);
+                        const matchedProj = (projectsList || []).find(p => (p.name || '').trim().toLowerCase() === (newProjName || '').trim().toLowerCase());
+                        const autoLoc = matchedProj ? [matchedProj.area, matchedProj.address].filter(Boolean).join(' - ') : (newLeadFormData.location || '');
                         setNewLeadFormData({
                           ...newLeadFormData,
                           projectName: newProjName,
                           projectType: newType,
-                          typography: newTypo
+                          typography: newTypo,
+                          location: autoLoc
                         });
                       }}
                       class="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800 bg-white"

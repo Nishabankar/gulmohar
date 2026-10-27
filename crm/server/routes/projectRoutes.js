@@ -280,13 +280,15 @@ router.post('/', protectAdmin, async (req, res) => {
     // Auto-link any unassigned leads that were requested for this project
     try {
       const typoText = Array.isArray(typographyArray) ? typographyArray.join(', ') : (typographyArray || '');
+      const combinedLocation = [cleanArea, cleanAddress].filter(Boolean).join(' - ');
       await query(
         `UPDATE leads 
          SET project_name = ?, 
-             typography = CASE WHEN typography IS NULL OR typography = '' THEN ? ELSE typography END 
+             typography = CASE WHEN typography IS NULL OR typography = '' THEN ? ELSE typography END,
+             location = CASE WHEN location IS NULL OR location = '' THEN ? ELSE location END
          WHERE (project_name IS NULL OR project_name = '') 
            AND notes LIKE ?`,
-        [cleanName, typoText, `%[Requested Project: ${cleanName}]%`]
+        [cleanName, typoText, combinedLocation, `%[Requested Project: ${cleanName}]%`]
       );
     } catch (autoAssignErr) {
       console.warn('Auto-assign pending leads error:', autoAssignErr.message);

@@ -18,7 +18,7 @@ const isDashboardRequest = (req) => {
 router.post('/', async (req, res) => {
   try {
     const { firstName, lastName, phone, email, plotInfo, plotsCount, visitDate, visitTime, followupDate, notes, assignedAgentName: rawAgentName, salesPerson, assignedTo, createdBy, modifiedBy, projectName: rawProjName, project, projectType, typography, carpetArea, budget, location, source } = req.body;
-    const finalLocation = (location || '').trim();
+    let finalLocation = (location || '').trim();
     const finalSource = (source || 'Website').trim();
     const assignedAgentName = rawAgentName !== undefined ? rawAgentName : salesPerson;
     const projectName = rawProjName !== undefined ? rawProjName : project;
@@ -121,7 +121,7 @@ router.post('/', async (req, res) => {
     if (rawRequestedProject) {
       try {
         const [matchedProj] = await query(
-          'SELECT id, name, typography FROM projects WHERE LOWER(TRIM(name)) = LOWER(TRIM(?)) LIMIT 1',
+          'SELECT id, name, typography, area, address FROM projects WHERE LOWER(TRIM(name)) = LOWER(TRIM(?)) LIMIT 1',
           [rawRequestedProject]
         );
         if (matchedProj && matchedProj.length > 0) {
@@ -134,11 +134,16 @@ router.post('/', async (req, res) => {
               finalTypography = String(matchedProj[0].typography);
             }
           }
+          // Auto-link project Area & Address to location if not provided
+          if (!finalLocation) {
+            finalLocation = [matchedProj[0].area, matchedProj[0].address].filter(Boolean).join(' - ');
+          }
         } else {
           // Project is NOT yet registered in CRM projects table
           // Keep project unassigned / blank until created in CRM
           finalProjectName = '';
           finalTypography = '';
+          finalLocation = '';
           requestedProjectPendingNote = `[Requested Project: ${rawRequestedProject}]`;
         }
       } catch (projErr) {

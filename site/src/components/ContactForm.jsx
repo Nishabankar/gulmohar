@@ -36,8 +36,7 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
       projectName: 'Gulmohar City',
       project: 'Gulmohar City',
       carpetArea: calculatedCarpet,
-      source: 'Website',
-      location: 'Malthan Village, Shikrapur – Malthan Road, Tal. Shirur, Dist. Pune'
+      source: 'Website'
     };
 
     try {

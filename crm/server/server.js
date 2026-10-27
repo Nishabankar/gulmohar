@@ -155,11 +155,19 @@ const seedAdminUser = async () => {
           INDEX idx_project_name (name)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
       `);
-      // Auto-migrate column 'area' if table was created previously without it
-      try {
-        await query("ALTER TABLE projects ADD COLUMN area VARCHAR(255) DEFAULT NULL AFTER rera_number");
-      } catch (alterErr) {
-        // Column already exists, safe to ignore
+      // Auto-migrate columns if table was created previously without them
+      const colsToEnsure = [
+        "ALTER TABLE projects ADD COLUMN project_status VARCHAR(100) DEFAULT 'Under Construction' AFTER project_type",
+        "ALTER TABLE projects ADD COLUMN land_area VARCHAR(100) DEFAULT '' AFTER typography",
+        "ALTER TABLE projects ADD COLUMN target_possession VARCHAR(100) DEFAULT '' AFTER rera_number",
+        "ALTER TABLE projects ADD COLUMN rera_possession VARCHAR(100) DEFAULT '' AFTER target_possession",
+        "ALTER TABLE projects ADD COLUMN towers VARCHAR(50) DEFAULT '' AFTER rera_possession",
+        "ALTER TABLE projects ADD COLUMN floors VARCHAR(50) DEFAULT '' AFTER towers",
+        "ALTER TABLE projects ADD COLUMN area VARCHAR(255) DEFAULT NULL AFTER floors",
+        "ALTER TABLE projects ADD COLUMN description TEXT DEFAULT NULL AFTER address"
+      ];
+      for (const sql of colsToEnsure) {
+        try { await query(sql); } catch (e) { /* Column exists */ }
       }
     } catch (e) {
       console.warn('Projects table init note:', e.message);

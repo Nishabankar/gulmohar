@@ -1,6 +1,13 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { API_BASE_URL } from '../config';
 
+export const PROJECT_STATUSES = [
+  'Under Construction',
+  'Ready to Move',
+  'New Launch',
+  'Completed'
+];
+
 export const PROJECT_TYPES = [
   'Apartment',
   'Villa',
@@ -114,7 +121,11 @@ const PROJECT_COLUMN_WIDTH_MAP = {
   projectName: 195,
   developerName: 165,
   projectType: 160,
+  projectStatus: 140,
   typography: 150,
+  landArea: 120,
+  possession: 140,
+  towersFloors: 130,
   reraNumber: 140,
   location: 280,
   actions: 105
@@ -125,7 +136,11 @@ const DEFAULT_PROJECT_COLUMNS = [
   { id: 'projectName', label: 'Project', visible: true, pinned: true },
   { id: 'developerName', label: 'Developer', visible: true, pinned: false },
   { id: 'projectType', label: 'Project Type', visible: true, pinned: false },
+  { id: 'projectStatus', label: 'Status', visible: true, pinned: false },
   { id: 'typography', label: 'Typography', visible: true, pinned: false },
+  { id: 'landArea', label: 'Land Area', visible: false, pinned: false },
+  { id: 'possession', label: 'Possession', visible: true, pinned: false },
+  { id: 'towersFloors', label: 'Towers / Floors', visible: false, pinned: false },
   { id: 'reraNumber', label: 'RERA No', visible: true, pinned: false },
   { id: 'location', label: 'Area / Address', visible: true, pinned: false },
   { id: 'actions', label: 'Actions', visible: true, pinned: true }
@@ -260,10 +275,17 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
     name: '',
     developerName: '',
     projectType: [],
+    projectStatus: 'Under Construction',
     typography: [],
+    landArea: '',
     reraNumber: '',
+    targetPossession: '',
+    reraPossession: '',
+    towers: '',
+    floors: '',
     area: '',
-    address: ''
+    address: '',
+    description: ''
   };
   const [formData, setFormData] = useState(initialFormState);
   const [formMsg, setFormMsg] = useState('');
@@ -373,11 +395,11 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
 
   // Download Sample CSV Template
   const handleDownloadSampleCSV = () => {
-    const headers = ['Project', 'Developer', 'Project Type', 'Typography', 'RERA No', 'Area', 'Address'];
+    const headers = ['Project', 'Developer', 'Project Type', 'Status', 'Typography', 'Land Area', 'RERA No', 'Target Possession', 'RERA Possession', 'Towers', 'Floors', 'Area', 'Address', 'Description'];
     const sampleRows = [
-      ['"Gulmohar City"', '"Gulmohar Group"', '"Apartment"', '"1 BHK, 2 BHK, 3 BHK"', '"P52100012345"', '"Kharadi"', '"Survey No 45, Near IT Park, Kharadi, Pune"'],
-      ['"Greenfield Villas"', '"Apex Builders"', '"Villa"', '"3 BHK, 4 BHK"', '"P52100067890"', '"Wagholi"', '"Gate No 12, Nagar Road, Wagholi, Pune"'],
-      ['"Royal Palms"', '"Shree Developers"', '"Plots"', '"Residential, Non-Agriculture"', '"P52100099887"', '"Shikrapur"', '"Pune-Nagar Highway, Shikrapur"']
+      ['"Gulmohar City"', '"Gulmohar Group"', '"Apartment"', '"Under Construction"', '"1 BHK, 2 BHK, 3 BHK"', '"5 Acres"', '"P52100012345"', '"Dec 2026"', '"June 2027"', '"4 Towers"', '"G+14"', '"Kharadi"', '"Survey No 45, Near IT Park, Kharadi, Pune"', '"Premium residential project near IT hub"'],
+      ['"Greenfield Villas"', '"Apex Builders"', '"Villa"', '"Ready to Move"', '"3 BHK, 4 BHK"', '"8 Acres"', '"P52100067890"', '"Ready"', '"Dec 2024"', '"2 Towers"', '"G+4"', '"Wagholi"', '"Gate No 12, Nagar Road, Wagholi, Pune"', '"Luxury gated community villas"'],
+      ['"Royal Palms"', '"Shree Developers"', '"Plots"', '"New Launch"', '"Residential, Non-Agriculture"', '"10 Guntha"', '"P52100099887"', '"Immediate"', '"March 2026"', '"-"', '"-"', '"Shikrapur"', '"Pune-Nagar Highway, Shikrapur"', '"Clear title NA residential plots"']
     ];
     const csvContent = '\uFEFF' + [headers.join(','), ...sampleRows.map(r => r.join(','))].join('\r\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -440,6 +462,13 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
     const typeIdx = find(['projecttype', 'type', 'types', 'category'], ['type']);
     const typoIdx = find(['typography', 'typo', 'configuration', 'bhk', 'unit'], ['typo', 'config', 'bhk']);
     const reraIdx = find(['reranumber', 'rerano', 'rera', 'registrationno'], ['rera']);
+    const statusIdx = find(['status', 'projectstatus', 'stagestatus', 'constructionstatus'], ['status']);
+    const landIdx = find(['landarea', 'land', 'plotarea', 'acres', 'totalarea'], ['land']);
+    const targetPossIdx = find(['targetpossession', 'possession', 'targetdate', 'possessiondate', 'completiondate'], ['poss']);
+    const reraPossIdx = find(['rerapossession', 'reraposs', 'reradate', 'reracompletion'], ['reraposs']);
+    const towersIdx = find(['towers', 'totaltowers', 'wings', 'buildings'], ['tower', 'wing']);
+    const floorsIdx = find(['floors', 'totalfloors', 'storeys'], ['floor']);
+    const descIdx = find(['description', 'desc', 'details', 'about'], ['desc']);
     const areaIdx = find(['area', 'locationarea', 'locality', 'suburb'], ['area', 'loc']);
     const addressIdx = find(['address', 'projectaddress', 'fulladdress', 'siteaddress'], ['address', 'site']);
     const leadsIdx = find(['assignedleads', 'assignedleadscount', 'leads', 'totalleads', 'leadscount'], ['leads']);
@@ -477,10 +506,17 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
         name: rawName,
         developerName,
         projectType,
+        projectStatus: statusIdx !== -1 ? getVal(statusIdx) : 'Under Construction',
         typography,
+        landArea: landIdx !== -1 ? getVal(landIdx) : '',
         reraNumber,
+        targetPossession: targetPossIdx !== -1 ? getVal(targetPossIdx) : '',
+        reraPossession: reraPossIdx !== -1 ? getVal(reraPossIdx) : '',
+        towers: towersIdx !== -1 ? getVal(towersIdx) : '',
+        floors: floorsIdx !== -1 ? getVal(floorsIdx) : '',
         area: area || address || 'Pune',
-        address
+        address,
+        description: descIdx !== -1 ? getVal(descIdx) : ''
       });
     });
 
@@ -1047,10 +1083,17 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
       name: project.name || '',
       developerName: project.developerName || '',
       projectType: mainTypes,
+      projectStatus: project.projectStatus || 'Under Construction',
       typography: initialTypos,
+      landArea: project.landArea || '',
       reraNumber: project.reraNumber || '',
+      targetPossession: project.targetPossession || '',
+      reraPossession: project.reraPossession || '',
+      towers: project.towers || '',
+      floors: project.floors || '',
       area: projectArea,
-      address: project.address || ''
+      address: project.address || '',
+      description: project.description || ''
     });
     setFormMsg('');
     setIsTypeDropdownOpen(false);
@@ -1913,6 +1956,54 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                                         <span className="text-gray-400 italic text-[10.5px]">—</span>
                                       </div>
                                     )}
+                                  </td>
+                                );
+                              case 'projectStatus': {
+                                const st = project.projectStatus || 'Under Construction';
+                                const getBadge = (s) => {
+                                  const l = s.toLowerCase();
+                                  if (l.includes('ready')) return 'bg-emerald-50 text-emerald-800 border-emerald-200';
+                                  if (l.includes('launch')) return 'bg-purple-50 text-purple-800 border-purple-200';
+                                  if (l.includes('complete')) return 'bg-slate-100 text-slate-700 border-slate-200';
+                                  return 'bg-amber-50 text-amber-800 border-amber-200';
+                                };
+                                return (
+                                  <td key="projectStatus" className={getProjectTdClass('projectStatus')} style={getProjectTdStyle('projectStatus')}>
+                                    <span className={`inline-block px-2 py-0.5 rounded-full border text-[10px] font-bold whitespace-nowrap ${getBadge(st)}`}>
+                                      {st}
+                                    </span>
+                                  </td>
+                                );
+                              }
+                              case 'landArea':
+                                return (
+                                  <td key="landArea" className={getProjectTdClass('landArea')} style={getProjectTdStyle('landArea')}>
+                                    <span className="text-xs text-gray-700 font-medium whitespace-nowrap">{project.landArea || '—'}</span>
+                                  </td>
+                                );
+                              case 'possession':
+                                return (
+                                  <td key="possession" className={getProjectTdClass('possession')} style={getProjectTdStyle('possession')}>
+                                    <div className="flex flex-col text-[11px] leading-tight">
+                                      {project.targetPossession ? (
+                                        <span className="font-semibold text-gray-800">{project.targetPossession}</span>
+                                      ) : project.reraPossession ? (
+                                        <span className="font-semibold text-gray-800">{project.reraPossession}</span>
+                                      ) : (
+                                        <span className="text-gray-400 italic">—</span>
+                                      )}
+                                      {project.reraPossession && project.targetPossession && (
+                                        <span className="text-gray-400 text-[9.5px]">RERA: {project.reraPossession}</span>
+                                      )}
+                                    </div>
+                                  </td>
+                                );
+                              case 'towersFloors':
+                                return (
+                                  <td key="towersFloors" className={getProjectTdClass('towersFloors')} style={getProjectTdStyle('towersFloors')}>
+                                    <span className="text-xs text-gray-700 font-medium whitespace-nowrap">
+                                      {[project.towers, project.floors].filter(Boolean).join(' | ') || '—'}
+                                    </span>
                                   </td>
                                 );
                               case 'reraNumber':

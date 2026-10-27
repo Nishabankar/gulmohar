@@ -124,8 +124,8 @@ const PROJECT_COLUMN_WIDTH_MAP = {
   projectStatus: 140,
   typography: 150,
   landArea: 120,
-  targetPossession: 140,
-  reraPossession: 140,
+  targetPossession: 160,
+  reraPossession: 160,
   towers: 100,
   floors: 100,
   reraNumber: 140,
@@ -1930,7 +1930,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                                 title={getSortTitle('Target Possession')}
                               >
                                 <div className="flex items-center gap-1.5">
-                                  <span>Target Poss</span>
+                                  <span>Target Possession</span>
                                   {renderSortIndicator()}
                                 </div>
                               </th>
@@ -1945,7 +1945,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                                 title={getSortTitle('RERA Possession')}
                               >
                                 <div className="flex items-center gap-1.5">
-                                  <span>RERA Poss</span>
+                                  <span>RERA Possession</span>
                                   {renderSortIndicator()}
                                 </div>
                               </th>
@@ -2287,7 +2287,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
       {/* CREATE / EDIT PROJECT MODAL */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-3 sm:p-4 animate-fade-in">
-          <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 max-w-lg w-full max-h-[85vh] flex flex-col overflow-hidden relative">
+          <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 max-w-2xl w-full max-h-[88vh] flex flex-col overflow-hidden relative">
             
             {/* Header (Exact Lead Modal Gradient) */}
             <div className="bg-gradient-to-r from-[#B30E2E] via-[#8A0B22] to-[#590414] p-4 sm:p-5 text-white flex items-center justify-between flex-shrink-0">
@@ -2342,7 +2342,6 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                         const isNowMisc = newName.trim().toLowerCase().includes('miscellaneous');
 
                         if (!wasMisc && isNowMisc) {
-                          // Auto-select all project types and all typographies when Miscellaneous is typed
                           const allTypes = [...PROJECT_TYPES];
                           const allTypos = [];
                           allTypes.forEach(pType => {
@@ -2364,7 +2363,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                         }
                       }}
                       placeholder="Enter project"
-                      className="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC]"
+                      className="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC]"
                     />
                   </div>
                   <div>
@@ -2374,81 +2373,69 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                       value={formData.developerName}
                       onChange={(e) => setFormData({ ...formData, developerName: e.target.value })}
                       placeholder="Enter developer name"
-                      className="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC]"
+                      className="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC]"
                     />
                   </div>
                 </div>
 
-                {/* 2. Project RERA Number */}
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">RERA No</label>
-                  <input 
-                    type="text" 
-                    value={formData.reraNumber}
-                    onChange={(e) => setFormData({ ...formData, reraNumber: e.target.value })}
-                    placeholder="Enter RERA No"
-                    className="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] font-mono"
-                  />
-                </div>
-
-                {/* 3. Project Type (Exact Lead Dropdown Trigger Button) */}
-                <div ref={typeDropdownRef} className="relative">
-                  <label className="block text-xs font-bold text-gray-700 mb-1">
-                    Project Type *
-                  </label>
-                  <button
-                    type="button"
-                    onClick={handleToggleTypeDropdown}
-                    className={`w-full px-3 py-2 rounded-xl border text-xs font-semibold focus:outline-none flex items-center justify-between text-left transition bg-white shadow-xs cursor-pointer ${
-                      isTypeDropdownOpen
-                        ? 'border-[#B30E2E] ring-1 ring-[#FCD6DC]'
-                        : 'border-gray-300 hover:border-gray-400'
-                    }`}
-                  >
-                    <span className="truncate">
-                      {formData.projectType.length === 0 ? (
-                        <span className="text-gray-400 font-normal">Select Project Type</span>
-                      ) : (
-                        <span className="text-gray-800 font-semibold">{formData.projectType.join(', ')}</span>
-                      )}
-                    </span>
-                    <i className={`fa-solid fa-chevron-down text-xs text-gray-400 transition-transform flex-shrink-0 ${isTypeDropdownOpen ? 'rotate-180' : ''}`}></i>
-                  </button>
-                </div>
-
-                {/* 4. Project Typography (Exact Lead Dropdown Trigger Button) */}
-                <div ref={typoDropdownRef} className="relative">
-                  <label className="block text-xs font-bold text-gray-700 mb-1">
-                    Project Typography *
-                  </label>
-                  <button
-                    type="button"
-                    disabled={formData.projectType.length === 0}
-                    onClick={handleToggleTypoDropdown}
-                    className={`w-full px-3 py-2 rounded-xl border text-xs font-semibold focus:outline-none flex items-center justify-between text-left transition shadow-xs ${
-                      formData.projectType.length === 0
-                        ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
-                        : isTypoDropdownOpen
-                          ? 'bg-white border-[#B30E2E] ring-1 ring-[#FCD6DC] cursor-pointer'
-                          : 'bg-white border-gray-300 hover:border-gray-400 cursor-pointer'
-                    }`}
-                  >
-                    <span className="truncate">
-                      {formData.projectType.length === 0 ? (
-                        <span className="text-gray-400 font-normal">Select Project Type first</span>
-                      ) : formData.typography.length === 0 ? (
-                        <span className="text-gray-400 font-normal">Select Typography</span>
-                      ) : (
-                        <span className="text-gray-800 font-semibold">{formData.typography.join(', ')}</span>
-                      )}
-                    </span>
-                    <i className={`fa-solid fa-chevron-down text-xs text-gray-400 transition-transform flex-shrink-0 ${isTypoDropdownOpen ? 'rotate-180' : ''}`}></i>
-                  </button>
-                </div>
-
-                {/* 5. Area & Address (Side by Side) */}
+                {/* 2. Project Type & Project Typography */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* Area Dropdown */}
+                  <div ref={typeDropdownRef} className="relative">
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      Project Type *
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleToggleTypeDropdown}
+                      className={`w-full h-[38px] px-3 py-2 rounded-xl border text-xs font-semibold focus:outline-none flex items-center justify-between text-left transition bg-white shadow-xs cursor-pointer ${
+                        isTypeDropdownOpen
+                          ? 'border-[#B30E2E] ring-1 ring-[#FCD6DC]'
+                          : 'border-gray-300 hover:border-gray-400'
+                      }`}
+                    >
+                      <span className="truncate">
+                        {formData.projectType.length === 0 ? (
+                          <span className="text-gray-400 font-normal">Select Project Type</span>
+                        ) : (
+                          <span className="text-gray-800 font-semibold">{formData.projectType.join(', ')}</span>
+                        )}
+                      </span>
+                      <i className={`fa-solid fa-chevron-down text-xs text-gray-400 transition-transform flex-shrink-0 ${isTypeDropdownOpen ? 'rotate-180' : ''}`}></i>
+                    </button>
+                  </div>
+
+                  <div ref={typoDropdownRef} className="relative">
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      Project Typography *
+                    </label>
+                    <button
+                      type="button"
+                      disabled={formData.projectType.length === 0}
+                      onClick={handleToggleTypoDropdown}
+                      className={`w-full h-[38px] px-3 py-2 rounded-xl border text-xs font-semibold focus:outline-none flex items-center justify-between text-left transition shadow-xs ${
+                        formData.projectType.length === 0
+                          ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
+                          : isTypoDropdownOpen
+                            ? 'bg-white border-[#B30E2E] ring-1 ring-[#FCD6DC] cursor-pointer'
+                            : 'bg-white border-gray-300 hover:border-gray-400 cursor-pointer'
+                      }`}
+                    >
+                      <span className="truncate">
+                        {formData.projectType.length === 0 ? (
+                          <span className="text-gray-400 font-normal">Select Project Type first</span>
+                        ) : formData.typography.length === 0 ? (
+                          <span className="text-gray-400 font-normal">Select Typography</span>
+                        ) : (
+                          <span className="text-gray-800 font-semibold">{formData.typography.join(', ')}</span>
+                        )}
+                      </span>
+                      <i className={`fa-solid fa-chevron-down text-xs text-gray-400 transition-transform flex-shrink-0 ${isTypoDropdownOpen ? 'rotate-180' : ''}`}></i>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 3. Area & Address */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div ref={areaDropdownRef} className="relative">
                     <label className="block text-xs font-bold text-gray-700 mb-1">
                       Area <span className="text-rose-500">*</span>
@@ -2479,7 +2466,6 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                     />
                   </div>
 
-                  {/* Address Field */}
                   <div>
                     <label className="block text-xs font-bold text-gray-700 mb-1">
                       Address
@@ -2488,13 +2474,13 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                       type="text" 
                       value={formData.address}
                       onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                      placeholder="Enter project address"
+                      placeholder="Enter address"
                       className="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800"
                     />
                   </div>
                 </div>
 
-                {/* 6. Status & Land Area */}
+                {/* 4. Project Status & Land Area */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-gray-700 mb-1">Project Status</label>
@@ -2514,13 +2500,13 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                       type="text" 
                       value={formData.landArea}
                       onChange={(e) => setFormData({ ...formData, landArea: e.target.value })}
-                      placeholder="e.g. 5 Acres / 10 Guntha"
+                      placeholder="Enter land area"
                       className="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800"
                     />
                   </div>
                 </div>
 
-                {/* 7. Target Possession & RERA Possession (Separate) */}
+                {/* 5. Target Possession & RERA Possession */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-gray-700 mb-1">Target Possession</label>
@@ -2528,7 +2514,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                       type="text" 
                       value={formData.targetPossession}
                       onChange={(e) => setFormData({ ...formData, targetPossession: e.target.value })}
-                      placeholder="e.g. Dec 2026 / Ready"
+                      placeholder="Enter target possession"
                       className="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800"
                     />
                   </div>
@@ -2538,13 +2524,13 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                       type="text" 
                       value={formData.reraPossession}
                       onChange={(e) => setFormData({ ...formData, reraPossession: e.target.value })}
-                      placeholder="e.g. June 2027"
+                      placeholder="Enter RERA possession"
                       className="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800 font-mono"
                     />
                   </div>
                 </div>
 
-                {/* 8. Towers & Floors (Separate) */}
+                {/* 6. Towers & Floors */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-gray-700 mb-1">Towers / Wings</label>
@@ -2552,7 +2538,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                       type="text" 
                       value={formData.towers}
                       onChange={(e) => setFormData({ ...formData, towers: e.target.value })}
-                      placeholder="e.g. 4 Towers / Wings A, B"
+                      placeholder="Enter towers / wings"
                       className="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800"
                     />
                   </div>
@@ -2562,37 +2548,49 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                       type="text" 
                       value={formData.floors}
                       onChange={(e) => setFormData({ ...formData, floors: e.target.value })}
-                      placeholder="e.g. G + 14 / 22 Storeys"
+                      placeholder="Enter floors"
                       className="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800"
                     />
                   </div>
                 </div>
 
-                {/* 9. Project URL / Website Link */}
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Project Website / Landing Page URL</label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                      <i className="fa-solid fa-link text-xs"></i>
-                    </div>
+                {/* 7. RERA No & Project Website URL */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">RERA No</label>
                     <input 
-                      type="url" 
-                      value={formData.projectUrl}
-                      onChange={(e) => setFormData({ ...formData, projectUrl: e.target.value })}
-                      placeholder="https://housedeal.in/projects/..."
-                      className="w-full h-[38px] pl-8 pr-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800 font-mono"
+                      type="text" 
+                      value={formData.reraNumber}
+                      onChange={(e) => setFormData({ ...formData, reraNumber: e.target.value })}
+                      placeholder="Enter RERA No"
+                      className="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] font-mono text-gray-800"
                     />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Project Website / URL</label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                        <i className="fa-solid fa-link text-xs"></i>
+                      </div>
+                      <input 
+                        type="url" 
+                        value={formData.projectUrl}
+                        onChange={(e) => setFormData({ ...formData, projectUrl: e.target.value })}
+                        placeholder="Enter project website / URL"
+                        className="w-full h-[38px] pl-8 pr-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800 font-mono"
+                      />
+                    </div>
                   </div>
                 </div>
 
-                {/* 10. Description */}
+                {/* 8. Description */}
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1">Description</label>
                   <textarea
                     rows={3}
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Enter key project details, highlights, or specifications..."
+                    placeholder="Enter description"
                     className="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800"
                   />
                 </div>
@@ -3368,8 +3366,8 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                           <th className="p-2 border-b">Type</th>
                           <th className="p-2 border-b">Typography</th>
                           <th className="p-2 border-b">Land Area</th>
-                          <th className="p-2 border-b">Target Poss</th>
-                          <th className="p-2 border-b">RERA Poss</th>
+                          <th className="p-2 border-b">Target Possession</th>
+                          <th className="p-2 border-b">RERA Possession</th>
                           <th className="p-2 border-b">Towers</th>
                           <th className="p-2 border-b">Floors</th>
                           <th className="p-2 border-b">URL</th>

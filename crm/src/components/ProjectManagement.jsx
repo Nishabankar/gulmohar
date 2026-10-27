@@ -138,13 +138,15 @@ const DEFAULT_PROJECT_COLUMNS = [
   { id: 'projectType', label: 'Project Type', visible: true, pinned: false },
   { id: 'projectStatus', label: 'Status', visible: true, pinned: false },
   { id: 'typography', label: 'Typography', visible: true, pinned: false },
-  { id: 'landArea', label: 'Land Area', visible: false, pinned: false },
+  { id: 'landArea', label: 'Land Area', visible: true, pinned: false },
   { id: 'possession', label: 'Possession', visible: true, pinned: false },
-  { id: 'towersFloors', label: 'Towers / Floors', visible: false, pinned: false },
+  { id: 'towersFloors', label: 'Towers / Floors', visible: true, pinned: false },
   { id: 'reraNumber', label: 'RERA No', visible: true, pinned: false },
   { id: 'location', label: 'Area / Address', visible: true, pinned: false },
   { id: 'actions', label: 'Actions', visible: true, pinned: true }
 ];
+
+const PROJECT_CONFIG_VERSION = 'v2_new_fields_20261027';
 
 export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }) {
   const [projects, setProjects] = useState([]);
@@ -155,7 +157,31 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
   // Project Column Configuration State & Persistence
   const [projectColumnConfig, setProjectColumnConfig] = useState(() => {
     try {
+      const storedVersion = localStorage.getItem('projectManagementColumnConfigVersion');
       const stored = localStorage.getItem('projectManagementColumnConfig');
+      if (storedVersion !== PROJECT_CONFIG_VERSION) {
+        localStorage.setItem('projectManagementColumnConfigVersion', PROJECT_CONFIG_VERSION);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const newColIds = ['projectStatus', 'landArea', 'possession', 'towersFloors'];
+            const upgraded = DEFAULT_PROJECT_COLUMNS.map(def => {
+              const existing = parsed.find(c => c.id === def.id);
+              if (existing) {
+                if (newColIds.includes(def.id)) {
+                  return { ...existing, visible: true };
+                }
+                return existing;
+              }
+              return def;
+            });
+            localStorage.setItem('projectManagementColumnConfig', JSON.stringify(upgraded));
+            return upgraded;
+          }
+        }
+        localStorage.setItem('projectManagementColumnConfig', JSON.stringify(DEFAULT_PROJECT_COLUMNS));
+        return DEFAULT_PROJECT_COLUMNS;
+      }
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -1020,6 +1046,26 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
           const typesB = (Array.isArray(b.projectType) ? b.projectType.join(', ') : (b.projectType || '')).toLowerCase();
           return typesA.localeCompare(typesB) * sortMultiplier;
         }
+        case 'projectStatus': {
+          const stA = (a.projectStatus || '').toLowerCase();
+          const stB = (b.projectStatus || '').toLowerCase();
+          return stA.localeCompare(stB) * sortMultiplier;
+        }
+        case 'landArea': {
+          const laA = (a.landArea || '').toLowerCase();
+          const laB = (b.landArea || '').toLowerCase();
+          return laA.localeCompare(laB) * sortMultiplier;
+        }
+        case 'possession': {
+          const posA = (a.targetPossession || a.reraPossession || '').toLowerCase();
+          const posB = (b.targetPossession || b.reraPossession || '').toLowerCase();
+          return posA.localeCompare(posB) * sortMultiplier;
+        }
+        case 'towersFloors': {
+          const tfA = [a.towers, a.floors].filter(Boolean).join(' ').toLowerCase();
+          const tfB = [b.towers, b.floors].filter(Boolean).join(' ').toLowerCase();
+          return tfA.localeCompare(tfB) * sortMultiplier;
+        }
         case 'typography': {
           const typoA = (Array.isArray(a.typography) ? a.typography.join(', ') : (a.typography || '')).toLowerCase();
           const typoB = (Array.isArray(b.typography) ? b.typography.join(', ') : (b.typography || '')).toLowerCase();
@@ -1809,6 +1855,66 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                               >
                                 <div className="flex items-center gap-1.5">
                                   <span>Project Type</span>
+                                  {renderSortIndicator()}
+                                </div>
+                              </th>
+                            );
+                          case 'projectStatus':
+                            return (
+                              <th 
+                                key="projectStatus" 
+                                onClick={() => handleProjectSort('projectStatus')}
+                                className={getProjectThClass('projectStatus', isSorted)} 
+                                style={getProjectThStyle('projectStatus')}
+                                title={getSortTitle('Status')}
+                              >
+                                <div className="flex items-center gap-1.5">
+                                  <span>Status</span>
+                                  {renderSortIndicator()}
+                                </div>
+                              </th>
+                            );
+                          case 'landArea':
+                            return (
+                              <th 
+                                key="landArea" 
+                                onClick={() => handleProjectSort('landArea')}
+                                className={getProjectThClass('landArea', isSorted)} 
+                                style={getProjectThStyle('landArea')}
+                                title={getSortTitle('Land Area')}
+                              >
+                                <div className="flex items-center gap-1.5">
+                                  <span>Land Area</span>
+                                  {renderSortIndicator()}
+                                </div>
+                              </th>
+                            );
+                          case 'possession':
+                            return (
+                              <th 
+                                key="possession" 
+                                onClick={() => handleProjectSort('possession')}
+                                className={getProjectThClass('possession', isSorted)} 
+                                style={getProjectThStyle('possession')}
+                                title={getSortTitle('Possession')}
+                              >
+                                <div className="flex items-center gap-1.5">
+                                  <span>Possession</span>
+                                  {renderSortIndicator()}
+                                </div>
+                              </th>
+                            );
+                          case 'towersFloors':
+                            return (
+                              <th 
+                                key="towersFloors" 
+                                onClick={() => handleProjectSort('towersFloors')}
+                                className={getProjectThClass('towersFloors', isSorted)} 
+                                style={getProjectThStyle('towersFloors')}
+                                title={getSortTitle('Towers / Floors')}
+                              >
+                                <div className="flex items-center gap-1.5">
+                                  <span>Towers / Floors</span>
                                   {renderSortIndicator()}
                                 </div>
                               </th>

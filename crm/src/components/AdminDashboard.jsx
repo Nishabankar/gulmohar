@@ -2012,7 +2012,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       return;
     }
     if (!profileForm.email || !profileForm.email.trim()) {
-      setProfileSaveMsg('Please enter a valid email address.');
+      setProfileSaveMsg('Please enter a valid email ID.');
       return;
     }
 
@@ -2284,7 +2284,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     if (cleanEmail) {
       const existingEmailLead = enquiries.find(item => item.email && item.email.trim().toLowerCase() === cleanEmail);
       if (existingEmailLead) {
-        setCreateLeadMsg(`Lead not submitted: A lead with email address "${cleanEmail}" already exists for ${existingEmailLead.firstName} ${existingEmailLead.lastName || ''}.`);
+        setCreateLeadMsg(`Lead not submitted: A lead with email ID "${cleanEmail}" already exists for ${existingEmailLead.firstName} ${existingEmailLead.lastName || ''}.`);
         return;
       }
     }
@@ -2416,7 +2416,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
         return;
       }
       if (existingUser.email && existingUser.email.toLowerCase() === cleanEmail) {
-        setAgentCreateMsg(`Error: Email address '${cleanEmail}' is already registered to ${existingUser.name || 'another user'}.`);
+        setAgentCreateMsg(`Error: Email ID '${cleanEmail}' is already registered to ${existingUser.name || 'another user'}.`);
         return;
       }
     }
@@ -2613,7 +2613,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
         return;
       }
       if (cleanedEmail && existingUser.email && existingUser.email.toLowerCase() === cleanedEmail) {
-        setUserEditSuccessMsg(`Error: Email address '${cleanedEmail}' is already registered to ${existingUser.name || 'another user'}.`);
+        setUserEditSuccessMsg(`Error: Email ID '${cleanedEmail}' is already registered to ${existingUser.name || 'another user'}.`);
         return;
       }
     }
@@ -2850,7 +2850,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     if (cleanEditEmail) {
       const dupEmail = enquiries.find(item => (item._id || item.id) !== leadKey && item.email && item.email.trim().toLowerCase() === cleanEditEmail);
       if (dupEmail) {
-        setEditModalSuccessMsg(`Error: Another lead already has email address '${cleanEditEmail}' (${dupEmail.firstName} ${dupEmail.lastName || ''}).`);
+        setEditModalSuccessMsg(`Error: Another lead already has email ID '${cleanEditEmail}' (${dupEmail.firstName} ${dupEmail.lastName || ''}).`);
         return;
       }
     }
@@ -3157,7 +3157,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     const lastNameIdx = find(['lastname', 'lname', 'surname', 'last'], ['lastname', 'surname']);
     const nameIdx = fullNameIdx !== -1 ? fullNameIdx : find(['name'], ['name']);
     const phoneIdx = find(['phone', 'phonenumber', 'mobile', 'mobileno', 'mobilenumber', 'contact', 'contactnumber', 'cell', 'cellphone'], ['phone', 'mobile']);
-    const emailIdx = find(['email', 'emailaddress', 'mail', 'mailid'], ['email', 'mail']);
+    const emailIdx = find(['email', 'emailid', 'emailaddress', 'mail', 'mailid'], ['email', 'mail']);
     const statusIdx = find(['leadstatus', 'status', 'stage', 'leadstage'], ['status', 'stage']);
     const remarksIdx = find(['remarks', 'remark', 'notes', 'note', 'comments', 'comment', 'description'], ['remark', 'note', 'comment']);
     const priorityIdx = find(['priority', 'leadpriority'], ['priority']);

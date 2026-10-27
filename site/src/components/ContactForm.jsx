@@ -161,7 +161,7 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
                     </div>
                   </div>
 
-                  {/* 2-Column Grid Row: Mobile Number & Email Address */}
+                  {/* 2-Column Grid Row: Mobile Number & Email ID */}
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {/* Input Mobile */}
                     <div>

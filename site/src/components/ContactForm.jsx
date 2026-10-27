@@ -121,13 +121,6 @@ export default function ContactForm({ selectedPlotForEnquiry }) {
                   </h3>
                 </div>
 
-                {statusMsg && (
-                  <div class={`p-2 rounded-xl mb-2 text-xs font-semibold flex items-center justify-center animate-fade-in ${statusMsg.type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-emerald-50 text-emerald-800 border border-emerald-200'}`}>
-                    <i class={`fa-solid ${statusMsg.type === 'error' ? 'fa-circle-exclamation text-red-600' : 'fa-circle-check text-emerald-600'} text-xs mr-1.5`}></i>
-                    <span>{statusMsg.text}</span>
-                  </div>
-                )}
-
                 <form onSubmit={handleSubmit} class="space-y-2.5">
                   
                   {/* 2-Column Grid Row: First Name & Last Name */}

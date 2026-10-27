@@ -277,7 +277,7 @@ router.post('/', protectAdmin, async (req, res) => {
 
     const newProjectId = result.insertId;
 
-    // Auto-link any unassigned leads that were requested for this project
+    // Auto-link any unassigned leads that were requested for this project or missing location
     try {
       const typoText = Array.isArray(typographyArray) ? typographyArray.join(', ') : (typographyArray || '');
       const combinedLocation = [cleanArea, cleanAddress].filter(Boolean).join(' - ');
@@ -286,9 +286,9 @@ router.post('/', protectAdmin, async (req, res) => {
          SET project_name = ?, 
              typography = CASE WHEN typography IS NULL OR typography = '' THEN ? ELSE typography END,
              location = CASE WHEN location IS NULL OR location = '' THEN ? ELSE location END
-         WHERE (project_name IS NULL OR project_name = '') 
-           AND notes LIKE ?`,
-        [cleanName, typoText, combinedLocation, `%[Requested Project: ${cleanName}]%`]
+         WHERE ((project_name IS NULL OR project_name = '') AND LOWER(notes) LIKE LOWER(?))
+            OR ((location IS NULL OR location = '') AND LOWER(TRIM(project_name)) = LOWER(TRIM(?)))`,
+        [cleanName, typoText, combinedLocation, `%[requested project: ${cleanName}]%`, cleanName]
       );
     } catch (autoAssignErr) {
       console.warn('Auto-assign pending leads error:', autoAssignErr.message);

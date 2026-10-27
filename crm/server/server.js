@@ -96,9 +96,19 @@ const seedAdminUser = async () => {
       // Ignore if table/column does not exist
     }
 
-    // Auto-repair any existing leads whose typography was truncated by the 255-char limit
+    // Auto-repair any existing leads whose typography or location needs syncing
     try {
-      const [projects] = await query("SELECT name, typography FROM projects WHERE typography IS NOT NULL AND typography != ''");
+      const [projects] = await query("SELECT name, typography, area, address FROM projects WHERE name IS NOT NULL AND name != ''");
+      for (const p of projects || []) {
+        if (!p.name) continue;
+        const combined = [p.area, p.address].filter(Boolean).join(' - ');
+        if (combined) {
+          await query(
+            "UPDATE leads SET location = ? WHERE LOWER(TRIM(project_name)) = LOWER(TRIM(?)) AND (location IS NULL OR location = '')",
+            [combined, p.name]
+          );
+        }
+      }
       for (const p of projects || []) {
         if (!p.name || !p.typography) continue;
         let list = [];

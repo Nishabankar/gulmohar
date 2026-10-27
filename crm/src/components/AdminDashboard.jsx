@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { API_BASE_URL } from '../config';
 import PolicyModal from './PolicyModal';
-import ProjectManagement, { APARTMENT_TYPOGRAPHY_GROUPS, TYPOGRAPHY_BY_TYPE } from './ProjectManagement';
+import ProjectManagement, { APARTMENT_TYPOGRAPHY_GROUPS, TYPOGRAPHY_BY_TYPE, PROJECT_AREAS } from './ProjectManagement';
 
 const getAgentProfilePhoto = (agentObj) => {
   if (!agentObj) return '';
@@ -8471,17 +8471,69 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                   </div>
                 </div>
 
+                {/* Area & Address (Auto-linked from Project or manual) */}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">Location</label>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Area</label>
+                    <select
+                      value={(() => {
+                        if (editingEnquiry.area) return editingEnquiry.area;
+                        const parts = (editingEnquiry.location || '').split(' - ');
+                        return PROJECT_AREAS.includes(parts[0]) ? parts[0] : (PROJECT_AREAS.find(a => (editingEnquiry.location || '').includes(a)) || '');
+                      })()}
+                      onChange={(e) => {
+                        const newArea = e.target.value;
+                        const currentAddr = editingEnquiry.address !== undefined ? editingEnquiry.address : (() => {
+                          const parts = (editingEnquiry.location || '').split(' - ');
+                          const matchedA = PROJECT_AREAS.includes(parts[0]) ? parts[0] : (PROJECT_AREAS.find(a => (editingEnquiry.location || '').includes(a)) || '');
+                          return matchedA && parts.length > 1 ? parts.slice(1).join(' - ') : (matchedA ? (editingEnquiry.location || '').replace(matchedA, '').replace(/^[\s\-–—:]+/, '') : (editingEnquiry.location || ''));
+                        })();
+                        const combined = [newArea, currentAddr].filter(Boolean).join(' - ');
+                        setEditingEnquiry({
+                          ...editingEnquiry,
+                          area: newArea,
+                          address: currentAddr,
+                          location: combined
+                        });
+                      }}
+                      class="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] bg-white text-gray-800"
+                    >
+                      <option value="">Select Area</option>
+                      {PROJECT_AREAS.map(a => (
+                        <option key={a} value={a}>{a}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Address</label>
                     <input 
                       type="text" 
-                      value={editingEnquiry.location || ''} 
-                      onChange={(e) => setEditingEnquiry({ ...editingEnquiry, location: e.target.value })}
-                      placeholder="Enter location"
-                      class="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E]"
+                      value={editingEnquiry.address !== undefined ? editingEnquiry.address : (() => {
+                        const parts = (editingEnquiry.location || '').split(' - ');
+                        const matchedA = PROJECT_AREAS.includes(parts[0]) ? parts[0] : (PROJECT_AREAS.find(a => (editingEnquiry.location || '').includes(a)) || '');
+                        return matchedA && parts.length > 1 ? parts.slice(1).join(' - ') : (matchedA ? (editingEnquiry.location || '').replace(matchedA, '').replace(/^[\s\-–—:]+/, '') : (editingEnquiry.location || ''));
+                      })()}
+                      onChange={(e) => {
+                        const newAddr = e.target.value;
+                        const currentArea = editingEnquiry.area !== undefined ? editingEnquiry.area : (() => {
+                          const parts = (editingEnquiry.location || '').split(' - ');
+                          return PROJECT_AREAS.includes(parts[0]) ? parts[0] : (PROJECT_AREAS.find(a => (editingEnquiry.location || '').includes(a)) || '');
+                        })();
+                        const combined = [currentArea, newAddr].filter(Boolean).join(' - ');
+                        setEditingEnquiry({
+                          ...editingEnquiry,
+                          area: currentArea,
+                          address: newAddr,
+                          location: combined
+                        });
+                      }}
+                      placeholder="Enter address"
+                      class="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800"
                     />
                   </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1">Source</label>
                     <select 
@@ -9130,18 +9182,52 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                   </div>
                 </div>
 
-                {/* 5. Location & Source */}
+                {/* 5. Area & Address (Auto-linked from Project or manual) */}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">Location</label>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Area</label>
+                    <select
+                      value={newLeadFormData.area || ''}
+                      onChange={(e) => {
+                        const newArea = e.target.value;
+                        const currentAddr = newLeadFormData.address || '';
+                        const combined = [newArea, currentAddr].filter(Boolean).join(' - ');
+                        setNewLeadFormData({
+                          ...newLeadFormData,
+                          area: newArea,
+                          location: combined
+                        });
+                      }}
+                      class="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] bg-white text-gray-800"
+                    >
+                      <option value="">Select Area</option>
+                      {PROJECT_AREAS.map(a => (
+                        <option key={a} value={a}>{a}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Address</label>
                     <input 
                       type="text" 
-                      value={newLeadFormData.location || ''} 
-                      onChange={(e) => setNewLeadFormData({ ...newLeadFormData, location: e.target.value })}
-                      placeholder="Enter location"
-                      class="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC]"
+                      value={newLeadFormData.address || ''} 
+                      onChange={(e) => {
+                        const newAddr = e.target.value;
+                        const currentArea = newLeadFormData.area || '';
+                        const combined = [currentArea, newAddr].filter(Boolean).join(' - ');
+                        setNewLeadFormData({
+                          ...newLeadFormData,
+                          address: newAddr,
+                          location: combined
+                        });
+                      }}
+                      placeholder="Enter address"
+                      class="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800"
                     />
                   </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1">Source</label>
                     <select 

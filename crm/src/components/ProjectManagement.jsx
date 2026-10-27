@@ -1363,9 +1363,8 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
       }
 
       setFormSubmitting(false);
-      const successText = modalMode === 'create' ? 'Project created successfully!' : `Project '${formData.name}' updated successfully!`;
+      const successText = modalMode === 'create' ? 'Project Created Successfully!' : 'Project Updated Successfully!';
       setFormMsg(successText);
-      showToast(successText, 'success');
       fetchProjects();
 
       setTimeout(() => {

@@ -2940,9 +2940,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
           setStatusFilter(finalSynced.status);
         }
 
-        const leadDisplayName = `${updatedLead.firstName || ''} ${updatedLead.lastName || ''}`.trim() || 'Lead';
-        setEditModalSuccessMsg(`Enquiry Updated Successfully in Database!`);
-        showToast(`Lead '${leadDisplayName}' updated successfully!`, 'success');
+        setEditModalSuccessMsg('Enquiry Updated Successfully!');
         setTimeout(() => {
           setEditingEnquiry(null);
           setEditModalSuccessMsg('');

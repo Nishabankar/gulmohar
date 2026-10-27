@@ -35,6 +35,7 @@ const formatProjectRow = (row) => {
     towers: row.towers || '',
     floors: row.floors || '',
     description: row.description || '',
+    projectUrl: row.project_url || '',
     area: row.area || '',
     address: row.address || '',
     assignedLeadsCount: Number(row.assigned_leads_count || 0),
@@ -186,12 +187,13 @@ const handleBulkImportProjects = async (req, res) => {
         const cleanTowers = str(project.towers !== undefined ? project.towers : project.totalTowers);
         const cleanFloors = str(project.floors !== undefined ? project.floors : project.totalFloors);
         const cleanDesc = str(project.description !== undefined ? project.description : project.desc);
+        const cleanProjectUrl = str(project.projectUrl !== undefined ? project.projectUrl : (project.url !== undefined ? project.url : (project.projectLink || project.link)));
 
         await query(
           `INSERT INTO projects 
-            (name, developer_name, project_type, project_status, typography, land_area, rera_number, target_possession, rera_possession, towers, floors, area, address, description, created_by)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [cleanName, cleanDeveloper, projectTypeJson, cleanStatus, typographyJson, cleanLandArea, cleanRera, cleanTargetPoss, cleanReraPoss, cleanTowers, cleanFloors, cleanArea || cleanAddress || 'Pune', cleanAddress, cleanDesc, createdBy]
+            (name, developer_name, project_type, project_status, typography, land_area, rera_number, target_possession, rera_possession, towers, floors, area, address, description, project_url, created_by)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [cleanName, cleanDeveloper, projectTypeJson, cleanStatus, typographyJson, cleanLandArea, cleanRera, cleanTargetPoss, cleanReraPoss, cleanTowers, cleanFloors, cleanArea || cleanAddress || 'Pune', cleanAddress, cleanDesc, cleanProjectUrl, createdBy]
         );
         importedCount++;
       } catch (err) {
@@ -247,7 +249,8 @@ router.post('/', protectAdmin, async (req, res) => {
       floors = '', 
       area = '', 
       address = '', 
-      description = '' 
+      description = '',
+      projectUrl = '' 
     } = req.body;
 
     if (!name || !name.trim()) {
@@ -307,12 +310,13 @@ router.post('/', protectAdmin, async (req, res) => {
     const cleanTowers = towers ? towers.trim() : '';
     const cleanFloors = floors ? floors.trim() : '';
     const cleanDesc = description ? description.trim() : '';
+    const cleanProjectUrl = projectUrl ? projectUrl.trim() : '';
 
     const [result] = await query(
       `INSERT INTO projects 
-        (name, developer_name, project_type, project_status, typography, land_area, rera_number, target_possession, rera_possession, towers, floors, area, address, description, created_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [cleanName, cleanDeveloper, projectTypeJson, cleanStatus, typographyJson, cleanLandArea, cleanRera, cleanTargetPoss, cleanReraPoss, cleanTowers, cleanFloors, cleanArea, cleanAddress, cleanDesc, createdBy]
+        (name, developer_name, project_type, project_status, typography, land_area, rera_number, target_possession, rera_possession, towers, floors, area, address, description, project_url, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [cleanName, cleanDeveloper, projectTypeJson, cleanStatus, typographyJson, cleanLandArea, cleanRera, cleanTargetPoss, cleanReraPoss, cleanTowers, cleanFloors, cleanArea, cleanAddress, cleanDesc, cleanProjectUrl, createdBy]
     );
 
     const newProjectId = result.insertId;
@@ -371,7 +375,8 @@ router.put('/:id', protectAdmin, async (req, res) => {
       floors = '', 
       area = '', 
       address = '', 
-      description = '' 
+      description = '',
+      projectUrl = '' 
     } = req.body;
 
     if (!name || !name.trim()) {
@@ -436,12 +441,13 @@ router.put('/:id', protectAdmin, async (req, res) => {
     const cleanTowers = towers ? towers.trim() : '';
     const cleanFloors = floors ? floors.trim() : '';
     const cleanDesc = description ? description.trim() : '';
+    const cleanProjectUrl = projectUrl ? projectUrl.trim() : '';
 
     await query(
       `UPDATE projects 
-       SET name = ?, developer_name = ?, project_type = ?, project_status = ?, typography = ?, land_area = ?, rera_number = ?, target_possession = ?, rera_possession = ?, towers = ?, floors = ?, area = ?, address = ?, description = ?
+       SET name = ?, developer_name = ?, project_type = ?, project_status = ?, typography = ?, land_area = ?, rera_number = ?, target_possession = ?, rera_possession = ?, towers = ?, floors = ?, area = ?, address = ?, description = ?, project_url = ?
        WHERE id = ?`,
-      [cleanName, cleanDeveloper, projectTypeJson, cleanStatus, typographyJson, cleanLandArea, cleanRera, cleanTargetPoss, cleanReraPoss, cleanTowers, cleanFloors, cleanArea, cleanAddress, cleanDesc, id]
+      [cleanName, cleanDeveloper, projectTypeJson, cleanStatus, typographyJson, cleanLandArea, cleanRera, cleanTargetPoss, cleanReraPoss, cleanTowers, cleanFloors, cleanArea, cleanAddress, cleanDesc, cleanProjectUrl, id]
     );
 
     const [updatedRows] = await query('SELECT * FROM projects WHERE id = ? LIMIT 1', [id]);

@@ -164,7 +164,8 @@ const seedAdminUser = async () => {
         "ALTER TABLE projects ADD COLUMN towers VARCHAR(50) DEFAULT '' AFTER rera_possession",
         "ALTER TABLE projects ADD COLUMN floors VARCHAR(50) DEFAULT '' AFTER towers",
         "ALTER TABLE projects ADD COLUMN area VARCHAR(255) DEFAULT NULL AFTER floors",
-        "ALTER TABLE projects ADD COLUMN description TEXT DEFAULT NULL AFTER address"
+        "ALTER TABLE projects ADD COLUMN description TEXT DEFAULT NULL AFTER address",
+        "ALTER TABLE projects ADD COLUMN project_url VARCHAR(500) DEFAULT NULL AFTER description"
       ];
       for (const sql of colsToEnsure) {
         try { await query(sql); } catch (e) { /* Column exists */ }

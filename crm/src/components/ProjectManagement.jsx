@@ -120,14 +120,17 @@ const PROJECT_COLUMN_WIDTH_MAP = {
   projectId: 85,
   projectName: 195,
   developerName: 165,
-  projectType: 160,
+  projectType: 150,
   projectStatus: 140,
   typography: 150,
   landArea: 120,
-  possession: 140,
-  towersFloors: 130,
+  targetPossession: 140,
+  reraPossession: 140,
+  towers: 100,
+  floors: 100,
   reraNumber: 140,
-  location: 280,
+  projectUrl: 130,
+  location: 260,
   actions: 105
 };
 
@@ -139,14 +142,17 @@ const DEFAULT_PROJECT_COLUMNS = [
   { id: 'projectStatus', label: 'Status', visible: true, pinned: false },
   { id: 'typography', label: 'Typography', visible: true, pinned: false },
   { id: 'landArea', label: 'Land Area', visible: true, pinned: false },
-  { id: 'possession', label: 'Possession', visible: true, pinned: false },
-  { id: 'towersFloors', label: 'Towers / Floors', visible: true, pinned: false },
+  { id: 'targetPossession', label: 'Target Possession', visible: true, pinned: false },
+  { id: 'reraPossession', label: 'RERA Possession', visible: true, pinned: false },
+  { id: 'towers', label: 'Towers', visible: true, pinned: false },
+  { id: 'floors', label: 'Floors', visible: true, pinned: false },
   { id: 'reraNumber', label: 'RERA No', visible: true, pinned: false },
+  { id: 'projectUrl', label: 'Project URL', visible: true, pinned: false },
   { id: 'location', label: 'Area / Address', visible: true, pinned: false },
   { id: 'actions', label: 'Actions', visible: true, pinned: true }
 ];
 
-const PROJECT_CONFIG_VERSION = 'v2_new_fields_20261027';
+const PROJECT_CONFIG_VERSION = 'v3_separate_possession_towers_url_20261027';
 
 export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }) {
   const [projects, setProjects] = useState([]);
@@ -161,24 +167,6 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
       const stored = localStorage.getItem('projectManagementColumnConfig');
       if (storedVersion !== PROJECT_CONFIG_VERSION) {
         localStorage.setItem('projectManagementColumnConfigVersion', PROJECT_CONFIG_VERSION);
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            const newColIds = ['projectStatus', 'landArea', 'possession', 'towersFloors'];
-            const upgraded = DEFAULT_PROJECT_COLUMNS.map(def => {
-              const existing = parsed.find(c => c.id === def.id);
-              if (existing) {
-                if (newColIds.includes(def.id)) {
-                  return { ...existing, visible: true };
-                }
-                return existing;
-              }
-              return def;
-            });
-            localStorage.setItem('projectManagementColumnConfig', JSON.stringify(upgraded));
-            return upgraded;
-          }
-        }
         localStorage.setItem('projectManagementColumnConfig', JSON.stringify(DEFAULT_PROJECT_COLUMNS));
         return DEFAULT_PROJECT_COLUMNS;
       }
@@ -311,7 +299,8 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
     floors: '',
     area: '',
     address: '',
-    description: ''
+    description: '',
+    projectUrl: ''
   };
   const [formData, setFormData] = useState(initialFormState);
   const [formMsg, setFormMsg] = useState('');
@@ -370,10 +359,18 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
       'Project',
       'Developer',
       'Project Type',
+      'Status',
       'Typography',
+      'Land Area',
       'RERA No',
+      'Target Possession',
+      'RERA Possession',
+      'Towers',
+      'Floors',
+      'Project URL',
       'Area',
       'Address',
+      'Description',
       'Assigned Leads',
       'Created By',
       'Created At'
@@ -396,10 +393,18 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
         escapeCell(project.name || ''),
         escapeCell(project.developerName || ''),
         escapeCell(types),
+        escapeCell(project.projectStatus || 'Under Construction'),
         escapeCell(typos),
+        escapeCell(project.landArea || ''),
         escapeCell(project.reraNumber || ''),
+        escapeCell(project.targetPossession || ''),
+        escapeCell(project.reraPossession || ''),
+        escapeCell(project.towers || ''),
+        escapeCell(project.floors || ''),
+        escapeCell(project.projectUrl || ''),
         escapeCell(project.area || ''),
         escapeCell(project.address || ''),
+        escapeCell(project.description || ''),
         escapeCell(project.assignedLeadsCount || 0),
         escapeCell(project.createdBy || 'Admin'),
         escapeCell(createdAt)
@@ -421,11 +426,11 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
 
   // Download Sample CSV Template
   const handleDownloadSampleCSV = () => {
-    const headers = ['Project', 'Developer', 'Project Type', 'Status', 'Typography', 'Land Area', 'RERA No', 'Target Possession', 'RERA Possession', 'Towers', 'Floors', 'Area', 'Address', 'Description'];
+    const headers = ['Project', 'Developer', 'Project Type', 'Status', 'Typography', 'Land Area', 'RERA No', 'Target Possession', 'RERA Possession', 'Towers', 'Floors', 'Project URL', 'Area', 'Address', 'Description'];
     const sampleRows = [
-      ['"Gulmohar City"', '"Gulmohar Group"', '"Apartment"', '"Under Construction"', '"1 BHK, 2 BHK, 3 BHK"', '"5 Acres"', '"P52100012345"', '"Dec 2026"', '"June 2027"', '"4 Towers"', '"G+14"', '"Kharadi"', '"Survey No 45, Near IT Park, Kharadi, Pune"', '"Premium residential project near IT hub"'],
-      ['"Greenfield Villas"', '"Apex Builders"', '"Villa"', '"Ready to Move"', '"3 BHK, 4 BHK"', '"8 Acres"', '"P52100067890"', '"Ready"', '"Dec 2024"', '"2 Towers"', '"G+4"', '"Wagholi"', '"Gate No 12, Nagar Road, Wagholi, Pune"', '"Luxury gated community villas"'],
-      ['"Royal Palms"', '"Shree Developers"', '"Plots"', '"New Launch"', '"Residential, Non-Agriculture"', '"10 Guntha"', '"P52100099887"', '"Immediate"', '"March 2026"', '"-"', '"-"', '"Shikrapur"', '"Pune-Nagar Highway, Shikrapur"', '"Clear title NA residential plots"']
+      ['"Gulmohar City"', '"Gulmohar Group"', '"Apartment"', '"Under Construction"', '"1 BHK, 2 BHK, 3 BHK"', '"5 Acres"', '"P52100012345"', '"Dec 2026"', '"June 2027"', '"4 Towers"', '"G+14"', '"https://housedeal.in/projects/gulmohar-city"', '"Kharadi"', '"Survey No 45, Near IT Park, Kharadi, Pune"', '"Premium residential project near IT hub"'],
+      ['"Greenfield Villas"', '"Apex Builders"', '"Villa"', '"Ready to Move"', '"3 BHK, 4 BHK"', '"8 Acres"', '"P52100067890"', '"Ready"', '"Dec 2024"', '"2 Towers"', '"G+4"', '"https://housedeal.in/projects/greenfield-villas"', '"Wagholi"', '"Gate No 12, Nagar Road, Wagholi, Pune"', '"Luxury gated community villas"'],
+      ['"Royal Palms"', '"Shree Developers"', '"Plots"', '"New Launch"', '"Residential, Non-Agriculture"', '"10 Guntha"', '"P52100099887"', '"Immediate"', '"March 2026"', '"-"', '"-"', '"https://housedeal.in/projects/royal-palms"', '"Shikrapur"', '"Pune-Nagar Highway, Shikrapur"', '"Clear title NA residential plots"']
     ];
     const csvContent = '\uFEFF' + [headers.join(','), ...sampleRows.map(r => r.join(','))].join('\r\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -494,6 +499,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
     const reraPossIdx = find(['rerapossession', 'reraposs', 'reradate', 'reracompletion'], ['reraposs']);
     const towersIdx = find(['towers', 'totaltowers', 'wings', 'buildings'], ['tower', 'wing']);
     const floorsIdx = find(['floors', 'totalfloors', 'storeys'], ['floor']);
+    const urlIdx = find(['projecturl', 'url', 'website', 'link', 'projectlink', 'webpage'], ['url', 'link', 'website']);
     const descIdx = find(['description', 'desc', 'details', 'about'], ['desc']);
     const areaIdx = find(['area', 'locationarea', 'locality', 'suburb'], ['area', 'loc']);
     const addressIdx = find(['address', 'projectaddress', 'fulladdress', 'siteaddress'], ['address', 'site']);
@@ -542,7 +548,8 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
         floors: floorsIdx !== -1 ? getVal(floorsIdx) : '',
         area: area || address || 'Pune',
         address,
-        description: descIdx !== -1 ? getVal(descIdx) : ''
+        description: descIdx !== -1 ? getVal(descIdx) : '',
+        projectUrl: urlIdx !== -1 ? getVal(urlIdx) : ''
       });
     });
 
@@ -1056,15 +1063,30 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
           const laB = (b.landArea || '').toLowerCase();
           return laA.localeCompare(laB) * sortMultiplier;
         }
-        case 'possession': {
-          const posA = (a.targetPossession || a.reraPossession || '').toLowerCase();
-          const posB = (b.targetPossession || b.reraPossession || '').toLowerCase();
+        case 'targetPossession': {
+          const posA = (a.targetPossession || '').toLowerCase();
+          const posB = (b.targetPossession || '').toLowerCase();
           return posA.localeCompare(posB) * sortMultiplier;
         }
-        case 'towersFloors': {
-          const tfA = [a.towers, a.floors].filter(Boolean).join(' ').toLowerCase();
-          const tfB = [b.towers, b.floors].filter(Boolean).join(' ').toLowerCase();
-          return tfA.localeCompare(tfB) * sortMultiplier;
+        case 'reraPossession': {
+          const reraA = (a.reraPossession || '').toLowerCase();
+          const reraB = (b.reraPossession || '').toLowerCase();
+          return reraA.localeCompare(reraB) * sortMultiplier;
+        }
+        case 'towers': {
+          const tA = (a.towers || '').toLowerCase();
+          const tB = (b.towers || '').toLowerCase();
+          return tA.localeCompare(tB) * sortMultiplier;
+        }
+        case 'floors': {
+          const fA = (a.floors || '').toLowerCase();
+          const fB = (b.floors || '').toLowerCase();
+          return fA.localeCompare(fB) * sortMultiplier;
+        }
+        case 'projectUrl': {
+          const uA = (a.projectUrl || '').toLowerCase();
+          const uB = (b.projectUrl || '').toLowerCase();
+          return uA.localeCompare(uB) * sortMultiplier;
         }
         case 'typography': {
           const typoA = (Array.isArray(a.typography) ? a.typography.join(', ') : (a.typography || '')).toLowerCase();
@@ -1139,7 +1161,8 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
       floors: project.floors || '',
       area: projectArea,
       address: project.address || '',
-      description: project.description || ''
+      description: project.description || '',
+      projectUrl: project.projectUrl || ''
     });
     setFormMsg('');
     setIsTypeDropdownOpen(false);
@@ -1290,10 +1313,18 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
         name: formData.name.trim(),
         developerName: formData.developerName.trim(),
         projectType: formData.projectType,
+        projectStatus: formData.projectStatus || 'Under Construction',
         typography: formData.typography,
-        reraNumber: formData.reraNumber.trim(),
+        landArea: (formData.landArea || '').trim(),
+        reraNumber: (formData.reraNumber || '').trim(),
+        targetPossession: (formData.targetPossession || '').trim(),
+        reraPossession: (formData.reraPossession || '').trim(),
+        towers: (formData.towers || '').trim(),
+        floors: (formData.floors || '').trim(),
         area: formData.area.trim(),
-        address: formData.address.trim()
+        address: formData.address.trim(),
+        description: (formData.description || '').trim(),
+        projectUrl: (formData.projectUrl || '').trim()
       };
 
       const url = modalMode === 'create'
@@ -1889,32 +1920,77 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                                 </div>
                               </th>
                             );
-                          case 'possession':
+                          case 'targetPossession':
                             return (
                               <th 
-                                key="possession" 
-                                onClick={() => handleProjectSort('possession')}
-                                className={getProjectThClass('possession', isSorted)} 
-                                style={getProjectThStyle('possession')}
-                                title={getSortTitle('Possession')}
+                                key="targetPossession" 
+                                onClick={() => handleProjectSort('targetPossession')}
+                                className={getProjectThClass('targetPossession', isSorted)} 
+                                style={getProjectThStyle('targetPossession')}
+                                title={getSortTitle('Target Possession')}
                               >
                                 <div className="flex items-center gap-1.5">
-                                  <span>Possession</span>
+                                  <span>Target Poss</span>
                                   {renderSortIndicator()}
                                 </div>
                               </th>
                             );
-                          case 'towersFloors':
+                          case 'reraPossession':
                             return (
                               <th 
-                                key="towersFloors" 
-                                onClick={() => handleProjectSort('towersFloors')}
-                                className={getProjectThClass('towersFloors', isSorted)} 
-                                style={getProjectThStyle('towersFloors')}
-                                title={getSortTitle('Towers / Floors')}
+                                key="reraPossession" 
+                                onClick={() => handleProjectSort('reraPossession')}
+                                className={getProjectThClass('reraPossession', isSorted)} 
+                                style={getProjectThStyle('reraPossession')}
+                                title={getSortTitle('RERA Possession')}
                               >
                                 <div className="flex items-center gap-1.5">
-                                  <span>Towers / Floors</span>
+                                  <span>RERA Poss</span>
+                                  {renderSortIndicator()}
+                                </div>
+                              </th>
+                            );
+                          case 'towers':
+                            return (
+                              <th 
+                                key="towers" 
+                                onClick={() => handleProjectSort('towers')}
+                                className={getProjectThClass('towers', isSorted)} 
+                                style={getProjectThStyle('towers')}
+                                title={getSortTitle('Towers')}
+                              >
+                                <div className="flex items-center gap-1.5">
+                                  <span>Towers</span>
+                                  {renderSortIndicator()}
+                                </div>
+                              </th>
+                            );
+                          case 'floors':
+                            return (
+                              <th 
+                                key="floors" 
+                                onClick={() => handleProjectSort('floors')}
+                                className={getProjectThClass('floors', isSorted)} 
+                                style={getProjectThStyle('floors')}
+                                title={getSortTitle('Floors')}
+                              >
+                                <div className="flex items-center gap-1.5">
+                                  <span>Floors</span>
+                                  {renderSortIndicator()}
+                                </div>
+                              </th>
+                            );
+                          case 'projectUrl':
+                            return (
+                              <th 
+                                key="projectUrl" 
+                                onClick={() => handleProjectSort('projectUrl')}
+                                className={getProjectThClass('projectUrl', isSorted, 'text-center')} 
+                                style={getProjectThStyle('projectUrl')}
+                                title={getSortTitle('Project URL')}
+                              >
+                                <div className="flex items-center justify-center gap-1.5">
+                                  <span>Website URL</span>
                                   {renderSortIndicator()}
                                 </div>
                               </th>
@@ -2087,29 +2163,47 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                                     <span className="text-xs text-gray-700 font-medium whitespace-nowrap">{project.landArea || '—'}</span>
                                   </td>
                                 );
-                              case 'possession':
+                              case 'targetPossession':
                                 return (
-                                  <td key="possession" className={getProjectTdClass('possession')} style={getProjectTdStyle('possession')}>
-                                    <div className="flex flex-col text-[11px] leading-tight">
-                                      {project.targetPossession ? (
-                                        <span className="font-semibold text-gray-800">{project.targetPossession}</span>
-                                      ) : project.reraPossession ? (
-                                        <span className="font-semibold text-gray-800">{project.reraPossession}</span>
-                                      ) : (
-                                        <span className="text-gray-400 italic">—</span>
-                                      )}
-                                      {project.reraPossession && project.targetPossession && (
-                                        <span className="text-gray-400 text-[9.5px]">RERA: {project.reraPossession}</span>
-                                      )}
-                                    </div>
+                                  <td key="targetPossession" className={getProjectTdClass('targetPossession')} style={getProjectTdStyle('targetPossession')}>
+                                    <span className="text-xs font-semibold text-gray-800 whitespace-nowrap">{project.targetPossession || <span className="text-gray-400 italic font-normal">—</span>}</span>
                                   </td>
                                 );
-                              case 'towersFloors':
+                              case 'reraPossession':
                                 return (
-                                  <td key="towersFloors" className={getProjectTdClass('towersFloors')} style={getProjectTdStyle('towersFloors')}>
-                                    <span className="text-xs text-gray-700 font-medium whitespace-nowrap">
-                                      {[project.towers, project.floors].filter(Boolean).join(' | ') || '—'}
-                                    </span>
+                                  <td key="reraPossession" className={getProjectTdClass('reraPossession')} style={getProjectTdStyle('reraPossession')}>
+                                    <span className="text-xs font-semibold text-gray-800 whitespace-nowrap">{project.reraPossession || <span className="text-gray-400 italic font-normal">—</span>}</span>
+                                  </td>
+                                );
+                              case 'towers':
+                                return (
+                                  <td key="towers" className={getProjectTdClass('towers')} style={getProjectTdStyle('towers')}>
+                                    <span className="text-xs text-gray-700 font-medium whitespace-nowrap">{project.towers || <span className="text-gray-400 italic font-normal">—</span>}</span>
+                                  </td>
+                                );
+                              case 'floors':
+                                return (
+                                  <td key="floors" className={getProjectTdClass('floors')} style={getProjectTdStyle('floors')}>
+                                    <span className="text-xs text-gray-700 font-medium whitespace-nowrap">{project.floors || <span className="text-gray-400 italic font-normal">—</span>}</span>
+                                  </td>
+                                );
+                              case 'projectUrl':
+                                return (
+                                  <td key="projectUrl" className={getProjectTdClass('projectUrl', 'text-center')} style={getProjectTdStyle('projectUrl')}>
+                                    {project.projectUrl ? (
+                                      <a
+                                        href={project.projectUrl.startsWith('http') ? project.projectUrl : ('https://' + project.projectUrl)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-50 text-[#B30E2E] hover:bg-[#B30E2E] hover:text-white border border-rose-200 text-[10.5px] font-bold transition shadow-xs"
+                                        title={project.projectUrl}
+                                      >
+                                        <i className="fa-solid fa-arrow-up-right-from-square text-[9.5px]"></i>
+                                        <span>Visit</span>
+                                      </a>
+                                    ) : (
+                                      <span className="text-gray-400 italic text-[11px]">—</span>
+                                    )}
                                   </td>
                                 );
                               case 'reraNumber':
@@ -2391,13 +2485,116 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                       Address
                     </label>
                     <input 
-                      type="text"
+                      type="text" 
                       value={formData.address}
                       onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                       placeholder="Enter project address"
                       className="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800"
                     />
                   </div>
+                </div>
+
+                {/* 6. Status & Land Area */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Project Status</label>
+                    <select
+                      value={formData.projectStatus}
+                      onChange={(e) => setFormData({ ...formData, projectStatus: e.target.value })}
+                      className="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] bg-white text-gray-800"
+                    >
+                      {PROJECT_STATUSES.map(st => (
+                        <option key={st} value={st}>{st}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Land Area</label>
+                    <input 
+                      type="text" 
+                      value={formData.landArea}
+                      onChange={(e) => setFormData({ ...formData, landArea: e.target.value })}
+                      placeholder="e.g. 5 Acres / 10 Guntha"
+                      className="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800"
+                    />
+                  </div>
+                </div>
+
+                {/* 7. Target Possession & RERA Possession (Separate) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Target Possession</label>
+                    <input 
+                      type="text" 
+                      value={formData.targetPossession}
+                      onChange={(e) => setFormData({ ...formData, targetPossession: e.target.value })}
+                      placeholder="e.g. Dec 2026 / Ready"
+                      className="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">RERA Possession</label>
+                    <input 
+                      type="text" 
+                      value={formData.reraPossession}
+                      onChange={(e) => setFormData({ ...formData, reraPossession: e.target.value })}
+                      placeholder="e.g. June 2027"
+                      className="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800 font-mono"
+                    />
+                  </div>
+                </div>
+
+                {/* 8. Towers & Floors (Separate) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Towers / Wings</label>
+                    <input 
+                      type="text" 
+                      value={formData.towers}
+                      onChange={(e) => setFormData({ ...formData, towers: e.target.value })}
+                      placeholder="e.g. 4 Towers / Wings A, B"
+                      className="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Floors</label>
+                    <input 
+                      type="text" 
+                      value={formData.floors}
+                      onChange={(e) => setFormData({ ...formData, floors: e.target.value })}
+                      placeholder="e.g. G + 14 / 22 Storeys"
+                      className="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800"
+                    />
+                  </div>
+                </div>
+
+                {/* 9. Project URL / Website Link */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">Project Website / Landing Page URL</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                      <i className="fa-solid fa-link text-xs"></i>
+                    </div>
+                    <input 
+                      type="url" 
+                      value={formData.projectUrl}
+                      onChange={(e) => setFormData({ ...formData, projectUrl: e.target.value })}
+                      placeholder="https://housedeal.in/projects/..."
+                      className="w-full h-[38px] pl-8 pr-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800 font-mono"
+                    />
+                  </div>
+                </div>
+
+                {/* 10. Description */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">Description</label>
+                  <textarea
+                    rows={3}
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Enter key project details, highlights, or specifications..."
+                    className="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800"
+                  />
                 </div>
 
               </div>
@@ -3167,8 +3364,15 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                         <tr>
                           <th className="p-2 border-b">Project</th>
                           <th className="p-2 border-b">Developer</th>
+                          <th className="p-2 border-b">Status</th>
                           <th className="p-2 border-b">Type</th>
                           <th className="p-2 border-b">Typography</th>
+                          <th className="p-2 border-b">Land Area</th>
+                          <th className="p-2 border-b">Target Poss</th>
+                          <th className="p-2 border-b">RERA Poss</th>
+                          <th className="p-2 border-b">Towers</th>
+                          <th className="p-2 border-b">Floors</th>
+                          <th className="p-2 border-b">URL</th>
                           <th className="p-2 border-b">Area</th>
                           <th className="p-2 border-b">RERA No</th>
                         </tr>
@@ -3178,10 +3382,17 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                           <tr key={idx} className="border-b hover:bg-slate-50">
                             <td className="p-2 font-medium text-slate-800">{project.name}</td>
                             <td className="p-2 text-slate-600">{project.developerName || '-'}</td>
+                            <td className="p-2 text-slate-600">{project.projectStatus || '-'}</td>
                             <td className="p-2 text-slate-600">{Array.isArray(project.projectType) ? project.projectType.join(', ') : project.projectType}</td>
                             <td className="p-2 text-slate-600">{Array.isArray(project.typography) ? project.typography.join(', ') : project.typography}</td>
+                            <td className="p-2 text-slate-600">{project.landArea || '-'}</td>
+                            <td className="p-2 text-slate-600">{project.targetPossession || '-'}</td>
+                            <td className="p-2 text-slate-600">{project.reraPossession || '-'}</td>
+                            <td className="p-2 text-slate-600">{project.towers || '-'}</td>
+                            <td className="p-2 text-slate-600">{project.floors || '-'}</td>
+                            <td className="p-2 text-slate-600">{project.projectUrl ? 'Yes' : '-'}</td>
                             <td className="p-2 text-slate-600">{project.area || project.address || '-'}</td>
-                            <td className="p-2 text-slate-500">{project.reraNumber || '-'}</td>
+                            <td className="p-2 text-slate-500 font-mono">{project.reraNumber || '-'}</td>
                           </tr>
                         ))}
                       </tbody>

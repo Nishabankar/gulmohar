@@ -8470,11 +8470,10 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                   <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1">Source</label>
                     <select 
-                      value={editingEnquiry.source || 'Gulmohar City'} 
+                      value={editingEnquiry.source || 'Website'} 
                       onChange={(e) => setEditingEnquiry({ ...editingEnquiry, source: e.target.value })}
                       class="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E] bg-white text-gray-800"
                     >
-                      <option value="Gulmohar City">Gulmohar City</option>
                       <option value="Website">Website</option>
                       <option value="Instagram">Instagram</option>
                       <option value="Facebook">Facebook</option>
@@ -9128,11 +9127,10 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                   <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1">Source</label>
                     <select 
-                      value={newLeadFormData.source || 'Gulmohar City'} 
+                      value={newLeadFormData.source || 'Website'} 
                       onChange={(e) => setNewLeadFormData({ ...newLeadFormData, source: e.target.value })}
                       class="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800 bg-white"
                     >
-                      <option value="Gulmohar City">Gulmohar City</option>
                       <option value="Website">Website</option>
                       <option value="Instagram">Instagram</option>
                       <option value="Facebook">Facebook</option>

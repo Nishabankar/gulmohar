@@ -276,6 +276,22 @@ router.post('/', protectAdmin, async (req, res) => {
     );
 
     const newProjectId = result.insertId;
+
+    // Auto-link any unassigned leads that were requested for this project
+    try {
+      const typoText = Array.isArray(typographyArray) ? typographyArray.join(', ') : (typographyArray || '');
+      await query(
+        `UPDATE leads 
+         SET project_name = ?, 
+             typography = CASE WHEN typography IS NULL OR typography = '' THEN ? ELSE typography END 
+         WHERE (project_name IS NULL OR project_name = '') 
+           AND notes LIKE ?`,
+        [cleanName, typoText, `%[Requested Project: ${cleanName}]%`]
+      );
+    } catch (autoAssignErr) {
+      console.warn('Auto-assign pending leads error:', autoAssignErr.message);
+    }
+
     const [createdRows] = await query('SELECT * FROM projects WHERE id = ? LIMIT 1', [newProjectId]);
 
     return res.status(201).json({

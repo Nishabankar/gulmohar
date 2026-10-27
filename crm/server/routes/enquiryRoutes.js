@@ -110,7 +110,46 @@ router.post('/', async (req, res) => {
     }
 
     const noteAuthor = finalCreatedBy !== 'System' ? finalCreatedBy : (createdBy || modifiedBy || 'Client');
-    const initialNotes = notes ? notes.trim() : '';
+    let initialNotes = notes ? notes.trim() : '';
+
+    // Check if the requested project is registered in CRM projects table
+    const rawRequestedProject = (rawProjName !== undefined ? rawProjName : project || '').trim();
+    let finalProjectName = '';
+    let finalTypography = (typography || '').trim();
+    let requestedProjectPendingNote = '';
+
+    if (rawRequestedProject) {
+      try {
+        const [matchedProj] = await query(
+          'SELECT id, name, typography FROM projects WHERE LOWER(TRIM(name)) = LOWER(TRIM(?)) LIMIT 1',
+          [rawRequestedProject]
+        );
+        if (matchedProj && matchedProj.length > 0) {
+          finalProjectName = matchedProj[0].name;
+          if (!finalTypography && matchedProj[0].typography) {
+            try {
+              const parsed = JSON.parse(matchedProj[0].typography);
+              finalTypography = Array.isArray(parsed) ? parsed.join(', ') : String(parsed);
+            } catch (e) {
+              finalTypography = String(matchedProj[0].typography);
+            }
+          }
+        } else {
+          // Project is NOT yet registered in CRM projects table
+          // Keep project unassigned / blank until created in CRM
+          finalProjectName = '';
+          finalTypography = '';
+          requestedProjectPendingNote = `[Requested Project: ${rawRequestedProject}]`;
+        }
+      } catch (projErr) {
+        finalProjectName = '';
+        finalTypography = '';
+      }
+    }
+
+    if (requestedProjectPendingNote) {
+      initialNotes = initialNotes ? `${initialNotes}\n${requestedProjectPendingNote}` : requestedProjectPendingNote;
+    }
 
     // Auto-convert plotsCount (Guntha) to carpetArea if carpetArea not explicitly provided
     let finalCarpetArea = (carpetArea || '').trim();
@@ -134,8 +173,8 @@ router.post('/', async (req, res) => {
         (visitTime && visitTime.trim()) ? visitTime.trim() : (followupDate ? '11:00' : ''),
         followupDate || '',
         priority,
-        (projectName || '').trim(),
-        (typography || '').trim(),
+        finalProjectName,
+        finalTypography,
         finalCarpetArea,
         (budget || '').trim(),
         initialNotes,
@@ -180,9 +219,9 @@ router.post('/', async (req, res) => {
       followupDate: followupDate || '',
       status: 'New',
       priority,
-      projectName: (projectName || '').trim(),
+      projectName: finalProjectName,
       projectType: (projectType || '').trim(),
-      typography: (typography || '').trim(),
+      typography: finalTypography,
       carpetArea: (carpetArea || '').trim(),
       budget: (budget || '').trim(),
       location: finalLocation,

@@ -172,8 +172,8 @@ const handleBulkImportProjects = async (req, res) => {
       } else if (typeof project.typography === 'string' && project.typography.trim()) {
         typoArr = project.typography.split(/[,;|]/).map(t => str(t)).filter(Boolean);
       }
-      if (typoArr.length === 0) {
-        typoArr = ['2 BHK'];
+      if (!Array.isArray(typoArr)) {
+        typoArr = [];
       }
 
       const projectTypeJson = JSON.stringify(typeArr);

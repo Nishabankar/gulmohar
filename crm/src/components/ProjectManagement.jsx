@@ -530,7 +530,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
       const address = addressIdx !== -1 ? getVal(addressIdx) : '';
 
       let projectType = rawType ? rawType.split(/[,;|]/).map(s => s.trim()).filter(Boolean) : ['Apartment'];
-      let typography = rawTypo ? rawTypo.split(/[,;|]/).map(s => s.trim()).filter(Boolean) : ['2 BHK'];
+      let typography = rawTypo ? rawTypo.split(/[,;|]/).map(s => s.trim()).filter(Boolean) : [];
 
       projectsList.push({
         id: idIdx !== -1 ? getVal(idIdx) : undefined,

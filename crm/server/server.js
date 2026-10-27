@@ -157,7 +157,7 @@ const seedAdminUser = async () => {
       `);
       // Auto-migrate columns if table was created previously without them
       const colsToEnsure = [
-        "ALTER TABLE projects ADD COLUMN project_status VARCHAR(100) DEFAULT 'Under Construction' AFTER project_type",
+        "ALTER TABLE projects ADD COLUMN project_status VARCHAR(100) DEFAULT '' AFTER project_type",
         "ALTER TABLE projects ADD COLUMN land_area VARCHAR(100) DEFAULT '' AFTER typography",
         "ALTER TABLE projects ADD COLUMN target_possession VARCHAR(100) DEFAULT '' AFTER rera_number",
         "ALTER TABLE projects ADD COLUMN rera_possession VARCHAR(100) DEFAULT '' AFTER target_possession",

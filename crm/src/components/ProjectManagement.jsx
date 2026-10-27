@@ -131,6 +131,7 @@ const PROJECT_COLUMN_WIDTH_MAP = {
   reraNumber: 140,
   projectUrl: 140,
   location: 280,
+  description: 280,
   actions: 105
 };
 
@@ -149,10 +150,11 @@ const DEFAULT_PROJECT_COLUMNS = [
   { id: 'reraNumber', label: 'RERA No', visible: true, pinned: false },
   { id: 'projectUrl', label: 'Project URL', visible: true, pinned: false },
   { id: 'location', label: 'Area / Address', visible: true, pinned: false },
+  { id: 'description', label: 'Description', visible: true, pinned: false },
   { id: 'actions', label: 'Actions', visible: true, pinned: true }
 ];
 
-const PROJECT_CONFIG_VERSION = 'v3_separate_possession_towers_url_20261027';
+const PROJECT_CONFIG_VERSION = 'v4_add_description_column_20261027';
 
 export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }) {
   const [projects, setProjects] = useState([]);
@@ -1118,6 +1120,11 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
           const locB = `${b.area || ''} ${b.address || ''}`.trim().toLowerCase();
           return locA.localeCompare(locB) * sortMultiplier;
         }
+        case 'description': {
+          const descA = (a.description || '').toLowerCase();
+          const descB = (b.description || '').toLowerCase();
+          return descA.localeCompare(descB) * sortMultiplier;
+        }
         default:
           return 0;
       }
@@ -2056,6 +2063,21 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                                 </div>
                               </th>
                             );
+                          case 'description':
+                            return (
+                              <th 
+                                key="description" 
+                                onClick={() => handleProjectSort('description')}
+                                className={getProjectThClass('description', isSorted)} 
+                                style={getProjectThStyle('description')}
+                                title={getSortTitle('Description')}
+                              >
+                                <div className="flex items-center gap-1.5">
+                                  <span>Description</span>
+                                  {renderSortIndicator()}
+                                </div>
+                              </th>
+                            );
                           case 'actions':
                             return (
                               <th 
@@ -2261,6 +2283,18 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                                       </div>
                                     ) : (
                                       <span className="text-gray-400 italic text-xs">—</span>
+                                    )}
+                                  </td>
+                                );
+                              case 'description':
+                                return (
+                                  <td key="description" className={getProjectTdClass('description')} style={getProjectTdStyle('description')} title={project.description || ''}>
+                                    {project.description ? (
+                                      <span className="text-xs text-gray-700 font-normal truncate block max-w-full">
+                                        {project.description}
+                                      </span>
+                                    ) : (
+                                      <span className="text-gray-400 italic text-[11px]">—</span>
                                     )}
                                   </td>
                                 );
@@ -3398,6 +3432,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                           <th className="p-2 border-b">Floors</th>
                           <th className="p-2 border-b">Project URL</th>
                           <th className="p-2 border-b">Area</th>
+                          <th className="p-2 border-b">Description</th>
                           <th className="p-2 border-b">RERA No</th>
                         </tr>
                       </thead>
@@ -3416,6 +3451,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                             <td className="p-2 text-slate-600">{project.floors || '-'}</td>
                             <td className="p-2 text-slate-600">{project.projectUrl ? 'Yes' : '-'}</td>
                             <td className="p-2 text-slate-600">{project.area || project.address || '-'}</td>
+                            <td className="p-2 text-slate-600 max-w-[200px] truncate" title={project.description}>{project.description || '-'}</td>
                             <td className="p-2 text-slate-500 font-mono">{project.reraNumber || '-'}</td>
                           </tr>
                         ))}

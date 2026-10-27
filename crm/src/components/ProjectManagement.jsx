@@ -1363,14 +1363,16 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
       }
 
       setFormSubmitting(false);
-      setFormMsg(modalMode === 'create' ? 'Project Created Successfully!' : 'Project Updated Successfully!');
+      const successText = modalMode === 'create' ? 'Project created successfully!' : `Project '${formData.name}' updated successfully!`;
+      setFormMsg(successText);
+      showToast(successText, 'success');
       fetchProjects();
 
       setTimeout(() => {
         setShowModal(false);
         setFormMsg('');
         setFormData(initialFormState);
-      }, 1200);
+      }, 1400);
     } catch (err) {
       setFormSubmitting(false);
       setFormMsg(err.message || 'Something went wrong while saving the project.');
@@ -2331,24 +2333,26 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
               </button>
             </div>
 
+            {/* Pinned In-Modal Alert Banner (Always visible even when scrolled down) */}
+            {formMsg && (() => {
+              const isSuccess = formMsg.toLowerCase().includes('success') && !formMsg.toLowerCase().includes('not') && !formMsg.toLowerCase().includes('error');
+              return (
+                <div className="px-4 sm:px-5 pt-3 pb-1 flex-shrink-0">
+                  <div className={`p-2.5 rounded-xl text-xs font-bold flex items-center gap-2 animate-fade-in ${
+                    isSuccess ? 'bg-emerald-100 border border-emerald-300 text-emerald-900' : 'bg-rose-100 border border-rose-300 text-rose-900'
+                  }`}>
+                    <i className={`fa-solid ${isSuccess ? 'fa-circle-check text-emerald-600' : 'fa-triangle-exclamation text-rose-600'}`}></i>
+                    <span>{formMsg}</span>
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* Form */}
             <form onSubmit={handleSubmitForm} className="flex-1 flex flex-col min-h-0 overflow-hidden">
               
               {/* Middle Scrollable Content */}
               <div className="p-4 sm:p-5 space-y-3.5 overflow-y-auto flex-1 custom-scrollbar project-modal-scrollable">
-                
-                {/* In-Form Success / Error Banner (Exact Lead Modal Style) */}
-                {formMsg && (() => {
-                  const isSuccess = formMsg.toLowerCase().includes('success') && !formMsg.toLowerCase().includes('not') && !formMsg.toLowerCase().includes('error');
-                  return (
-                    <div className={`p-2.5 rounded-xl text-xs font-bold flex items-center gap-2 animate-fade-in ${
-                      isSuccess ? 'bg-emerald-100 border border-emerald-300 text-emerald-900' : 'bg-rose-100 border border-rose-300 text-rose-900'
-                    }`}>
-                      <i className={`fa-solid ${isSuccess ? 'fa-circle-check text-emerald-600' : 'fa-triangle-exclamation text-rose-600'}`}></i>
-                      <span>{formMsg}</span>
-                    </div>
-                  );
-                })()}
 
                 {/* 1. Project Name & Developer Name */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

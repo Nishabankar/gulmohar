@@ -2740,6 +2740,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       const data = await res.json();
       if (data.success && data.data) {
         setEnquiries(prev => prev.map(item => (item._id === id || item.id === id) ? data.data : item));
+        showToast(`Lead status updated to '${newStatus}'`, 'success');
       }
     } catch (err) {
       console.warn('Backend status patch error:', err);
@@ -2939,11 +2940,13 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
           setStatusFilter(finalSynced.status);
         }
 
+        const leadDisplayName = `${updatedLead.firstName || ''} ${updatedLead.lastName || ''}`.trim() || 'Lead';
         setEditModalSuccessMsg(`Enquiry Updated Successfully in Database!`);
+        showToast(`Lead '${leadDisplayName}' updated successfully!`, 'success');
         setTimeout(() => {
           setEditingEnquiry(null);
           setEditModalSuccessMsg('');
-        }, 1200);
+        }, 1400);
       } else {
         alert(`Database Update Error: ${data.message || 'Could not update lead in database'}`);
         setEditModalSuccessMsg(`Error: ${data.message || 'Database update failed'}`);
@@ -8059,29 +8062,32 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
               </button>
             </div>
 
+            {/* Pinned In-Modal Alert Banner (Always visible even when scrolled down) */}
+            {editModalSuccessMsg && (() => {
+              const isSuccess = (editModalSuccessMsg.toLowerCase().includes('success') || editModalSuccessMsg.toLowerCase().includes('updated')) && !editModalSuccessMsg.toLowerCase().includes('error') && !editModalSuccessMsg.toLowerCase().includes('please');
+              return (
+                <div class="px-4 sm:px-5 pt-3 pb-1 flex-shrink-0">
+                  <div class={`px-4 py-2.5 rounded-2xl flex items-center justify-between text-xs font-bold shadow-sm animate-fade-in ${
+                    isSuccess ? 'bg-emerald-100 border border-emerald-300 text-emerald-950' : 'bg-rose-100 border border-rose-300 text-rose-950'
+                  }`}>
+                    <div class="flex items-center gap-2.5">
+                      <div class={`w-6 h-6 rounded-full flex items-center justify-center text-xs flex-shrink-0 ${
+                        isSuccess ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'
+                      }`}>
+                        <i class={`fa-solid ${isSuccess ? 'fa-check' : 'fa-triangle-exclamation'}`}></i>
+                      </div>
+                      <span class={`text-xs font-bold ${isSuccess ? 'text-emerald-900' : 'text-rose-900'}`}>{editModalSuccessMsg}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* Form */}
             <form onSubmit={handleSaveFullEdit} class="flex-1 flex flex-col min-h-0 overflow-hidden">
               
               {/* Scrollable Middle Content */}
               <div class="p-4 sm:p-5 space-y-3.5 overflow-y-auto flex-1 custom-scrollbar">
-                {/* Success Alert inside Modal */}
-                {editModalSuccessMsg && (() => {
-                  const isSuccess = (editModalSuccessMsg.toLowerCase().includes('success') || editModalSuccessMsg.toLowerCase().includes('updated')) && !editModalSuccessMsg.toLowerCase().includes('error') && !editModalSuccessMsg.toLowerCase().includes('please');
-                  return (
-                    <div class={`px-4 py-2.5 rounded-2xl flex items-center justify-between text-xs font-bold shadow-sm animate-fade-in ${
-                      isSuccess ? 'bg-emerald-100 border border-emerald-300 text-emerald-950' : 'bg-rose-100 border border-rose-300 text-rose-950'
-                    }`}>
-                      <div class="flex items-center gap-2.5">
-                        <div class={`w-6 h-6 rounded-full flex items-center justify-center text-xs flex-shrink-0 ${
-                          isSuccess ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'
-                        }`}>
-                          <i class={`fa-solid ${isSuccess ? 'fa-check' : 'fa-triangle-exclamation'}`}></i>
-                        </div>
-                        <span class={`text-xs font-bold ${isSuccess ? 'text-emerald-900' : 'text-rose-900'}`}>{editModalSuccessMsg}</span>
-                      </div>
-                    </div>
-                  );
-                })()}
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>

@@ -7826,6 +7826,8 @@ export default function AdminDashboard({ onLogout }) {
                                   if (matchedProject?.projectUrl && matchedProject.projectUrl.trim()) {
                                     const rawUrl = matchedProject.projectUrl.trim();
                                     targetUrl = rawUrl.startsWith('http') ? rawUrl : `https://${rawUrl}`;
+                                  } else if (cleanLeadProj.includes('gulmohar') || currentProjName.toLowerCase().includes('gulmohar')) {
+                                    targetUrl = 'https://gulmoharcity.in';
                                   } else if (hasValidProject) {
                                     const queryParts = [currentProjName, matchedProject?.area, 'Pune'].filter(Boolean).join(', ');
                                     targetUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(queryParts)}`;

@@ -184,6 +184,9 @@ const seedAdminUser = async () => {
       for (const sql of colsToEnsure) {
         try { await query(sql); } catch (e) { /* Column exists */ }
       }
+      try {
+        await query("UPDATE projects SET project_url = 'https://gulmoharcity.in' WHERE (name = 'Gulmohar City' OR LOWER(name) LIKE '%gulmohar city%') AND (project_url IS NULL OR TRIM(project_url) = '')");
+      } catch (e) { /* Non-fatal */ }
     } catch (e) {
       console.warn('Projects table init note:', e.message);
     }

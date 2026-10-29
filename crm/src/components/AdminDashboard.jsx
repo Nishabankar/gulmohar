@@ -2749,8 +2749,6 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     };
   }, []);
   const [selectedLeadIds, setSelectedLeadIds] = useState([]);
-  const [showAdminPhoneNumbers, setShowAdminPhoneNumbers] = useState(false);
-  const [revealedPhoneLeadIds, setRevealedPhoneLeadIds] = useState(new Set());
   const [editingNoteId, setEditingNoteId] = useState(null);
   const [noteText, setNoteText] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -7268,19 +7266,6 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   >
                                     <div class="flex items-center gap-1.5">
                                       <span>Mobile No</span>
-                                      {isAdmin && (
-                                        <button
-                                          type="button"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setShowAdminPhoneNumbers(prev => !prev);
-                                          }}
-                                          class="w-4 h-4 rounded hover:bg-gray-200 flex items-center justify-center text-gray-500 hover:text-[#B30E2E] transition-colors cursor-pointer ml-0.5"
-                                          title={showAdminPhoneNumbers ? "Hide Mobile Numbers (Stars)" : "Show Mobile Numbers (Admin)"}
-                                        >
-                                          <i class={`fa-solid ${showAdminPhoneNumbers ? 'fa-eye-slash' : 'fa-eye'} text-[10px]`}></i>
-                                        </button>
-                                      )}
                                       {renderSortIndicator()}
                                     </div>
                                   </th>
@@ -7593,8 +7578,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   );
                                 case 'mobile': {
                                   const rawPhone = item.phone || '';
-                                  const isRevealed = isAdmin && (showAdminPhoneNumbers || revealedPhoneLeadIds.has(currentId));
-                                  const displayPhone = isRevealed ? rawPhone : maskPhoneNumber(rawPhone);
+                                  const displayPhone = maskPhoneNumber(rawPhone);
                                   return (
                                     <td key="mobile" class={getTdClass('mobile', currentId)} style={getTdStyle('mobile')}>
                                       {rawPhone ? (
@@ -7607,27 +7591,6 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                             <i class="fa-solid fa-phone text-[8.5px] text-[#B30E2E]"></i>
                                             <span>{displayPhone}</span>
                                           </a>
-                                          {isAdmin && (
-                                            <button
-                                              type="button"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                setRevealedPhoneLeadIds(prev => {
-                                                  const next = new Set(prev);
-                                                  if (next.has(currentId)) {
-                                                    next.delete(currentId);
-                                                  } else {
-                                                    next.add(currentId);
-                                                  }
-                                                  return next;
-                                                });
-                                              }}
-                                              class="w-4 h-4 rounded hover:bg-rose-100 flex items-center justify-center text-gray-400 hover:text-[#B30E2E] transition cursor-pointer shrink-0"
-                                              title={isRevealed ? "Hide number" : "Reveal number (Admin)"}
-                                            >
-                                              <i class={`fa-solid ${isRevealed ? 'fa-eye-slash' : 'fa-eye'} text-[9px]`}></i>
-                                            </button>
-                                          )}
                                           {(() => {
                                             const cleanPhone = (item.phone || '').replace(/\D/g, '');
                                             const formattedPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;

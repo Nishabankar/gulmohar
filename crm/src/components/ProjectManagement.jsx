@@ -272,6 +272,8 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
   const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
   const [isTypoDropdownOpen, setIsTypoDropdownOpen] = useState(false);
   const [isAreaDropdownOpen, setIsAreaDropdownOpen] = useState(false);
+  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+  const [statusCoords, setStatusCoords] = useState(null);
   const [typeCoords, setTypeCoords] = useState(null);
   const [typoCoords, setTypoCoords] = useState(null);
   const [areaCoords, setAreaCoords] = useState(null);
@@ -281,6 +283,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
   const typeDropdownRef = useRef(null);
   const typoDropdownRef = useRef(null);
   const areaDropdownRef = useRef(null);
+  const statusDropdownRef = useRef(null);
   const [isMobileTypeDropdownOpen, setIsMobileTypeDropdownOpen] = useState(false);
   const [isDesktopTypeDropdownOpen, setIsDesktopTypeDropdownOpen] = useState(false);
   const mobileFilterTypeDropdownRef = useRef(null);
@@ -763,6 +766,56 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
     setIsTypoDropdownOpen(true);
   };
 
+  // Toggle Status Dropdown with smart viewport calculation
+  const handleToggleStatusDropdown = (e) => {
+    e.stopPropagation();
+    if (isStatusDropdownOpen) {
+      setIsStatusDropdownOpen(false);
+      return;
+    }
+    setIsTypeDropdownOpen(false);
+    setIsTypoDropdownOpen(false);
+    setIsAreaDropdownOpen(false);
+
+    const btn = e.currentTarget;
+    if (!btn) return;
+    const rect = btn.getBoundingClientRect();
+    const isMobile = window.innerWidth < 640;
+
+    const dropdownHeight = isMobile
+      ? Math.min(230, window.innerHeight - 80)
+      : Math.min(210, PROJECT_STATUSES.length * 42 + 50);
+
+    const dropdownWidth = isMobile
+      ? Math.min(Math.max(rect.width, 240), window.innerWidth - 24)
+      : Math.min(Math.max(rect.width, 220), window.innerWidth - 24);
+
+    const spaceBelow = window.innerHeight - rect.bottom - 16;
+    const spaceAbove = rect.top - 16;
+
+    let top;
+    let maxHeight = dropdownHeight;
+
+    const shouldOpenUpwards = (spaceBelow < dropdownHeight && spaceAbove >= dropdownHeight) || (spaceBelow < 180 && spaceAbove > spaceBelow);
+
+    let left = rect.left;
+    if (left + dropdownWidth > window.innerWidth - 12) {
+      left = Math.max(12, window.innerWidth - dropdownWidth - 12);
+    }
+    if (left < 12) left = 12;
+
+    if (shouldOpenUpwards) {
+      const maxHeight = Math.min(dropdownHeight, Math.max(120, spaceAbove - 12));
+      const bottom = window.innerHeight - rect.top + 4;
+      setStatusCoords({ bottom, left, width: dropdownWidth, maxHeight });
+    } else {
+      const maxHeight = Math.min(dropdownHeight, Math.max(120, spaceBelow - 12));
+      const top = rect.bottom + 4;
+      setStatusCoords({ top, left, width: dropdownWidth, maxHeight });
+    }
+    setIsStatusDropdownOpen(true);
+  };
+
   // Toggle Area Dropdown with smart viewport calculation
   const handleToggleAreaDropdown = (e) => {
     e.stopPropagation();
@@ -856,6 +909,13 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
       ) {
         setIsAreaDropdownOpen(false);
         setAreaSearch('');
+      }
+      if (
+        statusDropdownRef.current && 
+        !statusDropdownRef.current.contains(event.target) && 
+        !event.target.closest('.project-status-dropdown-menu')
+      ) {
+        setIsStatusDropdownOpen(false);
       }
       if (
         mobileFilterTypeDropdownRef.current &&
@@ -2541,18 +2601,33 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
 
                 {/* 4. Project Status & Land Area */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
+                  <div ref={statusDropdownRef} className="relative">
                     <label className="block text-xs font-bold text-gray-700 mb-1">Project Status</label>
-                    <select
-                      value={formData.projectStatus}
-                      onChange={(e) => setFormData({ ...formData, projectStatus: e.target.value })}
-                      className="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] bg-white text-gray-800"
+                    <button
+                      type="button"
+                      onClick={handleToggleStatusDropdown}
+                      className={`w-full h-[38px] px-3 py-2 rounded-xl border text-xs flex items-center justify-between cursor-pointer transition bg-white ${
+                        isStatusDropdownOpen
+                          ? 'border-[#B30E2E] ring-1 ring-[#FCD6DC]'
+                          : 'border-gray-300 hover:border-gray-400'
+                      }`}
                     >
-                      <option value="">Select Status</option>
-                      {PROJECT_STATUSES.map(st => (
-                        <option key={st} value={st}>{st}</option>
-                      ))}
-                    </select>
+                      <span className={formData.projectStatus ? 'font-semibold text-gray-800 truncate flex items-center gap-2' : 'text-gray-400 truncate'}>
+                        {formData.projectStatus ? (
+                          <>
+                            <span className={`w-2 h-2 rounded-full shrink-0 ${
+                              formData.projectStatus === 'Under Construction' ? 'bg-amber-500' :
+                              formData.projectStatus === 'Ready to Move' ? 'bg-emerald-500' :
+                              formData.projectStatus === 'New Launch' ? 'bg-sky-500' : 'bg-teal-500'
+                            }`} />
+                            <span className="truncate">{formData.projectStatus}</span>
+                          </>
+                        ) : (
+                          'Select Status'
+                        )}
+                      </span>
+                      <i className={`fa-solid fa-chevron-down text-xs text-gray-400 transition-transform flex-shrink-0 ${isStatusDropdownOpen ? 'rotate-180 text-[#B30E2E]' : ''}`}></i>
+                    </button>
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-gray-700 mb-1">Land Area</label>
@@ -2979,6 +3054,68 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
           </>
         );
       })()}
+
+      {/* FLOATING PROJECT STATUS DROPDOWN MENU */}
+      {showModal && isStatusDropdownOpen && statusCoords && (
+        <>
+          <div 
+            className="fixed inset-0 z-[99998] bg-black/25 sm:hidden animate-fade-in"
+            onClick={() => setIsStatusDropdownOpen(false)}
+          />
+          <div 
+            onWheel={(e) => e.stopPropagation()}
+            className="fixed z-[99999] bg-white border border-gray-200 rounded-xl shadow-2xl flex flex-col overflow-hidden animate-fade-in project-status-dropdown-menu"
+            style={{
+              ...(statusCoords.bottom !== undefined ? { bottom: `${statusCoords.bottom}px` } : { top: `${statusCoords.top}px` }),
+              left: `${statusCoords.left}px`,
+              width: `${statusCoords.width}px`,
+              maxHeight: `${statusCoords.maxHeight}px`
+            }}
+          >
+            <div className="p-2 border-b border-gray-100 bg-gray-50 flex items-center justify-between flex-shrink-0">
+              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Select Project Status</span>
+              <button
+                type="button"
+                onClick={() => setIsStatusDropdownOpen(false)}
+                className="w-4 h-4 rounded-full hover:bg-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 transition cursor-pointer text-xs"
+              >
+                <i className="fa-solid fa-xmark text-[10px]"></i>
+              </button>
+            </div>
+            <div className="overflow-y-auto overscroll-contain custom-scrollbar py-1">
+              {PROJECT_STATUSES.map(st => {
+                const isSelected = formData.projectStatus === st;
+                const dotColor = 
+                  st === 'Under Construction' ? 'bg-amber-500' :
+                  st === 'Ready to Move' ? 'bg-emerald-500' :
+                  st === 'New Launch' ? 'bg-sky-500' : 'bg-teal-500';
+
+                return (
+                  <button
+                    key={st}
+                    type="button"
+                    onClick={() => {
+                      setFormData(prev => ({ ...prev, projectStatus: st }));
+                      setIsStatusDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 text-xs font-semibold hover:bg-rose-50 hover:text-[#B30E2E] transition flex items-center justify-between cursor-pointer ${
+                      isSelected ? 'bg-[#FFF0F2] text-[#B30E2E] font-bold' : 'text-gray-700'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${dotColor}`} />
+                      <span className="truncate">{st}</span>
+                    </div>
+                    {isSelected && (
+                      <i className="fa-solid fa-check text-[10px] text-[#B30E2E]"></i>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* FLOATING AREA DROPDOWN MENU */}
       {showModal && isAreaDropdownOpen && areaCoords && (() => {

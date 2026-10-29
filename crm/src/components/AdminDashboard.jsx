@@ -490,6 +490,1211 @@ const ProjectFilterDropdown = ({
     </div>
   );
 };
+// Searchable Single-Select Project Dropdown for Modals (Mobile-first, Floating/Fixed)
+const SingleProjectSelectDropdown = ({
+  value = '',
+  onChange,
+  projectsList = [],
+  placeholder = 'Select Project',
+  className = ''
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const [coords, setCoords] = useState(null);
+  const triggerRef = useRef(null);
+
+  const computeCoords = (btn) => {
+    if (!btn) return null;
+    const rect = btn.getBoundingClientRect();
+    const isMobile = window.innerWidth < 640;
+    const vpHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    const vpWidth = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+
+    const targetHeight = isMobile ? Math.min(260, vpHeight - 80) : 280;
+    const targetWidth = isMobile
+      ? Math.min(Math.max(rect.width, 240), vpWidth - 24)
+      : Math.min(Math.max(rect.width, 280), vpWidth - 24);
+
+    const spaceBelow = vpHeight - rect.bottom - 16;
+    const spaceAbove = rect.top - 16;
+
+    let left = rect.left;
+    if (left + targetWidth > vpWidth - 12) {
+      left = Math.max(12, vpWidth - targetWidth - 12);
+    }
+    if (left < 12) left = 12;
+
+    const shouldOpenUpwards = (spaceBelow < targetHeight && spaceAbove >= targetHeight) || 
+                              (isMobile && spaceBelow < 180 && spaceAbove > spaceBelow);
+
+    if (shouldOpenUpwards) {
+      const maxHeight = Math.min(targetHeight, Math.max(140, spaceAbove - 12));
+      const bottom = vpHeight - rect.top + 4;
+      return { bottom, left, width: targetWidth, maxHeight };
+    } else {
+      const maxHeight = Math.min(targetHeight, Math.max(140, spaceBelow - 12));
+      const top = rect.bottom + 4;
+      return { top, left, width: targetWidth, maxHeight };
+    }
+  };
+
+  const handleToggle = (e) => {
+    e.stopPropagation();
+    if (isOpen) {
+      setIsOpen(false);
+      setSearch('');
+      return;
+    }
+    const btn = e.currentTarget;
+    if (!btn) return;
+    const newCoords = computeCoords(btn);
+    setCoords(newCoords);
+    setSearch('');
+    setIsOpen(true);
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleOutside = (e) => {
+      if (triggerRef.current && triggerRef.current.contains(e.target)) return;
+      if (e.target.closest && e.target.closest('.single-project-select-menu')) return;
+      setIsOpen(false);
+      setSearch('');
+    };
+
+    const updatePosition = () => {
+      if (!triggerRef.current) return;
+      const btn = triggerRef.current.querySelector('button');
+      if (!btn) return;
+      const rect = btn.getBoundingClientRect();
+      const vpHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      if (rect.bottom < 40 || rect.top > vpHeight - 40) {
+        setIsOpen(false);
+        setSearch('');
+        return;
+      }
+      const newCoords = computeCoords(btn);
+      if (newCoords) setCoords(newCoords);
+    };
+
+    document.addEventListener('mousedown', handleOutside);
+    document.addEventListener('touchstart', handleOutside);
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', updatePosition);
+      window.visualViewport.addEventListener('scroll', updatePosition);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleOutside);
+      document.removeEventListener('touchstart', handleOutside);
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', updatePosition);
+        window.visualViewport.removeEventListener('scroll', updatePosition);
+      }
+    };
+  }, [isOpen]);
+
+  const filteredProjects = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return projectsList;
+    return (projectsList || []).filter(p => 
+      (p.name || '').toLowerCase().includes(q) || 
+      (p.area || '').toLowerCase().includes(q) ||
+      (p.developerName || '').toLowerCase().includes(q)
+    );
+  }, [projectsList, search]);
+
+  const currentProject = (projectsList || []).find(p => (p.name || '').trim().toLowerCase() === (value || '').trim().toLowerCase());
+  const displayLabel = currentProject ? currentProject.name : (value || '');
+
+  return (
+    <div ref={triggerRef} className={`relative w-full ${className}`}>
+      <button
+        type="button"
+        onClick={handleToggle}
+        className={`w-full h-[38px] px-3 py-2 rounded-xl border text-xs flex items-center justify-between cursor-pointer transition bg-white ${
+          isOpen
+            ? 'border-[#B30E2E] ring-1 ring-[#FCD6DC]'
+            : 'border-gray-300 hover:border-gray-400'
+        }`}
+      >
+        <span className={displayLabel ? 'font-semibold text-gray-800 truncate flex items-center gap-1.5' : 'text-gray-400 truncate'}>
+          {displayLabel ? (
+            <>
+              <i className="fa-solid fa-building text-[10px] text-[#B30E2E] shrink-0"></i>
+              <span className="truncate">{displayLabel}</span>
+            </>
+          ) : (
+            placeholder
+          )}
+        </span>
+        <i className={`fa-solid fa-chevron-down text-xs text-gray-400 transition-transform shrink-0 ${isOpen ? 'rotate-180 text-[#B30E2E]' : ''}`}></i>
+      </button>
+
+      {isOpen && coords && (
+        <>
+          <div 
+            className="fixed inset-0 z-[99998] bg-black/25 sm:hidden animate-fade-in"
+            onClick={() => { setIsOpen(false); setSearch(''); }}
+          />
+          <div
+            onWheel={(e) => e.stopPropagation()}
+            className="fixed z-[99999] bg-white border border-gray-200 rounded-xl shadow-2xl flex flex-col overflow-hidden animate-fade-in single-project-select-menu"
+            style={{
+              ...(coords.bottom !== undefined ? { bottom: `${coords.bottom}px` } : { top: `${coords.top}px` }),
+              left: `${coords.left}px`,
+              width: `${coords.width}px`,
+              maxHeight: `${coords.maxHeight}px`
+            }}
+          >
+            {/* Header with Search */}
+            <div className="p-2 border-b border-gray-100 bg-gray-50 flex-shrink-0 space-y-1.5">
+              <div className="flex items-center justify-between px-1">
+                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                  Select Project ({projectsList.length})
+                </span>
+                <button
+                  type="button"
+                  onClick={() => { setIsOpen(false); setSearch(''); }}
+                  className="w-4 h-4 rounded-full hover:bg-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 transition cursor-pointer text-xs"
+                >
+                  <i className="fa-solid fa-xmark text-[10px]"></i>
+                </button>
+              </div>
+              <div className="relative flex items-center">
+                <i className="fa-solid fa-magnifying-glass text-gray-400 text-[10px] absolute left-2.5 pointer-events-none"></i>
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search project name, area..."
+                  className="w-full pl-7 pr-6 py-1 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#B30E2E]"
+                />
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() => setSearch('')}
+                    className="absolute right-2 text-gray-400 hover:text-gray-600 text-[10px] w-4 h-4 flex items-center justify-center cursor-pointer"
+                  >
+                    <i className="fa-solid fa-xmark"></i>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Scrollable Project List */}
+            <div className="overflow-y-auto overscroll-contain custom-scrollbar flex-1 py-1">
+              <button
+                type="button"
+                onClick={() => {
+                  onChange('');
+                  setIsOpen(false);
+                  setSearch('');
+                }}
+                className={`w-full text-left px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-50 flex items-center justify-between cursor-pointer italic ${
+                  !value ? 'bg-gray-50 font-semibold' : ''
+                }`}
+              >
+                <span>None / Select Project</span>
+                {!value && <i className="fa-solid fa-check text-[10px] text-gray-500"></i>}
+              </button>
+
+              {filteredProjects.length === 0 ? (
+                <div className="py-4 px-3 text-center text-gray-400 text-xs">
+                  No projects match "{search}"
+                </div>
+              ) : (
+                filteredProjects.map((p) => {
+                  const isSelected = (value || '').trim().toLowerCase() === (p.name || '').trim().toLowerCase();
+                  return (
+                    <button
+                      key={p.id || p.name}
+                      type="button"
+                      onClick={() => {
+                        onChange(p.name);
+                        setIsOpen(false);
+                        setSearch('');
+                      }}
+                      className={`w-full text-left px-3 py-2 text-xs font-semibold hover:bg-rose-50 hover:text-[#B30E2E] transition flex items-center justify-between cursor-pointer ${
+                        isSelected ? 'bg-[#FFF0F2] text-[#B30E2E] font-bold' : 'text-gray-700'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        <i className={`fa-solid fa-building text-[10px] shrink-0 ${isSelected ? 'text-[#B30E2E]' : 'text-gray-400'}`}></i>
+                        <span className="truncate">{p.name}</span>
+                        {p.area && (
+                          <span className="text-[10px] text-gray-400 font-normal shrink-0">
+                            • {p.area}
+                          </span>
+                        )}
+                      </div>
+                      {isSelected && (
+                        <i className="fa-solid fa-check text-[10px] text-[#B30E2E] shrink-0"></i>
+                      )}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+// Searchable Single-Select Area Dropdown for Modals (Mobile-first, Floating/Fixed)
+const SingleAreaSelectDropdown = ({
+  value = '',
+  onChange,
+  areasList = PROJECT_AREAS,
+  placeholder = 'Select Area',
+  className = ''
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const [coords, setCoords] = useState(null);
+  const triggerRef = useRef(null);
+
+  const computeCoords = (btn) => {
+    if (!btn) return null;
+    const rect = btn.getBoundingClientRect();
+    const isMobile = window.innerWidth < 640;
+    const vpHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    const vpWidth = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+
+    const availableAreas = [...(areasList || PROJECT_AREAS)];
+    if (value && !availableAreas.includes(value)) {
+      availableAreas.unshift(value);
+    }
+
+    const targetHeight = isMobile ? Math.min(260, vpHeight - 80) : Math.min(270, availableAreas.length * 40 + 70);
+    const targetWidth = isMobile
+      ? Math.min(Math.max(rect.width, 240), vpWidth - 24)
+      : Math.min(Math.max(rect.width, 240), vpWidth - 24);
+
+    const spaceBelow = vpHeight - rect.bottom - 16;
+    const spaceAbove = rect.top - 16;
+
+    let left = rect.left;
+    if (left + targetWidth > vpWidth - 12) {
+      left = Math.max(12, vpWidth - targetWidth - 12);
+    }
+    if (left < 12) left = 12;
+
+    const shouldOpenUpwards = (spaceBelow < targetHeight && spaceAbove >= targetHeight) || 
+                              (isMobile && spaceBelow < 180 && spaceAbove > spaceBelow);
+
+    if (shouldOpenUpwards) {
+      const maxHeight = Math.min(targetHeight, Math.max(140, spaceAbove - 12));
+      const bottom = vpHeight - rect.top + 4;
+      return { bottom, left, width: targetWidth, maxHeight };
+    } else {
+      const maxHeight = Math.min(targetHeight, Math.max(140, spaceBelow - 12));
+      const top = rect.bottom + 4;
+      return { top, left, width: targetWidth, maxHeight };
+    }
+  };
+
+  const handleToggle = (e) => {
+    e.stopPropagation();
+    if (isOpen) {
+      setIsOpen(false);
+      setSearch('');
+      return;
+    }
+    const btn = e.currentTarget;
+    if (!btn) return;
+    const newCoords = computeCoords(btn);
+    setCoords(newCoords);
+    setSearch('');
+    setIsOpen(true);
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleOutside = (e) => {
+      if (triggerRef.current && triggerRef.current.contains(e.target)) return;
+      if (e.target.closest && e.target.closest('.single-area-select-menu')) return;
+      setIsOpen(false);
+      setSearch('');
+    };
+
+    const updatePosition = () => {
+      if (!triggerRef.current) return;
+      const btn = triggerRef.current.querySelector('button');
+      if (!btn) return;
+      const rect = btn.getBoundingClientRect();
+      const vpHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      if (rect.bottom < 40 || rect.top > vpHeight - 40) {
+        setIsOpen(false);
+        setSearch('');
+        return;
+      }
+      const newCoords = computeCoords(btn);
+      if (newCoords) setCoords(newCoords);
+    };
+
+    document.addEventListener('mousedown', handleOutside);
+    document.addEventListener('touchstart', handleOutside);
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', updatePosition);
+      window.visualViewport.addEventListener('scroll', updatePosition);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleOutside);
+      document.removeEventListener('touchstart', handleOutside);
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', updatePosition);
+        window.visualViewport.removeEventListener('scroll', updatePosition);
+      }
+    };
+  }, [isOpen]);
+
+  const availableAreas = useMemo(() => {
+    const list = [...(areasList || PROJECT_AREAS)];
+    if (value && !list.includes(value)) {
+      list.unshift(value);
+    }
+    const q = search.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter(a => a.toLowerCase().includes(q));
+  }, [areasList, value, search]);
+
+  return (
+    <div ref={triggerRef} className={`relative w-full ${className}`}>
+      <button
+        type="button"
+        onClick={handleToggle}
+        className={`w-full h-[38px] px-3 py-2 rounded-xl border text-xs flex items-center justify-between cursor-pointer transition bg-white ${
+          isOpen
+            ? 'border-[#B30E2E] ring-1 ring-[#FCD6DC]'
+            : 'border-gray-300 hover:border-gray-400'
+        }`}
+      >
+        <span className={value ? 'font-semibold text-gray-800 truncate flex items-center gap-1.5' : 'text-gray-400 truncate'}>
+          {value ? (
+            <>
+              <i className="fa-solid fa-location-dot text-[10px] text-[#B30E2E] shrink-0"></i>
+              <span className="truncate">{value}</span>
+            </>
+          ) : (
+            placeholder
+          )}
+        </span>
+        <i className={`fa-solid fa-chevron-down text-xs text-gray-400 transition-transform shrink-0 ${isOpen ? 'rotate-180 text-[#B30E2E]' : ''}`}></i>
+      </button>
+
+      {isOpen && coords && (
+        <>
+          <div 
+            className="fixed inset-0 z-[99998] bg-black/25 sm:hidden animate-fade-in"
+            onClick={() => { setIsOpen(false); setSearch(''); }}
+          />
+          <div
+            onWheel={(e) => e.stopPropagation()}
+            className="fixed z-[99999] bg-white border border-gray-200 rounded-xl shadow-2xl flex flex-col overflow-hidden animate-fade-in single-area-select-menu"
+            style={{
+              ...(coords.bottom !== undefined ? { bottom: `${coords.bottom}px` } : { top: `${coords.top}px` }),
+              left: `${coords.left}px`,
+              width: `${coords.width}px`,
+              maxHeight: `${coords.maxHeight}px`
+            }}
+          >
+            {/* Header with Search */}
+            <div className="p-2 border-b border-gray-100 bg-gray-50 flex-shrink-0 space-y-1.5">
+              <div className="flex items-center justify-between px-1">
+                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                  Select Area ({availableAreas.length})
+                </span>
+                <button
+                  type="button"
+                  onClick={() => { setIsOpen(false); setSearch(''); }}
+                  className="w-4 h-4 rounded-full hover:bg-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 transition cursor-pointer text-xs"
+                >
+                  <i className="fa-solid fa-xmark text-[10px]"></i>
+                </button>
+              </div>
+              <div className="relative flex items-center">
+                <i className="fa-solid fa-magnifying-glass text-gray-400 text-[10px] absolute left-2.5 pointer-events-none"></i>
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search area..."
+                  className="w-full pl-7 pr-6 py-1 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#B30E2E]"
+                />
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() => setSearch('')}
+                    className="absolute right-2 text-gray-400 hover:text-gray-600 text-[10px] w-4 h-4 flex items-center justify-center cursor-pointer"
+                  >
+                    <i className="fa-solid fa-xmark"></i>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Scrollable Area List */}
+            <div className="overflow-y-auto overscroll-contain custom-scrollbar flex-1 py-1">
+              <button
+                type="button"
+                onClick={() => {
+                  onChange('');
+                  setIsOpen(false);
+                  setSearch('');
+                }}
+                className={`w-full text-left px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-50 flex items-center justify-between cursor-pointer italic ${
+                  !value ? 'bg-gray-50 font-semibold' : ''
+                }`}
+              >
+                <span>None / Select Area</span>
+                {!value && <i className="fa-solid fa-check text-[10px] text-gray-500"></i>}
+              </button>
+
+              {availableAreas.length === 0 ? (
+                <div className="py-4 px-3 text-center text-gray-400 text-xs">
+                  No areas match "{search}"
+                </div>
+              ) : (
+                availableAreas.map((areaName) => {
+                  const isSelected = (value || '').trim().toLowerCase() === areaName.trim().toLowerCase();
+                  return (
+                    <button
+                      key={areaName}
+                      type="button"
+                      onClick={() => {
+                        onChange(areaName);
+                        setIsOpen(false);
+                        setSearch('');
+                      }}
+                      className={`w-full text-left px-3 py-2 text-xs font-semibold hover:bg-rose-50 hover:text-[#B30E2E] transition flex items-center justify-between cursor-pointer ${
+                        isSelected ? 'bg-[#FFF0F2] text-[#B30E2E] font-bold' : 'text-gray-700'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        <i className={`fa-solid fa-location-dot text-[10px] shrink-0 ${isSelected ? 'text-[#B30E2E]' : 'text-gray-400'}`}></i>
+                        <span className="truncate">{areaName}</span>
+                      </div>
+                      {isSelected && (
+                        <i className="fa-solid fa-check text-[10px] text-[#B30E2E] shrink-0"></i>
+                      )}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+// Helper for lead status badges
+const getStatusBadge = (status) => {
+  switch (status) {
+    case 'New':
+      return 'bg-amber-100 text-amber-800 border-amber-300';
+    case 'Contacted':
+      return 'bg-blue-100 text-blue-800 border-blue-300';
+    case 'Interested':
+      return 'bg-purple-100 text-purple-800 border-purple-300';
+    case 'Details Provided':
+      return 'bg-cyan-100 text-cyan-800 border-cyan-300';
+    case 'Site Visit Scheduled':
+      return 'bg-indigo-100 text-indigo-800 border-indigo-300';
+    case 'Site Visit Done':
+      return 'bg-sky-100 text-sky-800 border-sky-300';
+    case 'Won':
+    case 'Closed':
+      return 'bg-emerald-100 text-emerald-800 border-emerald-300';
+    case 'Not Interested':
+      return 'bg-amber-100 text-amber-900 border-amber-300';
+    case 'Lost':
+      return 'bg-rose-100 text-rose-800 border-rose-300';
+    default:
+      return 'bg-gray-100 text-gray-800 border-gray-300';
+  }
+};
+
+// Priority Dropdown for Modals (Mobile-first, Floating/Fixed)
+const SinglePrioritySelectDropdown = ({ value = 'Hot', onChange, className = '' }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [coords, setCoords] = useState(null);
+  const triggerRef = useRef(null);
+
+  const currentVal = (value === 'Cold' || value === 'Low') ? 'Cold' : 'Hot';
+
+  const computeCoords = (btn) => {
+    if (!btn) return null;
+    const rect = btn.getBoundingClientRect();
+    const isMobile = window.innerWidth < 640;
+    const vpHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    const vpWidth = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+
+    const targetHeight = 110;
+    const targetWidth = isMobile
+      ? Math.min(Math.max(rect.width, 200), vpWidth - 24)
+      : Math.min(Math.max(rect.width, 160), vpWidth - 24);
+
+    const spaceBelow = vpHeight - rect.bottom - 16;
+    const spaceAbove = rect.top - 16;
+
+    let left = rect.left;
+    if (left + targetWidth > vpWidth - 12) {
+      left = Math.max(12, vpWidth - targetWidth - 12);
+    }
+    if (left < 12) left = 12;
+
+    const shouldOpenUpwards = (spaceBelow < targetHeight && spaceAbove >= targetHeight) || 
+                              (isMobile && spaceBelow < 120 && spaceAbove > spaceBelow);
+
+    if (shouldOpenUpwards) {
+      const bottom = vpHeight - rect.top + 4;
+      return { bottom, left, width: targetWidth, maxHeight: targetHeight };
+    } else {
+      const top = rect.bottom + 4;
+      return { top, left, width: targetWidth, maxHeight: targetHeight };
+    }
+  };
+
+  const handleToggle = (e) => {
+    e.stopPropagation();
+    if (isOpen) { setIsOpen(false); return; }
+    const btn = e.currentTarget;
+    if (!btn) return;
+    const newCoords = computeCoords(btn);
+    setCoords(newCoords);
+    setIsOpen(true);
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleOutside = (e) => {
+      if (triggerRef.current && triggerRef.current.contains(e.target)) return;
+      if (e.target.closest && e.target.closest('.single-priority-select-menu')) return;
+      setIsOpen(false);
+    };
+
+    const updatePosition = () => {
+      if (!triggerRef.current) return;
+      const btn = triggerRef.current.querySelector('button');
+      if (!btn) return;
+      const rect = btn.getBoundingClientRect();
+      const vpHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      if (rect.bottom < 40 || rect.top > vpHeight - 40) {
+        setIsOpen(false);
+        return;
+      }
+      const newCoords = computeCoords(btn);
+      if (newCoords) setCoords(newCoords);
+    };
+
+    document.addEventListener('mousedown', handleOutside);
+    document.addEventListener('touchstart', handleOutside);
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', updatePosition);
+      window.visualViewport.addEventListener('scroll', updatePosition);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleOutside);
+      document.removeEventListener('touchstart', handleOutside);
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', updatePosition);
+        window.visualViewport.removeEventListener('scroll', updatePosition);
+      }
+    };
+  }, [isOpen]);
+
+  return (
+    <div ref={triggerRef} className={`relative w-full ${className}`}>
+      <button
+        type="button"
+        onClick={handleToggle}
+        className={`w-full h-[38px] px-3 py-2 rounded-xl border text-xs flex items-center justify-between cursor-pointer transition bg-white ${
+          isOpen ? 'border-[#B30E2E] ring-1 ring-[#FCD6DC]' : 'border-gray-300 hover:border-gray-400'
+        }`}
+      >
+        <span className="flex items-center gap-2">
+          {currentVal === 'Hot' ? (
+            <span className="px-2 py-0.5 rounded-md border text-[10px] font-bold bg-rose-50 text-rose-700 border-rose-300 flex items-center gap-1.5">
+              <i className="fa-solid fa-fire text-rose-600"></i> Hot
+            </span>
+          ) : (
+            <span className="px-2 py-0.5 rounded-md border text-[10px] font-bold bg-sky-50 text-sky-700 border-sky-300 flex items-center gap-1.5">
+              <i className="fa-solid fa-snowflake text-sky-600"></i> Cold
+            </span>
+          )}
+        </span>
+        <i className={`fa-solid fa-chevron-down text-xs text-gray-400 transition-transform shrink-0 ${isOpen ? 'rotate-180 text-[#B30E2E]' : ''}`}></i>
+      </button>
+
+      {isOpen && coords && (
+        <>
+          <div className="fixed inset-0 z-[99998] bg-black/25 sm:hidden animate-fade-in" onClick={() => setIsOpen(false)} />
+          <div
+            onWheel={(e) => e.stopPropagation()}
+            className="fixed z-[99999] bg-white border border-gray-200 rounded-xl shadow-2xl p-1 animate-fade-in single-priority-select-menu space-y-1"
+            style={{
+              ...(coords.bottom !== undefined ? { bottom: `${coords.bottom}px` } : { top: `${coords.top}px` }),
+              left: `${coords.left}px`,
+              width: `${coords.width}px`
+            }}
+          >
+            {['Hot', 'Cold'].map((opt) => {
+              const isSelected = currentVal === opt;
+              return (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => {
+                    onChange(opt);
+                    setIsOpen(false);
+                  }}
+                  className={`w-full px-3 py-2 text-xs font-semibold rounded-lg flex items-center justify-between transition cursor-pointer ${
+                    isSelected ? 'bg-rose-50 text-[#B30E2E] font-bold' : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    {opt === 'Hot' ? (
+                      <i className="fa-solid fa-fire text-rose-600 text-xs"></i>
+                    ) : (
+                      <i className="fa-solid fa-snowflake text-sky-600 text-xs"></i>
+                    )}
+                    <span>{opt}</span>
+                  </div>
+                  {isSelected && <i className="fa-solid fa-check text-[10px] text-[#B30E2E]"></i>}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+// Status Dropdown for Modals (Mobile-first, Floating/Fixed)
+const SingleStatusSelectDropdown = ({ value = 'New', onChange, className = '' }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [coords, setCoords] = useState(null);
+  const triggerRef = useRef(null);
+
+  const STATUS_LIST = [
+    'New', 'Contacted', 'Interested', 'Details Provided', 
+    'Not Interested', 'Site Visit Scheduled', 'Site Visit Done', 'Won', 'Lost'
+  ];
+
+  const computeCoords = (btn) => {
+    if (!btn) return null;
+    const rect = btn.getBoundingClientRect();
+    const isMobile = window.innerWidth < 640;
+    const vpHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    const vpWidth = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+
+    const targetHeight = isMobile ? Math.min(270, vpHeight - 80) : 290;
+    const targetWidth = isMobile
+      ? Math.min(Math.max(rect.width, 240), vpWidth - 24)
+      : Math.min(Math.max(rect.width, 220), vpWidth - 24);
+
+    const spaceBelow = vpHeight - rect.bottom - 16;
+    const spaceAbove = rect.top - 16;
+
+    let left = rect.left;
+    if (left + targetWidth > vpWidth - 12) {
+      left = Math.max(12, vpWidth - targetWidth - 12);
+    }
+    if (left < 12) left = 12;
+
+    const shouldOpenUpwards = (spaceBelow < targetHeight && spaceAbove >= targetHeight) || 
+                              (isMobile && spaceBelow < 180 && spaceAbove > spaceBelow);
+
+    if (shouldOpenUpwards) {
+      const maxHeight = Math.min(targetHeight, Math.max(140, spaceAbove - 12));
+      const bottom = vpHeight - rect.top + 4;
+      return { bottom, left, width: targetWidth, maxHeight };
+    } else {
+      const maxHeight = Math.min(targetHeight, Math.max(140, spaceBelow - 12));
+      const top = rect.bottom + 4;
+      return { top, left, width: targetWidth, maxHeight };
+    }
+  };
+
+  const handleToggle = (e) => {
+    e.stopPropagation();
+    if (isOpen) { setIsOpen(false); return; }
+    const btn = e.currentTarget;
+    if (!btn) return;
+    const newCoords = computeCoords(btn);
+    setCoords(newCoords);
+    setIsOpen(true);
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleOutside = (e) => {
+      if (triggerRef.current && triggerRef.current.contains(e.target)) return;
+      if (e.target.closest && e.target.closest('.single-status-select-menu')) return;
+      setIsOpen(false);
+    };
+
+    const updatePosition = () => {
+      if (!triggerRef.current) return;
+      const btn = triggerRef.current.querySelector('button');
+      if (!btn) return;
+      const rect = btn.getBoundingClientRect();
+      const vpHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      if (rect.bottom < 40 || rect.top > vpHeight - 40) {
+        setIsOpen(false);
+        return;
+      }
+      const newCoords = computeCoords(btn);
+      if (newCoords) setCoords(newCoords);
+    };
+
+    document.addEventListener('mousedown', handleOutside);
+    document.addEventListener('touchstart', handleOutside);
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', updatePosition);
+      window.visualViewport.addEventListener('scroll', updatePosition);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleOutside);
+      document.removeEventListener('touchstart', handleOutside);
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', updatePosition);
+        window.visualViewport.removeEventListener('scroll', updatePosition);
+      }
+    };
+  }, [isOpen]);
+
+  const currentBadgeClass = getStatusBadge(value || 'New');
+
+  return (
+    <div ref={triggerRef} className={`relative w-full ${className}`}>
+      <button
+        type="button"
+        onClick={handleToggle}
+        className={`w-full h-[38px] px-3 py-2 rounded-xl border text-xs flex items-center justify-between cursor-pointer transition bg-white ${
+          isOpen ? 'border-[#B30E2E] ring-1 ring-[#FCD6DC]' : 'border-gray-300 hover:border-gray-400'
+        }`}
+      >
+        <span className={`px-2 py-0.5 rounded-md border text-[10.5px] font-bold ${currentBadgeClass}`}>
+          {value || 'New'}
+        </span>
+        <i className={`fa-solid fa-chevron-down text-xs text-gray-400 transition-transform shrink-0 ${isOpen ? 'rotate-180 text-[#B30E2E]' : ''}`}></i>
+      </button>
+
+      {isOpen && coords && (
+        <>
+          <div className="fixed inset-0 z-[99998] bg-black/25 sm:hidden animate-fade-in" onClick={() => setIsOpen(false)} />
+          <div
+            onWheel={(e) => e.stopPropagation()}
+            className="fixed z-[99999] bg-white border border-gray-200 rounded-xl shadow-2xl overflow-y-auto overscroll-contain custom-scrollbar p-1.5 animate-fade-in single-status-select-menu space-y-1"
+            style={{
+              ...(coords.bottom !== undefined ? { bottom: `${coords.bottom}px` } : { top: `${coords.top}px` }),
+              left: `${coords.left}px`,
+              width: `${coords.width}px`,
+              maxHeight: `${coords.maxHeight}px`
+            }}
+          >
+            {STATUS_LIST.map((st) => {
+              const isSelected = (value || 'New') === st;
+              const badgeClass = getStatusBadge(st);
+              return (
+                <button
+                  key={st}
+                  type="button"
+                  onClick={() => {
+                    onChange(st);
+                    setIsOpen(false);
+                  }}
+                  className={`w-full px-2.5 py-1.5 text-xs font-semibold rounded-lg flex items-center justify-between transition cursor-pointer ${
+                    isSelected ? 'bg-rose-50 font-bold' : 'hover:bg-gray-50'
+                  }`}
+                >
+                  <span className={`px-2 py-0.5 rounded-md border text-[10px] font-bold ${badgeClass}`}>
+                    {st}
+                  </span>
+                  {isSelected && <i className="fa-solid fa-check text-[10px] text-[#B30E2E]"></i>}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+// Sales Person Dropdown for Modals (Mobile-first, Floating/Fixed)
+const SingleAgentSelectDropdown = ({
+  value = '',
+  onChange,
+  allAgents = [],
+  includeAuto = false,
+  placeholder = 'Select Sales Person',
+  className = ''
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [coords, setCoords] = useState(null);
+  const triggerRef = useRef(null);
+
+  const computeCoords = (btn) => {
+    if (!btn) return null;
+    const rect = btn.getBoundingClientRect();
+    const isMobile = window.innerWidth < 640;
+    const vpHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    const vpWidth = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+
+    const totalOptions = allAgents.length + (includeAuto ? 1 : 0);
+    const targetHeight = isMobile ? Math.min(260, vpHeight - 80) : Math.min(260, totalOptions * 42 + 20);
+    const targetWidth = isMobile
+      ? Math.min(Math.max(rect.width, 240), vpWidth - 24)
+      : Math.min(Math.max(rect.width, 220), vpWidth - 24);
+
+    const spaceBelow = vpHeight - rect.bottom - 16;
+    const spaceAbove = rect.top - 16;
+
+    let left = rect.left;
+    if (left + targetWidth > vpWidth - 12) {
+      left = Math.max(12, vpWidth - targetWidth - 12);
+    }
+    if (left < 12) left = 12;
+
+    const shouldOpenUpwards = (spaceBelow < targetHeight && spaceAbove >= targetHeight) || 
+                              (isMobile && spaceBelow < 180 && spaceAbove > spaceBelow);
+
+    if (shouldOpenUpwards) {
+      const maxHeight = Math.min(targetHeight, Math.max(140, spaceAbove - 12));
+      const bottom = vpHeight - rect.top + 4;
+      return { bottom, left, width: targetWidth, maxHeight };
+    } else {
+      const maxHeight = Math.min(targetHeight, Math.max(140, spaceBelow - 12));
+      const top = rect.bottom + 4;
+      return { top, left, width: targetWidth, maxHeight };
+    }
+  };
+
+  const handleToggle = (e) => {
+    e.stopPropagation();
+    if (isOpen) { setIsOpen(false); return; }
+    const btn = e.currentTarget;
+    if (!btn) return;
+    const newCoords = computeCoords(btn);
+    setCoords(newCoords);
+    setIsOpen(true);
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleOutside = (e) => {
+      if (triggerRef.current && triggerRef.current.contains(e.target)) return;
+      if (e.target.closest && e.target.closest('.single-agent-select-menu')) return;
+      setIsOpen(false);
+    };
+
+    const updatePosition = () => {
+      if (!triggerRef.current) return;
+      const btn = triggerRef.current.querySelector('button');
+      if (!btn) return;
+      const rect = btn.getBoundingClientRect();
+      const vpHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      if (rect.bottom < 40 || rect.top > vpHeight - 40) {
+        setIsOpen(false);
+        return;
+      }
+      const newCoords = computeCoords(btn);
+      if (newCoords) setCoords(newCoords);
+    };
+
+    document.addEventListener('mousedown', handleOutside);
+    document.addEventListener('touchstart', handleOutside);
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', updatePosition);
+      window.visualViewport.addEventListener('scroll', updatePosition);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleOutside);
+      document.removeEventListener('touchstart', handleOutside);
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', updatePosition);
+        window.visualViewport.removeEventListener('scroll', updatePosition);
+      }
+    };
+  }, [isOpen]);
+
+  const isAuto = value === 'auto';
+  const displayLabel = isAuto ? 'Auto Alternate (Round-Robin)' : (value || placeholder);
+
+  return (
+    <div ref={triggerRef} className={`relative w-full ${className}`}>
+      <button
+        type="button"
+        onClick={handleToggle}
+        className={`w-full h-[38px] px-3 py-2 rounded-xl border text-xs flex items-center justify-between cursor-pointer transition bg-white ${
+          isOpen ? 'border-[#B30E2E] ring-1 ring-[#FCD6DC]' : 'border-gray-300 hover:border-gray-400'
+        }`}
+      >
+        <span className="flex items-center gap-2 truncate">
+          <i className={`fa-solid ${isAuto ? 'fa-shuffle text-indigo-600' : 'fa-user-tie text-emerald-600'} text-[11px] shrink-0`}></i>
+          <span className={value ? 'font-semibold text-gray-800 truncate' : 'text-gray-400 truncate'}>
+            {displayLabel}
+          </span>
+        </span>
+        <i className={`fa-solid fa-chevron-down text-xs text-gray-400 transition-transform shrink-0 ${isOpen ? 'rotate-180 text-[#B30E2E]' : ''}`}></i>
+      </button>
+
+      {isOpen && coords && (
+        <>
+          <div className="fixed inset-0 z-[99998] bg-black/25 sm:hidden animate-fade-in" onClick={() => setIsOpen(false)} />
+          <div
+            onWheel={(e) => e.stopPropagation()}
+            className="fixed z-[99999] bg-white border border-gray-200 rounded-xl shadow-2xl overflow-y-auto overscroll-contain custom-scrollbar p-1.5 animate-fade-in single-agent-select-menu space-y-1"
+            style={{
+              ...(coords.bottom !== undefined ? { bottom: `${coords.bottom}px` } : { top: `${coords.top}px` }),
+              left: `${coords.left}px`,
+              width: `${coords.width}px`,
+              maxHeight: `${coords.maxHeight}px`
+            }}
+          >
+            {includeAuto && (
+              <button
+                type="button"
+                onClick={() => {
+                  onChange('auto');
+                  setIsOpen(false);
+                }}
+                className={`w-full px-3 py-2 text-xs font-semibold rounded-lg flex items-center justify-between transition cursor-pointer border-b border-gray-100 mb-1 ${
+                  isAuto ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <div className="flex items-center gap-2 truncate">
+                  <i className="fa-solid fa-shuffle text-indigo-600 text-xs shrink-0"></i>
+                  <span className="truncate">Auto Alternate (Round-Robin)</span>
+                </div>
+                {isAuto && <i className="fa-solid fa-check text-[10px] text-indigo-600"></i>}
+              </button>
+            )}
+
+            {allAgents.map((agent) => {
+              const name = agent.name || agent.username;
+              const isSelected = value === name;
+              return (
+                <button
+                  key={agent.id || agent.username}
+                  type="button"
+                  onClick={() => {
+                    onChange(name);
+                    setIsOpen(false);
+                  }}
+                  className={`w-full px-3 py-2 text-xs font-semibold rounded-lg flex items-center justify-between transition cursor-pointer ${
+                    isSelected ? 'bg-emerald-50 text-emerald-800 font-bold' : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 truncate">
+                    <i className="fa-solid fa-user-tie text-emerald-600 text-xs shrink-0"></i>
+                    <span className="truncate">{name}</span>
+                  </div>
+                  {isSelected && <i className="fa-solid fa-check text-[10px] text-emerald-600"></i>}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+// Source Dropdown for Modals (Mobile-first, Floating/Fixed)
+const SingleSourceSelectDropdown = ({ value = 'Website', onChange, className = '' }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [coords, setCoords] = useState(null);
+  const triggerRef = useRef(null);
+
+  const SOURCE_OPTIONS = [
+    { label: 'Website', icon: 'fa-solid fa-globe', color: 'text-sky-600' },
+    { label: 'Meta', icon: 'fa-brands fa-meta', color: 'text-blue-600' },
+    { label: 'Roadside Hoarding', icon: 'fa-solid fa-signs-post', color: 'text-amber-600' },
+    { label: 'Referral', icon: 'fa-solid fa-handshake', color: 'text-emerald-600' },
+  ];
+
+  const currentVal = value || 'Website';
+  const currentOption = SOURCE_OPTIONS.find(o => o.label.toLowerCase() === currentVal.toLowerCase())
+    || ((currentVal.toLowerCase() === 'instagram' || currentVal.toLowerCase() === 'facebook') ? { label: 'Meta', icon: 'fa-brands fa-meta', color: 'text-blue-600' } : null)
+    || {
+      label: currentVal,
+      icon: 'fa-solid fa-bullhorn',
+      color: 'text-gray-600'
+    };
+
+  const computeCoords = (btn) => {
+    if (!btn) return null;
+    const rect = btn.getBoundingClientRect();
+    const isMobile = window.innerWidth < 640;
+    const vpHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    const vpWidth = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+
+    const targetHeight = 220;
+    const targetWidth = isMobile
+      ? Math.min(Math.max(rect.width, 240), vpWidth - 24)
+      : Math.min(Math.max(rect.width, 220), vpWidth - 24);
+
+    const spaceBelow = vpHeight - rect.bottom - 16;
+    const spaceAbove = rect.top - 16;
+
+    let left = rect.left;
+    if (left + targetWidth > vpWidth - 12) {
+      left = Math.max(12, vpWidth - targetWidth - 12);
+    }
+    if (left < 12) left = 12;
+
+    const shouldOpenUpwards = (spaceBelow < targetHeight && spaceAbove >= targetHeight) || 
+                              (isMobile && spaceBelow < 190 && spaceAbove > spaceBelow);
+
+    if (shouldOpenUpwards) {
+      const maxHeight = Math.min(targetHeight, Math.max(140, spaceAbove - 12));
+      const bottom = vpHeight - rect.top + 4;
+      return { bottom, left, width: targetWidth, maxHeight };
+    } else {
+      const maxHeight = Math.min(targetHeight, Math.max(140, spaceBelow - 12));
+      const top = rect.bottom + 4;
+      return { top, left, width: targetWidth, maxHeight };
+    }
+  };
+
+  const handleToggle = (e) => {
+    e.stopPropagation();
+    if (isOpen) { setIsOpen(false); return; }
+    const btn = e.currentTarget;
+    if (!btn) return;
+    const newCoords = computeCoords(btn);
+    setCoords(newCoords);
+    setIsOpen(true);
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleOutside = (e) => {
+      if (triggerRef.current && triggerRef.current.contains(e.target)) return;
+      if (e.target.closest && e.target.closest('.single-source-select-menu')) return;
+      setIsOpen(false);
+    };
+
+    const updatePosition = () => {
+      if (!triggerRef.current) return;
+      const btn = triggerRef.current.querySelector('button');
+      if (!btn) return;
+      const rect = btn.getBoundingClientRect();
+      const vpHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      if (rect.bottom < 40 || rect.top > vpHeight - 40) {
+        setIsOpen(false);
+        return;
+      }
+      const newCoords = computeCoords(btn);
+      if (newCoords) setCoords(newCoords);
+    };
+
+    document.addEventListener('mousedown', handleOutside);
+    document.addEventListener('touchstart', handleOutside);
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', updatePosition);
+      window.visualViewport.addEventListener('scroll', updatePosition);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleOutside);
+      document.removeEventListener('touchstart', handleOutside);
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', updatePosition);
+        window.visualViewport.removeEventListener('scroll', updatePosition);
+      }
+    };
+  }, [isOpen]);
+
+  return (
+    <div ref={triggerRef} className={`relative w-full ${className}`}>
+      <button
+        type="button"
+        onClick={handleToggle}
+        className={`w-full h-[38px] px-3 py-2 rounded-xl border text-xs flex items-center justify-between cursor-pointer transition bg-white ${
+          isOpen ? 'border-[#B30E2E] ring-1 ring-[#FCD6DC]' : 'border-gray-300 hover:border-gray-400'
+        }`}
+      >
+        <span className="flex items-center gap-2 truncate">
+          <i className={`${currentOption.icon} ${currentOption.color} text-xs shrink-0`}></i>
+          <span className="font-semibold text-gray-800 truncate">{currentOption.label}</span>
+        </span>
+        <i className={`fa-solid fa-chevron-down text-xs text-gray-400 transition-transform shrink-0 ${isOpen ? 'rotate-180 text-[#B30E2E]' : ''}`}></i>
+      </button>
+
+      {isOpen && coords && (
+        <>
+          <div className="fixed inset-0 z-[99998] bg-black/25 sm:hidden animate-fade-in" onClick={() => setIsOpen(false)} />
+          <div
+            onWheel={(e) => e.stopPropagation()}
+            className="fixed z-[99999] bg-white border border-gray-200 rounded-xl shadow-2xl overflow-y-auto overscroll-contain custom-scrollbar p-1.5 animate-fade-in single-source-select-menu space-y-1"
+            style={{
+              ...(coords.bottom !== undefined ? { bottom: `${coords.bottom}px` } : { top: `${coords.top}px` }),
+              left: `${coords.left}px`,
+              width: `${coords.width}px`,
+              maxHeight: `${coords.maxHeight}px`
+            }}
+          >
+            {SOURCE_OPTIONS.map((opt) => {
+              const isSelected = currentVal.toLowerCase() === opt.label.toLowerCase();
+              return (
+                <button
+                  key={opt.label}
+                  type="button"
+                  onClick={() => {
+                    onChange(opt.label);
+                    setIsOpen(false);
+                  }}
+                  className={`w-full px-3 py-2 text-xs font-semibold rounded-lg flex items-center justify-between transition cursor-pointer ${
+                    isSelected ? 'bg-rose-50 text-[#B30E2E] font-bold' : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 truncate">
+                    <i className={`${opt.icon} ${opt.color} text-xs shrink-0`}></i>
+                    <span className="truncate">{opt.label}</span>
+                  </div>
+                  {isSelected && <i className="fa-solid fa-check text-[10px] text-[#B30E2E]"></i>}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
 const LeadTypographyDropdownMenu = ({
   currentTypography,
   projectName,
@@ -3377,6 +4582,26 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
 
   const getCustomerUserId = getAgentUserId;
 
+  const getLeadLocation = (item) => {
+    let loc = (item?.location || '').trim();
+    const leadProj = (item?.projectName || item?.project || '').trim().toLowerCase();
+    if (leadProj && Array.isArray(projectsList) && projectsList.length > 0) {
+      const cleanLeadProj = leadProj.replace(/[^a-z0-9]/g, '');
+      const pMatch = projectsList.find(p => {
+        const pName = (p.name || '').trim().toLowerCase();
+        const cleanP = pName.replace(/[^a-z0-9]/g, '');
+        return pName === leadProj || (cleanP && (cleanLeadProj === cleanP || cleanLeadProj.includes(cleanP) || cleanP.includes(cleanLeadProj)));
+      });
+      if (pMatch) {
+        const projFull = [pMatch.area, pMatch.address].filter(Boolean).join(' - ');
+        if (projFull && (!loc || !loc.includes(' - ') || loc.toLowerCase() === (pMatch.area || '').toLowerCase())) {
+          return projFull;
+        }
+      }
+    }
+    return loc;
+  };
+
   const getLeadDisplayId = (item, index = 0, allLeads = enquiries) => {
     if (!item) return String(index + 1).padStart(2, '0');
     if (item.leadId) return (item.leadId || '').replace(/^#?LD-?/i, '');
@@ -3485,7 +4710,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
         escapeCSV(item.carpetArea || ''),
         escapeCSV(item.budget || ''),
         escapeCSV(item.assignedAgentName || 'Unassigned'),
-        escapeCSV(item.location || ''),
+        escapeCSV(getLeadLocation(item)),
         escapeCSV(item.source || 'Website'),
         escapeCSV(item.email || ''),
         escapeCSV(dateStr),
@@ -4137,7 +5362,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       (item.carpetArea || '').toLowerCase().includes(query) ||
       (item.budget || '').toLowerCase().includes(query) ||
       formatBudgetValue(item.budget).toLowerCase().includes(query) ||
-      (item.location || '').toLowerCase().includes(query) ||
+      getLeadLocation(item).toLowerCase().includes(query) ||
       (item.source || '').toLowerCase().includes(query);
 
     const checkSingleStatus = (st) => {
@@ -6857,7 +8082,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   );
                                 }
                                 case 'location': {
-                                  const loc = (item.location || '').trim();
+                                  const loc = getLeadLocation(item);
                                   if (!loc) {
                                     return (
                                       <td key="location" class={getTdClass('location', currentId)} style={getTdStyle('location')}>
@@ -6884,8 +8109,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   const getSourceStyle = (s) => {
                                     const lower = (s || '').toLowerCase();
                                     if (lower.includes('website')) return 'bg-sky-50 text-sky-700 border-sky-200';
-                                    if (lower.includes('instagram')) return 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200';
-                                    if (lower.includes('facebook')) return 'bg-blue-50 text-blue-700 border-blue-200';
+                                    if (lower.includes('meta') || lower.includes('facebook') || lower.includes('instagram')) return 'bg-blue-50 text-blue-700 border-blue-200';
                                     if (lower.includes('hoarding') || lower.includes('road')) return 'bg-amber-50 text-amber-700 border-amber-200';
                                     if (lower.includes('referral')) return 'bg-emerald-50 text-emerald-700 border-emerald-200';
                                     return 'bg-gray-50 text-gray-700 border-gray-200';
@@ -8142,10 +9366,9 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1">Project</label>
-                    <select
+                    <SingleProjectSelectDropdown
                       value={editingEnquiry.projectName || ''}
-                      onChange={(e) => {
-                        const newProjName = e.target.value;
+                      onChange={(newProjName) => {
                         const availableTypes = getProjectTypesForProject(projectsList, newProjName);
                         const newType = availableTypes.length > 0 ? availableTypes.join(', ') : '';
                         const newTypo = getAutoTypographyForProjectType(projectsList, newProjName, newType);
@@ -8159,18 +9382,8 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                           location: autoLoc
                         });
                       }}
-                      class="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800 bg-white"
-                    >
-                      <option value="">Select Project</option>
-                      {editingEnquiry.projectName && !projectsList.some(p => (p.name || '').trim().toLowerCase() === (editingEnquiry.projectName || '').trim().toLowerCase()) && (
-                        <option value={editingEnquiry.projectName}>{editingEnquiry.projectName}</option>
-                      )}
-                      {projectsList.map((p) => (
-                        <option key={p.id || p.name} value={p.name}>
-                          {p.name}
-                        </option>
-                      ))}
-                    </select>
+                      projectsList={projectsList}
+                    />
                   </div>
                                     <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1">Typography</label>
@@ -8421,49 +9634,29 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1">Priority</label>
-                    <select 
-                      value={(editingEnquiry.priority === 'Cold' || editingEnquiry.priority === 'Low') ? 'Cold' : 'Hot'}
-                      onChange={(e) => setEditingEnquiry({ ...editingEnquiry, priority: e.target.value })}
-                      class="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E]"
-                    >
-                      {PRIORITY_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                    </select>
+                    <SinglePrioritySelectDropdown
+                      value={editingEnquiry.priority}
+                      onChange={(opt) => setEditingEnquiry({ ...editingEnquiry, priority: opt })}
+                    />
                   </div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1">Status</label>
-                    <select 
-                      value={editingEnquiry.status || 'New'} 
-                      onChange={(e) => setEditingEnquiry({ ...editingEnquiry, status: e.target.value })}
-                      class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E]"
-                    >
-                      <option value="New">New</option>
-                      <option value="Contacted">Contacted</option>
-                      <option value="Interested">Interested</option>
-                      <option value="Details Provided">Details Provided</option>
-                      <option value="Not Interested">Not Interested</option>
-                      <option value="Site Visit Scheduled">Site Visit Scheduled</option>
-                      <option value="Site Visit Done">Site Visit Done</option>
-                      <option value="Won">Won</option>
-                      <option value="Lost">Lost</option>
-                    </select>
+                    <SingleStatusSelectDropdown
+                      value={editingEnquiry.status || 'New'}
+                      onChange={(st) => setEditingEnquiry({ ...editingEnquiry, status: st })}
+                    />
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1">Sales Person</label>
                     {isAdmin ? (
-                      <select 
-                        value={editingEnquiry.assignedAgentName || ''} 
-                        onChange={(e) => setEditingEnquiry({ ...editingEnquiry, assignedAgentName: e.target.value })}
-                        class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E]"
-                      >
-                        {allAgents.map(agent => (
-                          <option key={agent.id || agent.username} value={agent.name}>
-                            {agent.name}
-                          </option>
-                        ))}
-                      </select>
+                      <SingleAgentSelectDropdown
+                        value={editingEnquiry.assignedAgentName || ''}
+                        onChange={(name) => setEditingEnquiry({ ...editingEnquiry, assignedAgentName: name })}
+                        allAgents={allAgents}
+                      />
                     ) : (
                       <input 
                         type="text" 
@@ -8477,36 +9670,28 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
 
                 {/* Area & Address (Auto-linked from Project or manual) */}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
+                                    <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1">Area</label>
-                    <select
+                    <SingleAreaSelectDropdown
                       value={(() => {
                         if (editingEnquiry.area) return editingEnquiry.area;
                         const parts = (editingEnquiry.location || '').split(' - ');
                         return PROJECT_AREAS.includes(parts[0]) ? parts[0] : (PROJECT_AREAS.find(a => (editingEnquiry.location || '').includes(a)) || '');
                       })()}
-                      onChange={(e) => {
-                        const newArea = e.target.value;
+                      onChange={(newArea) => {
                         const currentAddr = editingEnquiry.address !== undefined ? editingEnquiry.address : (() => {
                           const parts = (editingEnquiry.location || '').split(' - ');
                           const matchedA = PROJECT_AREAS.includes(parts[0]) ? parts[0] : (PROJECT_AREAS.find(a => (editingEnquiry.location || '').includes(a)) || '');
-                          return matchedA && parts.length > 1 ? parts.slice(1).join(' - ') : (matchedA ? (editingEnquiry.location || '').replace(matchedA, '').replace(/^[\s\-–—:]+/, '') : (editingEnquiry.location || ''));
+                          return matchedA && parts.length > 1 ? parts.slice(1).join(' - ') : (matchedA ? (editingEnquiry.location || '').replace(matchedA, '').replace(/^[\s\---:]+/, '') : (editingEnquiry.location || ''));
                         })();
                         const combined = [newArea, currentAddr].filter(Boolean).join(' - ');
                         setEditingEnquiry({
                           ...editingEnquiry,
                           area: newArea,
-                          address: currentAddr,
                           location: combined
                         });
                       }}
-                      class="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] bg-white text-gray-800"
-                    >
-                      <option value="">Select Area</option>
-                      {PROJECT_AREAS.map(a => (
-                        <option key={a} value={a}>{a}</option>
-                      ))}
-                    </select>
+                    />
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1">Address</label>
@@ -8540,17 +9725,10 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1">Source</label>
-                    <select 
-                      value={editingEnquiry.source || 'Website'} 
-                      onChange={(e) => setEditingEnquiry({ ...editingEnquiry, source: e.target.value })}
-                      class="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E] bg-white text-gray-800"
-                    >
-                      <option value="Website">Website</option>
-                      <option value="Instagram">Instagram</option>
-                      <option value="Facebook">Facebook</option>
-                      <option value="Roadside Hoarding">Roadside Hoarding</option>
-                      <option value="Referral">Referral</option>
-                    </select>
+                    <SingleSourceSelectDropdown
+                      value={editingEnquiry.source || 'Website'}
+                      onChange={(src) => setEditingEnquiry({ ...editingEnquiry, source: src })}
+                    />
                   </div>
                 </div>
 
@@ -8885,10 +10063,9 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1">Project</label>
-                    <select
+                    <SingleProjectSelectDropdown
                       value={newLeadFormData.projectName || ''}
-                      onChange={(e) => {
-                        const newProjName = e.target.value;
+                      onChange={(newProjName) => {
                         const availableTypes = getProjectTypesForProject(projectsList, newProjName);
                         const newType = availableTypes.length > 0 ? availableTypes.join(', ') : '';
                         const newTypo = getAutoTypographyForProjectType(projectsList, newProjName, newType);
@@ -8902,15 +10079,8 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                           location: autoLoc
                         });
                       }}
-                      class="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800 bg-white"
-                    >
-                      <option value="">Select Project</option>
-                      {projectsList.map((p) => (
-                        <option key={p.id || p.name} value={p.name}>
-                          {p.name}
-                        </option>
-                      ))}
-                    </select>
+                      projectsList={projectsList}
+                    />
                   </div>
                                     <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1">Typography</label>
@@ -9162,18 +10332,12 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                   <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1">Assign Sales Executive</label>
                     {isAdmin ? (
-                      <select
+                      <SingleAgentSelectDropdown
                         value={newLeadFormData.assignedAgentName || 'auto'}
-                        onChange={(e) => setNewLeadFormData({ ...newLeadFormData, assignedAgentName: e.target.value })}
-                        class="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800 bg-white"
-                      >
-                        <option value="auto">Auto Alternate (Round-Robin)</option>
-                        {allAgents.map((agent) => (
-                          <option key={agent.id || agent.username} value={agent.name || agent.username}>
-                            {agent.name || agent.username}
-                          </option>
-                        ))}
-                      </select>
+                        onChange={(name) => setNewLeadFormData({ ...newLeadFormData, assignedAgentName: name })}
+                        allAgents={allAgents}
+                        includeAuto={true}
+                      />
                     ) : (
                       <div class="h-[38px] px-3 py-2 rounded-xl border border-emerald-200 bg-emerald-50 text-xs font-bold text-emerald-800 flex items-center justify-between">
                         <span class="flex items-center gap-1.5 truncate">
@@ -9188,12 +10352,11 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
 
                 {/* 5. Area & Address (Auto-linked from Project or manual) */}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
+                                    <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1">Area</label>
-                    <select
+                    <SingleAreaSelectDropdown
                       value={newLeadFormData.area || ''}
-                      onChange={(e) => {
-                        const newArea = e.target.value;
+                      onChange={(newArea) => {
                         const currentAddr = newLeadFormData.address || '';
                         const combined = [newArea, currentAddr].filter(Boolean).join(' - ');
                         setNewLeadFormData({
@@ -9202,13 +10365,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                           location: combined
                         });
                       }}
-                      class="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] bg-white text-gray-800"
-                    >
-                      <option value="">Select Area</option>
-                      {PROJECT_AREAS.map(a => (
-                        <option key={a} value={a}>{a}</option>
-                      ))}
-                    </select>
+                    />
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1">Address</label>
@@ -9234,17 +10391,10 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1">Source</label>
-                    <select 
-                      value={newLeadFormData.source || 'Website'} 
-                      onChange={(e) => setNewLeadFormData({ ...newLeadFormData, source: e.target.value })}
-                      class="w-full h-[38px] px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:border-[#B30E2E] focus:ring-1 focus:ring-[#FCD6DC] text-gray-800 bg-white"
-                    >
-                      <option value="Website">Website</option>
-                      <option value="Instagram">Instagram</option>
-                      <option value="Facebook">Facebook</option>
-                      <option value="Roadside Hoarding">Roadside Hoarding</option>
-                      <option value="Referral">Referral</option>
-                    </select>
+                    <SingleSourceSelectDropdown
+                      value={newLeadFormData.source || 'Website'}
+                      onChange={(src) => setNewLeadFormData({ ...newLeadFormData, source: src })}
+                    />
                   </div>
                 </div>
 

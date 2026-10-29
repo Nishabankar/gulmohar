@@ -86,8 +86,12 @@ router.post('/', async (req, res) => {
     let rawCreatedBy = (createdBy || '').trim();
     const lowerCreator = rawCreatedBy.toLowerCase();
     let finalCreatedBy = 'System';
-    if (rawCreatedBy && !['super admin', 'superadmin', 'admin', 'system admin', 'systemadmin', 'system', 'client'].includes(lowerCreator)) {
-      finalCreatedBy = rawCreatedBy; // Sales Executive name, e.g. Nisha or Mansi
+    // For public website enquiries (WordPress, Gulmohar, etc.), always attribute to 'System'
+    // Only logged-in dashboard requests can attribute to a specific Sales Executive
+    if (isDashboardRequest(req)) {
+      if (rawCreatedBy && !['super admin', 'superadmin', 'admin', 'system admin', 'systemadmin', 'system', 'client', 'website integration', 'website'].includes(lowerCreator)) {
+        finalCreatedBy = rawCreatedBy;
+      }
     }
 
     // Double-check with JWT token: if logged in as a Sales Executive, always attribute to them
@@ -120,10 +124,23 @@ router.post('/', async (req, res) => {
 
     if (rawRequestedProject) {
       try {
-        const [matchedProj] = await query(
+        let [matchedProj] = await query(
           'SELECT id, name, typography, area, address FROM projects WHERE LOWER(TRIM(name)) = LOWER(TRIM(?)) LIMIT 1',
           [rawRequestedProject]
         );
+
+        // If no exact match, try clean/fuzzy match across registered projects
+        if (!matchedProj || matchedProj.length === 0) {
+          const [allProjects] = await query('SELECT id, name, typography, area, address FROM projects');
+          const cleanReq = rawRequestedProject.toLowerCase().replace(/[^a-z0-9]/g, '');
+          const fuzzy = (allProjects || []).find(p => {
+            const cleanP = (p.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+            return cleanP && (cleanReq === cleanP || cleanReq.includes(cleanP) || cleanP.includes(cleanReq));
+          });
+          if (fuzzy) {
+            matchedProj = [fuzzy];
+          }
+        }
         if (matchedProj && matchedProj.length > 0) {
           finalProjectName = matchedProj[0].name;
           if (!finalTypography && matchedProj[0].typography) {
@@ -134,9 +151,12 @@ router.post('/', async (req, res) => {
               finalTypography = String(matchedProj[0].typography);
             }
           }
-          // Auto-link project Area & Address to location if not provided
-          if (!finalLocation) {
-            finalLocation = [matchedProj[0].area, matchedProj[0].address].filter(Boolean).join(' - ');
+          // Auto-link full project Area & Address (enrich if incoming location is empty or only has partial area)
+          const projectFullLoc = [matchedProj[0].area, matchedProj[0].address].filter(Boolean).join(' - ');
+          if (projectFullLoc) {
+            if (!finalLocation || !finalLocation.includes(' - ') || finalLocation.toLowerCase() === (matchedProj[0].area || '').toLowerCase() || finalLocation.toLowerCase() === (matchedProj[0].name || '').toLowerCase()) {
+              finalLocation = projectFullLoc;
+            }
           }
         } else {
           // Project is NOT yet registered in CRM projects table

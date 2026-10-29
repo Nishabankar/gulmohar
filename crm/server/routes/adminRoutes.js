@@ -36,6 +36,13 @@ const tokenStore = new Map();
 // Helper function to format SQL enquiry row to JSON matching frontend expectations
 const formatEnquiryRow = (row, historyEntries = []) => {
   if (!row) return null;
+  let resolvedLoc = (row.location || '').trim();
+  if (row.proj_area || row.proj_address) {
+    const projCombined = [row.proj_area, row.proj_address].filter(Boolean).join(' - ');
+    if (projCombined && (!resolvedLoc || !resolvedLoc.includes(' - ') || resolvedLoc.toLowerCase() === (row.proj_area || '').toLowerCase())) {
+      resolvedLoc = projCombined;
+    }
+  }
   return {
     _id: row.id.toString(),
     id: row.id,
@@ -53,7 +60,7 @@ const formatEnquiryRow = (row, historyEntries = []) => {
     assignedAgentName: row.assigned_agent_name || '',
     salesPerson: row.assigned_agent_name || '',
     assignedTo: row.assigned_to ? row.assigned_to.toString() : '',
-    createdBy: row.created_by || 'System',
+    createdBy: (row.created_by && !['website integration', 'website', 'client'].includes(row.created_by.toLowerCase().trim())) ? row.created_by : 'System',
     priority: (row.priority === 'Cold' || row.priority === 'Low') ? 'Cold' : 'Hot',
     projectName: row.project_name || '',
     project: row.project_name || '',
@@ -61,7 +68,7 @@ const formatEnquiryRow = (row, historyEntries = []) => {
     typography: row.typography || '',
     carpetArea: row.carpet_area || '',
     budget: row.budget || '',
-    location: row.location || '',
+    location: resolvedLoc,
     source: row.source || 'Website',
     history: historyEntries
       .filter(h => h.field_name !== 'Import' && h.field_name !== 'Sheet Status')
@@ -473,21 +480,24 @@ router.get('/enquiries', protectAdmin, async (req, res) => {
       // Non-fatal
     }
 
-    let sql = 'SELECT * FROM leads WHERE 1=1';
+    let sql = `SELECT l.*, p.area AS proj_area, p.address AS proj_address 
+               FROM leads l 
+               LEFT JOIN projects p ON LOWER(TRIM(l.project_name)) = LOWER(TRIM(p.name)) 
+               WHERE 1=1`;
     let params = [];
 
     if (status && status !== 'All') {
-      sql += ' AND status = ?';
+      sql += ' AND l.status = ?';
       params.push(status);
     }
 
     if (search && search.trim()) {
       const term = `%${search.trim()}%`;
-      sql += ' AND (first_name LIKE ? OR last_name LIKE ? OR phone LIKE ? OR email LIKE ? OR plot_info LIKE ?)';
+      sql += ' AND (l.first_name LIKE ? OR l.last_name LIKE ? OR l.phone LIKE ? OR l.email LIKE ? OR l.plot_info LIKE ?)';
       params.push(term, term, term, term, term);
     }
 
-    sql += ' ORDER BY created_at DESC';
+    sql += ' ORDER BY l.created_at DESC';
 
     const [enquiries] = await query(sql, params);
 

@@ -89,6 +89,20 @@ const seedAdminUser = async () => {
       // Column already dropped or not present
     }
 
+    // Auto-migrate any existing 'Website Integration' created_by entries to 'System'
+    try {
+      await query("UPDATE leads SET created_by = 'System' WHERE LOWER(TRIM(created_by)) IN ('website integration', 'website', 'client')");
+    } catch (e) {
+      // Ignore
+    }
+
+    // Auto-migrate any existing 'Instagram' or 'Facebook' source entries to 'Meta'
+    try {
+      await query("UPDATE leads SET source = 'Meta' WHERE LOWER(TRIM(source)) IN ('instagram', 'facebook')");
+    } catch (e) {
+      // Ignore
+    }
+
     // Reset stored column_preferences in users table to null so all users adopt new canonical sequence
     try {
       await query("UPDATE users SET column_preferences = NULL WHERE column_preferences IS NOT NULL");
@@ -104,8 +118,8 @@ const seedAdminUser = async () => {
         const combined = [p.area, p.address].filter(Boolean).join(' - ');
         if (combined) {
           await query(
-            "UPDATE leads SET location = ? WHERE LOWER(TRIM(project_name)) = LOWER(TRIM(?)) AND (location IS NULL OR location = '')",
-            [combined, p.name]
+            "UPDATE leads SET location = ? WHERE LOWER(TRIM(project_name)) = LOWER(TRIM(?)) AND (location IS NULL OR location = '' OR location NOT LIKE '% - %' OR LOWER(TRIM(location)) = LOWER(TRIM(?)) OR LOWER(TRIM(location)) = LOWER(TRIM(?)))",
+            [combined, p.name, p.area || '', p.name]
           );
         }
       }

@@ -7583,7 +7583,7 @@ export default function AdminDashboard({ onLogout }) {
                                         <div class="flex items-center gap-1.5 whitespace-nowrap">
                                           <a 
                                             href={`tel:${rawPhone}`} 
-                                            class="text-[#B30E2E] hover:underline font-bold flex items-center gap-1.5 whitespace-nowrap text-[11.5px] w-[94px] shrink-0 font-mono tracking-wide"
+                                            class="text-[#B30E2E] hover:underline font-bold flex items-center gap-1.5 whitespace-nowrap text-[11.5px] shrink-0 font-mono tracking-wide"
                                             title="Call Lead"
                                           >
                                             <i class="fa-solid fa-phone text-[8.5px] text-[#B30E2E]"></i>

@@ -195,7 +195,7 @@ const COLUMN_WIDTH_MAP = {
   carpetArea: 130,
   budget: 130,
   assignedAgent: 175,
-  location: 280,
+  location: 160,
   source: 130,
   createdBy: 150,
   notes: 75,
@@ -217,7 +217,7 @@ const COLUMN_CLASS_MAP = {
   carpetArea: 'w-[130px] min-w-[130px]',
   budget: 'w-[130px] min-w-[130px]',
   assignedAgent: 'w-[175px] min-w-[175px]',
-  location: 'w-[280px] min-w-[280px]',
+  location: 'w-[160px] min-w-[160px]',
   source: 'w-[130px] min-w-[130px]',
   createdBy: 'w-[150px] min-w-[150px]',
   notes: 'w-[75px] min-w-[75px]',
@@ -2158,7 +2158,7 @@ const DEFAULT_COLUMNS = [
   { id: 'carpetArea', label: 'Carpet Area', visible: true, pinned: false },
   { id: 'budget', label: 'Budget', visible: true, pinned: false },
   { id: 'assignedAgent', label: 'Sales Person', visible: true, pinned: false },
-  { id: 'location', label: 'Location', visible: true, pinned: false },
+  { id: 'location', label: 'Area', visible: true, pinned: false },
   { id: 'source', label: 'Source', visible: true, pinned: false },
   { id: 'email', label: 'Email ID', visible: true, pinned: false },
   { id: 'enquiryDate', label: 'Enquiry Date', visible: true, pinned: false },
@@ -8091,15 +8091,12 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                     );
                                   }
                                   const parts = loc.split(' - ');
-                                  const areaPart = parts.length > 1 ? parts[0] : '';
-                                  const addrPart = parts.length > 1 ? parts.slice(1).join(' - ') : loc;
+                                  const areaPart = parts[0].trim();
                                   return (
                                     <td key="location" class={getTdClass('location', currentId)} style={getTdStyle('location')}>
-                                      <div class="flex items-center gap-1.5 text-xs text-gray-700 truncate max-w-full" title={loc}>
+                                      <div class="flex items-center gap-1.5 text-xs text-gray-800 truncate max-w-full" title={loc}>
                                         <i class="fa-solid fa-location-dot text-[#B30E2E] shrink-0 text-[10px]"></i>
-                                        {areaPart && <span class="font-bold text-gray-900 shrink-0">{areaPart}</span>}
-                                        {areaPart && addrPart && <span class="text-gray-400 shrink-0 font-normal">-</span>}
-                                        <span class="truncate text-gray-600 font-normal">{addrPart}</span>
+                                        <span class="font-semibold text-gray-900 truncate">{areaPart || loc}</span>
                                       </div>
                                     </td>
                                   );

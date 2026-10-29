@@ -2327,19 +2327,9 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                                 return (
                                   <td key="location" className={getProjectTdClass('location')} style={getProjectTdStyle('location')} title={`${project.area ? project.area + ' - ' : ''}${project.address || ''}`}>
                                     {project.area || project.address ? (
-                                      <div className="flex items-center gap-1.5 text-xs text-gray-700 truncate max-w-full">
+                                      <div className="flex items-center gap-1.5 text-xs text-gray-800 truncate max-w-full">
                                         <i className="fa-solid fa-location-dot text-[#B30E2E] text-[10px] shrink-0"></i>
-                                        {project.area && (
-                                          <span className="font-bold text-gray-900 shrink-0">{project.area}</span>
-                                        )}
-                                        {project.area && project.address && (
-                                          <span className="text-gray-400 shrink-0 font-normal">-</span>
-                                        )}
-                                        {project.address && (
-                                          <span className="text-gray-500 truncate font-normal text-[11px]" title={project.address}>
-                                            {project.address}
-                                          </span>
-                                        )}
+                                        <span className="font-semibold text-gray-900 truncate">{project.area || project.address}</span>
                                       </div>
                                     ) : (
                                       <span className="text-gray-400 italic text-xs">—</span>

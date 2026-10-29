@@ -2360,7 +2360,7 @@ export const maskPhoneNumber = (phone) => {
   return '******';
 };
 
-export default function AdminDashboard({ onLogout, onGoHome }) {
+export default function AdminDashboard({ onLogout }) {
   const savedNavState = (() => {
     try {
       const raw = localStorage.getItem('lms_dashboard_nav_state');
@@ -5887,23 +5887,21 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
       <header class="bg-gradient-to-r from-[#B30E2E] via-[#8A0B22] to-[#590414] text-white flex-shrink-0 shadow-xl border-b border-rose-900/40 sticky top-0 z-40">
         <div class="w-full px-2.5 sm:px-6 lg:px-8 flex items-center justify-between h-14 sm:h-16 gap-2 sm:gap-4 relative">
           
-          {/* Left: Branding */}
-          <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0 z-10">
+          {/* Left: Branding (Static Non-Clickable Logo) */}
+          <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0 z-10 select-none">
             {/* Mobile View: Icon Only */}
             <img 
               src="/assets/images/Housedeal-icon.png?v=1" 
               alt="HouseDeal" 
-              onClick={onGoHome}
               title="HouseDeal CRM"
-              class="block sm:hidden h-8 w-8 object-contain cursor-pointer hover:opacity-95 transition"
+              class="block sm:hidden h-8 w-8 object-contain select-none"
             />
             {/* Tablet & Desktop View: Full Logo with Text */}
             <img 
               src="/assets/images/Housedeal-logo.png?v=3" 
               alt="HouseDeal CRM" 
-              onClick={onGoHome}
               title="HouseDeal CRM"
-              class="hidden sm:block h-8 sm:h-9 w-auto object-contain cursor-pointer hover:opacity-95 transition"
+              class="hidden sm:block h-8 sm:h-9 w-auto object-contain select-none"
             />
           </div>
 

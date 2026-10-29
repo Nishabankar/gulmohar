@@ -117,22 +117,22 @@ const TYPE_BADGE_STYLE = {
 };
 
 const PROJECT_COLUMN_WIDTH_MAP = {
-  projectId: 85,
-  projectName: 195,
-  developerName: 165,
-  projectType: 150,
-  projectStatus: 140,
-  typography: 150,
-  landArea: 120,
-  targetPossession: 160,
-  reraPossession: 160,
-  towers: 100,
-  floors: 100,
-  reraNumber: 140,
-  projectUrl: 140,
-  location: 280,
-  description: 280,
-  actions: 105
+  projectId: 75,
+  projectName: 185,
+  developerName: 150,
+  projectType: 135,
+  projectStatus: 130,
+  typography: 140,
+  landArea: 105,
+  targetPossession: 135,
+  reraPossession: 135,
+  towers: 75,
+  floors: 90,
+  reraNumber: 125,
+  projectUrl: 95,
+  location: 150,
+  description: 240,
+  actions: 95
 };
 
 const DEFAULT_PROJECT_COLUMNS = [
@@ -154,7 +154,7 @@ const DEFAULT_PROJECT_COLUMNS = [
   { id: 'actions', label: 'Actions', visible: true, pinned: true }
 ];
 
-const PROJECT_CONFIG_VERSION = 'v4_add_description_column_20261027';
+const PROJECT_CONFIG_VERSION = 'v5_compact_column_widths_20261029';
 
 export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }) {
   const [projects, setProjects] = useState([]);
@@ -1822,7 +1822,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                 visibleProjectCols.forEach(c => {
                   if (c.id !== 'actions' && c.pinned) {
                     projectColLeftMap[c.id] = projectCurrentLeft;
-                    projectCurrentLeft += (PROJECT_COLUMN_WIDTH_MAP[c.id] || 150);
+                    projectCurrentLeft += (PROJECT_COLUMN_WIDTH_MAP[c.id] || 135);
                   }
                 });
               }
@@ -1834,10 +1834,9 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
               };
 
               const getProjectThStyle = (colId) => {
-                const width = PROJECT_COLUMN_WIDTH_MAP[colId] || 150;
+                const width = PROJECT_COLUMN_WIDTH_MAP[colId] || 135;
                 const pinned = isProjectColPinned(colId);
-                const style = { width: `${width}px`, minWidth: `${width}px` };
-                if (pinned) style.maxWidth = `${width}px`;
+                const style = { width: `${width}px`, minWidth: `${width}px`, maxWidth: `${width}px` };
                 if (colId === 'actions') {
                   if (isProjectActionsPinned) style.right = 0;
                   return style;
@@ -1856,14 +1855,13 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                 const sortBg = isSorted ? 'bg-rose-50/70 text-[#B30E2E]' : '';
                 const isSortable = colId !== 'actions';
                 const cursorClass = isSortable ? 'cursor-pointer select-none group transition-colors hover:bg-gray-200/70' : 'select-none';
-                return `${stickyClass} py-3 px-3.5 whitespace-nowrap border-b border-gray-200 ${cursorClass} ${sortBg} ${extra}`.trim();
+                return `${stickyClass} py-3 px-3 whitespace-nowrap border-b border-gray-200 ${cursorClass} ${sortBg} ${extra}`.trim();
               };
 
               const getProjectTdStyle = (colId) => {
-                const width = PROJECT_COLUMN_WIDTH_MAP[colId] || 150;
+                const width = PROJECT_COLUMN_WIDTH_MAP[colId] || 135;
                 const pinned = isProjectColPinned(colId);
-                const style = { width: `${width}px`, minWidth: `${width}px` };
-                if (pinned) style.maxWidth = `${width}px`;
+                const style = { width: `${width}px`, minWidth: `${width}px`, maxWidth: `${width}px` };
                 if (colId === 'actions') {
                   if (isProjectActionsPinned) style.right = 0;
                   return style;
@@ -1879,10 +1877,10 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                 const stickyClass = pinned 
                   ? (colId === 'actions' ? 'sticky right-0 z-20 bg-white group-hover:bg-slate-50' : 'sticky z-20 bg-white group-hover:bg-slate-50')
                   : '';
-                return `${stickyClass} py-2.5 px-3.5 whitespace-nowrap transition-colors ${extra}`.trim();
+                return `${stickyClass} py-2.5 px-3 whitespace-nowrap transition-colors ${extra}`.trim();
               };
 
-              const totalProjectTableWidth = visibleProjectCols.reduce((sum, c) => sum + (PROJECT_COLUMN_WIDTH_MAP[c.id] || 150), 0);
+              const totalProjectTableWidth = visibleProjectCols.reduce((sum, c) => sum + (PROJECT_COLUMN_WIDTH_MAP[c.id] || 135), 0);
 
               return (
                 <table 
@@ -2282,7 +2280,7 @@ export default function ProjectManagement({ currentUser, isSuperAdmin, isAdmin }
                                 );
                               case 'towers':
                                 return (
-                                  <td key="towers" className={getProjectTdClass('towers')} style={getProjectTdStyle('towers')}>
+                                  <td key="towers" className={getProjectTdClass('towers', 'text-center')} style={getProjectTdStyle('towers')}>
                                     <span className="text-xs text-gray-700 font-medium whitespace-nowrap">{project.towers || <span className="text-gray-400 italic font-normal">—</span>}</span>
                                   </td>
                                 );

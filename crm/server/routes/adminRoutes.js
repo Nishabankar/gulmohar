@@ -608,10 +608,15 @@ router.patch('/enquiries/:id', protectAdmin, async (req, res) => {
 
     // Check for duplicate phone among other leads
     if (phone !== undefined && phone.trim()) {
-      const cleanPhone = phone.trim();
-      const [taken] = await query('SELECT id FROM leads WHERE phone = ? AND id != ?', [cleanPhone, targetId]);
-      if (taken.length > 0) {
-        return res.status(400).json({ success: false, message: `Another lead already has mobile number '${cleanPhone}'.` });
+      if (phone.includes('*')) {
+        // Masked phone submitted by sales agent -> preserve existing real phone number
+        phone = existing.phone;
+      } else {
+        const cleanPhone = phone.trim();
+        const [taken] = await query('SELECT id FROM leads WHERE phone = ? AND id != ?', [cleanPhone, targetId]);
+        if (taken.length > 0) {
+          return res.status(400).json({ success: false, message: `Another lead already has mobile number '${cleanPhone}'.` });
+        }
       }
     }
 

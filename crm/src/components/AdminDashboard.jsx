@@ -2345,6 +2345,21 @@ const ALL_STATUS_OPTIONS = [
   'Lost'
 ];
 
+export const maskPhoneNumber = (phone) => {
+  if (!phone) return '';
+  const str = String(phone).trim();
+  const digits = str.replace(/\D/g, '');
+  if (digits.length >= 10) {
+    const last4 = digits.slice(-4);
+    return `******${last4}`;
+  }
+  if (digits.length > 4) {
+    const last4 = digits.slice(-4);
+    return '*'.repeat(Math.max(4, digits.length - 4)) + last4;
+  }
+  return '******';
+};
+
 export default function AdminDashboard({ onLogout, onGoHome }) {
   const savedNavState = (() => {
     try {
@@ -2734,6 +2749,8 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     };
   }, []);
   const [selectedLeadIds, setSelectedLeadIds] = useState([]);
+  const [showAdminPhoneNumbers, setShowAdminPhoneNumbers] = useState(false);
+  const [revealedPhoneLeadIds, setRevealedPhoneLeadIds] = useState(new Set());
   const [editingNoteId, setEditingNoteId] = useState(null);
   const [noteText, setNoteText] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -4032,7 +4049,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
     e.preventDefault();
     if (!editingEnquiry) return;
 
-    if (editingEnquiry.phone && !/^[6-9]\d{9}$/.test(editingEnquiry.phone.trim())) {
+    if (isAdmin && editingEnquiry.phone && !/^[6-9]\d{9}$/.test(editingEnquiry.phone.trim())) {
       setEditModalSuccessMsg('Please enter a valid 10-digit mobile number starting with 6, 7, 8, or 9.');
       return;
     }
@@ -7251,6 +7268,19 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   >
                                     <div class="flex items-center gap-1.5">
                                       <span>Mobile No</span>
+                                      {isAdmin && (
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setShowAdminPhoneNumbers(prev => !prev);
+                                          }}
+                                          class="w-4 h-4 rounded hover:bg-gray-200 flex items-center justify-center text-gray-500 hover:text-[#B30E2E] transition-colors cursor-pointer ml-0.5"
+                                          title={showAdminPhoneNumbers ? "Hide Mobile Numbers (Stars)" : "Show Mobile Numbers (Admin)"}
+                                        >
+                                          <i class={`fa-solid ${showAdminPhoneNumbers ? 'fa-eye-slash' : 'fa-eye'} text-[10px]`}></i>
+                                        </button>
+                                      )}
                                       {renderSortIndicator()}
                                     </div>
                                   </th>
@@ -7561,19 +7591,43 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                       </div>
                                     </td>
                                   );
-                                case 'mobile':
+                                case 'mobile': {
+                                  const rawPhone = item.phone || '';
+                                  const isRevealed = isAdmin && (showAdminPhoneNumbers || revealedPhoneLeadIds.has(currentId));
+                                  const displayPhone = isRevealed ? rawPhone : maskPhoneNumber(rawPhone);
                                   return (
                                     <td key="mobile" class={getTdClass('mobile', currentId)} style={getTdStyle('mobile')}>
-                                      {item.phone ? (
+                                      {rawPhone ? (
                                         <div class="flex items-center gap-1.5 whitespace-nowrap">
                                           <a 
-                                            href={`tel:${item.phone}`} 
-                                            class="text-[#B30E2E] hover:underline font-bold flex items-center gap-1.5 whitespace-nowrap text-[11.5px] w-[94px] shrink-0"
+                                            href={`tel:${rawPhone}`} 
+                                            class="text-[#B30E2E] hover:underline font-bold flex items-center gap-1.5 whitespace-nowrap text-[11.5px] w-[94px] shrink-0 font-mono tracking-wide"
                                             title="Call Lead"
                                           >
                                             <i class="fa-solid fa-phone text-[8.5px] text-[#B30E2E]"></i>
-                                            <span>{item.phone}</span>
+                                            <span>{displayPhone}</span>
                                           </a>
+                                          {isAdmin && (
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setRevealedPhoneLeadIds(prev => {
+                                                  const next = new Set(prev);
+                                                  if (next.has(currentId)) {
+                                                    next.delete(currentId);
+                                                  } else {
+                                                    next.add(currentId);
+                                                  }
+                                                  return next;
+                                                });
+                                              }}
+                                              class="w-4 h-4 rounded hover:bg-rose-100 flex items-center justify-center text-gray-400 hover:text-[#B30E2E] transition cursor-pointer shrink-0"
+                                              title={isRevealed ? "Hide number" : "Reveal number (Admin)"}
+                                            >
+                                              <i class={`fa-solid ${isRevealed ? 'fa-eye-slash' : 'fa-eye'} text-[9px]`}></i>
+                                            </button>
+                                          )}
                                           {(() => {
                                             const cleanPhone = (item.phone || '').replace(/\D/g, '');
                                             const formattedPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
@@ -7609,6 +7663,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                       )}
                                     </td>
                                   );
+                                }
                                 case 'email':
                                   return (
                                     <td key="email" class={getTdClass('email', currentId)} style={getTdStyle('email')}>
@@ -9356,17 +9411,18 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                   <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1">Mobile Number *</label>
                     <input 
-                      type="tel" 
+                      type="text" 
                       required 
                       maxLength={10}
-                      pattern="[6-9][0-9]{9}"
-                      value={editingEnquiry.phone || ''} 
+                      pattern={isAdmin ? "[6-9][0-9]{9}" : undefined}
+                      value={isAdmin ? (editingEnquiry.phone || '') : maskPhoneNumber(editingEnquiry.phone)} 
                       onChange={(e) => {
+                        if (!isAdmin) return;
                         const cleaned = e.target.value.replace(/\D/g, '').slice(0, 10);
                         setEditingEnquiry({ ...editingEnquiry, phone: cleaned });
                       }}
                       disabled={!isAdmin}
-                      class={`w-full px-3 py-2 rounded-xl border text-xs focus:outline-none ${!isAdmin ? 'bg-gray-100 text-gray-600 border-gray-200 cursor-not-allowed font-semibold' : 'border-gray-300 focus:border-[#B30E2E]'}`}
+                      class={`w-full px-3 py-2 rounded-xl border text-xs focus:outline-none ${!isAdmin ? 'bg-gray-100 text-gray-600 border-gray-200 cursor-not-allowed font-semibold font-mono tracking-wider' : 'border-gray-300 focus:border-[#B30E2E]'}`}
                     />
                   </div>
                   <div>

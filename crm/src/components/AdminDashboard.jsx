@@ -7826,7 +7826,7 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                           title={matchedProject?.projectUrl ? `View Property: ${currentProjName}` : `View on Map: ${currentProjName}`}
                                         >
                                           <i class="fa-solid fa-building text-[9px] text-[#B30E2E] flex-shrink-0 group-hover:scale-110 transition-transform"></i>
-                                          <span class="font-bold text-xs whitespace-nowrap underline decoration-gray-300 group-hover:decoration-[#B30E2E] underline-offset-2">
+                                          <span class="font-bold text-xs whitespace-nowrap">
                                             {currentProjName}
                                           </span>
                                           <i class="fa-solid fa-arrow-up-right-from-square text-[8.5px] text-gray-400 group-hover:text-[#B30E2E] flex-shrink-0 transition-colors"></i>

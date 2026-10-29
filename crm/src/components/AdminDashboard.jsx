@@ -7796,19 +7796,41 @@ export default function AdminDashboard({ onLogout, onGoHome }) {
                                   );
                                 }
                                 case 'projectName': {
-                                  const matchedProject = (projectsList || []).find(p => (p.name || '').trim().toLowerCase() === (item.projectName || '').trim().toLowerCase());
+                                  const leadProj = (item.projectName || '').trim().toLowerCase();
+                                  const cleanLeadProj = leadProj.replace(/[^a-z0-9]/g, '');
+                                  const matchedProject = (projectsList || []).find(p => {
+                                    const pName = (p.name || '').trim().toLowerCase();
+                                    const cleanP = pName.replace(/[^a-z0-9]/g, '');
+                                    return pName === leadProj || (cleanP && cleanLeadProj && (cleanP === cleanLeadProj || cleanLeadProj.includes(cleanP) || cleanP.includes(cleanLeadProj)));
+                                  });
                                   const currentProjName = (matchedProject ? matchedProject.name : (item.projectName || '')).trim();
                                   const hasValidProject = Boolean(currentProjName && currentProjName !== '-' && currentProjName !== '—');
+
+                                  let targetUrl = '';
+                                  if (matchedProject?.projectUrl && matchedProject.projectUrl.trim()) {
+                                    const rawUrl = matchedProject.projectUrl.trim();
+                                    targetUrl = rawUrl.startsWith('http') ? rawUrl : `https://${rawUrl}`;
+                                  } else if (hasValidProject) {
+                                    const queryParts = [currentProjName, matchedProject?.area, 'Pune'].filter(Boolean).join(', ');
+                                    targetUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(queryParts)}`;
+                                  }
 
                                   return (
                                     <td key="projectName" class={getTdClass('projectName', currentId)} style={getTdStyle('projectName')}>
                                       {hasValidProject ? (
-                                        <div class="flex items-center gap-1.5 whitespace-nowrap" title={currentProjName}>
-                                          <i class="fa-solid fa-building text-[9px] text-[#B30E2E] flex-shrink-0"></i>
-                                          <span class="font-bold text-gray-800 text-xs whitespace-nowrap">
+                                        <a
+                                          href={targetUrl}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          class="group inline-flex items-center gap-1.5 whitespace-nowrap text-gray-900 hover:text-[#B30E2E] transition-colors cursor-pointer"
+                                          title={matchedProject?.projectUrl ? `View Property: ${currentProjName}` : `View on Map: ${currentProjName}`}
+                                        >
+                                          <i class="fa-solid fa-building text-[9px] text-[#B30E2E] flex-shrink-0 group-hover:scale-110 transition-transform"></i>
+                                          <span class="font-bold text-xs whitespace-nowrap underline decoration-gray-300 group-hover:decoration-[#B30E2E] underline-offset-2">
                                             {currentProjName}
                                           </span>
-                                        </div>
+                                          <i class="fa-solid fa-arrow-up-right-from-square text-[8.5px] text-gray-400 group-hover:text-[#B30E2E] flex-shrink-0 transition-colors"></i>
+                                        </a>
                                       ) : (
                                         <span class="text-gray-400 font-normal italic text-xs select-none">—</span>
                                       )}
